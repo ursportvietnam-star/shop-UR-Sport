@@ -42,7 +42,9 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         slug: formData.name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, ''),
         createdAt: serverTimestamp(),
         rating: 5,
-        reviews: 0
+        reviews: 0,
+        colors: ['Black', 'White', 'Blue'], // Default colors
+        sizes: ['S', 'M', 'L', 'XL'] // Default sizes
       });
 
       toast.success('Thêm sản phẩm thành công!');

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { PRODUCTS, CATEGORY_METADATA } from '../data';
 import { useCart } from '../CartContext';
 import { useAuth } from '../AuthContext';
+import { useProducts } from '../ProductsContext';
 import { Button } from '@/components/ui/button';
 import { 
   Star, 
@@ -29,14 +29,15 @@ export const ProductDetail: React.FC = () => {
   const { categorySlug, productSlug } = useParams<{ categorySlug: string, productSlug: string }>();
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
+  const { products, loading } = useProducts();
   
   // Find current product
-  const product = PRODUCTS.find(p => p.slug === productSlug);
+  const product = products.find(p => p.slug === productSlug);
   
   // SEO Navigation Logic (Prev/Next)
   const catMetadata = CATEGORY_METADATA.find(c => c.slug === categorySlug);
   const categoryName = catMetadata ? catMetadata.name : product?.category;
-  const categoryProducts = PRODUCTS.filter(p => p.category === categoryName);
+  const categoryProducts = products.filter(p => p.category === categoryName);
   const currentIndex = categoryProducts.findIndex(p => p.slug === productSlug);
   
   const prevProduct = currentIndex > 0 ? categoryProducts[currentIndex - 1] : null;
@@ -52,12 +53,20 @@ export const ProductDetail: React.FC = () => {
 
   useEffect(() => {
     if (product) {
-      setSelectedColor(product.colors[0]);
-      setSelectedSize(product.sizes[0]);
-      setMainImage(product.images[0]);
+      setSelectedColor(product.colors?.[0] || '');
+      setSelectedSize(product.sizes?.[0] || '');
+      setMainImage(product.images?.[0] || '');
       window.scrollTo(0, 0);
     }
   }, [product]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="h-12 w-12 rounded-full border-4 border-[#0082c8] border-t-transparent animate-spin" />
+      </div>
+    );
+  }
 
   if (!product) {
     return (

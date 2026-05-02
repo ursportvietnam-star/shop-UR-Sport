@@ -14,6 +14,7 @@ import { Product, Category } from './types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AuthProvider } from './AuthContext';
 import { CartProvider } from './CartContext';
+import { ProductsProvider, useProducts } from './ProductsContext';
 import { Toaster } from 'sonner';
 import { Filter, SlidersHorizontal, ArrowDown, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,7 @@ const getProductUrl = (product: Product) => {
 function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: Product) => void, onCategorySelect: (c: Category) => void }) {
   const navigate = useNavigate();
   const [featuredFilter, setFeaturedFilter] = useState('Most Popular');
+  const { products } = useProducts();
 
   return (
     <>
@@ -78,7 +80,7 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
         </div>
 
         <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-          {PRODUCTS
+          {products
             .filter(p => {
               if (featuredFilter === 'Most Popular') return p.rating >= 4.5;
               if (featuredFilter === 'Bestsellers') return p.isBestSeller;
@@ -121,7 +123,7 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
         </div>
 
         <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-          {PRODUCTS
+          {products
             .filter(p => p.category === 'Áo thun thể thao nam')
             .slice(0, 6)
             .map((product) => (
@@ -158,7 +160,7 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
         </div>
 
         <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-          {PRODUCTS
+          {products
             .filter(p => p.category === 'Áo polo nam')
             .slice(0, 6)
             .map((product) => (
@@ -195,7 +197,7 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
         </div>
 
         <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-          {PRODUCTS
+          {products
             .filter(p => p.category === 'Áo thun nam')
             .slice(0, 6)
             .map((product) => (
@@ -311,6 +313,7 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
 function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelect }: { activeCategory: string, setActiveCategory: (c: string) => void, isLoading: boolean, onProductSelect: (p: Product) => void }) {
   const navigate = useNavigate();
   const { categorySlug } = useParams<{ categorySlug?: string }>();
+  const { products } = useProducts();
 
   React.useEffect(() => {
     if (categorySlug) {
@@ -324,8 +327,8 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
   }, [categorySlug, setActiveCategory, activeCategory]);
 
   const filteredProducts = activeCategory === 'All' 
-    ? PRODUCTS 
-    : PRODUCTS.filter(p => p.category === activeCategory);
+    ? products 
+    : products.filter(p => p.category === activeCategory);
 
   return (
     <div className="mx-auto max-w-[1600px] px-4 py-8 sm:px-6 lg:px-8 xl:px-10">
@@ -501,7 +504,8 @@ function AppContent() {
 
   return (
     <AuthProvider>
-      <CartProvider>
+      <ProductsProvider>
+        <CartProvider>
         <div className="min-h-screen bg-white font-sans selection:bg-black selection:text-white">
           {!isAdminRoute && (
             <Navbar 
@@ -543,6 +547,7 @@ function AppContent() {
           <Toaster />
         </div>
       </CartProvider>
+      </ProductsProvider>
     </AuthProvider>
   );
 }
