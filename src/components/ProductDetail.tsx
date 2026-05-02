@@ -153,7 +153,7 @@ export const ProductDetail: React.FC = () => {
             </div>
             
             <div className="flex justify-start flex-wrap gap-2">
-              {product.images.map((img, i) => (
+              {(product.images || []).map((img, i) => (
                 <button
                   key={i}
                   onClick={() => setMainImage(img)}
@@ -251,12 +251,12 @@ export const ProductDetail: React.FC = () => {
             <div className="space-y-4 text-left">
                <p className="text-[13px] font-bold text-zinc-900">Color: <span className="text-zinc-500 ml-1 font-normal uppercase">{selectedColor}</span></p>
                <div className="flex flex-wrap gap-3">
-                  {product.colors.map((color, idx) => (
+                  {(product.colors || []).map((color, idx) => (
                     <button
                       key={color}
                       onClick={() => {
                         setSelectedColor(color);
-                        if (product.images[idx]) setMainImage(product.images[idx]);
+                        if (product.images?.[idx]) setMainImage(product.images[idx]);
                       }}
                       className={cn(
                         "relative flex items-center gap-3 pr-4 rounded-md border transition-all bg-white group h-12 overflow-hidden",
@@ -264,9 +264,9 @@ export const ProductDetail: React.FC = () => {
                       )}
                     >
                       <div className="w-12 h-12 flex items-center justify-center bg-white border-r border-zinc-100 shrink-0 p-1">
-                        {(product.images[idx] || product.images[0]) && (
+                        {(product.images?.[idx] || product.images?.[0]) && (
                           <img 
-                            src={product.images[idx] || product.images[0]} 
+                            src={product.images?.[idx] || product.images?.[0]} 
                             alt={color} 
                             className="w-full h-full object-contain" 
                             referrerPolicy="no-referrer" 
@@ -293,9 +293,9 @@ export const ProductDetail: React.FC = () => {
 
             {/* Size Selector */}
             <div className="flex items-center gap-4 text-left">
-               <p className="text-[13px] font-bold text-zinc-900 min-w-[40px]">Size:</p>
+               <p className="text-[13px] font-bold text-zinc-900">Size:</p>
                <div className="flex flex-wrap gap-2">
-                  {product.sizes.map(size => (
+                  {(product.sizes || []).map(size => (
                     <button
                        key={size}
                        onClick={() => setSelectedSize(size)}
