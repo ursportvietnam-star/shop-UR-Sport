@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { CATEGORY_METADATA } from '../data';
 import { useCart } from '../CartContext';
 import { useAuth } from '../AuthContext';
 import { useProducts } from '../ProductsContext';
