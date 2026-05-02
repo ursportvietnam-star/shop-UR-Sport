@@ -157,7 +157,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => navigate('/admin')}
+                        onClick={() => navigate('/quan-tri')}
                         className="h-[42px] flex items-center gap-2 px-5 rounded-2xl bg-zinc-900 text-sm font-bold text-white shadow-lg hover:bg-zinc-800 transition-all duration-250"
                       >
                         <BarChart2 className="h-4 w-4" />

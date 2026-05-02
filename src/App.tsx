@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { HashRouter as Router, Routes, Route, useNavigate, useParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useParams } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { ProductCard } from './components/ProductCard';
@@ -517,7 +517,7 @@ function AppContent() {
               <Route path="/checkout" element={<Checkout onComplete={() => {}} />} />
               <Route path="/news" element={<NewsPage />} />
               <Route path="/news/:id" element={<NewsPage />} />
-              <Route path="/admin" element={<AdminPanel />} />
+              <Route path="/quan-tri" element={<AdminPanel />} />
               <Route path="*" element={<div className="py-20 text-center font-black text-4xl">404 - PAGE NOT FOUND</div>} />
             </Routes>
           </main>
