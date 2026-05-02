@@ -1,7 +1,5 @@
 import React, { useState, useRef } from 'react';
 import { Upload, X, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { storage } from '../firebase';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -11,9 +9,15 @@ interface ImageUploadProps {
   label?: string;
 }
 
+// ─── Cloudinary config ───────────────────────────────────────────────────────
+// Điền thông tin Cloudinary của bạn vào đây
+const CLOUDINARY_CLOUD_NAME = 'dcj4qhcfh';
+const CLOUDINARY_UPLOAD_PRESET = 'ursport_uploads';
+// ────────────────────────────────────────────────────────────────────────────
+
 export const ImageUpload: React.FC<ImageUploadProps> = ({
   onUploadComplete,
-  folder = 'uploads',
+  folder = 'products',
   label = 'Tải ảnh lên'
 }) => {
   const [isUploading, setIsUploading] = useState(false);
@@ -31,72 +35,64 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
       toast.error('Vui lòng chọn file hình ảnh!');
       return;
     }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('File quá lớn! Tối đa 5MB.');
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File quá lớn! Tối đa 10MB.');
       return;
     }
 
-    // Show preview immediately
     const reader = new FileReader();
     reader.onloadend = () => setPreviewUrl(reader.result as string);
     reader.readAsDataURL(file);
 
-    uploadFile(file);
+    uploadToCloudinary(file);
   };
 
-  const uploadFile = (file: File) => {
+  const uploadToCloudinary = (file: File) => {
     setIsUploading(true);
     setProgress(0);
     setUploadError(null);
     setIsDone(false);
 
-    const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-    const storageRef = ref(storage, `${folder}/${fileName}`);
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    formData.append('folder', folder);
 
-    try {
-      const uploadTask = uploadBytesResumable(storageRef, file);
+    const xhr = new XMLHttpRequest();
 
-      uploadTask.on(
-        'state_changed',
-        (snapshot) => {
-          const p = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-          setProgress(p);
-        },
-        (error) => {
-          console.error('Upload error:', error);
-          let msg = 'Lỗi khi tải ảnh lên';
-          if (error.code === 'storage/unauthorized') {
-            msg = 'Không có quyền upload. Kiểm tra Firebase Storage Rules.';
-          } else if (error.code === 'storage/canceled') {
-            msg = 'Upload bị hủy.';
-          } else if (error.code === 'storage/unknown') {
-            msg = 'Lỗi kết nối. Vui lòng thử lại.';
-          }
-          setUploadError(msg);
-          toast.error(msg);
-          setIsUploading(false);
-          setProgress(0);
-        },
-        async () => {
-          try {
-            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            onUploadComplete(downloadURL);
-            setIsDone(true);
-            setIsUploading(false);
-            toast.success('Tải ảnh thành công!');
-          } catch (err) {
-            setUploadError('Không thể lấy URL ảnh. Thử lại.');
-            toast.error('Không thể lấy URL ảnh.');
-            setIsUploading(false);
-          }
-        }
-      );
-    } catch (err) {
-      setUploadError('Không thể kết nối Firebase Storage.');
-      toast.error('Không thể kết nối Firebase Storage.');
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const pct = Math.round((event.loaded / event.total) * 100);
+        setProgress(pct);
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status === 200) {
+        const data = JSON.parse(xhr.responseText);
+        onUploadComplete(data.secure_url);
+        setIsDone(true);
+        setIsUploading(false);
+        toast.success('Tải ảnh thành công!');
+      } else {
+        const errMsg = 'Upload thất bại. Kiểm tra lại Cloudinary config.';
+        setUploadError(errMsg);
+        toast.error(errMsg);
+        setIsUploading(false);
+        setProgress(0);
+      }
+    };
+
+    xhr.onerror = () => {
+      const errMsg = 'Lỗi kết nối. Vui lòng thử lại.';
+      setUploadError(errMsg);
+      toast.error(errMsg);
       setIsUploading(false);
-    }
+      setProgress(0);
+    };
+
+    xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`);
+    xhr.send(formData);
   };
 
   const removeImage = () => {
@@ -141,12 +137,11 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
               className="max-h-36 rounded-xl object-cover shadow-md"
             />
 
-            {/* Progress bar */}
             {isUploading && (
               <div className="w-full space-y-2">
                 <div className="w-full h-2 bg-zinc-200 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-[#0082c8] rounded-full transition-all duration-300"
+                    className="h-full bg-[#0082c8] rounded-full transition-all duration-200"
                     style={{ width: `${progress}%` }}
                   />
                 </div>
@@ -160,7 +155,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
             {uploadError && (
               <div className="flex items-center gap-2 text-red-500">
                 <AlertCircle className="h-4 w-4" />
-                <span className="text-xs font-bold">{uploadError}</span>
+                <span className="text-xs font-bold text-center">{uploadError}</span>
               </div>
             )}
 
@@ -187,7 +182,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
             <p className="text-sm font-bold text-zinc-500 group-hover:text-zinc-700 text-center">
               Kéo thả hoặc click để chọn ảnh
             </p>
-            <p className="text-xs text-zinc-400 mt-1">JPG, PNG, WebP • Tối đa 5MB</p>
+            <p className="text-xs text-zinc-400 mt-1">JPG, PNG, WebP • Tối đa 10MB</p>
           </>
         )}
       </div>
