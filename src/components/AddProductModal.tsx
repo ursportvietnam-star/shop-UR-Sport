@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Save, Package, Tag, Info, DollarSign, ListOrdered } from 'lucide-react';
+import { X, Save, Package, Tag, Info, DollarSign, ListOrdered, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -149,17 +149,19 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 space-y-10">
+              {/* Top Section: Info & Image */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                {/* Left: Basic Info */}
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-black uppercase tracking-widest text-zinc-500">Tên sản phẩm</label>
-                    <div className="relative">
-                      <Tag className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+                    <label className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1">Tên sản phẩm</label>
+                    <div className="relative group">
+                      <Tag className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-300 group-focus-within:text-[#0082c8] transition-colors" />
                       <Input 
                         value={formData.name}
                         onChange={(e) => setFormData({...formData, name: e.target.value})}
-                        className="pl-12 h-12 rounded-xl border-zinc-200 focus:ring-[#0082c8]"
+                        className="pl-12 h-14 rounded-2xl border-none bg-zinc-50 focus:bg-white focus:ring-2 focus:ring-[#0082c8]/20 transition-all text-sm font-bold placeholder:text-zinc-300"
                         placeholder="VD: Áo Thun Thể Thao Nam"
                       />
                     </div>
@@ -167,27 +169,27 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-xs font-black uppercase tracking-widest text-zinc-500">Giá bán (₫)</label>
-                      <div className="relative">
-                        <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+                      <label className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1">Giá bán (₫)</label>
+                      <div className="relative group">
+                        <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-300 group-focus-within:text-[#0082c8] transition-colors" />
                         <Input 
                           type="number"
                           value={formData.price}
                           onChange={(e) => setFormData({...formData, price: e.target.value})}
-                          className="pl-12 h-12 rounded-xl border-zinc-200"
+                          className="pl-12 h-14 rounded-2xl border-none bg-zinc-50 focus:bg-white focus:ring-2 focus:ring-[#0082c8]/20 transition-all text-sm font-bold"
                           placeholder="250000"
                         />
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-black uppercase tracking-widest text-zinc-500">Tồn kho</label>
-                      <div className="relative">
-                        <ListOrdered className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+                      <label className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1">Tồn kho</label>
+                      <div className="relative group">
+                        <ListOrdered className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-300 group-focus-within:text-[#0082c8] transition-colors" />
                         <Input 
                           type="number"
                           value={formData.stock}
                           onChange={(e) => setFormData({...formData, stock: e.target.value})}
-                          className="pl-12 h-12 rounded-xl border-zinc-200"
+                          className="pl-12 h-14 rounded-2xl border-none bg-zinc-50 focus:bg-white focus:ring-2 focus:ring-[#0082c8]/20 transition-all text-sm font-bold"
                           placeholder="100"
                         />
                       </div>
@@ -195,76 +197,84 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-black uppercase tracking-widest text-zinc-500">Danh mục</label>
-                    <select 
-                      value={formData.category}
-                      onChange={(e) => setFormData({...formData, category: e.target.value})}
-                      className="w-full h-12 px-4 rounded-xl border border-zinc-200 bg-white focus:ring-2 focus:ring-[#0082c8] outline-none font-bold text-sm"
-                    >
-                      {CATEGORIES.map(cat => (
-                        <option key={cat} value={cat}>{cat}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-xs font-black uppercase tracking-widest text-zinc-500">Mô tả sản phẩm (Chuẩn SEO)</label>
-                    <div className="quill-container">
-                      <ReactQuill 
-                        theme="snow"
-                        value={formData.description}
-                        onChange={(content) => setFormData({...formData, description: content})}
-                        modules={modules}
-                        placeholder="Nhập mô tả chi tiết, bạn có thể chèn ảnh, định dạng văn bản để chuẩn SEO..."
-                        className="h-[300px] mb-12"
-                      />
+                    <label className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1">Danh mục</label>
+                    <div className="relative group">
+                      <select 
+                        value={formData.category}
+                        onChange={(e) => setFormData({...formData, category: e.target.value})}
+                        className="w-full h-14 px-5 rounded-2xl border-none bg-zinc-50 focus:bg-white focus:ring-2 focus:ring-[#0082c8]/20 transition-all outline-none font-bold text-sm appearance-none cursor-pointer"
+                      >
+                        {CATEGORIES.map(cat => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-300 pointer-events-none" />
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <label className="text-xs font-black uppercase tracking-widest text-zinc-500">Hình ảnh sản phẩm</label>
+                {/* Right: Image Upload */}
+                <div className="space-y-2">
+                  <label className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1">Hình ảnh sản phẩm</label>
+                  <div className="h-[236px]">
                     <ImageUpload 
                       onUploadComplete={(url) => setFormData({...formData, images: [...formData.images, url]})}
                       folder="products"
                       label=""
                     />
-                    <div className="grid grid-cols-3 gap-2 mt-4">
-                      {formData.images.map((url, i) => (
-                        <div key={i} className="relative aspect-square rounded-lg overflow-hidden border border-zinc-100 group">
-                          <img src={url} alt="" className="w-full h-full object-cover" />
-                          <button 
-                            type="button"
-                            onClick={() => setFormData({...formData, images: formData.images.filter((_, idx) => idx !== i)})}
-                            className="absolute top-1 right-1 bg-white/80 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="h-3 w-3 text-red-500" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
+                  </div>
+                  <div className="flex gap-2 mt-4 overflow-x-auto pb-2 scrollbar-hide">
+                    {formData.images.map((url, i) => (
+                      <div key={i} className="relative w-16 h-16 shrink-0 rounded-xl overflow-hidden border border-zinc-100 group shadow-sm">
+                        <img src={url} alt="" className="w-full h-full object-cover" />
+                        <button 
+                          type="button"
+                          onClick={() => setFormData({...formData, images: formData.images.filter((_, idx) => idx !== i)})}
+                          className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-4 w-4 text-white" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
 
-              <div className="pt-6 border-t border-zinc-100 flex justify-end gap-4">
-                <Button 
+              {/* Bottom Section: Rich Editor */}
+              <div className="space-y-4 pt-4 border-t border-zinc-50">
+                <div className="flex items-center gap-2">
+                  <Info className="h-4 w-4 text-[#0082c8]" />
+                  <label className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400">Mô tả sản phẩm (Chuẩn SEO)</label>
+                </div>
+                <div className="rounded-3xl border border-zinc-100 overflow-hidden bg-zinc-50/30">
+                  <ReactQuill 
+                    theme="snow"
+                    value={formData.description}
+                    onChange={(content) => setFormData({...formData, description: content})}
+                    modules={modules}
+                    placeholder="Nhập mô tả chi tiết, bạn có thể chèn ảnh, định dạng văn bản để chuẩn SEO..."
+                    className="h-[350px] mb-12 bg-white"
+                  />
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="pt-6 flex justify-end items-center gap-8">
+                <button 
                   type="button" 
-                  variant="ghost" 
                   onClick={onClose}
-                  className="rounded-xl font-bold px-8"
+                  className="text-sm font-bold text-zinc-500 hover:text-zinc-900 transition-colors"
                 >
                   Hủy
-                </Button>
+                </button>
                 <Button 
                   type="submit" 
                   disabled={isSubmitting}
-                  className="bg-[#0082c8] hover:bg-[#0071ae] text-white rounded-xl font-bold px-12 h-12 shadow-lg shadow-blue-500/20 flex items-center gap-2"
+                  className="bg-[#0082c8] hover:bg-[#0071ae] text-white rounded-2xl font-black uppercase italic tracking-tighter px-10 h-14 shadow-xl shadow-blue-500/30 flex items-center gap-3 transition-all active:scale-95"
                 >
                   {isSubmitting ? 'Đang lưu...' : (
                     <>
-                      <Save className="h-4 w-4" />
+                      <Save className="h-5 w-5" />
                       Lưu sản phẩm
                     </>
                   )}
