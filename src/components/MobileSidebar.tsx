@@ -1,0 +1,190 @@
+import React, { useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Link } from 'react-router-dom';
+import { X, User, ChevronRight, ShoppingBag, CreditCard, Heart, Settings, LogIn, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { CATEGORY_METADATA } from '../data';
+import { Category } from '../types';
+
+interface MobileSidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onLogin: () => void;
+  onPageChange: (page: string) => void;
+  onCategorySelect: (category: Category) => void;
+  activeCategory: Category;
+  user: any;
+}
+
+export const MobileSidebar: React.FC<MobileSidebarProps> = ({ 
+  isOpen, 
+  onClose, 
+  onLogin, 
+  onPageChange,
+  onCategorySelect,
+  activeCategory,
+  user 
+}) => {
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm"
+          />
+
+          <motion.div
+            initial={{ x: '-100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '-100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="fixed left-0 top-0 z-[10000] h-screen w-[310px] bg-white shadow-2xl flex flex-col overflow-hidden"
+          >
+            {/* Header: Brand Blue Background */}
+            <div className="bg-[#0082c8] px-5 pt-8 pb-10 text-white relative shrink-0">
+                <div className="flex justify-between items-start mb-6">
+                    <div className="flex flex-col">
+                        <Link to="/" onClick={onClose} className="text-2xl font-black italic tracking-tighter leading-none flex items-center">
+                            <span className="text-white">UR</span>
+                            <span className="text-white ml-1">SPORT</span>
+                        </Link>
+                        <span className="text-[10px] font-bold italic tracking-tight text-white/80 mt-1 uppercase">
+                            Phong Cách Thể Thao
+                        </span>
+                    </div>
+                    <button onClick={onClose} className="p-1 hover:bg-white/10 rounded-full transition-colors text-white">
+                        <X className="h-6 w-6" />
+                    </button>
+                </div>
+
+                {/* User Card - Styled like the screenshot's login section */}
+                <div 
+                    onClick={() => { if(!user) onLogin(); onClose(); }}
+                    className="relative overflow-hidden bg-white/10 backdrop-blur-md p-4 rounded-xl shadow-lg border border-white/20 cursor-pointer group transition-all active:scale-[0.98] flex items-center gap-4"
+                >
+                    <div className="h-12 w-12 rounded-full bg-white flex items-center justify-center flex-shrink-0 shadow-md">
+                        {user?.photoURL ? (
+                            <img src={user.photoURL} alt="" className="h-full w-full object-cover rounded-full" referrerPolicy="no-referrer" />
+                        ) : (
+                            <div className="h-full w-full rounded-full flex items-center justify-center">
+                                <User className="h-6 w-6 text-[#0082c8]" />
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <p className="font-extrabold text-[15px] tracking-tight truncate text-white">
+                            {user ? user.displayName : 'Đăng nhập | Đăng ký'}
+                        </p>
+                        <p className="text-[10px] font-medium text-white/80 mt-0.5 tracking-tight truncate">
+                            {user ? 'Chào đón bạn trở lại' : 'Đăng nhập để nhận ưu đãi tốt hơn'}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto bg-white">
+                <div className="py-0">
+                    {/* Quick Menu */}
+                    <div className="bg-zinc-50 py-4 px-6 border-b border-zinc-100 mb-2">
+                        <p className="text-[11px] font-extrabold uppercase tracking-widest text-zinc-400">
+                            DANH MỤC CHÍNH
+                        </p>
+                    </div>
+
+                    <div className="px-6 space-y-4 mb-6">
+                        <Link 
+                            to="/shop"
+                            onClick={onClose}
+                            className="block w-full text-left py-2 text-[17px] font-black italic tracking-tighter uppercase text-zinc-900 hover:text-[#0082c8] transition-colors"
+                        >
+                            Cửa hàng
+                        </Link>
+                        <Link 
+                            to="/news"
+                            onClick={onClose}
+                            className="block w-full text-left py-2 text-[17px] font-black italic tracking-tighter uppercase text-zinc-900 hover:text-[#0082c8] transition-colors"
+                        >
+                            Bài viết
+                        </Link>
+                    </div>
+
+                    <div className="bg-zinc-50 py-4 px-6 border-b border-zinc-100">
+                        <p className="text-[11px] font-extrabold uppercase tracking-widest text-zinc-400">
+                            DANH MỤC SẢN PHẨM
+                        </p>
+                    </div>
+                    
+                    <div className="px-0">
+                        <div className="flex flex-col">
+                            {CATEGORY_METADATA.map((cat, i) => (
+                                <motion.button
+                                    key={cat.slug}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: i * 0.05 }}
+                                    onClick={() => {
+                                        onCategorySelect(cat.name);
+                                        onClose();
+                                    }}
+                                    className={`w-full flex items-center gap-4 py-4 px-6 transition-all group relative border-b border-zinc-100 ${
+                                        activeCategory === cat.name 
+                                          ? 'bg-[#0082c8]/5' 
+                                          : 'hover:bg-zinc-50 bg-white'
+                                    }`}
+                                >
+                                    <div className="h-14 w-14 rounded-full overflow-hidden border border-zinc-200 group-hover:scale-105 transition-transform bg-zinc-50 flex-shrink-0 relative shadow-inner">
+                                        <img src={cat.icon} alt={cat.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                                    </div>
+                                    <span className={`text-[17px] font-black tracking-tight text-left flex-1 text-zinc-900`}>
+                                        {cat.name}
+                                    </span>
+                                    <ChevronRight className="h-4 w-4 text-zinc-300" />
+                                </motion.button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="mt-8 px-5 pb-12">
+                        <Button 
+                            className="w-full bg-zinc-950 text-white font-black h-16 uppercase tracking-widest text-[13px] rounded-xl shadow-lg hover:bg-black transition-all mb-4"
+                            onClick={() => { onCategorySelect('All' as any); onClose(); }}
+                        >
+                            KHÁM PHÁ BỘ SƯU TẬP
+                        </Button>
+                        <p className="text-[11px] text-zinc-400 text-center font-bold tracking-tight uppercase opacity-50">
+                            Miễn phí đổi size trong 7 ngày
+                        </p>
+                    </div>
+                </div>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+};
