@@ -497,18 +497,22 @@ function AppContent() {
     navigate(page === 'home' ? '/' : `/${page}`);
   };
 
+  const isAdminRoute = window.location.pathname === '/quan-tri';
+
   return (
     <AuthProvider>
       <CartProvider>
         <div className="min-h-screen bg-white font-sans selection:bg-black selection:text-white">
-          <Navbar 
-            onCartClick={() => setIsCartOpen(true)} 
-            onPageChange={onPageChange}
-            onCategorySelect={handleCategorySelect}
-            activeCategory={activeCategory as any}
-          />
+          {!isAdminRoute && (
+            <Navbar 
+              onCartClick={() => setIsCartOpen(true)} 
+              onPageChange={onPageChange}
+              onCategorySelect={handleCategorySelect}
+              activeCategory={activeCategory as any}
+            />
+          )}
           
-          <main className="pt-16">
+          <main className={!isAdminRoute ? "pt-16" : ""}>
             <Routes>
               <Route path="/" element={<HomePage onProductSelect={() => {}} onCategorySelect={handleCategorySelect} />} />
               <Route path="/shop" element={<ShopPage activeCategory={activeCategory} setActiveCategory={setActiveCategory} isLoading={isLoading} onProductSelect={() => {}} />} />
@@ -522,16 +526,19 @@ function AppContent() {
             </Routes>
           </main>
 
-          <Footer 
-            onPageChange={onPageChange}
-            onCategorySelect={handleCategorySelect}
-          />
-
-          <CartSidebar 
-            isOpen={isCartOpen} 
-            onClose={() => setIsCartOpen(false)} 
-            onCheckout={() => {}}
-          />
+          {!isAdminRoute && (
+            <>
+              <Footer 
+                onPageChange={onPageChange}
+                onCategorySelect={handleCategorySelect}
+              />
+              <CartSidebar 
+                isOpen={isCartOpen} 
+                onClose={() => setIsCartOpen(false)} 
+                onCheckout={() => {}}
+              />
+            </>
+          )}
           
           <Toaster />
         </div>
