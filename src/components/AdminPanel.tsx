@@ -5,8 +5,9 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Package, Users, Settings, Trash2, Edit2, LayoutDashboard } from 'lucide-react';
+import { Plus, Package, Users, Settings, Trash2, Edit2, LayoutDashboard, Image as ImageIcon } from 'lucide-react';
 import { PRODUCTS } from '../data';
+import { ImageUpload } from './ImageUpload';
 
 export const AdminPanel: React.FC = () => {
   const { user, isAdmin, loading } = useAuth();
@@ -56,6 +57,7 @@ export const AdminPanel: React.FC = () => {
           <TabsTrigger value="inventory" className="rounded-none h-full px-8 font-black uppercase text-xs data-[state=active]:bg-white data-[state=active]:shadow-none">INVENTORY</TabsTrigger>
           <TabsTrigger value="orders" className="rounded-none h-full px-8 font-black uppercase text-xs data-[state=active]:bg-white data-[state=active]:shadow-none">ORDERS</TabsTrigger>
           <TabsTrigger value="customers" className="rounded-none h-full px-8 font-black uppercase text-xs data-[state=active]:bg-white data-[state=active]:shadow-none">CUSTOMERS</TabsTrigger>
+          <TabsTrigger value="media" className="rounded-none h-full px-8 font-black uppercase text-xs data-[state=active]:bg-white data-[state=active]:shadow-none">MEDIA LIBRARY</TabsTrigger>
           <TabsTrigger value="settings" className="rounded-none h-full px-8 font-black uppercase text-xs data-[state=active]:bg-white data-[state=active]:shadow-none">SETTINGS</TabsTrigger>
         </TabsList>
 
@@ -138,6 +140,51 @@ export const AdminPanel: React.FC = () => {
               <Package className="h-12 w-12 text-zinc-300 mb-4" />
               <p className="text-zinc-500 font-bold uppercase text-xs tracking-widest">No orders found yet.</p>
            </div>
+        </TabsContent>
+
+        <TabsContent value="media">
+           <Card className="rounded-none border-2 border-zinc-100 shadow-none">
+              <CardHeader>
+                 <CardTitle className="text-xl font-black italic tracking-tighter uppercase">Media Library & Storage</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-8">
+                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                    <div className="space-y-4">
+                       <h3 className="text-sm font-black uppercase tracking-widest text-zinc-400">Tải ảnh mới</h3>
+                       <ImageUpload 
+                          onUploadComplete={(url) => {
+                             console.log('File available at:', url);
+                          }}
+                          folder="products"
+                          label="Upload product images to Firebase Storage"
+                       />
+                    </div>
+                    
+                    <div className="space-y-4">
+                       <h3 className="text-sm font-black uppercase tracking-widest text-zinc-400">Storage Information</h3>
+                       <div className="bg-zinc-50 p-6 rounded-2xl border border-zinc-100">
+                          <p className="text-sm text-zinc-600 mb-4">
+                             Đây là nơi bạn có thể lưu trữ hình ảnh sản phẩm, banner và các tài liệu khác miễn phí trên Firebase Storage.
+                          </p>
+                          <ul className="space-y-3">
+                             <li className="flex items-center gap-3 text-xs font-bold text-zinc-700">
+                                <div className="h-2 w-2 bg-green-500 rounded-full" />
+                                5GB Dung lượng lưu trữ miễn phí
+                             </li>
+                             <li className="flex items-center gap-3 text-xs font-bold text-zinc-700">
+                                <div className="h-2 w-2 bg-green-500 rounded-full" />
+                                Tự động tối ưu hóa đường truyền
+                             </li>
+                             <li className="flex items-center gap-3 text-xs font-bold text-zinc-700">
+                                <div className="h-2 w-2 bg-green-500 rounded-full" />
+                                Bảo mật với Firebase Security Rules
+                             </li>
+                          </ul>
+                       </div>
+                    </div>
+                 </div>
+              </CardContent>
+           </Card>
         </TabsContent>
       </Tabs>
     </div>

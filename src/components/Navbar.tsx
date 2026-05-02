@@ -153,6 +153,18 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
                       {(user.displayName || user.email || 'U').charAt(0).toUpperCase()}
                     </div>
 
+                    {isAdmin && (
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => navigate('/admin')}
+                        className="h-[42px] flex items-center gap-2 px-5 rounded-2xl bg-zinc-900 text-sm font-bold text-white shadow-lg hover:bg-zinc-800 transition-all duration-250"
+                      >
+                        <BarChart2 className="h-4 w-4" />
+                        <span className="hidden sm:inline">Quản trị</span>
+                      </motion.button>
+                    )}
+
                     <motion.button
                       whileHover={{ 
                         scale: 1.02,
@@ -163,7 +175,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
                       className="h-[42px] flex items-center gap-2 px-5 rounded-2xl bg-gradient-to-r from-[#ef4444] to-[#dc2626] text-sm font-bold text-white shadow-[0_4px_12px_rgba(239,68,68,0.2)] hover:shadow-[0_6px_20px_rgba(239,68,68,0.3)] hover:brightness-110 transition-all duration-250 active:scale-95"
                     >
                       <LogOut className="h-4 w-4" />
-                      <span className="hidden sm:inline">Thoát tài khoản</span>
+                      <span className="hidden sm:inline">Thoát</span>
                     </motion.button>
                   </motion.div>
                 )}

@@ -41,7 +41,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
       onClose();
       toast.success('Đăng nhập thành công!');
     } catch (error) {
-      toast.error('Đăng nhập thất bại');
+      console.error('Login error:', error);
+      // AuthContext.tsx already handles the toast with specific messages
     }
   };
 

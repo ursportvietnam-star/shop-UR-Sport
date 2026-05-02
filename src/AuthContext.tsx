@@ -23,14 +23,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
       setUser(authUser);
       if (authUser) {
-        try {
-          // Add a small delay or retry to ensure Firestore is connected
-          const adminDoc = await getDoc(doc(db, 'admins', authUser.uid));
-          setIsAdmin(adminDoc.exists());
-        } catch (error: any) {
-          console.error('Error checking admin status:', error);
-          // If it's a connection error, we don't want to block the user
-          setIsAdmin(false);
+        // Special case: Default admin email
+        if (authUser.email === 'ursportvietnam@gmail.com') {
+          setIsAdmin(true);
+        } else {
+          try {
+            // Check if user is listed in Firestore admins collection
+            const adminDoc = await getDoc(doc(db, 'admins', authUser.uid));
+            setIsAdmin(adminDoc.exists());
+          } catch (error: any) {
+            console.error('Error checking admin status:', error);
+            setIsAdmin(false);
+          }
         }
       } else {
         setIsAdmin(false);
