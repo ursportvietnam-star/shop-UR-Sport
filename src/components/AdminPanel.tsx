@@ -1,4 +1,5 @@
-import { Plus, Package, Users, Settings, Trash2, Edit2, LayoutDashboard, Image as ImageIcon, MessageSquare, ShoppingBag } from 'lucide-react';
+import React from 'react';
+import { Plus, Package, Users, Trash2, Edit2, Image as ImageIcon, MessageSquare, ShoppingBag } from 'lucide-react';
 import { PRODUCTS as STATIC_PRODUCTS } from '../data';
 import { ImageUpload } from './ImageUpload';
 import { AddProductModal } from './AddProductModal';
@@ -6,6 +7,12 @@ import { collection, onSnapshot, query, orderBy, deleteDoc, doc } from 'firebase
 import { db } from '../firebase';
 import { Product } from '../types';
 import { toast } from 'sonner';
+import { useAuth } from '../AuthContext';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { cn } from '@/lib/utils';
 
 export const AdminPanel: React.FC = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
