@@ -508,10 +508,25 @@ export const ProductDetail: React.FC = () => {
             <div className="w-20 h-1 bg-[#0082c8] rounded-full" />
           </div>
 
-          <div className="space-y-12 text-[15px] leading-relaxed text-zinc-600 font-medium">
+          <div className="space-y-12 text-[15px] leading-relaxed text-zinc-600 font-medium product-description">
              <div className="space-y-4">
-                <p>Từ ngàn xưa, người phương Đông đã tin rằng mọi vật đều mang năng lượng và các con số cũng không ngoại lệ. Mỗi con số đều có một ý nghĩa, một tần sóng riêng, khi kết hợp lại sẽ tạo thành một trường năng lượng có thể ảnh hưởng tích cực hoặc tiêu cực đến người sở hữu. Trong bối cảnh đó, chiếc SIM điện thoại, vật bất ly thân của chúng ta, cũng được xem xét kỹ lưỡng dưới góc độ phong thủy. Không chỉ đơn thuần là dãy số liên lạc, nó còn là "linh vật" đồng hành, có thể là quý nhân phù trợ hoặc ngược lại, nếu không được chọn lựa cẩn trọng.</p>
-                <p>4 số cuối SIM điện thoại đặc biệt được chú trọng vì chúng thường được coi là "đuôi số" mang lại vận may, tài lộc, giống như "hậu vận" của chủ nhân. Việc lựa chọn một dãy số hợp mệnh không chỉ giúp tâm lý an yên, tự tin hơn mà còn được kỳ vọng mang lại những dòng chảy năng lượng tích cực, giúp công việc hanh thông, tài lộc vượng phát và cuộc sống bình an.</p>
+                {product.description ? (
+                  <div 
+                    dangerouslySetInnerHTML={{ __html: product.description }} 
+                    className="prose prose-zinc max-w-none 
+                      [&_h1]:text-2xl [&_h1]:font-black [&_h1]:mb-4 [&_h1]:text-zinc-900
+                      [&_h2]:text-xl [&_h2]:font-black [&_h2]:mb-3 [&_h2]:text-zinc-900
+                      [&_h3]:text-lg [&_h3]:font-black [&_h3]:mb-2 [&_h3]:text-zinc-900
+                      [&_p]:mb-4 [&_p]:leading-relaxed
+                      [&_img]:rounded-2xl [&_img]:my-8 [&_img]:shadow-lg [&_img]:mx-auto
+                      [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-4
+                      [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-4
+                      [&_blockquote]:border-l-4 [&_blockquote]:border-[#0082c8] [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-zinc-500
+                    "
+                  />
+                ) : (
+                  <p>Sản phẩm này chưa có mô tả chi tiết.</p>
+                )}
              </div>
 
              <div className="grid grid-cols-1 gap-12 pt-8 border-t border-zinc-100">

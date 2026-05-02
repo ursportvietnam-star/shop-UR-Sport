@@ -8,6 +8,8 @@ import { toast } from 'sonner';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { CATEGORIES } from '../data';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 interface AddProductModalProps {
   isOpen: boolean;
@@ -25,6 +27,55 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
     stock: '',
     images: [] as string[]
   });
+
+  const modules = React.useMemo(() => ({
+    toolbar: {
+      container: [
+        [{ 'header': [1, 2, 3, false] }],
+        ['bold', 'italic', 'underline', 'strike', 'blockquote'],
+        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+        [{ 'align': [] }],
+        ['link', 'image'],
+        ['clean']
+      ],
+      handlers: {
+        image: () => {
+          const input = document.createElement('input');
+          input.setAttribute('type', 'file');
+          input.setAttribute('accept', 'image/*');
+          input.click();
+
+          input.onchange = async () => {
+            const file = input.files?.[0];
+            if (!file) return;
+
+            const toastId = toast.loading('Đang tải ảnh lên mô tả...');
+            const uploadData = new FormData();
+            uploadData.append('file', file);
+            uploadData.append('upload_preset', 'ursport_uploads');
+            uploadData.append('folder', 'product_descriptions');
+
+            try {
+              const res = await fetch(`https://api.cloudinary.com/v1_1/dcj4qhcfh/image/upload`, {
+                method: 'POST',
+                body: uploadData
+              });
+              const data = await res.json();
+              
+              const quill = (document.querySelector('.ql-editor') as any)?.__quill;
+              if (quill) {
+                const range = quill.getSelection();
+                quill.insertEmbed(range.index, 'image', data.secure_url);
+              }
+              toast.success('Đã chèn ảnh thành công', { id: toastId });
+            } catch (error) {
+              toast.error('Lỗi khi tải ảnh', { id: toastId });
+            }
+          };
+        }
+      }
+    }
+  }), []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,7 +132,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[800px] max-h-[90vh] bg-white rounded-[32px] shadow-2xl z-[101] overflow-hidden flex flex-col"
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[1000px] max-h-[95vh] bg-white rounded-[32px] shadow-2xl z-[101] overflow-hidden flex flex-col"
           >
             <div className="p-6 border-b border-zinc-100 flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -157,14 +208,15 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-black uppercase tracking-widest text-zinc-500">Mô tả sản phẩm</label>
-                    <div className="relative">
-                      <Info className="absolute left-4 top-4 h-4 w-4 text-zinc-400" />
-                      <textarea 
+                    <label className="text-xs font-black uppercase tracking-widest text-zinc-500">Mô tả sản phẩm (Chuẩn SEO)</label>
+                    <div className="quill-container">
+                      <ReactQuill 
+                        theme="snow"
                         value={formData.description}
-                        onChange={(e) => setFormData({...formData, description: e.target.value})}
-                        className="w-full min-h-[120px] pl-12 pr-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-[#0082c8] outline-none font-medium text-sm"
-                        placeholder="Nhập mô tả sản phẩm..."
+                        onChange={(content) => setFormData({...formData, description: content})}
+                        modules={modules}
+                        placeholder="Nhập mô tả chi tiết, bạn có thể chèn ảnh, định dạng văn bản để chuẩn SEO..."
+                        className="h-[300px] mb-12"
                       />
                     </div>
                   </div>
