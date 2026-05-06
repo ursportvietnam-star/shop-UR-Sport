@@ -187,9 +187,17 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, isOpe
               </div>
               
               <div className="pt-2">
-                <div className="flex items-center gap-2 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
-                  <CreditCard className="h-4 w-4 text-emerald-400" />
-                  <span className="text-[10px] font-black uppercase text-emerald-400 tracking-wider">Thanh toán khi nhận hàng (COD)</span>
+                <div className={cn(
+                  "flex items-center gap-2 px-3 py-2 rounded-xl border",
+                  order.paymentMethod === 'bank_transfer' ? "bg-blue-500/10 border-blue-500/20 text-blue-400" :
+                  order.paymentMethod === 'e_wallet' ? "bg-pink-500/10 border-pink-500/20 text-pink-400" :
+                  "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                )}>
+                  <CreditCard className="h-4 w-4" />
+                  <span className="text-[10px] font-black uppercase tracking-wider">
+                    {order.paymentMethod === 'bank_transfer' ? 'Chuyển khoản ngân hàng' :
+                     order.paymentMethod === 'e_wallet' ? 'Ví điện tử (Momo/ZaloPay)' : 'Thanh toán khi nhận hàng (COD)'}
+                  </span>
                 </div>
               </div>
             </div>

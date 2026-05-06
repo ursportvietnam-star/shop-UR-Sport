@@ -647,6 +647,7 @@ export const AdminPanel: React.FC = () => {
                       <tr className="border-b border-white/5">
                         <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Mã đơn / Ngày</th>
                         <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Khách hàng</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Thanh toán</th>
                         <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Tổng cộng</th>
                         <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Trạng thái</th>
                         <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30 text-right">Thao tác</th>
@@ -672,6 +673,17 @@ export const AdminPanel: React.FC = () => {
                             <td className="px-6 py-4">
                               <p className="text-white text-sm font-bold">{order.shippingAddress.fullName}</p>
                               <p className="text-white/30 text-[11px] font-medium">{order.shippingAddress.phone}</p>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={cn(
+                                "px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-tighter border",
+                                order.paymentMethod === 'bank_transfer' ? "bg-blue-500/10 text-blue-400 border-blue-500/20" :
+                                order.paymentMethod === 'e_wallet' ? "bg-pink-500/10 text-pink-400 border-pink-500/20" :
+                                "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                              )}>
+                                {order.paymentMethod === 'bank_transfer' ? 'Chuyển khoản' :
+                                 order.paymentMethod === 'e_wallet' ? 'Ví điện tử' : 'COD'}
+                              </span>
                             </td>
                             <td className="px-6 py-4">
                               <p className="text-[#0082c8] font-black text-sm">{order.total.toLocaleString('vi-VN')}₫</p>

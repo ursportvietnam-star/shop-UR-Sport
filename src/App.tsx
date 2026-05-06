@@ -276,7 +276,7 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
                {
                  id: 5,
                  title: "Tìm kiếm điện thoại Nokia phím bấm hoài cổ",
-                 image: "https://images.unsplash.com/photo-1556906781-9a412961c28c?auto=format&fit=crop&q=80&w=600",
+                 image: "https://images.unsplash.com/photo-1556906781-9a412961c28c?auto=format&fit=crop&get=80&w=600",
                  date: "07/06/2026"
                },
                {
@@ -314,6 +314,8 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
     </>
   );
 }
+
+
 
 function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelect }: { activeCategory: string, setActiveCategory: (c: string) => void, isLoading: boolean, onProductSelect: (p: Product) => void }) {
   const navigate = useNavigate();
@@ -568,7 +570,7 @@ function AppContent() {
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                         {[
                           { icon: Truck, title: 'Miễn phí vận chuyển', desc: 'Cho đơn hàng từ 500k' },
-                          { icon: ShieldCheck, title: 'Hàng chính hãng', desc: 'Cam kết chất lượng 100%' },
+                          { icon: ShieldCheck, title: 'Thanh toán linh hoạt', desc: 'COD, Chuyển khoản, Ví điện tử' },
                           { icon: RefreshCcw, title: 'Đổi trả 30 ngày', desc: 'Dễ dàng và nhanh chóng' },
                           { icon: Phone, title: 'Hỗ trợ 24/7', desc: 'Hotline: 0917 722 425' },
                         ].map((badge, idx) => (

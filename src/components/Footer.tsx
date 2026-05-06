@@ -240,9 +240,9 @@ export function Footer({ onPageChange, onCategorySelect }: FooterProps) {
                 Thanh toán
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
-                {["VISA", "MOMO", "ZALO", "COD"].map((item) => (
+                {["COD", "BANK", "MOMO", "ZALO"].map((item) => (
                   <span
-                    className="rounded border border-white/10 bg-white px-2.5 py-1 text-xs font-black text-slate-950"
+                    className="rounded border border-white/10 bg-white px-2.5 py-1 text-[10px] font-black text-slate-950 uppercase tracking-tighter"
                     key={item}
                   >
                     {item}
@@ -301,9 +301,9 @@ export function Footer({ onPageChange, onCategorySelect }: FooterProps) {
         <div className="mt-10 flex flex-col gap-4 border-t border-white/10 pt-6 text-sm font-semibold text-slate-400 sm:flex-row sm:items-center sm:justify-between">
           <p>© 2026 UR SPORT. All rights reserved</p>
           <div className="flex flex-wrap items-center gap-2">
-            {["Visa", "Momo", "Mastercard", "COD"].map((item) => (
+            {["COD", "Bank Transfer", "E-Wallet"].map((item) => (
               <span
-                className="rounded-md border border-white/10 px-3 py-1 text-xs font-black text-slate-300"
+                className="rounded-md border border-white/10 px-3 py-1 text-[10px] font-black text-slate-300 uppercase tracking-widest"
                 key={item}
               >
                 {item}

@@ -35,7 +35,10 @@ import {
   Play,
   Camera,
   Video,
-  X
+  X,
+  Truck,
+  ShieldCheck,
+  RefreshCcw
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { toast } from 'sonner';
@@ -328,6 +331,11 @@ export const ProductDetail: React.FC = () => {
     });
   };
 
+  const handleBuyNow = () => {
+    addToCart(product, selectedColor, selectedSize, quantity);
+    navigate('/checkout');
+  };
+
   return (
     <div className="bg-white min-h-screen pb-20 font-sans text-zinc-900">
       {/* 1. SEO Breadcrumbs & Nav Row */}
@@ -465,20 +473,52 @@ export const ProductDetail: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 h-16 pt-4">
-                <div className="flex items-center border-2 border-zinc-100 rounded-2xl bg-white overflow-hidden h-full">
-                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-14 h-full flex items-center justify-center text-zinc-400 hover:text-[#0082c8] hover:bg-zinc-50 transition-colors"><Minus className="h-4 w-4" /></button>
-                  <div className="w-14 h-full flex items-center justify-center font-bold text-zinc-900 text-lg border-x-2 border-zinc-50">{quantity}</div>
-                  <button onClick={() => setQuantity(quantity + 1)} className="w-14 h-full flex items-center justify-center text-zinc-400 hover:text-[#0082c8] hover:bg-zinc-50 transition-colors"><Plus className="h-4 w-4" /></button>
+                <div className="flex items-center gap-4 h-16 pt-4">
+                  <div className="flex items-center border-2 border-zinc-100 rounded-2xl bg-white overflow-hidden h-full">
+                    <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-14 h-full flex items-center justify-center text-zinc-400 hover:text-[#0082c8] hover:bg-zinc-50 transition-colors"><Minus className="h-4 w-4" /></button>
+                    <div className="w-14 h-full flex items-center justify-center font-bold text-zinc-900 text-lg border-x-2 border-zinc-50">{quantity}</div>
+                    <button onClick={() => setQuantity(quantity + 1)} className="w-14 h-full flex items-center justify-center text-zinc-400 hover:text-[#0082c8] hover:bg-zinc-50 transition-colors"><Plus className="h-4 w-4" /></button>
+                  </div>
+                  <button onClick={handleAddToCart} className="flex-1 h-full bg-[#f0f9ff] border-2 border-[#0082c8] text-[#0082c8] font-bold rounded-2xl text-[14px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-blue-100 transition-all active:scale-[0.98]">
+                    <ShoppingCart className="h-5 w-5" /> Thêm vào giỏ
+                  </button>
+                  <button onClick={handleBuyNow} className="flex-1 h-full bg-[#1e4b64] text-white font-bold rounded-2xl text-[14px] uppercase tracking-widest hover:bg-[#153a4d] transition-all active:scale-[0.98] shadow-lg">Mua Ngay</button>
                 </div>
-                <button onClick={handleAddToCart} className="flex-1 h-full bg-[#f0f9ff] border-2 border-[#0082c8] text-[#0082c8] font-bold rounded-2xl text-[14px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-blue-100 transition-all active:scale-[0.98]">
-                  <ShoppingCart className="h-5 w-5" /> Thêm vào giỏ
-                </button>
-                <button className="flex-1 h-full bg-[#1e4b64] text-white font-bold rounded-2xl text-[14px] uppercase tracking-widest hover:bg-[#153a4d] transition-all active:scale-[0.98] shadow-lg">Mua Ngay</button>
+
+                {/* Trust Badges - Improved for Conversion */}
+                <div className="pt-6 border-t border-zinc-100">
+                  <div className="bg-zinc-50/80 rounded-2xl p-6 grid grid-cols-2 gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center shadow-sm">
+                        <Truck className="h-5 w-5 text-[#0082c8]" />
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-black uppercase tracking-tight">Miễn phí giao hàng</p>
+                        <p className="text-[10px] text-zinc-400 font-bold uppercase">Cho đơn từ 500k</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center shadow-sm">
+                        <ShieldCheck className="h-5 w-5 text-[#0082c8]" />
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-black uppercase tracking-tight">Thanh toán an toàn</p>
+                        <p className="text-[10px] text-zinc-400 font-bold uppercase">COD, Bank, E-Wallet</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 flex items-center justify-center gap-6">
+                    {["COD", "Bank Transfer", "Momo", "ZaloPay"].map((method) => (
+                      <span key={method} className="text-[9px] font-black uppercase tracking-widest text-zinc-300">
+                        {method}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
         {/* Tabs Section */}
         <div className="mt-12 border-t border-zinc-100 pt-12">

@@ -393,12 +393,12 @@ export function NewsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[1600px] px-4 py-8 sm:px-6 lg:px-8 xl:px-10">
+    <div className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-12">
-        <h1 className="text-[40px] font-black text-black leading-tight tracking-tight mb-4">
+        <h1 className="text-[32px] sm:text-[40px] font-black text-black leading-tight tracking-tight mb-4">
           Tin tức & <span className="text-[#16a34a]">Bài viết</span>
         </h1>
-        <p className="text-zinc-500 max-w-2xl font-medium">
+        <p className="text-zinc-500 max-w-2xl font-medium text-sm sm:text-base">
           Cập nhật những xu hướng thời trang mới nhất, kinh nghiệm phối đồ và các sự kiện sôi nổi từ cộng đồng UrSport.
         </p>
       </div>
@@ -440,7 +440,7 @@ export function NewsPage() {
               </div>
             </div>
             
-            <h2 className="text-2xl font-black text-zinc-900 group-hover:text-[#16a34a] transition-colors leading-tight mb-4">
+            <h2 className="text-xl sm:text-2xl font-black text-zinc-900 group-hover:text-[#16a34a] transition-colors leading-tight mb-4 line-clamp-2 min-h-[3.5rem]">
               {post.title}
             </h2>
             
