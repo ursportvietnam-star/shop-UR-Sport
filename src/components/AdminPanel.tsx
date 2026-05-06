@@ -3,23 +3,25 @@ import {
   LayoutDashboard, Package, ShoppingBag, Users, MessageSquare,
   Image as ImageIcon, Settings, Plus, Trash2, Edit2, LogOut,
   TrendingUp, Eye, DollarSign, BarChart2, Menu, X, Bell,
-  Search, ChevronRight, Upload, Star, AlertCircle
+  Search, ChevronRight, Upload, Star, AlertCircle, Copy, ExternalLink, Code2, Check as CheckIcon
 } from 'lucide-react';
-import { collection, onSnapshot, query, orderBy, deleteDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, deleteDoc, doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { PRODUCTS as STATIC_PRODUCTS } from '../data';
 import { ImageUpload } from './ImageUpload';
 import { AddProductModal } from './AddProductModal';
+import { AddBlogPostModal } from './AddBlogPostModal';
 import { useAuth } from '../AuthContext';
-import { Product } from '../types';
+import { Product, BlogPost } from '../types';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
-type AdminTab = 'dashboard' | 'products' | 'orders' | 'customers' | 'media' | 'settings';
+type AdminTab = 'dashboard' | 'products' | 'orders' | 'customers' | 'blog' | 'media' | 'settings';
 
 const NAV_ITEMS: { id: AdminTab; label: string; icon: React.FC<any> }[] = [
   { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },
   { id: 'products', label: 'Sản phẩm', icon: Package },
+  { id: 'blog', label: 'Blog', icon: MessageSquare },
   { id: 'orders', label: 'Đơn hàng', icon: ShoppingBag },
   { id: 'customers', label: 'Khách hàng', icon: Users },
   { id: 'media', label: 'Thư viện ảnh', icon: ImageIcon },
@@ -30,10 +32,17 @@ export const AdminPanel: React.FC = () => {
   const { user, isAdmin, loading: authLoading, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
   const [products, setProducts] = useState<Product[]>([]);
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isBlogModalOpen, setIsBlogModalOpen] = useState(false);
+  const [editingBlogPost, setEditingBlogPost] = useState<BlogPost | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [blogSearchQuery, setBlogSearchQuery] = useState('');
+  const [customCss, setCustomCss] = useState('');
+  const [cssSaved, setCssSaved] = useState(false);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -49,6 +58,58 @@ export const AdminPanel: React.FC = () => {
     return () => unsubscribe();
   }, [isAdmin]);
 
+  useEffect(() => {
+    if (!isAdmin) return;
+    const q = query(collection(db, 'blogPosts'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as BlogPost[];
+      setBlogPosts(data);
+    }, () => {
+      setBlogPosts([]);
+    });
+    return () => unsubscribe();
+  }, [isAdmin]);
+
+  // Load custom CSS from Firestore
+  useEffect(() => {
+    if (!isAdmin) return;
+    getDoc(doc(db, 'settings', 'customCss')).then(snap => {
+      if (snap.exists()) setCustomCss(snap.data().css || '');
+    });
+  }, [isAdmin]);
+
+  const handleSaveCss = async () => {
+    try {
+      await setDoc(doc(db, 'settings', 'customCss'), { css: customCss });
+      // Inject immediately into current page
+      let styleEl = document.getElementById('custom-global-css') as HTMLStyleElement | null;
+      if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = 'custom-global-css';
+        document.head.appendChild(styleEl);
+      }
+      styleEl.textContent = customCss;
+      setCssSaved(true);
+      toast.success('CSS đã được lưu và áp dụng!');
+      setTimeout(() => setCssSaved(false), 2000);
+    } catch {
+      toast.error('Lỗi khi lưu CSS');
+    }
+  };
+
+  const handleDeleteCss = async () => {
+    if (!window.confirm('Xóa toàn bộ CSS tùy biến?')) return;
+    try {
+      await setDoc(doc(db, 'settings', 'customCss'), { css: '' });
+      setCustomCss('');
+      const styleEl = document.getElementById('custom-global-css');
+      if (styleEl) styleEl.textContent = '';
+      toast.success('Đã xóa CSS tùy biến');
+    } catch {
+      toast.error('Lỗi khi xóa CSS');
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (!window.confirm('Bạn có chắc muốn xóa sản phẩm này?')) return;
     try {
@@ -57,6 +118,42 @@ export const AdminPanel: React.FC = () => {
     } catch {
       toast.error('Lỗi khi xóa sản phẩm');
     }
+  };
+
+  const handleDeleteBlogPost = async (id: string) => {
+    if (!window.confirm('Bạn có chắc muốn xóa bài viết này?')) return;
+    try {
+      await deleteDoc(doc(db, 'blogPosts', id));
+      toast.success('Đã xóa bài viết');
+    } catch {
+      toast.error('Lỗi khi xóa bài viết');
+    }
+  };
+
+  const handleCopy = async (product: Product) => {
+    try {
+      const { addDoc, collection: col, serverTimestamp } = await import('firebase/firestore');
+      const copy = {
+        ...product,
+        name: product.name + ' (Copy)',
+        slug: (product.slug || '') + '-copy-' + Date.now(),
+        createdAt: serverTimestamp(),
+        rating: 5,
+        reviewsCount: 0,
+      };
+      delete (copy as any).id;
+      await addDoc(col(db, 'products'), copy);
+      toast.success('Sản phẩm đã được sao chép thành công!');
+    } catch {
+      toast.error('Lỗi khi sao chép sản phẩm');
+    }
+  };
+
+  const handleView = (product: Product) => {
+    const catSlug = product.category
+      ? product.category.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')
+      : 'san-pham';
+    window.open(`/apparel/${catSlug}/${product.slug}`, '_blank');
   };
 
   if (authLoading) {
@@ -196,11 +293,26 @@ export const AdminPanel: React.FC = () => {
             </button>
             {activeTab === 'products' && (
               <button
-                onClick={() => setIsAddModalOpen(true)}
+                onClick={() => {
+                  setEditingProduct(null);
+                  setIsAddModalOpen(true);
+                }}
                 className="flex items-center gap-2 px-4 py-2 bg-[#0082c8] hover:bg-[#0071ae] text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-500/20 transition-all hover:scale-105 active:scale-95"
               >
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">Thêm sản phẩm</span>
+              </button>
+            )}
+            {activeTab === 'blog' && (
+              <button
+                onClick={() => {
+                  setEditingBlogPost(null);
+                  setIsBlogModalOpen(true);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-[#0082c8] hover:bg-[#0071ae] text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-500/20 transition-all hover:scale-105 active:scale-95"
+              >
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Thêm bài viết</span>
               </button>
             )}
           </div>
@@ -347,17 +459,133 @@ export const AdminPanel: React.FC = () => {
                             </td>
                             <td className="px-6 py-4 hidden lg:table-cell">
                               <div className="flex items-center gap-1">
-                                <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />
-                                <span className="text-white/60 text-sm font-bold">{product.rating || 0}</span>
+                                <Star 
+                                  className={cn(
+                                    "h-3 w-3",
+                                    (product.reviewsCount || 0) > 0 ? "text-yellow-400 fill-yellow-400" : "text-white/20"
+                                  )} 
+                                />
+                                <span className="text-white/60 text-sm font-bold">
+                                  {product.rating || 0} 
+                                  <span className="text-white/20 font-normal ml-1">({product.reviewsCount || 0})</span>
+                                </span>
                               </div>
                             </td>
                             <td className="px-6 py-4">
                               <div className="flex items-center justify-end gap-1">
-                                <button className="h-8 w-8 flex items-center justify-center rounded-lg text-white/30 hover:text-blue-400 hover:bg-blue-500/10 transition-all">
+                                <button
+                                  onClick={() => handleView(product)}
+                                  title="Xem sản phẩm"
+                                  className="h-8 w-8 flex items-center justify-center rounded-lg text-white/30 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all"
+                                >
+                                  <ExternalLink className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleCopy(product)}
+                                  title="Sao chép sản phẩm"
+                                  className="h-8 w-8 flex items-center justify-center rounded-lg text-white/30 hover:text-yellow-400 hover:bg-yellow-500/10 transition-all"
+                                >
+                                  <Copy className="h-3.5 w-3.5" />
+                                </button>
+                                <button 
+                                  onClick={() => {
+                                    setEditingProduct(product);
+                                    setIsAddModalOpen(true);
+                                  }}
+                                  title="Chỉnh sửa"
+                                  className="h-8 w-8 flex items-center justify-center rounded-lg text-white/30 hover:text-blue-400 hover:bg-blue-500/10 transition-all"
+                                >
                                   <Edit2 className="h-3.5 w-3.5" />
                                 </button>
                                 <button
                                   onClick={() => handleDelete(product.id)}
+                                  title="Xóa"
+                                  className="h-8 w-8 flex items-center justify-center rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'blog' && (
+            <div className="space-y-4">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm bài viết..."
+                  value={blogSearchQuery}
+                  onChange={e => setBlogSearchQuery(e.target.value)}
+                  className="w-full bg-[#13161f] border border-white/5 rounded-xl pl-11 pr-4 py-3 text-white text-sm font-medium placeholder:text-white/25 focus:outline-none focus:border-[#0082c8]/50 transition-all"
+                />
+              </div>
+
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-white/40 text-sm font-medium">
+                  Hiển thị <span className="text-white font-bold">{blogPosts.filter(post => post.title.toLowerCase().includes(blogSearchQuery.toLowerCase()) || post.category.toLowerCase().includes(blogSearchQuery.toLowerCase()) || post.author.toLowerCase().includes(blogSearchQuery.toLowerCase())).length}</span> bài viết
+                </p>
+              </div>
+
+              <div className="bg-[#13161f] border border-white/5 rounded-2xl overflow-hidden">
+                {blogPosts.filter(post => post.title.toLowerCase().includes(blogSearchQuery.toLowerCase()) || post.category.toLowerCase().includes(blogSearchQuery.toLowerCase()) || post.author.toLowerCase().includes(blogSearchQuery.toLowerCase())).length === 0 ? (
+                  <div className="py-20 flex items-center justify-center">
+                    <MessageSquare className="h-12 w-12 text-white/10 mx-auto mb-3" />
+                    <p className="text-white/30 font-bold text-sm">Không tìm thấy bài viết</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                      <thead>
+                        <tr className="border-b border-white/5">
+                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Tiêu đề</th>
+                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30 hidden md:table-cell">Chuyên mục</th>
+                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Tác giả</th>
+                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30 hidden lg:table-cell">Ngày</th>
+                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30 text-right">Thao tác</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/[0.04]">
+                        {blogPosts.filter(post => post.title.toLowerCase().includes(blogSearchQuery.toLowerCase()) || post.category.toLowerCase().includes(blogSearchQuery.toLowerCase()) || post.author.toLowerCase().includes(blogSearchQuery.toLowerCase())).map(post => (
+                          <tr key={post.id} className="hover:bg-white/[0.02] transition-all group">
+                            <td className="px-6 py-4 w-[40%]">
+                              <p className="text-white text-sm font-bold line-clamp-1">{post.title}</p>
+                              <p className="text-white/30 text-[11px] mt-1">{post.excerpt.slice(0, 80)}...</p>
+                            </td>
+                            <td className="px-6 py-4 hidden md:table-cell">
+                              <span className="px-3 py-1 bg-white/5 border border-white/5 text-white/50 text-[10px] font-black uppercase tracking-wider rounded-lg">
+                                {post.category}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <p className="text-white text-sm font-bold">{post.author}</p>
+                            </td>
+                            <td className="px-6 py-4 hidden lg:table-cell">
+                              <p className="text-white/40 text-sm">{post.date}</p>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center justify-end gap-1">
+                                <button
+                                  onClick={() => {
+                                    setEditingBlogPost(post);
+                                    setIsBlogModalOpen(true);
+                                  }}
+                                  title="Sửa"
+                                  className="h-8 w-8 flex items-center justify-center rounded-lg text-white/30 hover:text-blue-400 hover:bg-blue-500/10 transition-all"
+                                >
+                                  <Edit2 className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteBlogPost(post.id)}
+                                  title="Xóa"
                                   className="h-8 w-8 flex items-center justify-center rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all"
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
@@ -375,15 +603,6 @@ export const AdminPanel: React.FC = () => {
           )}
 
           {/* ─── ORDERS ─── */}
-          {activeTab === 'orders' && (
-            <div className="bg-[#13161f] border border-white/5 rounded-2xl p-16 flex flex-col items-center text-center">
-              <div className="h-20 w-20 bg-orange-500/10 rounded-full flex items-center justify-center mb-5">
-                <ShoppingBag className="h-10 w-10 text-orange-400" />
-              </div>
-              <h3 className="text-white font-black text-xl uppercase tracking-tight mb-2">Chưa có đơn hàng</h3>
-              <p className="text-white/30 font-medium max-w-xs">Khi khách hàng đặt mua, danh sách đơn hàng sẽ xuất hiện tại đây.</p>
-            </div>
-          )}
 
           {/* ─── CUSTOMERS ─── */}
           {activeTab === 'customers' && (
@@ -438,12 +657,104 @@ export const AdminPanel: React.FC = () => {
 
           {/* ─── SETTINGS ─── */}
           {activeTab === 'settings' && (
-            <div className="bg-[#13161f] border border-white/5 rounded-2xl p-16 flex flex-col items-center text-center">
-              <div className="h-20 w-20 bg-white/5 rounded-full flex items-center justify-center mb-5">
-                <Settings className="h-10 w-10 text-white/20" />
+            <div className="space-y-6">
+              {/* Custom CSS */}
+              <div className="bg-[#13161f] border border-white/5 rounded-2xl overflow-hidden">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
+                  <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 bg-purple-500/10 rounded-xl flex items-center justify-center">
+                      <Code2 className="h-4 w-4 text-purple-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-white font-black text-sm uppercase tracking-widest">Tùy biến giao diện (Custom CSS)</h3>
+                      <p className="text-white/30 text-xs font-medium mt-0.5">CSS sẽ được chèn vào trang qua thẻ <code className="text-purple-400">#custom-global-css</code></p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleDeleteCss}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold transition-all"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> Xóa
+                    </button>
+                    <button
+                      onClick={handleSaveCss}
+                      className={cn(
+                        "flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold transition-all",
+                        cssSaved
+                          ? "bg-emerald-500 text-white"
+                          : "bg-[#0082c8] hover:bg-[#0071ae] text-white"
+                      )}
+                    >
+                      {cssSaved ? <CheckIcon className="h-3.5 w-3.5" /> : <Upload className="h-3.5 w-3.5" />}
+                      {cssSaved ? 'Đã lưu!' : 'Lưu & Áp dụng'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Code editor area */}
+                <div className="relative">
+                  {/* Line numbers */}
+                  <div className="absolute left-0 top-0 bottom-0 w-12 bg-white/[0.02] border-r border-white/5 pointer-events-none flex flex-col items-end pt-4 pb-4 pr-2 select-none overflow-hidden">
+                    {Array.from({ length: Math.max(customCss.split('\n').length, 20) }, (_, i) => (
+                      <span key={i} className="text-white/15 text-xs font-mono leading-6">{i + 1}</span>
+                    ))}
+                  </div>
+                  <textarea
+                    value={customCss}
+                    onChange={e => setCustomCss(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Tab') {
+                        e.preventDefault();
+                        const start = e.currentTarget.selectionStart;
+                        const end = e.currentTarget.selectionEnd;
+                        const val = customCss;
+                        setCustomCss(val.substring(0, start) + '  ' + val.substring(end));
+                        setTimeout(() => e.currentTarget.setSelectionRange(start + 2, start + 2), 0);
+                      }
+                      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                        e.preventDefault();
+                        handleSaveCss();
+                      }
+                    }}
+                    spellCheck={false}
+                    placeholder={`/* Nhập CSS tùy biến của bạn vào đây... */\n\n/* Ví dụ: */\n.product-card {\n  border-radius: 16px;\n}\n\nbody {\n  font-family: 'Inter', sans-serif;\n}`}
+                    className="w-full min-h-[400px] bg-transparent pl-14 pr-6 pt-4 pb-4 text-[13px] font-mono text-green-300 leading-6 resize-y outline-none placeholder:text-white/15 border-none"
+                    style={{ caretColor: '#4ade80' }}
+                  />
+                </div>
+
+                <div className="px-6 py-3 border-t border-white/5 flex items-center justify-between">
+                  <p className="text-white/25 text-[11px] font-medium">
+                    {customCss.split('\n').length} dòng • {customCss.length} ký tự • Lưu nhanh: <kbd className="bg-white/10 px-1.5 py-0.5 rounded text-white/40">Ctrl+S</kbd>
+                  </p>
+                  <p className="text-white/25 text-[11px]">Tab = 2 spaces</p>
+                </div>
               </div>
-              <h3 className="text-white font-black text-xl uppercase tracking-tight mb-2">Cài đặt hệ thống</h3>
-              <p className="text-white/30 font-medium max-w-xs">Tính năng cài đặt đang được phát triển.</p>
+
+              {/* Quick snippets */}
+              <div className="bg-[#13161f] border border-white/5 rounded-2xl p-6">
+                <h3 className="text-white font-black text-xs uppercase tracking-widest mb-4">Snippets gợi ý</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {[
+                    { label: 'Bo góc card', css: '.product-card { border-radius: 20px; }' },
+                    { label: 'Ẩn footer', css: 'footer { display: none; }' },
+                    { label: 'Font hệ thống', css: 'body { font-family: \'Inter\', sans-serif; }' },
+                    { label: 'Responsive Video', css: '.video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; }\n.video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }' },
+                    { label: 'Scrollbar tùy biến', css: '::-webkit-scrollbar { width: 6px; }\n::-webkit-scrollbar-thumb { background: #0082c8; border-radius: 3px; }' },
+                    { label: 'Nút CTA nổi bật', css: '.btn-primary { background: linear-gradient(135deg, #0082c8, #005fa3); box-shadow: 0 4px 15px rgba(0,130,200,0.4); }' },
+                  ].map((snippet, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setCustomCss(prev => prev + (prev ? '\n\n' : '') + '/* ' + snippet.label + ' */\n' + snippet.css)}
+                      className="text-left p-3 bg-white/[0.03] hover:bg-white/[0.07] border border-white/5 hover:border-purple-500/30 rounded-xl transition-all group"
+                    >
+                      <p className="text-white/80 text-xs font-bold group-hover:text-purple-400 transition-colors">{snippet.label}</p>
+                      <p className="text-white/25 text-[10px] font-mono mt-1 truncate">{snippet.css.split('\n')[0]}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </main>
@@ -451,8 +762,25 @@ export const AdminPanel: React.FC = () => {
 
       <AddProductModal
         isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setEditingProduct(null);
+        }}
         onSuccess={() => {}}
+        product={editingProduct}
+      />
+
+      <AddBlogPostModal
+        isOpen={isBlogModalOpen}
+        onClose={() => {
+          setIsBlogModalOpen(false);
+          setEditingBlogPost(null);
+        }}
+        onSuccess={() => {
+          setIsBlogModalOpen(false);
+          setEditingBlogPost(null);
+        }}
+        post={editingBlogPost}
       />
     </div>
   );

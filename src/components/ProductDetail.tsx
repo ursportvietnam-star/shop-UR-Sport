@@ -5,6 +5,18 @@ import { useCart } from '../CartContext';
 import { useAuth } from '../AuthContext';
 import { useProducts } from '../ProductsContext';
 import { Button } from '@/components/ui/button';
+import { db } from '../firebase';
+import { 
+  collection, 
+  addDoc, 
+  query, 
+  where, 
+  onSnapshot, 
+  serverTimestamp,
+  doc,
+  runTransaction
+} from 'firebase/firestore';
+import { Review, Product } from '../types';
 import { 
   Star, 
   ShoppingBag, 
@@ -20,14 +32,17 @@ import {
   Check,
   Upload,
   Image as ImageIcon,
-  Play
+  Play,
+  Camera,
+  Video,
+  X
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 export const ProductDetail: React.FC = () => {
-  const { categorySlug, productSlug } = useParams<{ categorySlug: string, productSlug: string }>();
+  const { categorySlug, productSlug } = useParams<{ categorySlug?: string, productSlug: string }>();
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
   const { products, loading } = useProducts();
@@ -51,6 +66,197 @@ export const ProductDetail: React.FC = () => {
   const [mainImage, setMainImage] = useState('');
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [uploadType, setUploadType] = useState<'image' | 'video'>('image');
+  const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('description');
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewFilter, setReviewFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const REVIEWS_PER_PAGE = 5;
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [hasPurchased, setHasPurchased] = useState<boolean>(false);
+  const [isCheckingPurchase, setIsCheckingPurchase] = useState(true);
+  const [newReview, setNewReview] = useState({ rating: 5, comment: '', userName: '' });
+  const [selectedReviewFiles, setSelectedReviewFiles] = useState<File[]>([]);
+  const [reviewPreviews, setReviewPreviews] = useState<{ url: string, type: 'image' | 'video' }[]>([]);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (!product?.id) return;
+
+    const q = query(
+      collection(db, 'reviews'),
+      where('productId', '==', product.id)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const reviewsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Review[];
+      
+      const sortedReviews = [...reviewsData].sort((a, b) => {
+        const timeA = a.createdAt?.seconds || 0;
+        const timeB = b.createdAt?.seconds || 0;
+        return timeB - timeA;
+      });
+      
+      setReviews(sortedReviews);
+    });
+
+    // Kiểm tra trạng thái mua hàng
+    const checkPurchaseStatus = async () => {
+      if (!user) {
+        setHasPurchased(false);
+        setIsCheckingPurchase(false);
+        return;
+      }
+
+      try {
+        const { getDocs } = await import('firebase/firestore');
+        const ordersRef = collection(db, 'orders');
+        const purchaseQuery = query(
+          ordersRef, 
+          where('userId', '==', user.uid),
+          where('status', '==', 'delivered')
+        );
+        
+        const querySnapshot = await getDocs(purchaseQuery);
+        const purchased = querySnapshot.docs.some(doc => {
+          const orderData = doc.data();
+          return orderData.items?.some((item: any) => item.id === product.id);
+        });
+
+        setHasPurchased(purchased);
+      } catch (error) {
+        console.error('Lỗi kiểm tra trạng thái mua hàng:', error);
+      } finally {
+        setIsCheckingPurchase(false);
+      }
+    };
+
+    checkPurchaseStatus();
+
+    return () => unsubscribe();
+  }, [product?.id, user]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      setSelectedReviewFiles(prev => [...prev, ...files]);
+
+      const newPreviews = files.map(file => ({
+        url: URL.createObjectURL(file),
+        type: file.type.startsWith('video') ? 'video' : 'image' as 'image' | 'video'
+      }));
+      setReviewPreviews(prev => [...prev, ...newPreviews]);
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setSelectedReviewFiles(prev => prev.filter((_, i) => i !== index));
+    setReviewPreviews(prev => {
+      URL.revokeObjectURL(prev[index].url);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!product?.id) return;
+    if (!user) {
+      toast.error('Vui lòng đăng nhập để gửi đánh giá!');
+      return;
+    }
+    if (!newReview.comment.trim() || (!user && !newReview.userName.trim())) {
+      toast.error('Vui lòng nhập đầy đủ thông tin đánh giá!');
+      return;
+    }
+
+    setIsSubmittingReview(true);
+    const uploadToast = toast.loading('Đang chuẩn bị gửi đánh giá...');
+    
+    try {
+      // 1. Upload media to Cloudinary
+      const imageUrls: string[] = [];
+      const videoUrls: string[] = [];
+
+      const CLOUDINARY_CLOUD_NAME = 'dcj4qhcfh';
+      const CLOUDINARY_UPLOAD_PRESET = 'ursport_uploads';
+
+      if (selectedReviewFiles.length > 0) {
+        for (let i = 0; i < selectedReviewFiles.length; i++) {
+          const file = selectedReviewFiles[i];
+          const isVideo = file.type.startsWith('video');
+          toast.loading(`Đang tải ${isVideo ? 'video' : 'ảnh'} (${i + 1}/${selectedReviewFiles.length})...`, { id: uploadToast });
+          
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+          formData.append('folder', `reviews/${product.id}`);
+
+          const response = await fetch(
+            `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${isVideo ? 'video' : 'image'}/upload`,
+            { method: 'POST', body: formData }
+          );
+
+          if (!response.ok) throw new Error('Lỗi upload Cloudinary');
+          
+          const data = await response.json();
+          if (isVideo) {
+            videoUrls.push(data.secure_url);
+          } else {
+            imageUrls.push(data.secure_url);
+          }
+        }
+      }
+
+      toast.loading('Đang lưu thông tin đánh giá...', { id: uploadToast });
+
+      // 2. Thêm review mới
+      await addDoc(collection(db, 'reviews'), {
+        productId: product.id,
+        userId: user.uid,
+        userName: user?.displayName || newReview.userName,
+        rating: newReview.rating,
+        comment: newReview.comment,
+        variant: `${selectedSize} / ${selectedColor}`,
+        images: imageUrls,
+        videos: videoUrls,
+        createdAt: serverTimestamp()
+      });
+
+      // 3. Sử dụng Transaction để cập nhật rating và reviewsCount của sản phẩm
+      const productRef = doc(db, 'products', product.id);
+      
+      await runTransaction(db, async (transaction) => {
+        const productDoc = await transaction.get(productRef);
+        if (!productDoc.exists()) return;
+
+        const currentData = productDoc.data();
+        const currentCount = currentData.reviewsCount || 0;
+        const currentRating = currentData.rating || 0;
+        
+        const newCount = currentCount + 1;
+        const newAvgRating = parseFloat(((currentRating * currentCount + newReview.rating) / newCount).toFixed(1));
+        
+        transaction.update(productRef, {
+          rating: newAvgRating,
+          reviewsCount: newCount
+        });
+      });
+
+      setNewReview({ rating: 5, comment: '', userName: '' });
+      setSelectedReviewFiles([]);
+      setReviewPreviews([]);
+      toast.success('Cảm ơn bạn đã đánh giá sản phẩm!', { id: uploadToast });
+    } catch (error: any) {
+      console.error('Error submitting review:', error);
+      toast.error('Có lỗi xảy ra: ' + error.message, { id: uploadToast });
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
 
   useEffect(() => {
     if (product) {
@@ -58,8 +264,42 @@ export const ProductDetail: React.FC = () => {
       setSelectedSize(product.sizes?.[0] || '');
       setMainImage(product.images?.[0] || '');
       window.scrollTo(0, 0);
+
+      // Dynamic SEO Meta Tags
+      document.title = product.seoTitle || `${product.name} | UR Sport - Phong cách thể thao`;
+      
+      const metaDescription = document.querySelector('meta[name="description"]');
+      const descContent = product.metaDescription || product.description.replace(/<[^>]*>?/gm, '').slice(0, 160);
+      if (metaDescription) {
+        metaDescription.setAttribute('content', descContent);
+      } else {
+        const meta = document.createElement('meta');
+        meta.name = 'description';
+        meta.content = descContent;
+        document.head.appendChild(meta);
+      }
+
+      const metaKeywords = document.querySelector('meta[name="keywords"]');
+      if (metaKeywords) {
+        metaKeywords.setAttribute('content', product.keywords || '');
+      } else if (product.keywords) {
+        const meta = document.createElement('meta');
+        meta.name = 'keywords';
+        meta.content = product.keywords;
+        document.head.appendChild(meta);
+      }
     }
   }, [product]);
+  
+  // Update main image when color selection changes
+  useEffect(() => {
+    if (product && selectedColor) {
+      const variant = product.colorImages?.find(ci => ci.name === selectedColor);
+      if (variant?.image) {
+        setMainImage(variant.image);
+      }
+    }
+  }, [selectedColor, product]);
 
   if (loading) {
     return (
@@ -90,51 +330,42 @@ export const ProductDetail: React.FC = () => {
 
   return (
     <div className="bg-white min-h-screen pb-20 font-sans text-zinc-900">
-      {/* 1. Standard SEO Breadcrumbs & Nav Row */}
-      <div className="mb-8">
-        <div className="mx-auto max-w-[1400px] px-4 py-3 sm:px-6 lg:px-8 flex items-center justify-between">
-          <nav className="flex items-center gap-2 text-[11px] font-medium text-zinc-400 tracking-wider">
-            <Link to="/" className="hover:text-black transition-colors">Home</Link>
-            <span className="opacity-30">/</span>
-            <Link 
-              to={`/apparel/${categorySlug}`} 
-              className="hover:text-black transition-colors"
-            >
-              {categoryName}
-            </Link>
-            <span className="opacity-30">/</span>
-            <span className="text-zinc-600 font-medium capitalize-first">{product.name}</span>
-          </nav>
+      {/* 1. SEO Breadcrumbs & Nav Row */}
+      <div className="mx-auto max-w-[1400px] px-4 py-3 sm:px-6 lg:px-8 flex items-center justify-between border-b border-zinc-100 mb-8">
+        <nav className="flex items-center gap-2 text-[11px] font-medium text-zinc-400 tracking-wider">
+          <Link to="/" className="hover:text-black transition-colors">Home</Link>
+          <span className="opacity-30">/</span>
+          <Link to={`/apparel/${categorySlug}`} className="hover:text-black transition-colors">{categoryName}</Link>
+          <span className="opacity-30">/</span>
+          <span className="text-zinc-600">{product.name}</span>
+        </nav>
 
-          <div className="flex items-center gap-3 text-zinc-400">
-             <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => prevProduct && navigate(`/apparel/${categorySlug}/${prevProduct.slug}`)}
-                  disabled={!prevProduct}
-                  className="w-6 h-6 rounded-full border border-zinc-200 flex items-center justify-center hover:bg-zinc-50 disabled:opacity-30 transition-all"
-                >
-                  <ChevronLeft className="h-3.5 w-3.5" />
-                </button>
-                <span className="text-[10px] font-bold min-w-[40px] text-center">
-                  {currentIndex + 1} of {categoryProducts.length}
-                </span>
-                <button 
-                  onClick={() => nextProduct && navigate(`/apparel/${categorySlug}/${nextProduct.slug}`)}
-                  disabled={!nextProduct}
-                  className="w-6 h-6 rounded-full border border-zinc-200 flex items-center justify-center hover:bg-zinc-50 disabled:opacity-30 transition-all"
-                >
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </button>
-             </div>
-          </div>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => prevProduct && navigate(`/apparel/${categorySlug}/${prevProduct.slug}`)}
+            disabled={!prevProduct}
+            className="w-8 h-8 rounded-full border border-zinc-200 flex items-center justify-center hover:bg-zinc-50 disabled:opacity-30 transition-all"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <span className="text-[10px] font-bold min-w-[50px] text-center text-zinc-400">
+            {currentIndex + 1} / {categoryProducts.length}
+          </span>
+          <button 
+            onClick={() => nextProduct && navigate(`/apparel/${categorySlug}/${nextProduct.slug}`)}
+            disabled={!nextProduct}
+            className="w-8 h-8 rounded-full border border-zinc-200 flex items-center justify-center hover:bg-zinc-50 disabled:opacity-30 transition-all"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
         </div>
       </div>
 
       <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-[40%_60%] gap-8 items-start text-left">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
           {/* Left: Product Gallery */}
-          <div className="space-y-6 order-1 lg:order-1">
-            <div className="relative aspect-square w-full overflow-hidden bg-white border border-zinc-100 rounded-lg shadow-sm">
+          <div className="lg:col-span-5 space-y-6">
+            <div className="relative aspect-square w-full overflow-hidden bg-white border border-zinc-100 rounded-2xl shadow-sm">
               {mainImage && (
                 <motion.img 
                   key={mainImage}
@@ -146,487 +377,485 @@ export const ProductDetail: React.FC = () => {
                   referrerPolicy="no-referrer"
                 />
               )}
-              {product.discountPrice && (
-                 <div className="absolute top-4 left-4 bg-[#ff3b30] text-white text-[10px] font-black px-3 py-1.5 rounded-full shadow-lg">
-                    HOT -{Math.round((1 - product.discountPrice / product.price) * 100)}%
-                 </div>
-              )}
             </div>
-            
-            <div className="flex justify-start flex-wrap gap-2">
+            <div className="flex gap-3 overflow-x-auto pb-2">
               {(product.images || []).map((img, i) => (
-                <button
-                  key={i}
-                  onClick={() => setMainImage(img)}
-                  className={cn(
-                    "w-12 h-12 rounded-md border-2 transition-all p-1 bg-white",
-                    mainImage === img ? "border-[#0082c8] shadow-md scale-105" : "border-zinc-100 hover:border-zinc-300"
-                  )}
-                >
-                  {img && <img src={img} alt="" className="w-full h-full object-contain" referrerPolicy="no-referrer" />}
+                <button key={i} onClick={() => setMainImage(img)} className="w-20 h-20 rounded-xl border-2 border-zinc-100 overflow-hidden shrink-0">
+                  <img src={img} alt="" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>
-
-            {/* Sharing & Likes Section - MỚI */}
-            <div className="flex flex-col sm:flex-row items-center justify-start gap-6 pt-8 border-t border-zinc-50">
-              <div className="flex items-center gap-3">
-                <span className="text-[12px] font-black text-zinc-400 uppercase tracking-widest leading-none">Share:</span>
-                <div className="flex items-center gap-2">
-                  <button className="w-8 h-8 rounded-full bg-[#0084FF]/10 flex items-center justify-center text-[#0084FF] hover:bg-[#0084FF] hover:text-white transition-all shadow-sm" title="Messenger">
-                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                      <path d="M12 2C6.477 2 2 6.145 2 11.258c0 2.914 1.455 5.518 3.735 7.21v3.532l3.39-1.858a11.233 11.233 0 002.875.374c5.523 0 10-4.145 10-9.258C22 6.145 17.523 2 12 2zm1.295 12.518l-2.613-2.79-5.1 2.79 5.613-5.962 2.613 2.79 5.1-2.79-5.613 5.962z" />
-                    </svg>
-                  </button>
-                  <button className="w-8 h-8 rounded-full bg-[#1877F2]/10 flex items-center justify-center text-[#1877F2] hover:bg-[#1877F2] hover:text-white transition-all shadow-sm" title="Facebook">
-                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                    </svg>
-                  </button>
-                  <button className="w-8 h-8 rounded-full bg-black/5 flex items-center justify-center text-zinc-900 hover:bg-black hover:text-white transition-all shadow-sm" title="X">
-                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
-                      <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932 6.064-6.932zm-1.292 19.494h2.039L6.486 3.24H4.298l13.311 17.407z" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-              
-              <div className="hidden sm:block w-px h-6 bg-zinc-200" />
-              
-              <div className="flex items-center gap-3 bg-zinc-50 px-4 py-2 rounded-full border border-zinc-100 hover:bg-zinc-100 transition-colors cursor-pointer group">
-                <Heart className="h-4 w-4 text-zinc-400 group-hover:text-red-500 group-hover:fill-red-500 transition-all" />
-                <span className="text-[12px] font-bold text-zinc-600">Đã thích (11,8k)</span>
-              </div>
-            </div>
           </div>
 
-          {/* Right: Product Info Sidebar */}
-          <div className="space-y-8 lg:sticky lg:top-24 order-2 lg:order-2">
+          {/* Right: Product Info */}
+          <div className="lg:col-span-7 space-y-10 lg:sticky lg:top-24">
             <div className="space-y-6">
               <div className="space-y-2">
-                <h1 className="text-2xl sm:text-3xl font-medium text-zinc-900 tracking-tight italic leading-tight capitalize-first">
+                <p className="text-[13px] font-bold text-[#00a651] uppercase tracking-widest">UR SPORT Official</p>
+                <h1 className="text-[20px] font-medium text-zinc-900 leading-tight">
                   {product.name}
                 </h1>
-                <div className="flex items-center flex-wrap gap-4 pt-2">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className={cn("h-3.5 w-3.5", i < Math.floor(product.rating) ? "text-[#ffa800] fill-[#ffa800]" : "text-zinc-200")} />
-                      ))}
-                    </div>
-                    <button className="text-blue-600 font-black hover:underline text-[10px] uppercase tracking-widest border-l border-zinc-200 pl-4 h-3 flex items-center">
-                      Write a review
-                    </button>
+                <div className="flex items-center flex-wrap gap-6 pt-4">
+                  <div className="flex items-center gap-1.5">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className={cn("h-4 w-4", i < Math.floor(product.rating || 0) ? "text-[#ffa800] fill-[#ffa800]" : "text-zinc-200")} />
+                    ))}
+                    <span className="text-sm font-bold text-zinc-400 ml-2">({product.reviewsCount || 0} đánh giá)</span>
                   </div>
-                  
-                  <div className="flex items-center gap-1.5 text-[10px] font-black text-zinc-400 uppercase tracking-widest bg-zinc-50 px-3 py-1 rounded border border-zinc-100 group">
-                    CODE: <span className="text-zinc-900">TS{product.id.replace('-', '').toUpperCase()}</span>
-                    <button className="p-0.5 hover:text-black transition-colors" title="Copy code">
-                      <Copy className="h-3 w-3" />
-                    </button>
+                  <div className="h-4 w-px bg-zinc-200" />
+                  <div className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2">
+                    CODE: <span className="text-zinc-900 font-bold">UR-{product.id.substring(0,6).toUpperCase()}</span>
+                    <Copy className="h-3.5 w-3.5 cursor-pointer hover:text-black transition-colors" />
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-2 pt-4 border-t border-zinc-50">
+              <div className="space-y-3 pt-8 border-t border-zinc-100">
                 <div className="flex items-baseline gap-4">
-                  <span className="text-4xl font-black text-black tracking-tighter">
+                  <span className="text-5xl font-bold text-[#ff3b30] tracking-tighter">
                     {(product.discountPrice || product.price).toLocaleString('vi-VN')}₫
                   </span>
                   {product.discountPrice && (
-                    <span className="text-lg text-zinc-300 line-through font-bold">
+                    <span className="text-2xl text-zinc-300 line-through font-bold">
                       {product.price.toLocaleString('vi-VN')}₫
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1.5 text-[11px] font-black text-[#1e4b64] uppercase tracking-widest rounded-full py-1">
-                    <div className="w-2 h-2 rounded-full bg-[#1e4b64] animate-pulse" /> IN STOCK
-                  </div>
-                </div>
               </div>
             </div>
 
-
-            {/* Color Selector */}
-            <div className="space-y-4 text-left">
-               <p className="text-[13px] font-bold text-zinc-900">Color: <span className="text-zinc-500 ml-1 font-normal uppercase">{selectedColor}</span></p>
-               <div className="flex flex-wrap gap-3">
+            {/* Selection UI */}
+            <div className="space-y-8">
+              <div className="space-y-4">
+                <p className="text-[14px] font-bold text-zinc-900 uppercase tracking-wider">Màu sắc: <span className="text-[#0082c8] font-bold ml-1">{selectedColor}</span></p>
+                <div className="flex flex-wrap gap-3">
                   {(product.colors || []).map((color, idx) => (
                     <button
                       key={color}
-                      onClick={() => {
-                        setSelectedColor(color);
-                        if (product.images?.[idx]) setMainImage(product.images[idx]);
-                      }}
+                      onClick={() => setSelectedColor(color)}
                       className={cn(
-                        "relative flex items-center gap-3 pr-4 rounded-md border transition-all bg-white group h-12 overflow-hidden",
-                        selectedColor === color ? "border-[#0082c8] ring-1 ring-[#0082c8]/10 shadow-sm" : "border-zinc-200 hover:border-zinc-300"
+                        "px-6 h-12 rounded-xl border-2 transition-all font-bold uppercase text-[13px] tracking-wide",
+                        selectedColor === color ? "border-[#0082c8] bg-blue-50/30 text-[#0082c8]" : "border-zinc-100 text-zinc-600 hover:border-zinc-300"
                       )}
                     >
-                      <div className="w-12 h-12 flex items-center justify-center bg-white border-r border-zinc-100 shrink-0 p-1">
-                        {(product.images?.[idx] || product.images?.[0]) && (
-                          <img 
-                            src={product.images?.[idx] || product.images?.[0]} 
-                            alt={color} 
-                            className="w-full h-full object-contain" 
-                            referrerPolicy="no-referrer" 
-                          />
-                        )}
-                      </div>
-                      <span className={cn(
-                        "text-[13px] font-medium transition-colors uppercase whitespace-nowrap",
-                        selectedColor === color ? "text-[#0082c8] font-bold" : "text-zinc-500 group-hover:text-zinc-900"
-                      )}>
-                        {color}
-                      </span>
-                      {selectedColor === color && (
-                        <div className="absolute bottom-0 right-0 overflow-hidden w-4 h-4">
-                           <div className="absolute bottom-0 right-0 bg-[#0082c8] w-full h-full" style={{ clipPath: 'polygon(100% 0, 0% 100%, 100% 100%)' }}>
-                            <Check className="h-2 w-2 text-white stroke-[4px] absolute bottom-0 right-0" />
-                          </div>
-                        </div>
-                      )}
+                      {color}
                     </button>
                   ))}
-               </div>
-            </div>
+                </div>
+              </div>
 
-            {/* Size Selector */}
-            <div className="flex items-center gap-4 text-left">
-               <p className="text-[13px] font-bold text-zinc-900">Size:</p>
-               <div className="flex flex-wrap gap-2">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-[14px] font-bold text-zinc-900 uppercase tracking-wider">Kích cỡ: <span className="text-[#0082c8] font-bold ml-1">{selectedSize}</span></p>
+                  <button onClick={() => setIsSizeGuideOpen(true)} className="text-[12px] font-bold text-[#0068c9] hover:underline uppercase tracking-widest italic">Size Guide</button>
+                </div>
+                <div className="flex flex-wrap gap-3">
                   {(product.sizes || []).map(size => (
                     <button
-                       key={size}
-                       onClick={() => setSelectedSize(size)}
-                       className={cn(
-                         "relative min-w-[48px] h-10 px-3 rounded-md text-sm font-bold transition-all border flex items-center justify-center bg-white",
-                         selectedSize === size 
-                           ? "border-[#0082c8] text-[#0082c8] ring-1 ring-[#0082c8]/10 shadow-sm" 
-                           : "border-zinc-200 text-zinc-600 hover:border-zinc-300"
-                       )}
+                      key={size}
+                      onClick={() => setSelectedSize(size)}
+                      className={cn(
+                        "min-w-[70px] h-12 rounded-xl text-[14px] font-bold transition-all border-2 flex items-center justify-center",
+                        selectedSize === size ? "border-[#0082c8] text-[#0082c8] bg-blue-50/30" : "border-zinc-100 text-zinc-600 hover:border-zinc-300"
+                      )}
                     >
-                       {size}
-                       {selectedSize === size && (
-                         <div className="absolute -top-1 -right-1">
-                           <div className="bg-[#0082c8] rounded-full w-3.5 h-3.5 border border-white shadow-sm flex items-center justify-center">
-                             <Check className="h-2 w-2 text-white stroke-[4px]" />
-                           </div>
-                         </div>
-                       )}
+                      {size}
                     </button>
                   ))}
-               </div>
-            </div>
-
-            {/* Actions */}
-            <div className="pt-4">
-              <div className="flex items-center gap-2 h-12 w-full">
-                {/* Quantity Selector */}
-                <div className="flex items-center border border-zinc-200 rounded-md bg-white overflow-hidden shrink-0 h-full">
-                  <button 
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="w-8 h-full flex items-center justify-center text-zinc-400 hover:text-[#0082c8] hover:bg-zinc-50 transition-colors"
-                  >
-                    <Minus className="h-3 w-3" />
-                  </button>
-                  <div className="w-8 h-full flex items-center justify-center font-bold text-zinc-800 border-x border-zinc-100 text-xs">
-                    {quantity}
-                  </div>
-                  <button 
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="w-8 h-full flex items-center justify-center text-zinc-400 hover:text-[#0082c8] hover:bg-zinc-50 transition-colors"
-                  >
-                    <Plus className="h-3 w-3" />
-                  </button>
                 </div>
-                
-                {/* Add to Cart */}
-                <button 
-                  onClick={handleAddToCart}
-                  className="flex-1 h-full min-w-0 bg-[#f0f9ff] border border-[#0082c8] text-[#0082c8] font-bold rounded-md text-[11px] flex items-center justify-center gap-1.5 hover:bg-blue-50 transition-all uppercase tracking-tight shadow-sm active:scale-[0.98]"
-                >
-                  <div className="relative shrink-0">
-                    <ShoppingCart className="h-3.5 w-3.5" />
-                    <div className="absolute -top-1 -right-1 bg-[#0082c8] text-white rounded-full w-2.5 h-2.5 flex items-center justify-center border border-white">
-                      <Plus className="h-1 w-1 stroke-[5px]" />
-                    </div>
-                  </div>
-                  <span className="truncate">Thêm vào giỏ</span>
-                </button>
-
-                {/* Buy Now */}
-                <button 
-                  className="flex-1 h-full bg-[#1e4b64] text-white font-bold rounded-md text-[11px] uppercase tracking-wider hover:bg-[#153a4d] transition-all shadow-md active:scale-[0.98]"
-                >
-                  Mua Ngay
-                </button>
-              </div>
-            </div>
-
-            {/* Delivery, Payment & Warranty Section - VIETNAMESE */}
-            <div className="pt-8 border-t border-zinc-100 space-y-4">
-              {/* Delivery Section */}
-              <div className="">
-                <button 
-                  onClick={() => setExpandedSection(expandedSection === 'delivery' ? null : 'delivery')}
-                  className="flex items-center justify-between w-full py-4 text-sm font-bold text-zinc-900 border-b border-zinc-50 hover:text-blue-600 transition-colors group"
-                >
-                  <span>Nhà vận chuyển</span>
-                  {expandedSection === 'delivery' ? <ChevronUp className="h-4 w-4 text-blue-600" /> : <ChevronDown className="h-4 w-4 text-zinc-400 group-hover:text-blue-600" />}
-                </button>
-                {expandedSection === 'delivery' && (
-                  <div className="py-4 px-1">
-                    <p className="text-[12px] text-zinc-600 font-bold">Viettel Post</p>
-                  </div>
-                )}
               </div>
 
-              {/* Payment Section */}
-              <div className="">
-                <button 
-                  onClick={() => setExpandedSection(expandedSection === 'payment' ? null : 'payment')}
-                  className="flex items-center justify-between w-full py-4 text-sm font-bold text-zinc-900 border-b border-zinc-50 hover:text-blue-600 transition-colors group"
-                >
-                  <span>Các phương thức thanh toán</span>
-                  {expandedSection === 'payment' ? <ChevronUp className="h-4 w-4 text-blue-600" /> : <ChevronDown className="h-4 w-4 text-zinc-400 group-hover:text-blue-600" />}
+              <div className="flex items-center gap-4 h-16 pt-4">
+                <div className="flex items-center border-2 border-zinc-100 rounded-2xl bg-white overflow-hidden h-full">
+                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-14 h-full flex items-center justify-center text-zinc-400 hover:text-[#0082c8] hover:bg-zinc-50 transition-colors"><Minus className="h-4 w-4" /></button>
+                  <div className="w-14 h-full flex items-center justify-center font-bold text-zinc-900 text-lg border-x-2 border-zinc-50">{quantity}</div>
+                  <button onClick={() => setQuantity(quantity + 1)} className="w-14 h-full flex items-center justify-center text-zinc-400 hover:text-[#0082c8] hover:bg-zinc-50 transition-colors"><Plus className="h-4 w-4" /></button>
+                </div>
+                <button onClick={handleAddToCart} className="flex-1 h-full bg-[#f0f9ff] border-2 border-[#0082c8] text-[#0082c8] font-bold rounded-2xl text-[14px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-blue-100 transition-all active:scale-[0.98]">
+                  <ShoppingCart className="h-5 w-5" /> Thêm vào giỏ
                 </button>
-                
-                {expandedSection === 'payment' && (
-                  <div className="py-4 px-1 space-y-4">
-                    <div className="flex flex-wrap items-center gap-4">
-                      <div className="flex items-center gap-2 px-3 py-1 bg-[#EE4D2D]/5 border border-[#EE4D2D]/20 rounded">
-                        <span className="text-[10px] font-black text-[#EE4D2D] italic">Shopee</span>
-                        <span className="text-[10px] font-black text-[#EE4D2D]">Pay</span>
-                      </div>
-                      <div className="flex items-center gap-2 px-3 py-1 bg-[#008fe5]/5 border border-[#008fe5]/20 rounded">
-                        <span className="text-[10px] font-black text-[#008fe5] italic">Zalo</span>
-                        <span className="text-[10px] font-black text-[#008fe5]">Pay</span>
-                      </div>
-                      <div className="flex items-center gap-2 px-3 py-1 bg-zinc-50 border border-zinc-200 rounded">
-                        <span className="text-[10px] font-black text-zinc-500 uppercase">BANK</span>
-                      </div>
-                      <div className="flex items-center gap-2 px-3 py-1 bg-zinc-50 border border-zinc-200 rounded">
-                        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-tighter">COD</span>
-                      </div>
-                    </div>
-
-                    <p className="text-[12px] text-zinc-500 leading-relaxed">
-                      Chấp nhận thanh toán trực tuyến qua ShopeePay, ZaloPay, chuyển khoản ngân hàng hoặc tiền mặt khi nhận hàng (COD).
-                      <button className="ml-2 text-blue-600 font-bold hover:underline">Chi tiết ⓘ</button>
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Warranty Section */}
-              <div className="">
-                <button 
-                  onClick={() => setExpandedSection(expandedSection === 'warranty' ? null : 'warranty')}
-                  className="flex items-center justify-between w-full py-4 text-sm font-bold text-zinc-900 border-b border-zinc-50 hover:text-blue-600 transition-colors group"
-                >
-                  <span>Bảo hành và đổi trả</span>
-                  {expandedSection === 'warranty' ? <ChevronUp className="h-4 w-4 text-blue-600" /> : <ChevronDown className="h-4 w-4 text-zinc-400 group-hover:text-blue-600" />}
-                </button>
-                {expandedSection === 'warranty' && (
-                  <div className="py-4 px-1 space-y-3">
-                    <p className="text-[12px] text-zinc-500 leading-relaxed">
-                      Hỗ trợ đổi trả sản phẩm trong vòng <span className="font-bold text-zinc-900">30 ngày</span> nếu có lỗi từ nhà sản xuất.
-                    </p>
-                    <p className="text-[12px] text-zinc-500 leading-relaxed">
-                      Bảo hành chính hãng: <span className="font-bold text-zinc-900">12 tháng</span>.
-                    </p>
-                  </div>
-                )}
+                <button className="flex-1 h-full bg-[#1e4b64] text-white font-bold rounded-2xl text-[14px] uppercase tracking-widest hover:bg-[#153a4d] transition-all active:scale-[0.98] shadow-lg">Mua Ngay</button>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Features Section */}
-        <div className="mt-24 border-t border-zinc-100 pt-16">
-          <h2 className="text-3xl font-bold text-black mb-12 uppercase italic tracking-tight">Chi tiết sản phẩm</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-24 gap-y-2">
-            <FeatureLine label="Màu sắc" value={selectedColor} />
-            <FeatureLine label="Kích cỡ" value={selectedSize} />
-            <FeatureLine label="Chất liệu" value="100% Cotton" opacity="opacity-50" />
-            <FeatureLine label="Phong cách" value="Thể thao năng động" opacity="opacity-50" />
-            <FeatureLine label="Bảo quản" value="Giặt máy ở chế độ nhẹ" opacity="opacity-50" />
-            <FeatureLine label="Xuất xứ" value="Việt Nam" opacity="opacity-50" />
+        {/* Tabs Section */}
+        <div className="mt-12 border-t border-zinc-100 pt-12">
+          <div className="w-full">
+            <div className="space-y-12">
+
+              <div>
+                  <div className="flex flex-col lg:flex-row gap-0">
+                    {/* Left Column: Main Content (~81%) */}
+                    <div className="flex-1 min-w-0 lg:border-r lg:border-zinc-200 lg:pr-8 space-y-10 overflow-hidden">
+
+                      {/* ── 1. CHI TIẾT SẢN PHẨM ── */}
+                      <div>
+                        <h4 className="text-[16px] font-bold text-zinc-900 italic mb-6 pb-4 border-b border-zinc-200">CHI TIẾT SẢN PHẨM</h4>
+                        <div className="grid grid-cols-1 gap-y-0">
+                          {[
+                            { label: 'Thương hiệu', value: product.brand || 'UR SPORT' },
+                            { label: 'Xuất xứ', value: product.origin || 'Việt Nam' },
+                            { label: 'Kiểu dáng', value: product.style || 'Slim Fit' },
+                            { label: 'Chất liệu', value: product.material || 'Cotton Premium' },
+                            { label: 'Phong cách', value: product.fashionStyle || 'Thể thao, Cơ bản, Hàn Quốc, Đường phố, Công sở' },
+                            { label: 'Cổ áo', value: product.collarType || 'Cổ tròn' }
+                          ].map(row => (
+                            <div key={row.label} className="flex items-center py-[14px] border-b border-zinc-100 last:border-0">
+                              <span className="text-zinc-400 text-[14px] w-44 shrink-0">{row.label}</span>
+                              <span className="text-zinc-800 text-[14px] font-semibold">{row.value}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* ── 2. HƯỚNG DẪN CHỌN SIZE ── */}
+                      {product.sizeGuideUrl && (
+                        <div>
+                          <h4 className="text-[16px] font-bold text-zinc-900 italic mb-6 pb-4 border-b border-zinc-200">Hướng Dẫn Chọn Size</h4>
+                          <img src={product.sizeGuideUrl} alt="Hướng dẫn chọn size" className="w-full max-w-[700px] h-auto rounded-lg border border-zinc-200" />
+                        </div>
+                      )}
+
+                      {/* ── 3. MÔ TẢ SẢN PHẨM ── */}
+                      <div>
+                        <h4 className="text-[16px] font-bold text-zinc-900 italic mb-6 pb-4 border-b border-zinc-200">MÔ TẢ SẢN PHẨM</h4>
+                        <div className="relative">
+                          <div className={cn(
+                            "product-description-container max-w-none text-zinc-600 leading-relaxed overflow-hidden transition-all duration-700 break-words",
+                            !isDescriptionExpanded ? "max-h-[800px]" : "max-h-none"
+                          )}>
+                            <div dangerouslySetInnerHTML={{ __html: product.description }} />
+                          </div>
+                          {!isDescriptionExpanded && <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-white to-transparent pointer-events-none" />}
+                          <div className="flex justify-center pt-8">
+                            <button 
+                              onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                              className="px-5 py-2 bg-white border border-zinc-200 text-[#0082c8] text-sm font-bold rounded-full shadow-sm hover:text-black hover:border-zinc-300 hover:shadow-md transition-all flex items-center gap-2"
+                            >
+                              {isDescriptionExpanded ? 'Thu gọn' : 'Xem thêm nội dung'}
+                              <ChevronDown className={cn("h-4 w-4 transition-transform", isDescriptionExpanded && "rotate-180")} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Column: Sidebar (~19%) */}
+                    <div className="hidden lg:block w-[220px] shrink-0 pl-6">
+                      <div className="sticky top-24">
+                        <h4 className="text-[14px] text-zinc-400 mb-6">Top Sản Phẩm Nổi Bật</h4>
+                        <div className="space-y-6">
+                          {categoryProducts.filter(p => p.id !== product.id).slice(0, 4).map(p => (
+                            <Link to={`/apparel/${categorySlug || 'all'}/${p.slug}`} key={p.id} className="block group">
+                              <div className="aspect-[4/5] w-full overflow-hidden bg-zinc-100 mb-2 relative">
+                                <img src={p.images?.[0]} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                {p.videos && p.videos.length > 0 && (
+                                  <div className="absolute bottom-2 right-2 w-6 h-6 bg-black/50 rounded-full flex items-center justify-center">
+                                    <Play className="h-3 w-3 text-white fill-white" />
+                                  </div>
+                                )}
+                              </div>
+                              <h5 className="text-[13px] font-medium text-zinc-700 leading-snug line-clamp-2 group-hover:text-[#0082c8] transition-colors">{p.name}</h5>
+                              <p className="text-[#ee4d2d] font-medium text-[14px] mt-1">
+                                {p.discountPrice ? p.discountPrice.toLocaleString('vi-VN') : p.price.toLocaleString('vi-VN')}₫
+                              </p>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Detailed Description Section - TỪ ẢNH */}
-        <div className="mt-20 space-y-16 pb-20 max-w-[1000px]">
-          {/* Cover Media Upload Section - MỚI - Chỉ hiện cho Admin */}
-          {isAdmin && (
-            <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden mb-12">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 bg-zinc-50/50">
-                <div className="flex items-center gap-2">
-                  <ImageIcon className="h-4 w-4 text-zinc-400" />
-                  <span className="text-sm font-bold text-zinc-900">Ảnh bìa / Video (Admin Only)</span>
+        {/* Dedicated Reviews Section */}
+        <div id="reviews-section" className="mt-12 bg-zinc-50/50 rounded-[40px] p-6 sm:p-8 border border-zinc-100 shadow-sm">
+          <div className="space-y-6">
+            <div className="text-left">
+              <h4 className="text-xl font-bold text-zinc-900 tracking-tight">Đánh giá sản phẩm</h4>
+            </div>
+
+            <div className="bg-[#fffbf8] border border-[#f9ede5] p-6 sm:p-8 rounded-sm flex flex-col md:flex-row items-center gap-8 md:gap-12">
+              <div className="text-center md:text-left">
+                <div className="text-[#ee4d2d] font-medium mb-2">
+                  <span className="text-3xl font-bold">{product.rating ? product.rating.toFixed(1) : '0.0'}</span>
+                  <span className="text-lg ml-1">trên 5</span>
                 </div>
-                <div className="flex bg-zinc-100 p-1 rounded-lg">
-                  <button 
-                    onClick={() => setUploadType('image')}
-                    className={cn(
-                      "px-4 py-1.5 text-[12px] font-bold rounded-md transition-all",
-                      uploadType === 'image' ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700"
-                    )}
-                  >
-                    Ảnh
-                  </button>
-                  <button 
-                    onClick={() => setUploadType('video')}
-                    className={cn(
-                      "px-4 py-1.5 text-[12px] font-bold rounded-md transition-all",
-                      uploadType === 'video' ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700"
-                    )}
-                  >
-                    Video
-                  </button>
+                <div className="flex justify-center md:justify-start gap-0.5">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className={cn("h-5 w-5", i < Math.floor(product.rating || 0) ? "fill-[#ee4d2d] text-[#ee4d2d]" : "text-zinc-200")} />
+                  ))}
                 </div>
               </div>
               
-              <div className="p-8">
-                <div className="aspect-[21/9] w-full border-2 border-dashed border-zinc-200 rounded-xl flex flex-col items-center justify-center gap-4 group hover:border-blue-400 hover:bg-blue-50/10 transition-all cursor-pointer">
-                  <div className="w-12 h-12 rounded-full bg-zinc-50 flex items-center justify-center group-hover:bg-blue-50 transition-colors">
-                    <Upload className="h-6 w-6 text-zinc-400 group-hover:text-blue-500" />
-                  </div>
-                  <span className="text-[12px] font-bold text-zinc-500 group-hover:text-blue-600 transition-colors">
-                    Tải {uploadType === 'image' ? 'ảnh' : 'video'} lên
-                  </span>
-                </div>
+              <div className="flex-1 flex flex-wrap gap-2.5">
+                {(() => {
+                  const formatCount = (count: number) => {
+                    if (count >= 1000) return `${(count / 1000).toFixed(1).replace('.', ',')}k`;
+                    return count.toString();
+                  };
+
+                  return [
+                    { id: 'all', label: 'Tất Cả' },
+                    { id: '5', label: `5 Sao (${formatCount(reviews.filter(r => r.rating === 5).length)})` },
+                    { id: '4', label: `4 Sao (${formatCount(reviews.filter(r => r.rating === 4).length)})` },
+                    { id: '3', label: `3 Sao (${formatCount(reviews.filter(r => r.rating === 3).length)})` },
+                    { id: '2', label: `2 Sao (${formatCount(reviews.filter(r => r.rating === 2).length)})` },
+                    { id: '1', label: `1 Sao (${formatCount(reviews.filter(r => r.rating === 1).length)})` },
+                    { id: 'comment', label: `Có Bình Luận (${formatCount(reviews.filter(r => r.comment.trim()).length)})` },
+                    { id: 'media', label: `Có Hình Ảnh / Video (${formatCount(reviews.filter(r => (r.images?.length || 0) > 0 || (r.videos?.length || 0) > 0).length)})` }
+                  ].map(filter => (
+                    <button
+                      key={filter.id}
+                      onClick={() => { setReviewFilter(filter.id); setCurrentPage(1); }}
+                      className={cn(
+                        "px-4 py-2 text-[14px] rounded-sm border transition-all min-w-[100px] h-10 flex items-center justify-center",
+                        reviewFilter === filter.id 
+                          ? "bg-white border-[#ee4d2d] text-[#ee4d2d]" 
+                          : "bg-white border-zinc-200 text-zinc-800 hover:border-zinc-300"
+                      )}
+                    >
+                      {filter.label}
+                    </button>
+                  ));
+                })()}
               </div>
             </div>
-          )}
 
-          <div className="space-y-6">
-            <h3 className="text-2xl font-black text-zinc-900 uppercase italic tracking-tight">Chi tiết sản phẩm & Chất liệu</h3>
-            <div className="w-20 h-1 bg-[#0082c8] rounded-full" />
-          </div>
-
-          <div className="space-y-12 text-[15px] leading-relaxed text-zinc-600 font-medium product-description">
-             <div className="space-y-4">
-                {product.description ? (
-                  <div 
-                    dangerouslySetInnerHTML={{ __html: product.description }} 
-                    className="prose prose-zinc max-w-none 
-                      [&_h1]:text-2xl [&_h1]:font-black [&_h1]:mb-4 [&_h1]:text-zinc-900
-                      [&_h2]:text-xl [&_h2]:font-black [&_h2]:mb-3 [&_h2]:text-zinc-900
-                      [&_h3]:text-lg [&_h3]:font-black [&_h3]:mb-2 [&_h3]:text-zinc-900
-                      [&_p]:mb-4 [&_p]:leading-relaxed
-                      [&_img]:rounded-2xl [&_img]:my-8 [&_img]:shadow-lg [&_img]:mx-auto
-                      [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-4
-                      [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-4
-                      [&_blockquote]:border-l-4 [&_blockquote]:border-[#0082c8] [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-zinc-500
-                    "
-                  />
-                ) : (
-                  <p>Sản phẩm này chưa có mô tả chi tiết.</p>
-                )}
-             </div>
-
-             <div className="grid grid-cols-1 gap-12 pt-8 border-t border-zinc-100">
-                <div className="space-y-8">
-                  <div className="space-y-4">
-                    <h4 className="text-[11px] font-black uppercase tracking-widest text-zinc-400">Đặc tính kỹ thuật vải</h4>
-                    <ul className="space-y-4">
-                      <li className="flex gap-4">
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-600 mt-2 shrink-0" />
-                        <div>
-                          <p className="text-base font-bold text-zinc-900">Loại vải: Cotton co giãn 4 chiều</p>
-                          <p className="text-sm text-zinc-500">Giống vải áo thể thao nhưng dày, mềm và mướt hơn. Thân thiện tuyệt đối với làn da em bé và người lớn.</p>
-                        </div>
-                      </li>
-                      <li className="flex gap-4">
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-600 mt-2 shrink-0" />
-                        <div>
-                          <p className="text-base font-bold text-zinc-900">Thành phần: 98% Cotton, 2% Spandex</p>
-                          <p className="text-sm text-zinc-500">Thành phần công bố 98% cotton. Thực tế xét nghiệm: 95.7% Cotton, 4.3% Spandex. KHÔNG POLY, KHÔNG NILON.</p>
-                        </div>
-                      </li>
-                      <li className="flex gap-4">
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-600 mt-2 shrink-0" />
-                        <div>
-                          <p className="text-base font-bold text-zinc-900">Độ dày & Co rút: 230GSM</p>
-                          <p className="text-sm text-zinc-500">Ngang: KHÔNG CO RÚT. Dọc: Rút nhẹ ~1cm (2,1%). NATO đã may dài hơn 1cm so với bảng size để sau khi giặt sẽ về đúng kích thước chuẩn.</p>
-                        </div>
-                      </li>
-                    </ul>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 pt-6 border-t border-zinc-100">
-                    <div className="space-y-4">
-                      <h4 className="text-[11px] font-black uppercase tracking-widest text-zinc-400">Độ bền sản phẩm</h4>
-                      <div className="space-y-3">
-                        <p className="text-sm font-bold text-zinc-900">Độ bền màu giặt: Mức độ 4,5/5</p>
-                        <p className="text-[13px] text-zinc-500">Bền màu sau hơn 20 lần giặt. Vải xuống dần nhưng không bị bạc màu nhanh hay loang lổ.</p>
-                        <p className="text-sm font-bold text-zinc-900">Độ bền nén thủng: Chịu lực cao</p>
-                        <p className="text-[13px] text-zinc-500">Không rách đường may sau thử nghiệm nén thủng cực đại. KHÔNG THỂ RÁCH KHI SỬ DỤNG THÔNG THƯỜNG.</p>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-4">
-                      <h4 className="text-[11px] font-black uppercase tracking-widest text-zinc-400">Thông tin gia công</h4>
-                      <div className="space-y-3 text-[13px] text-zinc-500 font-medium">
-                        <p>• Sợi bông Mỹ chải kỹ: Cực kỳ thân thiện với làn da, mềm mướt không thô ráp.</p>
-                        <p>• Xử lý bề mặt 2 lần: Cho cảm giác nhẵn nhụi, cực mịn tay khi chạm vào.</p>
-                        <p>• Hút ẩm cực cao: Để máy lạnh 5 phút, tự động áo lạnh ngắt.</p>
-                        <p>• Hồ lạnh: Duy trì cảm giác mát mẻ ban đầu, mất dần sau 5 lần giặt để lộ bề mặt cotton nguyên bản.</p>
-                      </div>
+            {!isCheckingPurchase && (hasPurchased || isAdmin) ? (
+              <div className="bg-white rounded-[24px] p-6 sm:p-8 border border-zinc-100 shadow-sm">
+                <h5 className="text-lg font-bold text-zinc-900 mb-4">Viết cảm nhận của bạn</h5>
+                <form onSubmit={handleSubmitReview} className="space-y-4">
+                  <div className="flex items-center gap-6">
+                    <span className="text-sm font-bold text-zinc-600 uppercase">Bạn chấm mấy sao?</span>
+                    <div className="flex gap-2">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button key={star} type="button" onClick={() => setNewReview({ ...newReview, rating: star })} className="transition-transform active:scale-125">
+                          <Star className={cn("h-8 w-8 transition-all", star <= newReview.rating ? "fill-[#ee4d2d] text-[#ee4d2d]" : "text-zinc-200")} />
+                        </button>
+                      ))}
                     </div>
                   </div>
-                </div>
 
-                <div className="bg-zinc-50 p-8 rounded-3xl border border-zinc-100 space-y-8">
                   <div className="space-y-6">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 bg-[#0082c8] rounded-xl shadow-lg shadow-blue-100">
-                        <Check className="h-4 w-4 text-white" />
-                      </div>
-                      <h4 className="text-lg font-bold text-zinc-900 uppercase italic">Tổng quan & Cam kết</h4>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                      <div className="space-y-2">
-                        <span className="text-[10px] font-black text-red-600 uppercase tracking-widest block">Khuyết điểm:</span>
-                        <p className="text-sm text-zinc-600 font-medium italic">
-                          Độ đứng form không bằng áo 2 chiều loại dày và cứng. Áo thuộc loại vải em bé nên mềm mại, nhìn độ phồng tay áo và vai sẽ tự nhiên, dễ hình dung hơn.
-                        </p>
-                      </div>
-                      <div className="space-y-2">
-                        <span className="text-[10px] font-black text-[#1e4b64] uppercase tracking-widest block">Ưu điểm:</span>
-                        <p className="text-sm text-zinc-600 font-medium">
-                          Phù hợp da nhạy cảm hoặc người hay đổ mồ hôi. Mặc cực kỳ thích, mướt mịn, thấm hút hoàn hảo như áo thể thao chuyên dụng nhưng dày dặn hơn.
-                        </p>
-                      </div>
-                    </div>
+                    {!user && (
+                      <input 
+                        type="text"
+                        placeholder="Họ và tên của bạn..."
+                        value={newReview.userName}
+                        onChange={(e) => setNewReview({ ...newReview, userName: e.target.value })}
+                        className="w-full px-6 py-4 bg-zinc-50 border-none rounded-2xl text-sm font-medium focus:ring-2 focus:ring-[#ee4d2d]/20 outline-none transition-all"
+                      />
+                    )}
+                    <textarea 
+                      rows={4}
+                      placeholder="Sản phẩm mặc có mát không? Form dáng thế nào?..."
+                      value={newReview.comment}
+                      onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
+                      className="w-full px-6 py-6 bg-zinc-50 border-none rounded-[24px] text-sm font-medium focus:ring-2 focus:ring-[#ee4d2d]/20 outline-none transition-all resize-none"
+                    />
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-8 border-t border-zinc-200">
-                    <div className="flex items-center gap-3 px-4 py-3 bg-white rounded-xl border border-zinc-100">
-                       <div className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-                       <span className="text-[11px] font-bold text-zinc-900 uppercase">Ship 24/7 (1-3 ngày nhận)</span>
+                  {/* Media Upload */}
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap gap-4">
+                      <label className="flex items-center gap-2 px-6 py-3 bg-zinc-50 hover:bg-zinc-100 rounded-xl cursor-pointer transition-all border-2 border-dashed border-zinc-200 text-zinc-600 font-bold text-xs uppercase tracking-widest group">
+                        <Camera className="h-4 w-4 group-hover:text-[#ee4d2d] transition-colors" />
+                        <span>Thêm ảnh hoặc video</span>
+                        <input type="file" multiple accept="image/*,video/*" className="hidden" onChange={handleFileChange} />
+                      </label>
                     </div>
-                    <div className="flex items-center gap-3 px-4 py-3 bg-white rounded-xl border border-zinc-100">
-                       <div className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-                       <span className="text-[11px] font-bold text-zinc-900 uppercase">Hỏa tốc giao ngay trong 60'</span>
-                    </div>
+
+                    {reviewPreviews.length > 0 && (
+                      <div className="flex flex-wrap gap-3">
+                        {reviewPreviews.map((preview, idx) => (
+                          <div key={idx} className="relative w-24 h-24 rounded-xl overflow-hidden border-2 border-zinc-100 group shadow-sm">
+                            {preview.type === 'image' ? (
+                              <img src={preview.url} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full bg-zinc-900 flex items-center justify-center">
+                                <Video className="h-8 w-8 text-white/50" />
+                                <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                                  <Play className="h-6 w-6 text-white" />
+                                </div>
+                              </div>
+                            )}
+                            <button 
+                              type="button"
+                              onClick={() => removeFile(idx)}
+                              className="absolute top-1 right-1 w-6 h-6 bg-black/60 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   
-                  <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 text-center">
-                    <p className="text-[11px] font-black text-blue-600 uppercase tracking-widest">
-                      Sản phẩm được bảo hành <span className="text-blue-900 underline decoration-2 underline-offset-4">TRỌN ĐỜI</span> về độ bền & chất lượng
-                    </p>
+                  <div className="flex justify-end">
+                    <Button type="submit" disabled={isSubmittingReview} className="bg-[#ee4d2d] hover:bg-[#d73211] text-white px-12 py-7 rounded-2xl font-bold tracking-widest shadow-xl shadow-red-500/20 active:scale-95 transition-all">
+                      {isSubmittingReview ? 'Đang gửi...' : 'Gửi đánh giá ngay'}
+                    </Button>
                   </div>
+                </form>
+              </div>
+            ) : !isCheckingPurchase && (
+              <div className="bg-[#fffbf8] border border-[#f9ede5] p-8 rounded-2xl text-center">
+                <div className="h-16 w-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm border border-[#f9ede5]">
+                  <ShoppingBag className="h-8 w-8 text-[#ee4d2d]" />
                 </div>
-             </div>
+                <h5 className="text-lg font-bold text-zinc-900 mb-2">Chỉ người mua hàng mới có thể đánh giá</h5>
+                <p className="text-zinc-500 text-sm max-w-md mx-auto leading-relaxed">
+                  Bạn cần mua sản phẩm này và đơn hàng phải ở trạng thái <strong className="text-[#ee4d2d]">"Đã giao hàng"</strong> để có thể chia sẻ trải nghiệm của mình.
+                </p>
+                {!user && (
+                  <Button onClick={() => window.location.href = '/login'} className="mt-6 bg-[#ee4d2d] text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-red-500/20">
+                    Đăng nhập để kiểm tra
+                  </Button>
+                )}
+              </div>
+            )}
+
+            <div className="space-y-8">
+              {(() => {
+                const filtered = reviews.filter(r => {
+                  if (reviewFilter === 'all') return true;
+                  if (reviewFilter === 'comment') return r.comment.trim().length > 0;
+                  if (reviewFilter === 'media') return (r.images?.length || 0) > 0 || (r.videos?.length || 0) > 0;
+                  return r.rating === parseInt(reviewFilter);
+                });
+
+                const totalPages = Math.ceil(filtered.length / REVIEWS_PER_PAGE);
+                const paginated = filtered.slice((currentPage - 1) * REVIEWS_PER_PAGE, currentPage * REVIEWS_PER_PAGE);
+
+                return (
+                  <>
+                    {paginated.map((review: any) => (
+                      <div key={review.id} className="bg-white p-8 rounded-[28px] border border-zinc-100 shadow-sm space-y-6 transition-all hover:shadow-md">
+                        <div className="flex justify-between items-start">
+                          <div className="flex items-center gap-4">
+                            <div className="h-14 w-14 rounded-full bg-gradient-to-br from-[#ee4d2d] to-[#ff7337] flex items-center justify-center text-white font-bold text-xl border-4 border-white shadow-md">
+                              {review.userName.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="font-bold text-zinc-900 text-[15px]">{review.userName}</p>
+                              <div className="flex gap-0.5 mt-1">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star key={i} className={cn("h-3.5 w-3.5", i < review.rating ? "fill-[#ee4d2d] text-[#ee4d2d]" : "text-zinc-200")} />
+                                ))}
+                              </div>
+                              <div className="flex items-center gap-3 mt-2 text-[12px] text-zinc-400 font-medium">
+                                <span>{review.createdAt?.toDate ? review.createdAt.toDate().toLocaleString('vi-VN') : 'Mới đây'}</span>
+                                {review.variant && (
+                                  <>
+                                    <span className="w-1 h-1 bg-zinc-200 rounded-full" />
+                                    <span>Phân loại hàng: {review.variant}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="pl-18 space-y-4">
+                          <p className="text-zinc-700 text-[16px] leading-relaxed font-medium">
+                            {review.comment}
+                          </p>
+
+                          {/* Review Media Display */}
+                          {(review.images?.length || review.videos?.length) && (
+                            <div className="flex flex-wrap gap-4 pt-2">
+                              {review.images?.map((img: string, i: number) => (
+                                <div key={i} className="w-32 h-32 rounded-xl overflow-hidden border border-zinc-100 cursor-pointer hover:scale-105 transition-all shadow-sm">
+                                  <img src={img} className="w-full h-full object-cover" />
+                                </div>
+                              ))}
+                              {review.videos?.map((vid: string, i: number) => (
+                                <div key={i} className="w-32 h-32 rounded-xl overflow-hidden border border-zinc-100 cursor-pointer hover:scale-105 transition-all shadow-sm relative group">
+                                  <video src={vid} className="w-full h-full object-cover" />
+                                  <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/10 transition-all">
+                                    <Play className="h-10 w-10 text-white fill-white" />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          <div className="flex items-center gap-6 pt-4">
+                            <button className="flex items-center gap-2 text-zinc-400 hover:text-[#ee4d2d] transition-colors group">
+                              <svg className="h-5 w-5 transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M7 10v12M15 5.88l-1.42 1.42a4.41 4.41 0 0 1-6.23 0l-1.42-1.42a1 1 0 0 0-1.42 1.42l1.42 1.42a6.41 6.41 0 0 0 9.06 0l1.42-1.42a1 1 0 0 0-1.42-1.42Z"/><path d="M14 10V4.5a2.5 2.5 0 0 0-5 0V10"/></svg>
+                              <span className="text-sm font-bold">Hữu ích</span>
+                            </button>
+                            <button className="text-zinc-400 hover:text-zinc-600 transition-colors">
+                              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    {totalPages > 1 && (
+                      <div className="flex justify-center items-center gap-2 mt-12 pt-8 border-t border-zinc-100">
+                        <button 
+                          disabled={currentPage === 1}
+                          onClick={() => { setCurrentPage(prev => prev - 1); window.scrollTo({ top: document.getElementById('reviews-section')?.offsetTop || 0, behavior: 'smooth' }); }}
+                          className="w-10 h-10 flex items-center justify-center rounded-sm border border-zinc-200 disabled:opacity-30 hover:bg-zinc-50 transition-colors"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </button>
+                        
+                        {[...Array(totalPages)].map((_, i) => {
+                          const page = i + 1;
+                          // Hiển thị logic rút gọn trang nếu cần, nhưng ở đây ta cứ hiện hết cho đơn giản nếu số lượng ít
+                          return (
+                            <button
+                              key={page}
+                              onClick={() => { setCurrentPage(page); window.scrollTo({ top: document.getElementById('reviews-section')?.offsetTop || 0, behavior: 'smooth' }); }}
+                              className={cn(
+                                "w-10 h-10 flex items-center justify-center rounded-sm text-sm font-medium transition-all",
+                                currentPage === page 
+                                  ? "bg-[#ee4d2d] text-white shadow-md" 
+                                  : "text-zinc-500 hover:bg-zinc-50 border border-transparent hover:border-zinc-200"
+                              )}
+                            >
+                              {page}
+                            </button>
+                          );
+                        })}
+
+                        <button 
+                          disabled={currentPage === totalPages}
+                          onClick={() => { setCurrentPage(prev => prev + 1); window.scrollTo({ top: document.getElementById('reviews-section')?.offsetTop || 0, behavior: 'smooth' }); }}
+                          className="w-10 h-10 flex items-center justify-center rounded-sm border border-zinc-200 disabled:opacity-30 hover:bg-zinc-50 transition-colors"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Size Guide Modal */}
+      {isSizeGuideOpen && product.sizeGuideUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setIsSizeGuideOpen(false)}>
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="relative max-w-4xl w-full bg-white rounded-3xl overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setIsSizeGuideOpen(false)} className="absolute top-4 right-4 w-10 h-10 bg-black/10 hover:bg-black/20 text-black flex items-center justify-center rounded-full z-10 transition-colors"><X className="h-5 w-5" /></button>
+            <div className="max-h-[85vh] overflow-auto">
+              <img src={product.sizeGuideUrl} alt="Size Guide" className="w-full h-auto" />
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };

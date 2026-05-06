@@ -41,11 +41,11 @@ export const PRODUCTS: Product[] = [
     category: 'Áo thun nam',
     images: [
       'https://tuanlouis.vn/datafiles/34259/upload/files/%C3%81O%20THUN/IMG_1268.JPG',
-      '/input_file_1.png',
-      '/input_file_3.png',
-      '/input_file_4.png',
-      '/input_file_5.png',
-      '/input_file_6.png'
+      'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800',
+      'https://images.unsplash.com/photo-1554568218-0f1715e72254?w=800',
+      'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=800',
+      'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800',
+      'https://images.unsplash.com/photo-1562157873-818bc0726f68?w=800'
     ],
     colors: ['Trắng', 'Đen', 'Đỏ', 'Vàng', 'Than', 'Xanh'],
     sizes: ['S', 'M', 'L', 'XL'],

@@ -7,6 +7,7 @@ interface ImageUploadProps {
   onUploadComplete: (url: string) => void;
   folder?: string;
   label?: string;
+  externalPreview?: string;
 }
 
 // ─── Cloudinary config ───────────────────────────────────────────────────────
@@ -18,7 +19,8 @@ const CLOUDINARY_UPLOAD_PRESET = 'ursport_uploads';
 export const ImageUpload: React.FC<ImageUploadProps> = ({
   onUploadComplete,
   folder = 'products',
-  label = 'Tải ảnh lên'
+  label = 'Tải ảnh lên',
+  externalPreview
 }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -26,6 +28,13 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isDone, setIsDone] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const openFilePicker = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isUploading) return;
+    fileInputRef.current?.click();
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -108,7 +117,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
       {label && <label className="text-sm font-bold text-zinc-700">{label}</label>}
 
       <div
-        onClick={() => !isUploading && fileInputRef.current?.click()}
+        onClick={openFilePicker}
         className={cn(
           "relative group cursor-pointer border-2 border-dashed rounded-2xl p-6 transition-all duration-300 flex flex-col items-center justify-center min-h-[180px]",
           previewUrl
@@ -125,14 +134,15 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
           type="file"
           ref={fileInputRef}
           onChange={handleFileChange}
+          onClick={(e) => e.stopPropagation()}
           className="hidden"
           accept="image/*"
         />
 
-        {previewUrl ? (
+        {(externalPreview || previewUrl) ? (
           <div className="relative w-full flex flex-col items-center gap-3">
             <img
-              src={previewUrl}
+              src={externalPreview || previewUrl!}
               alt="Preview"
               className="max-h-36 rounded-xl object-cover shadow-md"
             />

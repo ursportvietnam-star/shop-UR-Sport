@@ -16,24 +16,78 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        (
+          request.auth.token.email == 'ursportvietnam@gmail.com' &&
+          request.auth.token.email_verified == true
+        )
+      );
     }
 
     function isValidId(id) {
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
+    function isValidOrderCreate() {
+      return isSignedIn() &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.status == 'pending' &&
+        request.resource.data.items is list &&
+        request.resource.data.items.size() > 0 &&
+        request.resource.data.total is number &&
+        request.resource.data.total >= 0 &&
+        request.resource.data.shippingAddress.fullName is string &&
+        request.resource.data.shippingAddress.phone is string &&
+        request.resource.data.shippingAddress.address is string;
+    }
+
+    function isRatingAggregateUpdate() {
+      return isSignedIn() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating', 'reviewsCount']) &&
+        request.resource.data.rating is number &&
+        request.resource.data.rating >= 0 &&
+        request.resource.data.rating <= 5 &&
+        request.resource.data.reviewsCount is number &&
+        request.resource.data.reviewsCount >= resource.data.reviewsCount;
+    }
+
+    function isValidReviewCreate() {
+      return isSignedIn() &&
+        request.resource.data.productId is string &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.userName is string &&
+        request.resource.data.rating is number &&
+        request.resource.data.rating >= 1 &&
+        request.resource.data.rating <= 5 &&
+        request.resource.data.comment is string;
+    }
+
     // Products: Public read, Admin write
     match /products/{productId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || isRatingAggregateUpdate();
     }
 
     // Orders: Owner read/write, Admin read/write
     match /orders/{orderId} {
-      allow create: if isSignedIn();
+      allow create: if isValidOrderCreate();
       allow read, update: if isOwner(resource.data.userId) || isAdmin();
       allow delete: if isAdmin();
+    }
+
+    // Reviews: Public read, signed-in customers/admins create, admins moderate
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isValidReviewCreate() || isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    // Settings used by the storefront, writable only by admins
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
     
     // Admins collection

@@ -50,7 +50,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
             <div className="absolute top-3 left-3 flex flex-col gap-1.5 items-start">
               {product.isBestSeller && (
                 <Badge className="bg-[#7c3aed] hover:bg-[#7c3aed] text-white font-bold border-none rounded-full px-4 py-1 text-[11px] h-6 shadow-sm">
-                  Most popular
+                  Phổ biến nhất
                 </Badge>
               )}
               {product.discountPrice && (
@@ -87,7 +87,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
                 >
                   <div className="bg-white/95 backdrop-blur-sm rounded-xl p-4 shadow-2xl space-y-3 pointer-events-auto">
                     <div>
-                      <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter mb-1.5 italic">Color</p>
+                      <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter mb-1.5 italic">Màu sắc</p>
                       <div className="flex gap-2">
                         <div className="h-4 w-4 rounded-full bg-[#0082c8] ring-2 ring-offset-2 ring-[#0082c8]" />
                         <div className="h-4 w-4 rounded-full bg-zinc-800" />
@@ -95,7 +95,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
                       </div>
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter mb-1.5 italic">Size</p>
+                      <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter mb-1.5 italic">Kích cỡ</p>
                       <div className="flex gap-1.5">
                         {['M', 'L', 'XXL', 'XL', 'S'].map(size => (
                           <div key={size} className={cn(
@@ -114,32 +114,37 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
           </div>
 
           <div className="p-4 pt-5 flex flex-col flex-grow">
-            <h3 className="text-[15px] font-bold text-zinc-900 leading-tight mb-1 line-clamp-2">
+            <h3 className="text-[15px] font-medium text-zinc-900 leading-tight mb-1 line-clamp-2">
               {product.name}
             </h3>
             
-            <p className="text-[11px] font-medium text-zinc-400 tracking-tight mb-2 uppercase">
+            <p className="text-[11px] font-medium text-zinc-400 tracking-tight mb-2">
               CODE: {product.id.split('-')[0].toUpperCase()}
             </p>
 
             <div className="flex items-center gap-1.5 mb-2">
               <div className="flex items-center">
-                <Star className="h-3 w-3 fill-[#fbbf24] text-[#fbbf24]" />
-                <span className="text-xs font-bold ml-1">{product.rating}</span>
+                <Star 
+                  className={cn(
+                    "h-3 w-3",
+                    (product.reviewsCount || 0) > 0 ? "fill-[#fbbf24] text-[#fbbf24]" : "text-zinc-300"
+                  )} 
+                />
+                <span className="text-xs font-bold ml-1">{product.rating || 0}</span>
               </div>
-              <span className="text-[11px] text-zinc-400 font-medium">(Reviews: 4)</span>
+              <span className="text-[11px] text-zinc-400 font-medium">(Đánh giá: {product.reviewsCount || 0})</span>
               <div className="h-3 w-3 rounded-full bg-[#0082c8]/20 flex items-center justify-center">
                 <div className="h-1 w-1 rounded-full bg-[#0082c8]" />
               </div>
             </div>
 
             <div className="flex items-center gap-2 mb-4">
-              <span className="text-[11px] font-bold text-[#0082c8]">In stock</span>
+              <span className="text-[11px] font-bold text-[#0082c8]">Còn hàng</span>
             </div>
             
             <div className="mt-auto flex items-center justify-between">
               <div className="flex items-baseline gap-2">
-                <span className="text-[19px] font-black text-black">
+                <span className="text-[19px] font-bold text-black">
                   {(product.discountPrice || product.price).toLocaleString('vi-VN')}₫
                 </span>
               </div>

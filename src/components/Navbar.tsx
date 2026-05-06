@@ -56,18 +56,18 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
     <>
       <nav className={`fixed top-0 z-50 w-full border-b transition-all duration-300 ${
         isScrolled 
-          ? 'bg-white border-zinc-200 shadow-sm py-1' 
-          : 'bg-white border-zinc-100 py-2'
+          ? 'bg-white border-zinc-200 shadow-md py-0' 
+          : 'bg-white border-zinc-100 py-1'
       } text-zinc-900`}>
-        <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-4 sm:px-6 lg:px-8 gap-4">
+        <div className="mx-auto flex h-20 max-w-[1440px] items-center px-4 sm:px-6 lg:px-8 gap-4">
           
-          {/* Logo Section */}
-          <div className="flex items-center gap-1 sm:gap-4 shrink-0">
+          {/* LEFT: Menu & Logo */}
+          <div className="flex items-center gap-2 sm:gap-6 shrink-0">
             <button 
               onClick={() => setIsSidebarOpen(true)}
-              className="flex items-center justify-center text-zinc-900 hover:text-[#0082c8] transition-colors p-2 shrink-0"
+              className="flex items-center justify-center text-zinc-900 hover:text-[#0082c8] transition-all p-2 bg-zinc-50 hover:bg-zinc-100 rounded-full"
             >
-              <Menu className="h-6 w-6" />
+              <Menu className="h-5 w-5" />
             </button>
 
             <Link to="/" className="flex flex-col items-start hover:opacity-80 transition-opacity">
@@ -75,120 +75,111 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
                 <span className="text-[#0082c8]">UR</span>
                 <span>SPORT</span>
               </div>
-              <span className="text-[9px] font-bold italic uppercase tracking-tight text-zinc-400 mt-[1px]">
+              <span className="text-[9px] font-bold italic uppercase tracking-tight text-zinc-400 mt-[0.5px]">
                 Phong Cách Thể Thao
               </span>
             </Link>
+
+            {/* Desktop Nav Links */}
+            <div className="hidden xl:flex items-center gap-6 ml-6 border-l border-zinc-100 pl-6">
+              <button 
+                onClick={() => onPageChange('shop')}
+                className="text-[13px] font-black uppercase tracking-widest text-zinc-600 hover:text-[#0082c8] transition-colors"
+              >
+                Cửa hàng
+              </button>
+              <button 
+                onClick={() => onPageChange('blog')}
+                className="text-[13px] font-black uppercase tracking-widest text-zinc-600 hover:text-[#0082c8] transition-colors"
+              >
+                Blog
+              </button>
+            </div>
           </div>
 
-          {/* Middle Navigation */}
-          <div className="flex-1 flex items-center justify-center max-w-4xl gap-4 xl:gap-8">
-            <div className="relative flex-1 group min-w-[150px] max-w-[400px]">
+          {/* MIDDLE: Search */}
+          <div className="flex-1 flex items-center justify-center px-4 lg:px-12">
+            <div className="relative w-full max-w-[500px] group">
               <input 
                 type="text" 
-                placeholder="Search products"
-                className="w-full bg-zinc-50 border border-zinc-200 rounded-md py-2 px-4 pr-10 text-sm transition-all focus:bg-white focus:ring-1 focus:ring-[#0082c8] focus:border-transparent placeholder:text-zinc-400"
+                placeholder="Tìm kiếm sản phẩm..."
+                className="w-full bg-zinc-50 border border-zinc-200 rounded-xl py-2.5 px-5 pr-12 text-sm transition-all focus:bg-white focus:ring-2 focus:ring-[#0082c8]/10 focus:border-[#0082c8] placeholder:text-zinc-400 font-medium"
               />
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 group-focus-within:text-[#0082c8] transition-colors" />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 bg-zinc-900 rounded-lg text-white group-focus-within:bg-[#0082c8] transition-colors cursor-pointer">
+                <Search className="h-3.5 w-3.5" />
+              </div>
             </div>
           </div>
 
-          {/* Right Tools */}
+          {/* RIGHT: Tools & Auth */}
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-            <div className="hidden lg:flex items-center gap-2 text-[11px] font-black border-r border-zinc-100 pr-4 mr-2 text-zinc-400">
-              <Phone className="h-4 w-4 text-[#0082c8]" />
-              <span>+84 917 722 425</span>
-            </div>
+            {/* Phone (Hidden on small mobile) */}
+            <a 
+              href="tel:+84917722425"
+              className="hidden lg:flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-zinc-50 transition-colors text-zinc-600 group"
+            >
+              <div className="p-1.5 bg-blue-50 text-[#0082c8] rounded-lg group-hover:bg-[#0082c8] group-hover:text-white transition-colors">
+                <Phone className="h-3.5 w-3.5" />
+              </div>
+              <span className="text-[12px] font-bold">+84 917 722 425</span>
+            </a>
 
-            <div className="flex items-center gap-1 sm:gap-3">
-              <button className="hidden sm:flex p-2 text-zinc-400 hover:text-black transition-colors">
+            <div className="h-6 w-px bg-zinc-100 hidden lg:block mx-1" />
+
+            <div className="flex items-center gap-1 sm:gap-2">
+              <button className="hidden sm:flex p-2.5 text-zinc-400 hover:text-[#ef4444] hover:bg-red-50 rounded-xl transition-all">
                 <Heart className="h-5 w-5" />
               </button>
 
-              <AnimatePresence mode="wait">
-                {loading ? (
-                  <motion.div 
-                    key="loading"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="flex items-center gap-2"
-                  >
-                    <div className="h-[42px] w-[100px] bg-zinc-100 animate-pulse rounded-xl" />
-                    <div className="h-[42px] w-[100px] bg-zinc-100 animate-pulse rounded-xl hidden md:block" />
-                  </motion.div>
-                ) : !user ? (
-                  <motion.div 
-                    key="logged-out"
-                    initial={{ opacity: 0, x: 10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -10 }}
-                    className="flex items-center gap-2"
-                  >
-                    <button
-                      onClick={() => openAuthModal('login')}
-                      className="h-[42px] flex items-center gap-2 px-4 rounded-xl border border-zinc-200 bg-white/50 backdrop-blur-sm text-sm font-semibold text-zinc-700 hover:bg-zinc-50 transition-all duration-250 active:scale-95"
-                    >
-                      <LogIn className="h-4 w-4" />
-                      <span className="hidden md:inline">Đăng nhập</span>
-                    </button>
-                    <button
-                      onClick={() => openAuthModal('register')}
-                      className="h-[42px] flex items-center gap-2 px-4 rounded-xl bg-[#0082c8] hover:bg-[#0071ae] text-sm font-bold text-white shadow-[0_4px_12px_rgba(0,130,200,0.2)] hover:shadow-[0_6px_20px_rgba(0,130,200,0.35)] hover:-translate-y-0.5 transition-all duration-250 active:scale-95"
-                    >
-                      <UserPlus className="h-4 w-4" />
-                      <span className="hidden md:inline">Đăng ký</span>
-                    </button>
-                  </motion.div>
-                ) : (
-                  <motion.div 
-                    key="logged-in"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="flex items-center gap-3"
-                  >
-                    {/* User Avatar */}
-                    <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-sm shrink-0">
-                      {(user.displayName || user.email || 'U').charAt(0).toUpperCase()}
-                    </div>
-
-                    {isAdmin && (
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => navigate('/quan-tri')}
-                        className="h-[42px] flex items-center gap-2 px-5 rounded-2xl bg-zinc-900 text-sm font-bold text-white shadow-lg hover:bg-zinc-800 transition-all duration-250"
+              <div className="flex items-center gap-2">
+                <AnimatePresence mode="wait">
+                  {loading ? (
+                    <div className="h-10 w-24 bg-zinc-100 animate-pulse rounded-xl" />
+                  ) : !user ? (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => openAuthModal('login')}
+                        className="h-11 flex items-center gap-2 px-4 rounded-xl text-sm font-bold text-zinc-600 hover:bg-zinc-50 transition-all active:scale-95 border border-transparent hover:border-zinc-200"
                       >
-                        <BarChart2 className="h-4 w-4" />
-                        <span className="hidden sm:inline">Quản trị</span>
-                      </motion.button>
-                    )}
+                        <LogIn className="h-4 w-4" />
+                        <span className="hidden lg:inline">Đăng nhập</span>
+                      </button>
+                      <button
+                        onClick={() => openAuthModal('register')}
+                        className="h-11 flex items-center gap-2 px-5 rounded-xl bg-[#0082c8] hover:bg-[#0071ae] text-sm font-bold text-white shadow-md hover:shadow-lg transition-all active:scale-95"
+                      >
+                        <UserPlus className="h-4 w-4" />
+                        <span className="hidden lg:inline">Đăng ký</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <div className="h-9 w-9 rounded-xl bg-zinc-900 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                        {(user.displayName || user.email || 'U').charAt(0).toUpperCase()}
+                      </div>
+                      <button
+                        onClick={() => logout()}
+                        className="h-11 flex items-center gap-2 px-4 rounded-xl text-zinc-400 hover:text-[#ef4444] hover:bg-red-50 transition-all"
+                        title="Đăng xuất"
+                      >
+                        <LogOut className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                </AnimatePresence>
 
-                    <motion.button
-                      whileHover={{ 
-                        scale: 1.02,
-                        x: [0, -1, 1, -1, 1, 0],
-                        transition: { duration: 0.25 }
-                      }}
-                      onClick={() => logout()}
-                      className="h-[42px] flex items-center gap-2 px-5 rounded-2xl bg-gradient-to-r from-[#ef4444] to-[#dc2626] text-sm font-bold text-white shadow-[0_4px_12px_rgba(239,68,68,0.2)] hover:shadow-[0_6px_20px_rgba(239,68,68,0.3)] hover:brightness-110 transition-all duration-250 active:scale-95"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      <span className="hidden sm:inline">Thoát</span>
-                    </motion.button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <button onClick={onCartClick} className="relative p-2 ml-1 text-zinc-400 hover:text-black transition-colors">
-                <ShoppingCart className="h-5 w-5" />
-                {cartCount > 0 && (
-                  <Badge className="absolute -top-1 -right-1 bg-[#1e4b64] hover:bg-[#153a4d] text-white text-[9px] font-black h-4 w-4 flex items-center justify-center p-0 min-w-0">
-                    {cartCount}
-                  </Badge>
-                )}
-              </button>
+                <button 
+                  onClick={onCartClick} 
+                  className="relative p-2.5 bg-zinc-950 text-white rounded-xl hover:bg-zinc-800 transition-all shadow-lg active:scale-95 ml-1"
+                >
+                  <ShoppingCart className="h-5 w-5" />
+                  {cartCount > 0 && (
+                    <Badge className="absolute -top-1.5 -right-1.5 bg-[#0082c8] text-white text-[10px] font-black h-5 w-5 flex items-center justify-center p-0 border-2 border-white rounded-full">
+                      {cartCount}
+                    </Badge>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>

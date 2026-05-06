@@ -3,6 +3,14 @@ import { ChevronRight, Calendar, User, ArrowLeft, ArrowRight, Share2, MessageCir
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useParams, useNavigate } from 'react-router-dom';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { db } from '../firebase';
+
+interface TocHeading {
+  id: string;
+  text: string;
+  level: number;
+}
 
 const POST_CATEGORIES = ['Tất cả', 'Xu hướng', 'Kinh nghiệm', 'Sự kiện'];
 
@@ -15,117 +23,241 @@ const POSTS = [
     author: "UrSport Team",
     image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=1000",
     excerpt: "Khám phá sự giao thoa giữa công nghệ âm thanh đỉnh cao và phong cách sống hiện đại. Khi âm nhạc không chỉ là âm thanh mà là cảm hứng cho mọi chuyển động.",
-    content: "Trong kỷ nguyên số, ranh giới giữa thể thao, thời trang và công nghệ đang dần mờ nhạt. Một chiếc tai nghe không còn đơn thuần là thiết bị phát nhạc; nó đã trở thành một biểu tượng phong cách, một người bạn đồng hành không thể thiếu trong hành trình rèn luyện bản thân.\n\nSự xuất hiện của các dòng sản phẩm âm thanh không dây thế hệ mới đã mở ra một hướng đi mới cho các tín đồ vận động. Không còn nỗi lo vướng víu dây dợ, người dùng giờ đây có thể tự do trải nghiệm mọi chuyển động, từ những bước chạy miệt mài trên vỉa hè đến những bài tập cường độ cao trong phòng gym.\n\nChất lượng âm thanh trung thực kết hợp cùng khả năng chống nước, chống mồ hôi vượt trội chính là những yếu tố then chốt. UrSport luôn nỗ lực tìm kiếm và giới thiệu những giải pháp tối ưu nhất, giúp bạn không chỉ tập luyện hiệu quả mà còn khẳng định cái tôi cá nhân mạnh mẽ."
+    content: "<h2>Mở đầu</h2><p>Trong kỷ nguyên số, ranh giới giữa thể thao, thời trang và công nghệ đang dần mờ nhạt. Một chiếc tai nghe không còn đơn thuần là thiết bị phát nhạc; nó đã trở thành một biểu tượng phong cách, một người bạn đồng hành không thể thiếu trong hành trình rèn luyện bản thân.</p><h2>Âm thanh và chuyển động</h2><p>Sự xuất hiện của các dòng sản phẩm âm thanh không dây thế hệ mới đã mở ra một hướng đi mới cho các tín đồ vận động. Không còn nỗi lo vướng víu dây dợ, người dùng giờ đây có thể tự do trải nghiệm mọi chuyển động, từ những bước chạy miệt mài trên vỉa hè đến những bài tập cường độ cao trong phòng gym.</p><h3>Thiết kế không dây</h3><p>Không còn nỗi lo vướng víu dây dợ, người dùng giờ đây có thể tự do trải nghiệm mọi chuyển động, từ những bước chạy miệt mài trên vỉa hè đến những bài tập cường độ cao trong phòng gym.</p><h2>Chất lượng và tiện ích</h2><p>Chất lượng âm thanh trung thực kết hợp cùng khả năng chống nước, chống mồ hôi vượt trội chính là những yếu tố then chốt. UrSport luôn nỗ lực tìm kiếm và giới thiệu những giải pháp tối ưu nhất, giúp bạn không chỉ tập luyện hiệu quả mà còn khẳng định cái tôi cá nhân mạnh mẽ.</p>"
   },
   {
     id: 2,
-    title: "Thế giới trò chơi Nintendo Wii mới cập bến",
-    category: "Sự kiện",
+    title: "Mùa hè năng động với bộ đồ thể thao UR Sport",
+    category: "Xu hướng",
     date: "10/06/2026",
-    author: "Admin",
-    image: "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&q=80&w=600",
-    excerpt: "Sự trở lại đầy ngoạn mục của dòng máy chơi game vận động huyền thoại, hứa hẹn mang đến những giờ phút giải trí sôi động.",
-    content: "Chúng tôi vô cùng hào hứng thông báo về đợt hàng Nintendo Wii mới nhất đã chính thức có mặt tại UrSport. Đây không chỉ là một chiếc máy chơi game đơn thuần; đó là một thiết bị tuyệt vời để cả gia đình cùng vận động và vui chơi cùng nhau trong những ngày cuối tuần.\n\nVới các tựa game nổi tiếng như Wii Sports, Wii Fit, bạn có thể biến phòng khách nhà mình thành một sân vận động mini. Chơi tennis, chơi bowling hay tập yoga – tất cả đều được mô phỏng một cách trực quan và đầy hào hứng. Hãy ghé ngay cửa hàng để trải nghiệm trực tiếp!"
+    author: "Stylist",
+    image: "https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&q=80&w=600",
+    excerpt: "Chọn trang phục thể thao thoáng mát và phong cách để luôn năng động trong mọi hoạt động ngoài trời.",
+    content: "Bộ đồ thể thao UR Sport được thiết kế để mang lại cảm giác thoải mái tối đa trong những ngày hè oi ả. Vải thoáng khí, khô nhanh và đường may chắc chắn giúp bạn tự tin với mọi bài tập ngoài trời.\n\nĐừng quên phối thêm giày thể thao sáng màu và phụ kiện tối giản để hoàn thiện phong cách hiện đại và năng lượng."
   },
   {
     id: 3,
-    title: "Mẫu lều WeatherMaster nổi tiếng đã có mặt",
+    title: "Làm quen với bộ môn chạy trail cho người mới bắt đầu",
     category: "Kinh nghiệm",
     date: "09/06/2026",
     author: "UrSport Team",
-    image: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=600",
-    excerpt: "Giải pháp trú ẩn hoàn hảo cho mọi chuyến dã ngoại, bất chấp mọi điều kiện thời tiết khắc nghiệt.",
-    content: "Lều WeatherMaster từ lâu đã được giới xê dịch đánh giá là 'pháo đài di động'. Với công nghệ vải chống thấm tuyệt đối và hệ thống khung xương chắc chắn, chiếc lều này đảm bảo sự an toàn và thoải mái tối đa cho bạn cùng gia đình giữa thiên nhiên hoang dã.\n\nThiết kế rộng rãi với nhiều ngăn thông gió giúp không gian bên trong luôn thoáng đãng, ngay cả trong những ngày hè oi ả. Đặc biệt, quá trình lắp đặt cực kỳ nhanh chóng và đơn giản, giúp bạn tiết kiệm thời gian quý báu để tận hưởng chuyến đi."
+    image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&q=80&w=600",
+    excerpt: "Lời khuyên hữu ích để bạn bắt đầu chạy trail an toàn và hiệu quả, dù là chuyến đi ngắn hay đường dài.",
+    content: "Chạy trail là cách tuyệt vời để kết hợp vận động và khám phá thiên nhiên. Trước khi bắt đầu, hãy chọn đôi giày chuyên dụng, kiểm tra địa hình và mang theo đủ nước.\n\nBắt đầu với những đoạn đường ngắn, giữ nhịp thở đều và dần tăng cường độ khi cơ thể đã thích nghi. Điều quan trọng là giữ an toàn và tận hưởng hành trình."
   },
   {
     id: 4,
-    title: "Những bản nhạc huyền thoại của B.B.King",
-    category: "Xu hướng",
+    title: "Top 5 phụ kiện thể thao cần có trong túi gym của bạn",
+    category: "Kinh nghiệm",
     date: "08/06/2026",
     author: "Admin",
-    image: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=80&w=600",
-    excerpt: "Âm hưởng Blues nồng nàn dành cho những tâm hồn đam mê âm nhạc cổ điển và phong cách vintage.",
-    content: "B.B. King, vị vua của dòng nhạc Blues, luôn biết cách làm say đắm lòng người bằng tiếng đàn guitar điện 'Lucille' đặc trưng của mình. Tại UrSport, chúng tôi tin rằng âm nhạc là linh hồn của mọi hoạt động, và việc lắng nghe những giai điệu Blues kinh điển sẽ giúp bạn thư giãn hiệu quả sau những giờ tập luyện căng thẳng.\n\nHãy cùng chúng tôi điểm qua top 10 bản nhạc bất hủ của ông và khám phá cách mà âm nhạc có thể thay đổi tâm trạng và nâng cao chất lượng cuộc sống hàng ngày của bạn."
+    image: "https://images.unsplash.com/photo-1599058917212-4e1b9aceb4dc?auto=format&fit=crop&q=80&w=600",
+    excerpt: "Từ bình nước đến khăn lau, những phụ kiện sau sẽ giúp buổi tập của bạn trơn tru và hiệu quả hơn.",
+    content: "Một buổi tập gym đầy đủ cần chuẩn bị những phụ kiện cơ bản như bình nước, khăn lau, dây tập và tai nghe. Những món đồ nhỏ này tạo nên sự khác biệt lớn trong trải nghiệm luyện tập.\n\nChuẩn bị kỹ càng giúp bạn tiết kiệm thời gian, tăng động lực và giữ tinh thần sảng khoái trong mỗi buổi tập."
   },
   {
     id: 5,
-    title: "Tìm kiếm điện thoại Nokia phím bấm hoài cổ",
+    title: "Hướng dẫn chọn giày chạy bộ phù hợp cho mọi địa hình",
     category: "Kinh nghiệm",
     date: "07/06/2026",
     author: "Stylist",
-    image: "https://images.unsplash.com/photo-1556906781-9a412961c28c?auto=format&fit=crop&q=80&w=600",
-    excerpt: "Xu hướng quay trở lại với những giá trị bền vững và đơn giản trong kỷ nguyên số bủa vây.",
-    content: "Giữa hàng loạt smartphone hào nhoáng, những chiếc điện thoại Nokia phím bấm hoài cổ như 3310 hay 8110 đang trở lại như một biểu tượng của lối sống tối giản. Nhiều người lựa chọn chúng như một thiết bị phụ để 'detox' khỏi mạng xã hội và tập trung hơn vào cuộc sống thực tại.\n\nĐộ bền bỉ huyền thoại, thời lượng pin tính bằng tuần và cảm giác bấm phím vật lý đặc trưng là những điều không bao giờ lỗi thời. Hãy cùng UrSport khám phá lý do tại sao dòng máy 'cục gạch' này vẫn có một vị thế vững chắc trong lòng người dùng."
+    image: "https://images.unsplash.com/photo-1515548213390-2e8f97b26f0d?auto=format&fit=crop&q=80&w=600",
+    excerpt: "Giày chạy bộ đúng chính là bí quyết để bạn chạy tốt hơn và hạn chế chấn thương hiệu quả.",
+    content: "Khi chọn giày chạy bộ, hãy chú ý đến đệm lót, độ bám của đế giày và sự ôm sát bàn chân. Với từng loại địa hình, bạn sẽ cần một đôi giày khác nhau để tối ưu hiệu suất.\n\nĐừng quên thử giày vào cuối ngày và mang theo tất chuyên dụng để cảm nhận chính xác sự vừa vặn khi chạy."
   },
   {
     id: 6,
-    title: "Chuẩn bị cho những tình huống khẩn cấp bất ngờ",
+    title: "Chuẩn bị cho những tình huống khẩn cấp khi leo núi",
     category: "Kinh nghiệm",
     date: "06/06/2026",
     author: "UrSport Team",
     image: "https://images.unsplash.com/photo-1518310323263-d3434682054a?auto=format&fit=crop&q=80&w=600",
-    excerpt: "Trang bị kiến thức và dụng cụ thiết yếu để đảm bảo an toàn cho bản thân và gia đình.",
-    content: "Chúng ta không thể lường trước được những gì tương lai mang lại, nhưng chúng ta hoàn toàn có thể chuẩn bị cho chúng. Một bộ kit sinh tồn cơ bản, những kiến thức sơ cứu cơ bản và tinh thần vững vàng là những gì bạn cần khi đối mặt với các tình huống khó khăn.\n\nTrong bài viết này, chúng tôi sẽ hướng dẫn bạn cách xây dựng một 'túi thoát hiểm' (Go-bag) tiêu chuẩn và danh sách những vật dụng không thể thiếu giúp bạn duy trì sự sống và liên lạc trong trường hợp mất điện hoặc thiên tai."
-  },
-  {
-    id: 7,
-    title: "Xe đạp Drifter Cruiser: Đẳng cấp Mỹ cổ điển",
-    category: "Sự kiện",
-    date: "05/06/2026",
-    author: "Admin",
-    image: "https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?auto=format&fit=crop&q=80&w=600",
-    excerpt: "Trải nghiệm cảm giác tự do phóng khoáng trên những cung đường ven biển với dòng xe đạp biểu tượng.",
-    content: "Drifter Cruiser mang trong mình tinh thần tự do của nước Mỹ những thập niên trước. Với thiết kế khung cong mềm mại, tay lái rộng và yên xe cực kỳ thoải mái, đây là người bạn đồng hành lý tưởng cho những buổi dạo phố chậm rãi hay ngắm hoàng hôn bên bờ biển.\n\nKhông chỉ là phương tiện di chuyển, Drifter Cruiser còn là một phụ kiện thời trang đẳng cấp, giúp bạn nổi bật trong mọi khung hình. Hãy đến UrSport để chọn cho mình sắc màu yêu thích nhất của dòng xe này."
+    excerpt: "Trang bị kiến thức và dụng cụ thiết yếu để đảm bảo an toàn cho bản thân và đồng đội.",
+    content: "Chúng ta không thể lường trước được những gì tương lai mang lại, nhưng chúng ta hoàn toàn có thể chuẩn bị cho chúng. Một bộ kit sinh tồn cơ bản, những kiến thức sơ cứu cơ bản và tinh thần vững vàng là những gì bạn cần khi đối mặt với các tình huống khó khăn leo núi.\n\nTrong bài viết này, chúng tôi sẽ hướng dẫn bạn cách xây dựng một 'túi thoát hiểm' (Go-bag) tiêu chuẩn và danh sách những vật dụng không thể thiếu giúp bạn duy trì sự sống và liên lạc trong trường hợp mất điện hoặc thiên tai."
   }
 ];
 
 export function NewsPage() {
-  const { id } = useParams();
+  const { slug } = useParams<{ slug?: string }>();
   const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState('Tất cả');
   const [selectedPost, setSelectedPost] = useState<any>(null);
+  const [posts, setPosts] = useState<any[]>(POSTS);
+  const [contentHtml, setContentHtml] = useState('');
+  const [tocHeadings, setTocHeadings] = useState<TocHeading[]>([]);
+  const [showToc, setShowToc] = useState(false);
+  const [activeHeadingId, setActiveHeadingId] = useState<string>('');
 
   useEffect(() => {
-    if (id) {
-      const post = POSTS.find(p => p.id === parseInt(id));
+    const q = query(collection(db, 'blogPosts'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const loaded = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
+      setPosts(loaded.length > 0 ? loaded : POSTS);
+    }, () => {
+      setPosts(POSTS);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (slug) {
+      const post = posts.find(p => p.slug === slug) || posts.find(p => p.id === slug);
       if (post) {
         setSelectedPost(post);
         window.scrollTo(0, 0);
       } else {
-        navigate('/news');
+        navigate('/blog');
       }
     } else {
       setSelectedPost(null);
     }
-  }, [id, navigate]);
+  }, [slug, posts, navigate]);
+
+  useEffect(() => {
+    if (!selectedPost) {
+      setContentHtml('');
+      setTocHeadings([]);
+      return;
+    }
+
+    const slugifyHeading = (text: string) =>
+      text
+        .toString()
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-');
+
+    let rawHtml = selectedPost.content || '';
+    if (!rawHtml.trim().startsWith('<')) {
+      rawHtml = rawHtml
+        .split('\n\n')
+        .map((paragraph: string) => `<p>${paragraph.trim()}</p>`)
+        .join('');
+    }
+
+    const parser = new DOMParser();
+    const document = parser.parseFromString(`<div>${rawHtml}</div>`, 'text/html');
+    const wrapper = document.body.firstElementChild as HTMLElement;
+    if (!wrapper) {
+      setContentHtml(rawHtml);
+      setTocHeadings([]);
+      return;
+    }
+
+    const seenIds = new Set<string>();
+    const headings = Array.from(wrapper.querySelectorAll('h2, h3, h4')).map((heading) => {
+      const level = Number(heading.tagName.charAt(1));
+      const text = heading.textContent?.trim() || '';
+      let id = heading.id || slugifyHeading(text || 'heading');
+      let uniqueId = id;
+      let counter = 1;
+      while (seenIds.has(uniqueId)) {
+        uniqueId = `${id}-${counter}`;
+        counter += 1;
+      }
+      seenIds.add(uniqueId);
+      heading.id = uniqueId;
+      return { id: uniqueId, text, level };
+    });
+
+    setTocHeadings(headings);
+    setContentHtml(wrapper.innerHTML);
+  }, [selectedPost]);
+
+  useEffect(() => {
+    if (!selectedPost) return;
+
+    const handleScroll = () => {
+      const heroImageContainer = document.querySelector('.blog-hero-image');
+      if (!heroImageContainer) return;
+
+      const heroImage = heroImageContainer.querySelector('img') as HTMLImageElement;
+      if (!heroImage) return;
+
+      const imageRect = heroImage.getBoundingClientRect();
+      const imageHeight = imageRect.height;
+      const scrolledDistance = -imageRect.top;
+      const scrollProgress = imageHeight > 0 ? scrolledDistance / imageHeight : 0;
+      
+      setShowToc(scrollProgress >= 0.7);
+
+      const headingElements = Array.from(document.querySelectorAll('h2[id], h3[id], h4[id]')) as HTMLElement[];
+      let currentActiveId = '';
+
+      headingElements.forEach((element) => {
+        const rect = element.getBoundingClientRect();
+        if (rect.top <= window.innerHeight * 0.25) {
+          currentActiveId = element.id;
+        }
+      });
+
+      if (!currentActiveId && headingElements.length > 0) {
+        currentActiveId = headingElements[0].id;
+      }
+
+      setActiveHeadingId(currentActiveId);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [selectedPost]);
+
+  useEffect(() => {
+    if (!selectedPost) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            (entry.target as HTMLElement).classList.add('animate-underline');
+          }
+        });
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+      }
+    );
+
+    const headings = document.querySelectorAll('.blog-content h2, .blog-content h3');
+    headings.forEach((heading) => {
+      observer.observe(heading);
+    });
+
+    return () => {
+      headings.forEach((heading) => {
+        observer.unobserve(heading);
+      });
+      observer.disconnect();
+    };
+  }, [selectedPost, contentHtml]);
 
   const filteredPosts = activeCategory === 'Tất cả' 
-    ? POSTS 
-    : POSTS.filter(p => p.category === activeCategory);
+    ? posts 
+    : posts.filter(p => p.category === activeCategory);
 
   if (selectedPost) {
-    const relatedPosts = POSTS.filter(p => p.id !== selectedPost.id).slice(0, 5);
+    const relatedPosts = posts.filter(p => p.id !== selectedPost.id).slice(0, 5);
 
     return (
       <div className="mx-auto max-w-[1400px] px-4 py-8 sm:px-6 lg:px-8 xl:px-10">
-        {/* Breadcrumbs */}
         <nav className="flex items-center gap-2 text-xs font-medium text-zinc-400 mb-8 pb-4 border-b border-zinc-100">
           <button onClick={() => navigate("/")} className="hover:text-black transition-colors">Home</button>
           <ChevronRight className="h-3 w-3" />
-          <button onClick={() => navigate("/news")} className="hover:text-black transition-colors">Blog</button>
+          <button onClick={() => navigate("/blog")} className="hover:text-black transition-colors">Blog</button>
           <ChevronRight className="h-3 w-3" />
           <span className="truncate max-w-[200px] sm:max-w-md">{selectedPost.title}</span>
         </nav>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-16">
-          {/* Main Content */}
-          <div className="min-w-0">
-            {/* Title */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 lg:gap-16">
+          <div className="min-w-0 w-full">
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-black leading-tight tracking-tight mb-4">
               {selectedPost.title}
             </h1>
 
-            {/* Post Metadata - Screenshot Style */}
             <div className="flex items-center gap-2 mb-10">
               <div className="flex items-center gap-1.5 bg-zinc-100 px-2 py-1 rounded text-[11px] font-bold text-zinc-500 uppercase">
                 <Calendar className="h-3 w-3" />
@@ -136,7 +268,6 @@ export function NewsPage() {
               </span>
             </div>
 
-            {/* Author and Social */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-12 border-b border-zinc-100 pb-10">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-zinc-900 text-white flex items-center justify-center font-black text-lg">
@@ -156,8 +287,7 @@ export function NewsPage() {
               </div>
             </div>
 
-            {/* Image */}
-            <div className="relative aspect-[16/9] overflow-hidden rounded-[32px] mb-12 shadow-2xl">
+            <div className="blog-hero-image relative aspect-[16/9] overflow-hidden rounded-[32px] mb-12 shadow-2xl w-full">
               <img 
                 src={selectedPost.image} 
                 alt={selectedPost.title} 
@@ -165,21 +295,71 @@ export function NewsPage() {
               />
             </div>
 
-            {/* Content */}
-            <div className="prose prose-lg max-w-none">
-              {selectedPost.content.split("\n\n").map((para: string, i: number) => (
-                <p key={i} className="text-zinc-600 text-lg leading-relaxed mb-8 font-medium">
-                  {para}
-                </p>
-              ))}
+            <div className="blog-content prose prose-lg max-w-none text-zinc-600">
+              <div dangerouslySetInnerHTML={{ __html: contentHtml }} />
             </div>
+
+            {selectedPost.images?.length > 0 && (
+              <div className="grid gap-4 mt-10 sm:grid-cols-2 w-full">
+                {selectedPost.images.map((img: string, index: number) => (
+                  <div key={index} className="overflow-hidden rounded-[28px] bg-zinc-100 shadow-sm w-full">
+                    <img src={img} alt={`${selectedPost.title}-${index}`} className="h-full w-full object-cover" />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {selectedPost.videos?.length > 0 && (
+              <div className="mt-10 space-y-6 w-full">
+                {selectedPost.videos.map((video: string, index: number) => (
+                  <div key={index} className="overflow-hidden rounded-[28px] bg-black shadow-lg w-full">
+                    <video controls src={video} className="w-full object-cover" />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Sidebar */}
-          <aside className="space-y-12">
-            {/* Related Posts with Images */}
+          <aside className="space-y-12 w-full lg:w-[320px]">
+            {showToc && tocHeadings.length > 0 && (
+              <div className="rounded-[24px] border border-zinc-200 bg-white p-6 shadow-sm lg:sticky top-28 transition-all duration-300 animate-in fade-in overflow-hidden">
+                <div className="relative z-10">
+                  <h3 className="text-[11px] font-black text-zinc-900 uppercase tracking-[0.3em] mb-5 border-b border-zinc-200 pb-3 flex items-center gap-2">
+                    📋 MỤC LỤC BÀI VIẾT
+                  </h3>
+                  <div className="space-y-2">
+                    {tocHeadings.map((heading, idx) => (
+                      <button
+                        key={heading.id}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          const element = document.getElementById(heading.id);
+                          if (element) {
+                            const offset = 120;
+                            const targetPosition = element.getBoundingClientRect().top + window.scrollY - offset;
+                            window.scrollTo({ top: targetPosition, behavior: 'smooth' });
+                          }
+                        }}
+                        className={cn(
+                          'block w-full text-left text-sm font-medium transition-all duration-300 py-2 px-3 rounded relative overflow-hidden group',
+                          heading.level === 3 && 'ml-4 text-xs',
+                          heading.level === 4 && 'ml-8 text-[11px]',
+                          activeHeadingId === heading.id 
+                            ? 'bg-zinc-100 text-zinc-900 font-bold' 
+                            : 'text-zinc-600 hover:bg-zinc-50'
+                        )}
+                        title={heading.text}
+                      >
+                        <span className="truncate">{heading.text}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div>
-              <h3 className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-6 border-b border-zinc-100 pb-2">
+              <h3 className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-6 border-b border-zinc-100 pb-2 truncate">
                 BÀI VIẾT LIÊN QUAN
               </h3>
               <div className="space-y-6">
@@ -212,10 +392,8 @@ export function NewsPage() {
     );
   }
 
-
   return (
     <div className="mx-auto max-w-[1600px] px-4 py-8 sm:px-6 lg:px-8 xl:px-10">
-      {/* Header */}
       <div className="mb-12">
         <h1 className="text-[40px] font-black text-black leading-tight tracking-tight mb-4">
           Tin tức & <span className="text-[#16a34a]">Bài viết</span>
@@ -225,7 +403,6 @@ export function NewsPage() {
         </p>
       </div>
 
-      {/* Categories Filter */}
       <div className="flex items-center gap-2 mb-10 overflow-x-auto pb-2 scrollbar-hide">
         {POST_CATEGORIES.map(cat => (
           <button
@@ -243,7 +420,6 @@ export function NewsPage() {
         ))}
       </div>
 
-      {/* Posts Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-20">
         {filteredPosts.map(post => (
           <article 
@@ -264,17 +440,6 @@ export function NewsPage() {
               </div>
             </div>
             
-            <div className="flex items-center gap-4 text-[12px] font-bold text-zinc-400 mb-3 uppercase tracking-widest">
-              <div className="flex items-center gap-1.5">
-                <Calendar className="h-3.5 w-3.5" />
-                {post.date}
-              </div>
-              <div className="flex items-center gap-1.5">
-                <User className="h-3.5 w-3.5" />
-                {post.author}
-              </div>
-            </div>
-
             <h2 className="text-2xl font-black text-zinc-900 group-hover:text-[#16a34a] transition-colors leading-tight mb-4">
               {post.title}
             </h2>

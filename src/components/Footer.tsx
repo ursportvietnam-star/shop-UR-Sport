@@ -30,6 +30,7 @@ const categoryLinks = [
 ];
 
 const supportLinks = [
+  { label: "Blog", href: "blog" },
   { label: "Chính sách đổi trả", href: "#" },
   { label: "Chính sách bảo hành", href: "#" },
   { label: "Hướng dẫn mua hàng", href: "#" },
@@ -41,6 +42,8 @@ const socialLinks = [
   { label: "Instagram", href: "https://instagram.com", icon: Instagram },
   { label: "TikTok", href: "https://tiktok.com", icon: Music2 }
 ];
+
+
 
 const Logo = ({ inverse }: { inverse?: boolean }) => (
   <div className="flex flex-col items-start mb-2">
@@ -95,7 +98,7 @@ export function Footer({ onPageChange, onCategorySelect }: FooterProps) {
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-400 to-transparent" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_0%,rgba(0,71,255,0.1),transparent_34%),linear-gradient(135deg,rgba(15,23,42,0.96),rgba(2,6,23,1))]" />
 
-      <div className="relative mx-auto max-w-[1600px] px-4 pt-8 pb-12 sm:px-6 lg:px-8 lg:pt-10 lg:pb-16 xl:px-10">
+      <div className="relative mx-auto max-w-[1440px] px-4 pt-8 pb-12 sm:px-6 lg:px-8 lg:pt-10 lg:pb-16">
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-[1.3fr_0.9fr_0.95fr_1.15fr_0.85fr] xl:gap-14">
           <div>
             <div onClick={() => onPageChange('home')} className="cursor-pointer">

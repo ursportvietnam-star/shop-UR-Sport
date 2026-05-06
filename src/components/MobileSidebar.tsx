@@ -125,11 +125,11 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
                             Cửa hàng
                         </Link>
                         <Link 
-                            to="/news"
+                            to="/blog"
                             onClick={onClose}
                             className="block w-full text-left py-2 text-[17px] font-black italic tracking-tighter uppercase text-zinc-900 hover:text-[#0082c8] transition-colors"
                         >
-                            Bài viết
+                            Blog
                         </Link>
                     </div>
 

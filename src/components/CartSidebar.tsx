@@ -37,7 +37,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose, onChe
               <div className="flex items-center justify-between border-b px-6 py-6">
                 <div className="flex items-center gap-2">
                   <ShoppingBag className="h-6 w-6 font-bold" />
-                  <h2 className="text-xl font-black italic tracking-tighter uppercase">YOUR BAG</h2>
+                  <h2 className="text-xl font-black italic tracking-tighter uppercase">GIỎ HÀNG</h2>
                 </div>
                 <button onClick={onClose} className="p-2 hover:bg-black/5 rounded-full transition-colors">
                   <X className="h-6 w-6" />
@@ -47,9 +47,9 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose, onChe
               <ScrollArea className="flex-1 px-6">
                 {cart.length === 0 ? (
                   <div className="flex h-[60vh] flex-col items-center justify-center text-center">
-                    <p className="text-zinc-500 font-medium mb-6">Your bag is empty.</p>
+                    <p className="text-zinc-500 font-medium mb-6">Giỏ hàng của bạn đang trống.</p>
                     <Button onClick={onClose} variant="outline" className="font-bold border-2 border-black rounded-none h-12 px-8">
-                      CONTINUE SHOPPING
+                      TIẾP TỤC MUA SẮM
                     </Button>
                   </div>
                 ) : (
@@ -106,17 +106,17 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose, onChe
               {cart.length > 0 && (
                 <div className="border-t bg-zinc-50 p-6 space-y-4">
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-zinc-500 font-bold uppercase tracking-widest">Subtotal</span>
+                    <span className="text-zinc-500 font-bold uppercase tracking-widest">Tạm tính</span>
                     <span className="text-lg font-black">{total.toLocaleString('vi-VN')}₫</span>
                   </div>
                   <p className="text-[10px] text-zinc-400 font-medium uppercase tracking-widest text-center">
-                    Shipping & taxes calculated at checkout
+                    Phí vận chuyển & thuế được tính khi thanh toán
                   </p>
                   <Button 
                     onClick={onCheckout}
                     className="w-full bg-black text-white hover:bg-zinc-800 font-black py-8 rounded-none text-lg tracking-tight flex items-center justify-center gap-2"
                   >
-                    CHECKOUT NOW <ArrowRight className="h-5 w-5" />
+                    THANH TOÁN NGAY <ArrowRight className="h-5 w-5" />
                   </Button>
                 </div>
               )}

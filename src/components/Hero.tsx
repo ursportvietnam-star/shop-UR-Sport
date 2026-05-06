@@ -17,7 +17,7 @@ export const Hero: React.FC<{ onShopClick: () => void }> = ({ onShopClick }) => 
         <div className="absolute inset-0 bg-linear-to-r from-black/60 to-transparent" />
       </div>
 
-      <div className="relative mx-auto flex h-full max-w-screen-2xl flex-col justify-center px-4 sm:px-6 lg:px-12">
+      <div className="relative mx-auto flex h-full max-w-[1440px] flex-col justify-center px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
@@ -25,24 +25,23 @@ export const Hero: React.FC<{ onShopClick: () => void }> = ({ onShopClick }) => 
           className="max-w-3xl"
         >
           <span className="text-secondary font-black uppercase tracking-widest text-sm mb-6 block">
-            PREMIUM EQUIPMENT COLLECTION
+            BỘ SƯU TẬP THIẾT BỊ CAO CẤP
           </span>
           <h1 className="text-5xl sm:text-7xl lg:text-8xl font-black italic tracking-tighter text-white uppercase leading-[1] mb-8">
-            Peak <br />
-            Performance <br />
-            Starts Here.
+            Hiệu Suất <br />
+            Vượt Trội <br />
+            Bắt Đầu Từ Đây.
           </h1>
           <p className="text-lg sm:text-xl text-zinc-300 max-w-lg mb-10 leading-relaxed font-medium">
-            Gear up with modern sportswear built for training, movement, and everyday confidence.
+            Trang bị đồ thể thao hiện đại, mang lại sự tự tin và thoải mái tuyệt đối trong mọi buổi tập.
           </p>
           
           <div className="flex flex-wrap gap-4">
             <Button 
               onClick={onShopClick}
-              variant="outline"
-              className="border-2 border-white text-white hover:bg-[#0082c8] hover:border-[#0082c8] font-black px-10 py-6 rounded-full text-sm uppercase tracking-widest transition-all"
+              className="bg-[#0082c8] border-2 border-[#0082c8] text-white hover:bg-white hover:text-[#0082c8] font-black px-10 py-6 rounded-full text-sm uppercase tracking-widest transition-all shadow-lg shadow-blue-500/30"
             >
-              Browse UR Collection
+              Khám phá Bộ sưu tập UR
             </Button>
           </div>
         </motion.div>

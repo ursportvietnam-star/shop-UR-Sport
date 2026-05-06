@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useParams } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
@@ -16,6 +16,8 @@ import { AuthProvider } from './AuthContext';
 import { CartProvider } from './CartContext';
 import { ProductsProvider, useProducts } from './ProductsContext';
 import { Toaster } from 'sonner';
+import { getDoc, doc } from 'firebase/firestore';
+import { db } from './firebase';
 import { Filter, SlidersHorizontal, ArrowDown, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,9 +25,7 @@ import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const getProductUrl = (product: Product) => {
-  const catMetadata = CATEGORY_METADATA.find(c => c.name === product.category);
-  const categorySlug = catMetadata ? catMetadata.slug : 'all';
-  return `/apparel/${categorySlug}/${product.slug}`;
+  return `/${product.slug || product.id}`;
 };
 
 function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: Product) => void, onCategorySelect: (c: Category) => void }) {
@@ -41,8 +41,8 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
       <section className="mx-auto max-w-[1600px] px-4 pt-0 pb-4 sm:px-6 lg:px-8 xl:px-10 bg-white">
         <div className="flex items-center justify-center gap-4 mb-6">
           <div className="h-px bg-zinc-200 flex-1" />
-          <h2 className="text-3xl sm:text-4xl font-black tracking-tighter text-zinc-900 leading-none whitespace-nowrap">
-            Possibly you may be <span className="text-[#0082c8]">interested</span>
+          <h2 className="text-3xl sm:text-4xl font-bold tracking-tighter text-zinc-900 leading-none whitespace-nowrap">
+            Có thể bạn sẽ <span className="text-[#0082c8]">quan tâm</span>
           </h2>
           <div className="h-px bg-zinc-200 flex-1" />
         </div>
@@ -56,7 +56,7 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
                 featuredFilter === 'Most Popular' ? "bg-white text-black shadow-md border border-zinc-100" : "text-zinc-500 hover:text-zinc-800"
               )}
             >
-              Most Popular
+              Phổ biến nhất
             </button>
             <button 
               onClick={() => setFeaturedFilter('Bestsellers')}
@@ -65,7 +65,7 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
                 featuredFilter === 'Bestsellers' ? "bg-white text-black shadow-md border border-zinc-100" : "text-zinc-500 hover:text-zinc-800"
               )}
             >
-              Bestsellers
+              Bán chạy nhất
             </button>
             <button 
               onClick={() => setFeaturedFilter('On Sale')}
@@ -74,7 +74,7 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
                 featuredFilter === 'On Sale' ? "bg-white text-black shadow-md border border-zinc-100" : "text-zinc-500 hover:text-zinc-800"
               )}
             >
-              On Sale
+              Đang giảm giá
             </button>
           </div>
         </div>
@@ -103,13 +103,13 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
             className="rounded-full border-zinc-200 text-zinc-900 hover:bg-zinc-50 font-bold px-10 h-10 text-[14px] shadow-sm transform transition hover:scale-105"
             onClick={() => navigate('/shop')}
           >
-            Show more
+            Xem thêm
           </Button>
         </div>
       </section>
 
       {/* In Demand Section - Athletic Shirts */}
-      <section className="mx-auto max-w-[1600px] px-4 pt-0 pb-6 sm:px-6 lg:px-8 xl:px-10 bg-white">
+      <section className="mx-auto max-w-[1440px] px-4 pt-0 pb-6 sm:px-6 lg:px-8 bg-white">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl sm:text-3xl font-black tracking-tighter text-zinc-900 leading-none">
             Sản phẩm <span className="text-[#0082c8]">Áo thể thao</span> nổi bật
@@ -140,13 +140,13 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
              onClick={() => onCategorySelect('Áo thun thể thao nam')}
              className="rounded-full border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50 font-bold px-8 h-10 text-[13px] shadow-sm"
           >
-             Show more
+             Xem thêm
           </Button>
         </div>
       </section>
 
       {/* Polo Shirts Section */}
-      <section className="mx-auto max-w-[1600px] px-4 pt-0 pb-6 sm:px-6 lg:px-8 xl:px-10 bg-white">
+      <section className="mx-auto max-w-[1440px] px-4 pt-0 pb-6 sm:px-6 lg:px-8 bg-white">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl sm:text-3xl font-black tracking-tighter text-zinc-900 leading-none">
             Bộ sưu tập <span className="text-blue-600">Áo Polo Nam</span>
@@ -177,13 +177,13 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
              onClick={() => onCategorySelect('Áo polo nam')}
              className="rounded-full border-zinc-200 text-zinc-900 hover:bg-zinc-50 font-bold px-8 h-10 text-[13px] shadow-sm"
           >
-             Show more
+             Xem thêm
           </Button>
         </div>
       </section>
 
       {/* Men's T-Shirts Section */}
-      <section className="mx-auto max-w-[1600px] px-4 pt-0 pb-12 sm:px-6 lg:px-8 xl:px-10 bg-white">
+      <section className="mx-auto max-w-[1440px] px-4 pt-0 pb-12 sm:px-6 lg:px-8 bg-white">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl sm:text-3xl font-black tracking-tighter text-zinc-900 leading-none">
             <span className="text-[#0082c8]">Áo Thun Nam</span> Thời Trang
@@ -214,13 +214,13 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
              onClick={() => onCategorySelect('Áo thun nam')}
              className="rounded-full border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50 font-bold px-8 h-10 text-[13px] shadow-sm"
           >
-             Show more
+             Xem thêm
           </Button>
         </div>
       </section>
 
       {/* Latest News Section - Matching Screenshot */}
-      <section className="mx-auto max-w-[1600px] px-4 pt-4 pb-4 sm:px-6 lg:px-8 xl:px-10 bg-white border-t border-zinc-100">
+      <section className="mx-auto max-w-[1440px] px-4 pt-4 pb-4 sm:px-6 lg:px-8 bg-white border-t border-zinc-100">
         <div className="flex items-center justify-center gap-4 mb-10">
           <div className="h-px bg-zinc-200 flex-1" />
           <h2 className="text-3xl sm:text-4xl font-black tracking-tighter text-zinc-900 leading-none whitespace-wrap text-center">
@@ -314,6 +314,8 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
   const navigate = useNavigate();
   const { categorySlug } = useParams<{ categorySlug?: string }>();
   const { products } = useProducts();
+  const queryParams = new URLSearchParams(window.location.search);
+  const brandFilter = queryParams.get('brand');
 
   React.useEffect(() => {
     if (categorySlug) {
@@ -321,33 +323,45 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
       if (catMetadata && catMetadata.name !== activeCategory) {
         setActiveCategory(catMetadata.name);
       }
-    } else if (activeCategory !== 'All') {
+    } else if (!brandFilter && activeCategory !== 'All') {
       setActiveCategory('All');
     }
-  }, [categorySlug, setActiveCategory, activeCategory]);
+  }, [categorySlug, setActiveCategory, activeCategory, brandFilter]);
 
-  const filteredProducts = activeCategory === 'All' 
+  let filteredProducts = activeCategory === 'All' 
     ? products 
     : products.filter(p => p.category === activeCategory);
 
+  if (brandFilter) {
+    filteredProducts = products.filter(p => p.brand === brandFilter);
+  }
+
   return (
-    <div className="mx-auto max-w-[1600px] px-4 py-8 sm:px-6 lg:px-8 xl:px-10">
+    <div className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-8">
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-2 text-sm text-zinc-400 mb-6">
         <button 
           onClick={() => navigate('/')}
           className="hover:text-black transition-colors"
         >
-          Home
+          Trang chủ
         </button>
         <span>/</span>
         <button 
-          onClick={() => setActiveCategory('All')}
+          onClick={() => {
+            navigate('/shop');
+            setActiveCategory('All');
+          }}
           className="hover:text-black transition-colors"
         >
-          Apparel
+          Cửa hàng
         </button>
-        {activeCategory !== 'All' && (
+        {brandFilter ? (
+          <>
+            <span>/</span>
+            <span className="text-zinc-500 font-medium">Thương hiệu: {brandFilter}</span>
+          </>
+        ) : activeCategory !== 'All' && (
           <>
             <span>/</span>
             <span className="text-zinc-500 font-medium">{activeCategory}</span>
@@ -358,25 +372,25 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
       <header className="mb-10">
         <div className="flex flex-col gap-4 mb-8">
           <h1 className="text-[32px] sm:text-[40px] font-black text-black leading-tight tracking-tight">
-            {activeCategory === 'All' ? 'All Products' : activeCategory}
+            {brandFilter ? `Sản phẩm thương hiệu ${brandFilter}` : (activeCategory === 'All' ? 'Tất cả sản phẩm' : activeCategory)}
           </h1>
           
           <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-zinc-100">
             <div className="flex flex-wrap items-center gap-2">
               <Button variant="outline" className="h-11 rounded-full border-zinc-200 text-zinc-900 font-bold px-5 gap-2 hover:bg-zinc-50">
-                <SlidersHorizontal className="h-4 w-4" /> Filters <ChevronDown className="h-3 w-3 opacity-50" />
+                <SlidersHorizontal className="h-4 w-4" /> Bộ lọc <ChevronDown className="h-3 w-3 opacity-50" />
               </Button>
               <Button variant="outline" className="h-11 rounded-full border-zinc-200 text-zinc-900 font-bold px-5 gap-2 hover:bg-zinc-50 hidden sm:flex">
-                Price <ChevronDown className="h-3 w-3 opacity-50" />
+                Giá <ChevronDown className="h-3 w-3 opacity-50" />
               </Button>
               <Button variant="outline" className="h-11 rounded-full border-zinc-200 text-zinc-900 font-bold px-5 gap-2 hover:bg-zinc-50 hidden sm:flex">
-                Brand <ChevronDown className="h-3 w-3 opacity-50" />
+                Thương hiệu <ChevronDown className="h-3 w-3 opacity-50" />
               </Button>
               <Button variant="outline" className="h-11 rounded-full border-zinc-200 text-zinc-900 font-bold px-5 gap-2 hover:bg-zinc-50 hidden md:flex">
-                Color <ChevronDown className="h-3 w-3 opacity-50" />
+                Màu sắc <ChevronDown className="h-3 w-3 opacity-50" />
               </Button>
               <Button variant="outline" className="h-11 rounded-full border-zinc-200 text-zinc-900 font-bold px-5 gap-2 hover:bg-zinc-50 hidden md:flex">
-                Size <ChevronDown className="h-3 w-3 opacity-50" />
+                Kích cỡ <ChevronDown className="h-3 w-3 opacity-50" />
               </Button>
             </div>
 
@@ -387,7 +401,7 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
                     <div className="w-4 h-0.5 bg-zinc-900 rounded-full" />
                     <div className="w-3 h-0.5 bg-zinc-900 rounded-full ml-auto" />
                   </div>
-                  Categories
+                  Danh mục
                 </div>
                 <ChevronDown className="h-3 w-3 opacity-50" />
               </Button>
@@ -484,6 +498,22 @@ function AppContent() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
+  // Inject custom CSS từ Firestore vào mọi trang
+  useEffect(() => {
+    getDoc(doc(db, 'settings', 'customCss')).then(snap => {
+      if (!snap.exists()) return;
+      const css = snap.data().css || '';
+      if (!css.trim()) return;
+      let styleEl = document.getElementById('custom-global-css') as HTMLStyleElement | null;
+      if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = 'custom-global-css';
+        document.head.appendChild(styleEl);
+      }
+      styleEl.textContent = css;
+    }).catch(() => {});
+  }, []);
+
   const handleCategorySelect = (category: Category) => {
     setIsLoading(true);
     setActiveCategory(category);
@@ -498,6 +528,11 @@ function AppContent() {
 
   const onPageChange = (page: string) => {
     navigate(page === 'home' ? '/' : `/${page}`);
+  };
+
+  const handleCheckout = () => {
+    setIsCartOpen(false);
+    navigate('/checkout');
   };
 
   const isAdminRoute = window.location.pathname === '/quan-tri';
@@ -524,8 +559,12 @@ function AppContent() {
               <Route path="/apparel/:categorySlug/:productSlug" element={<ProductDetail />} />
               <Route path="/checkout" element={<Checkout onComplete={() => {}} />} />
               <Route path="/news" element={<NewsPage />} />
-              <Route path="/news/:id" element={<NewsPage />} />
+              <Route path="/news/:slug" element={<NewsPage />} />
+              <Route path="/blog" element={<NewsPage />} />
+              <Route path="/blog/:slug" element={<NewsPage />} />
               <Route path="/quan-tri" element={<AdminPanel />} />
+              {/* Shopee-style clean URLs for products at root */}
+              <Route path="/:productSlug" element={<ProductDetail />} />
               <Route path="*" element={<div className="py-20 text-center font-black text-4xl">404 - PAGE NOT FOUND</div>} />
             </Routes>
           </main>
@@ -539,7 +578,7 @@ function AppContent() {
               <CartSidebar 
                 isOpen={isCartOpen} 
                 onClose={() => setIsCartOpen(false)} 
-                onCheckout={() => {}}
+                onCheckout={handleCheckout}
               />
             </>
           )}
