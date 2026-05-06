@@ -1,26 +1,27 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-:root {
-  --brand-blue: #0082c8;
-  --brand-blue-dark: #005fa3;
-  --brand-black: #0f172a;
-  --brand-white: #ffffff;
-  --brand-gray: #f8fafc;
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-serif: "Outfit", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  
+  --color-brand-blue: #0082c8;
+  --color-brand-blue-dark: #005fa3;
+  --color-brand-black: #0f172a;
+  --color-brand-white: #ffffff;
+  --color-brand-gray: #f8fafc;
 }
 
 @layer base {
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+
   body {
     @apply antialiased text-slate-900 bg-white;
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-sans);
     letter-spacing: -0.01em;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Outfit', sans-serif;
+    font-family: var(--font-serif);
   }
 }
 
@@ -30,7 +31,7 @@
   }
 
   .premium-gradient {
-    background: linear-gradient(135deg, var(--brand-blue) 0%, var(--brand-blue-dark) 100%);
+    @apply bg-linear-to-r from-brand-blue to-brand-blue-dark;
   }
 
   .glass-card {
