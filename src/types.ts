@@ -69,7 +69,8 @@ export interface Order {
     phone: string;
     address: string;
   };
-  createdAt: string;
+  note?: string;
+  createdAt: any;
 }
 
 export interface BlogPost {

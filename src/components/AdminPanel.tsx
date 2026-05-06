@@ -11,8 +11,9 @@ import { PRODUCTS as STATIC_PRODUCTS } from '../data';
 import { ImageUpload } from './ImageUpload';
 import { AddProductModal } from './AddProductModal';
 import { AddBlogPostModal } from './AddBlogPostModal';
+import { OrderDetailModal } from './OrderDetailModal';
 import { useAuth } from '../AuthContext';
-import { Product, BlogPost } from '../types';
+import { Product, BlogPost, Order } from '../types';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -33,6 +34,7 @@ export const AdminPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
   const [products, setProducts] = useState<Product[]>([]);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -43,6 +45,8 @@ export const AdminPanel: React.FC = () => {
   const [blogSearchQuery, setBlogSearchQuery] = useState('');
   const [customCss, setCustomCss] = useState('');
   const [cssSaved, setCssSaved] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [isOrderDetailModalOpen, setIsOrderDetailModalOpen] = useState(false);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -66,6 +70,18 @@ export const AdminPanel: React.FC = () => {
       setBlogPosts(data);
     }, () => {
       setBlogPosts([]);
+    });
+    return () => unsubscribe();
+  }, [isAdmin]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Order[];
+      setOrders(data);
+    }, () => {
+      setOrders([]);
     });
     return () => unsubscribe();
   }, [isAdmin]);
@@ -127,6 +143,25 @@ export const AdminPanel: React.FC = () => {
       toast.success('Đã xóa bài viết');
     } catch {
       toast.error('Lỗi khi xóa bài viết');
+    }
+  };
+
+  const handleDeleteOrder = async (id: string) => {
+    if (!window.confirm('Xóa đơn hàng này?')) return;
+    try {
+      await deleteDoc(doc(db, 'orders', id));
+      toast.success('Đã xóa đơn hàng');
+    } catch {
+      toast.error('Lỗi khi xóa đơn hàng');
+    }
+  };
+
+  const handleUpdateOrderStatus = async (id: string, status: Order['status']) => {
+    try {
+      await setDoc(doc(db, 'orders', id), { status }, { merge: true });
+      toast.success('Đã cập nhật trạng thái đơn hàng');
+    } catch {
+      toast.error('Lỗi khi cập nhật trạng thái');
     }
   };
 
@@ -329,7 +364,7 @@ export const AdminPanel: React.FC = () => {
                 {[
                   { label: 'Tổng sản phẩm', value: products.length, icon: Package, color: 'from-blue-500 to-blue-600', bg: 'bg-blue-500/10', text: 'text-blue-400' },
                   { label: 'Doanh thu ước tính', value: totalRevenue.toLocaleString('vi-VN') + '₫', icon: DollarSign, color: 'from-emerald-500 to-emerald-600', bg: 'bg-emerald-500/10', text: 'text-emerald-400' },
-                  { label: 'Đơn hàng', value: '0', icon: ShoppingBag, color: 'from-orange-500 to-orange-600', bg: 'bg-orange-500/10', text: 'text-orange-400' },
+                  { label: 'Đơn hàng', value: orders.length.toString(), icon: ShoppingBag, color: 'from-orange-500 to-orange-600', bg: 'bg-orange-500/10', text: 'text-orange-400' },
                   { label: 'Đánh giá TB', value: avgRating + ' ★', icon: Star, color: 'from-purple-500 to-purple-600', bg: 'bg-purple-500/10', text: 'text-purple-400' },
                 ].map((stat, i) => (
                   <div key={i} className="bg-[#13161f] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-all group">
@@ -603,6 +638,104 @@ export const AdminPanel: React.FC = () => {
           )}
 
           {/* ─── ORDERS ─── */}
+          {activeTab === 'orders' && (
+            <div className="space-y-4">
+              <div className="bg-[#13161f] border border-white/5 rounded-2xl overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-white/5">
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Mã đơn / Ngày</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Khách hàng</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Tổng cộng</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Trạng thái</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30 text-right">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/[0.04]">
+                      {orders.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="px-6 py-20 text-center">
+                            <ShoppingBag className="h-12 w-12 text-white/10 mx-auto mb-3" />
+                            <p className="text-white/30 font-bold text-sm">Chưa có đơn hàng nào</p>
+                          </td>
+                        </tr>
+                      ) : (
+                        orders.map(order => (
+                          <tr key={order.id} className="hover:bg-white/[0.02] transition-all group">
+                            <td className="px-6 py-4">
+                              <p className="text-white text-sm font-bold">#{order.id.substring(0, 8)}</p>
+                              <p className="text-white/30 text-[11px] font-medium">
+                                {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleString('vi-VN') : order.createdAt}
+                              </p>
+                            </td>
+                            <td className="px-6 py-4">
+                              <p className="text-white text-sm font-bold">{order.shippingAddress.fullName}</p>
+                              <p className="text-white/30 text-[11px] font-medium">{order.shippingAddress.phone}</p>
+                            </td>
+                            <td className="px-6 py-4">
+                              <p className="text-[#0082c8] font-black text-sm">{order.total.toLocaleString('vi-VN')}₫</p>
+                              <div className="mt-2 space-y-1">
+                                {order.items.map((item, idx) => (
+                                  <div key={idx} className="flex items-center gap-2 text-[10px] bg-white/[0.03] border border-white/5 rounded px-2 py-1">
+                                    <span className="text-white font-bold truncate max-w-[120px]">{item.name}</span>
+                                    <span className="text-white/40">|</span>
+                                    <span className="text-blue-400 font-bold uppercase">{item.selectedColor}</span>
+                                    <span className="text-white/40">/</span>
+                                    <span className="text-emerald-400 font-bold">{item.selectedSize}</span>
+                                    <span className="text-white/40 ml-auto">x{item.quantity}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <select
+                                value={order.status}
+                                onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value as any)}
+                                className={cn(
+                                  "bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-[10px] font-black uppercase tracking-wider focus:outline-none transition-all",
+                                  order.status === 'delivered' ? "text-emerald-400" :
+                                  order.status === 'cancelled' ? "text-red-400" :
+                                  order.status === 'shipped' ? "text-blue-400" : "text-yellow-400"
+                                )}
+                              >
+                                <option value="pending" className="bg-[#13161f]">Chờ xử lý</option>
+                                <option value="processing" className="bg-[#13161f]">Đang chuẩn bị</option>
+                                <option value="shipped" className="bg-[#13161f]">Đang giao</option>
+                                <option value="delivered" className="bg-[#13161f]">Đã giao</option>
+                                <option value="cancelled" className="bg-[#13161f]">Đã hủy</option>
+                              </select>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center justify-end gap-1">
+                                <button
+                                  onClick={() => {
+                                    setSelectedOrder(order);
+                                    setIsOrderDetailModalOpen(true);
+                                  }}
+                                  title="Xem chi tiết"
+                                  className="h-8 w-8 flex items-center justify-center rounded-lg text-white/30 hover:text-blue-400 hover:bg-blue-500/10 transition-all"
+                                >
+                                  <Eye className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteOrder(order.id)}
+                                  title="Xóa"
+                                  className="h-8 w-8 flex items-center justify-center rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* ─── CUSTOMERS ─── */}
           {activeTab === 'customers' && (
@@ -781,6 +914,15 @@ export const AdminPanel: React.FC = () => {
           setEditingBlogPost(null);
         }}
         post={editingBlogPost}
+      />
+
+      <OrderDetailModal
+        isOpen={isOrderDetailModalOpen}
+        onClose={() => {
+          setIsOrderDetailModalOpen(false);
+          setSelectedOrder(null);
+        }}
+        order={selectedOrder}
       />
     </div>
   );

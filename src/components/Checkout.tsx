@@ -18,6 +18,7 @@ const checkoutSchema = z.object({
   phone: z.string().min(10, 'Valid phone number is required'),
   address: z.string().min(10, 'Detailed address is required'),
   city: z.string().min(2, 'City is required'),
+  note: z.string().optional(),
 });
 
 type CheckoutFormValues = z.infer<typeof checkoutSchema>;
@@ -61,6 +62,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
           address: `${data.address}, ${data.city}`,
         },
         email: data.email,
+        note: data.note || '',
         createdAt: serverTimestamp()
       };
 
@@ -131,6 +133,14 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                 <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Địa chỉ giao hàng</label>
                 <Input {...register('address')} className="rounded-none border-2 border-zinc-200 focus-visible:ring-black h-14 font-medium" />
                 {errors.address && <p className="text-xs text-red-500 font-bold">{errors.address.message}</p>}
+              </div>
+              <div className="md:col-span-2 space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Ghi chú đơn hàng (Tùy chọn)</label>
+                <textarea 
+                  {...register('note')} 
+                  className="w-full rounded-none border-2 border-zinc-200 focus-visible:ring-black p-4 font-medium min-h-[100px] outline-none focus:border-black transition-colors"
+                  placeholder="Ví dụ: Giao giờ hành chính, gọi trước khi đến..."
+                />
               </div>
             </div>
           </section>

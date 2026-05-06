@@ -18,7 +18,9 @@ import { ProductsProvider, useProducts } from './ProductsContext';
 import { Toaster } from 'sonner';
 import { getDoc, doc } from 'firebase/firestore';
 import { db } from './firebase';
-import { Filter, SlidersHorizontal, ArrowDown, ChevronDown, ChevronRight } from 'lucide-react';
+import { Filter, SlidersHorizontal, ArrowRight, Check, Star, ShieldCheck, Truck, RefreshCcw, 
+  ChevronRight, ChevronDown, Phone, MessageCircle, Instagram, Facebook 
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -109,16 +111,19 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
       </section>
 
       {/* In Demand Section - Athletic Shirts */}
-      <section className="mx-auto max-w-[1440px] px-4 pt-0 pb-6 sm:px-6 lg:px-8 bg-white">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl sm:text-3xl font-black tracking-tighter text-zinc-900 leading-none">
-            Sản phẩm <span className="text-[#0082c8]">Áo thể thao</span> nổi bật
-          </h2>
+      <section className="mx-auto max-w-[1440px] px-4 pt-20 pb-12 sm:px-6 lg:px-8 bg-white">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+          <div>
+            <span className="section-subtitle">Performance Collection</span>
+            <h2 className="section-title">
+              Sản phẩm <span className="text-[#0082c8]">Áo thể thao</span> nổi bật
+            </h2>
+          </div>
           <button 
-            onClick={() => onCategorySelect('Áo thun thể thao nam')}
-            className="flex items-center gap-1.5 text-sm font-bold text-blue-600 hover:underline"
+             onClick={() => onCategorySelect('Áo thun thể thao nam')}
+             className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-[#0082c8] hover:translate-x-2 transition-transform"
           >
-            Xem thêm <ChevronRight className="h-4 w-4" />
+            Xem tất cả bộ sưu tập <ChevronRight className="h-4 w-4" />
           </button>
         </div>
 
@@ -553,7 +558,35 @@ function AppContent() {
           
           <main className={!isAdminRoute ? "pt-16" : ""}>
             <Routes>
-              <Route path="/" element={<HomePage onProductSelect={() => {}} onCategorySelect={handleCategorySelect} />} />
+              <Route path="/" element={
+                <>
+                  <HomePage onProductSelect={() => {}} onCategorySelect={handleCategorySelect} />
+                  
+                  {/* Trust Badges Section - Premium Feel */}
+                  <section className="bg-slate-50 border-b border-slate-100">
+                    <div className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-8">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                        {[
+                          { icon: Truck, title: 'Miễn phí vận chuyển', desc: 'Cho đơn hàng từ 500k' },
+                          { icon: ShieldCheck, title: 'Hàng chính hãng', desc: 'Cam kết chất lượng 100%' },
+                          { icon: RefreshCcw, title: 'Đổi trả 30 ngày', desc: 'Dễ dàng và nhanh chóng' },
+                          { icon: Phone, title: 'Hỗ trợ 24/7', desc: 'Hotline: 0917 722 425' },
+                        ].map((badge, idx) => (
+                          <div key={idx} className="flex items-center gap-4 group">
+                            <div className="h-12 w-12 rounded-2xl bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-300">
+                              <badge.icon className="h-6 w-6 text-[#0082c8]" />
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-black uppercase tracking-tight text-slate-900">{badge.title}</h4>
+                              <p className="text-[11px] font-medium text-slate-400">{badge.desc}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </section>
+                </>
+              } />
               <Route path="/shop" element={<ShopPage activeCategory={activeCategory} setActiveCategory={setActiveCategory} isLoading={isLoading} onProductSelect={() => {}} />} />
               <Route path="/apparel/:categorySlug" element={<ShopPage activeCategory={activeCategory} setActiveCategory={setActiveCategory} isLoading={isLoading} onProductSelect={() => {}} />} />
               <Route path="/apparel/:categorySlug/:productSlug" element={<ProductDetail />} />
@@ -584,6 +617,32 @@ function AppContent() {
           )}
           
           <Toaster />
+
+          {/* Floating Action Buttons - Vietnam Style */}
+          {!isAdminRoute && (
+            <div className="fixed bottom-8 right-8 z-[60] flex flex-col gap-4">
+              <a 
+                href="https://zalo.me/0917722425" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="group relative flex items-center justify-center h-16 w-16 bg-white rounded-2xl shadow-2xl hover:scale-110 transition-all duration-300 border border-blue-50"
+              >
+                <div className="absolute right-full mr-4 bg-white px-4 py-2 rounded-xl shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-100">
+                  <span className="text-[12px] font-black uppercase text-blue-600 whitespace-nowrap">Chat Zalo</span>
+                </div>
+                <MessageCircle className="h-7 w-7 text-blue-500" />
+              </a>
+              <a 
+                href="tel:0917722425" 
+                className="group relative flex items-center justify-center h-16 w-16 bg-[#0082c8] rounded-2xl shadow-2xl hover:scale-110 transition-all duration-300 animate-bounce"
+              >
+                <div className="absolute right-full mr-4 bg-white px-4 py-2 rounded-xl shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-100">
+                  <span className="text-[12px] font-black uppercase text-[#0082c8] whitespace-nowrap">Gọi ngay</span>
+                </div>
+                <Phone className="h-7 w-7 text-white" />
+              </a>
+            </div>
+          )}
         </div>
       </CartProvider>
       </ProductsProvider>
