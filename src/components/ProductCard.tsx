@@ -1,10 +1,9 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { ShoppingCart, Star, Heart, Plus, ShoppingBag } from 'lucide-react';
+import { motion } from 'motion/react';
+import { Star, Heart, Plus, ShoppingBag } from 'lucide-react';
 import { Product } from '../types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useCart } from '../CartContext';
 import { toast } from 'sonner';
@@ -16,7 +15,6 @@ interface ProductCardProps {
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
   const { addToCart } = useCart();
-  const [isHovered, setIsHovered] = React.useState(false);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -26,95 +24,37 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
 
   return (
     <motion.div
-      onHoverStart={() => setIsHovered(true)}
-      onHoverEnd={() => setIsHovered(false)}
       transition={{ duration: 0.2 }}
       className="group cursor-pointer"
       onClick={onClick}
     >
-      <Card className="overflow-hidden border-none shadow-none bg-white rounded-2xl h-full transition-all duration-300 group-hover:shadow-xl relative">
+      <Card className="overflow-hidden border-none shadow-none bg-white rounded-2xl h-full transition-all duration-500 group-hover:shadow-[0_20px_50px_-20px_rgba(0,0,0,0.15)] relative">
         <CardContent className="p-0 flex flex-col h-full">
-          <div className="relative aspect-square overflow-hidden bg-zinc-50 rounded-2xl">
+          <div className="relative aspect-[4/5] overflow-hidden bg-zinc-50 rounded-2xl">
             {product.images && product.images[0] ? (
               <img
                 src={product.images[0]}
                 alt={product.name}
-                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                className="h-full w-full object-cover transition-transform duration-1000 ease-out group-hover:scale-110"
                 referrerPolicy="no-referrer"
               />
             ) : (
               <div className="h-full w-full bg-zinc-100" />
             )}
             
-            {/* Badges */}
-            <div className="absolute top-3 left-3 flex flex-col gap-1.5 items-start">
-              {product.isBestSeller && (
-                <Badge className="bg-[#7c3aed] hover:bg-[#7c3aed] text-white font-bold border-none rounded-full px-4 py-1 text-[11px] h-6 shadow-sm">
-                  Phổ biến nhất
-                </Badge>
-              )}
-              {product.discountPrice && (
-                <Badge className="bg-[#f97316] hover:bg-[#f97316] text-white font-bold border-none rounded-full px-4 py-1 text-[11px] h-6 shadow-sm">
-                  -{Math.round(((product.price - product.discountPrice) / product.price) * 100)}%
-                </Badge>
-              )}
-              <Badge className="bg-black hover:bg-black text-white font-bold border-none rounded-full px-2 py-1 text-[11px] h-6 w-14 flex items-center justify-center shadow-sm">
-                <span className="leading-none flex items-center gap-1">
-                  <span className="text-[10px] scale-75 origin-left">BLACK</span>
-                  <span className="text-[10px] scale-75 origin-left">FRIDAY</span>
-                </span>
-              </Badge>
-            </div>
-
-            {/* Floating Actions on Hover */}
-            <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity translate-x-2 group-hover:translate-x-0 duration-300">
-              <Button size="icon" variant="secondary" className="h-9 w-9 rounded-full bg-white shadow-md hover:bg-zinc-100">
+            {/* Minimalist Overlay on Hover */}
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-500" />
+            
+            {/* Floating Actions - Streamlined */}
+            <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0 duration-500">
+              <Button size="icon" variant="secondary" className="h-9 w-9 rounded-full bg-white shadow-xl hover:bg-zinc-50 hover:scale-110 active:scale-95 transition-all">
                 <Heart className="h-4 w-4 text-zinc-600" />
               </Button>
-              <Button size="icon" variant="secondary" className="h-9 w-9 rounded-full bg-white shadow-md hover:bg-zinc-100">
-                <ShoppingBag className="h-4 w-4 text-zinc-600" />
-              </Button>
             </div>
-
-            {/* Quick View Hover State - matching screenshot attributes */}
-            <AnimatePresence>
-              {isHovered && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  className="absolute inset-x-0 bottom-0 p-4 pt-20 bg-gradient-to-t from-white to-transparent pointer-events-none"
-                >
-                  <div className="bg-white/95 backdrop-blur-sm rounded-xl p-4 shadow-2xl space-y-3 pointer-events-auto">
-                    <div>
-                      <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter mb-1.5 italic">Màu sắc</p>
-                      <div className="flex gap-2">
-                        <div className="h-4 w-4 rounded-full bg-[#0082c8] ring-2 ring-offset-2 ring-[#0082c8]" />
-                        <div className="h-4 w-4 rounded-full bg-zinc-800" />
-                        <div className="h-4 w-4 rounded-full bg-blue-300" />
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter mb-1.5 italic">Kích cỡ</p>
-                      <div className="flex gap-1.5">
-                        {['M', 'L', 'XXL', 'XL', 'S'].map(size => (
-                          <div key={size} className={cn(
-                            "h-6 min-w-6 flex items-center justify-center rounded border text-[10px] font-bold",
-                            size === 'M' ? "border-black bg-black text-white" : "border-zinc-200 text-zinc-400"
-                          )}>
-                            {size}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
 
           <div className="p-4 pt-5 flex flex-col flex-grow">
-            <h3 className="text-[15px] font-medium text-zinc-900 leading-tight mb-3 line-clamp-2">
+            <h3 className="text-[15px] font-medium text-zinc-900 leading-tight mb-3 line-clamp-2 transition-colors group-hover:text-[#0082c8]">
               {product.name}
             </h3>
 
