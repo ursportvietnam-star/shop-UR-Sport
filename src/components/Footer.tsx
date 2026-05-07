@@ -156,7 +156,7 @@ export function Footer({ onPageChange, onCategorySelect }: FooterProps) {
             <ul className="mt-5 space-y-3">
               {supportLinks.map((link) => (
                 <li key={link.label}>
-                  <button 
+                  <button
                     onClick={() => link.href !== '#' && onPageChange(link.href)}
                     className="group/link inline-flex w-fit items-center text-sm font-semibold text-slate-300 transition duration-300 hover:translate-x-1 hover:text-[#0082c8]"
                   >
@@ -198,7 +198,7 @@ export function Footer({ onPageChange, onCategorySelect }: FooterProps) {
                 className="h-32 w-full"
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
-                src="https://www.google.com/maps?q=72%20Nguyen%20Trai%20District%201%20Ho%20Chi%20Minh%20City&output=embed"
+                src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d15992569.001833983!2d80.0375699!3d11.8747132!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752f523f5fc0e3%3A0x6654790e867462ee!2sUr%20Sport%20-%20%C3%81o%20thun%20th%E1%BB%83%20thao!5e0!3m2!1svi!2s!4v1778154966090!5m2!1svi!2s"
                 title="UR SPORT Google Map"
               />
             </div>
@@ -283,7 +283,7 @@ export function Footer({ onPageChange, onCategorySelect }: FooterProps) {
                   <ul className="min-h-0 space-y-3 pb-4">
                     {section.links.map((link: any) => (
                       <li key={section.isCategory ? link.value : link.label}>
-                        <button 
+                        <button
                           onClick={() => section.isCategory ? onCategorySelect(link.value) : (link.href !== '#' && onPageChange(link.href))}
                           className="text-sm font-semibold text-slate-300 hover:text-[#0082c8] transition-colors"
                         >

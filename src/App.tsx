@@ -9,6 +9,7 @@ import { Checkout } from './components/Checkout';
 import { AdminPanel } from './components/AdminPanel';
 import { NewsPage } from './components/NewsPage';
 import { Footer } from './components/Footer';
+import { FloatingContactMenu } from './components/FloatingContactMenu';
 import { PRODUCTS, CATEGORIES, CATEGORY_METADATA } from './data';
 import { Product, Category } from './types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -620,31 +621,8 @@ function AppContent() {
           
           <Toaster />
 
-          {/* Floating Action Buttons - Vietnam Style */}
-          {!isAdminRoute && (
-            <div className="fixed bottom-8 right-8 z-[60] flex flex-col gap-4">
-              <a 
-                href="https://zalo.me/0917722425" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="group relative flex items-center justify-center h-16 w-16 bg-white rounded-2xl shadow-2xl hover:scale-110 transition-all duration-300 border border-blue-50"
-              >
-                <div className="absolute right-full mr-4 bg-white px-4 py-2 rounded-xl shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-100">
-                  <span className="text-[12px] font-black uppercase text-blue-600 whitespace-nowrap">Chat Zalo</span>
-                </div>
-                <MessageCircle className="h-7 w-7 text-blue-500" />
-              </a>
-              <a 
-                href="tel:0917722425" 
-                className="group relative flex items-center justify-center h-16 w-16 bg-[#0082c8] rounded-2xl shadow-2xl hover:scale-110 transition-all duration-300 animate-bounce"
-              >
-                <div className="absolute right-full mr-4 bg-white px-4 py-2 rounded-xl shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-slate-100">
-                  <span className="text-[12px] font-black uppercase text-[#0082c8] whitespace-nowrap">Gọi ngay</span>
-                </div>
-                <Phone className="h-7 w-7 text-white" />
-              </a>
-            </div>
-          )}
+          {/* Floating Contact Menu */}
+          {!isAdminRoute && <FloatingContactMenu />}
         </div>
       </CartProvider>
       </ProductsProvider>

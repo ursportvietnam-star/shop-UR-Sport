@@ -49,9 +49,8 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => setPreviewUrl(reader.result as string);
-    reader.readAsDataURL(file);
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
 
     uploadToCloudinary(file);
   };
@@ -80,6 +79,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
       if (xhr.status === 200) {
         const data = JSON.parse(xhr.responseText);
         onUploadComplete(data.secure_url);
+        setPreviewUrl(data.secure_url); // Update preview to real URL
         setIsDone(true);
         setIsUploading(false);
         toast.success('Tải ảnh thành công!');
@@ -105,6 +105,10 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   };
 
   const removeImage = () => {
+    // If previewUrl is an object URL, revoke it to prevent memory leaks
+    if (previewUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(previewUrl);
+    }
     setPreviewUrl(null);
     setProgress(0);
     setUploadError(null);
@@ -112,9 +116,17 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const handleCopyUrl = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (previewUrl && !previewUrl.startsWith('blob:')) {
+      navigator.clipboard.writeText(previewUrl);
+      toast.success('Đã sao chép đường dẫn ảnh!');
+    }
+  };
+
   return (
     <div className="w-full space-y-3">
-      {label && <label className="text-sm font-bold text-zinc-700">{label}</label>}
+      {label && <label className="text-sm font-bold text-white/40 uppercase tracking-widest">{label}</label>}
 
       <div
         onClick={openFilePicker}
@@ -122,11 +134,11 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
           "relative group cursor-pointer border-2 border-dashed rounded-2xl p-6 transition-all duration-300 flex flex-col items-center justify-center min-h-[180px]",
           previewUrl
             ? uploadError
-              ? "border-red-400 bg-red-50/10"
+              ? "border-red-400 bg-red-50/5"
               : isDone
-              ? "border-green-400 bg-green-50/10"
-              : "border-[#0082c8] bg-blue-50/10"
-            : "border-zinc-200 hover:border-[#0082c8] hover:bg-zinc-50",
+              ? "border-emerald-500/50 bg-emerald-500/5"
+              : "border-[#0082c8] bg-blue-500/5"
+            : "border-white/10 hover:border-[#0082c8] hover:bg-white/[0.02]",
           isUploading && "pointer-events-none"
         )}
       >
@@ -140,48 +152,83 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
         />
 
         {(externalPreview || previewUrl) ? (
-          <div className="relative w-full flex flex-col items-center gap-3">
-            <img
-              src={externalPreview || previewUrl!}
-              alt="Preview"
-              className="max-h-36 rounded-xl object-cover shadow-md"
-            />
+          <div className="relative w-full flex flex-col items-center gap-4">
+            <div className="relative">
+              <img
+                src={externalPreview || previewUrl!}
+                alt="Preview"
+                className="max-h-40 rounded-xl object-cover shadow-2xl border border-white/10"
+              />
+              {isDone && !previewUrl?.startsWith('blob:') && (
+                <div className="absolute top-2 right-2 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCopyUrl}
+                    className="p-2 bg-[#0f1117]/80 backdrop-blur-md border border-white/10 rounded-lg text-white hover:bg-[#0082c8] transition-all"
+                    title="Sao chép link"
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+            </div>
 
             {isUploading && (
-              <div className="w-full space-y-2">
-                <div className="w-full h-2 bg-zinc-200 rounded-full overflow-hidden">
+              <div className="w-full max-w-[200px] space-y-2">
+                <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-[#0082c8] rounded-full transition-all duration-200"
                     style={{ width: `${progress}%` }}
                   />
                 </div>
                 <div className="flex items-center justify-center gap-2 text-[#0082c8]">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span className="text-sm font-bold">{progress}%</span>
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <span className="text-[10px] font-black">{progress}%</span>
                 </div>
               </div>
             )}
 
             {uploadError && (
-              <div className="flex items-center gap-2 text-red-500">
+              <div className="flex items-center gap-2 text-red-400">
                 <AlertCircle className="h-4 w-4" />
                 <span className="text-xs font-bold text-center">{uploadError}</span>
               </div>
             )}
 
             {isDone && (
-              <div className="flex items-center gap-2 text-green-600">
-                <CheckCircle2 className="h-4 w-4" />
-                <span className="text-sm font-bold">Upload thành công!</span>
+              <div className="w-full space-y-3">
+                <div className="flex items-center justify-center gap-2 text-emerald-400">
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span className="text-sm font-bold">Tải lên thành công!</span>
+                </div>
+                
+                {!previewUrl?.startsWith('blob:') && (
+                  <div className="flex items-center gap-2 p-2 bg-white/5 border border-white/5 rounded-xl">
+                    <input 
+                      type="text" 
+                      readOnly 
+                      value={previewUrl || ''} 
+                      className="flex-1 bg-transparent border-none text-[10px] text-white/50 outline-none truncate font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleCopyUrl}
+                      className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white text-[10px] font-bold rounded-lg transition-all flex items-center gap-1.5"
+                    >
+                      <Copy className="h-3 w-3" />
+                      Sao chép
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); removeImage(); }}
-              className="absolute -top-2 -right-2 bg-white border border-zinc-200 p-1.5 rounded-full shadow hover:bg-red-50 hover:text-red-500 transition-colors"
+              className="absolute -top-3 -right-3 bg-[#0f1117] border border-white/10 p-2 rounded-full shadow-xl text-white/50 hover:text-red-400 transition-colors"
             >
-              <X className="h-3.5 w-3.5" />
+              <X className="h-4 w-4" />
             </button>
           </div>
         ) : (

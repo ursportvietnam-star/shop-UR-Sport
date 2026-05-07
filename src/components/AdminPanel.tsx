@@ -5,7 +5,7 @@ import {
   TrendingUp, Eye, DollarSign, BarChart2, Menu, X, Bell,
   Search, ChevronRight, Upload, Star, AlertCircle, Copy, ExternalLink, Code2, Check as CheckIcon
 } from 'lucide-react';
-import { collection, onSnapshot, query, orderBy, deleteDoc, doc, setDoc, getDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, deleteDoc, doc, setDoc, getDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { PRODUCTS as STATIC_PRODUCTS } from '../data';
 import { ImageUpload } from './ImageUpload';
@@ -16,6 +16,12 @@ import { useAuth } from '../AuthContext';
 import { Product, BlogPost, Order } from '../types';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+
+interface MediaItem {
+  id: string;
+  url: string;
+  createdAt: any;
+}
 
 type AdminTab = 'dashboard' | 'products' | 'orders' | 'customers' | 'blog' | 'media' | 'settings';
 
@@ -47,6 +53,7 @@ export const AdminPanel: React.FC = () => {
   const [cssSaved, setCssSaved] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isOrderDetailModalOpen, setIsOrderDetailModalOpen] = useState(false);
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -82,6 +89,18 @@ export const AdminPanel: React.FC = () => {
       setOrders(data);
     }, () => {
       setOrders([]);
+    });
+    return () => unsubscribe();
+  }, [isAdmin]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    const q = query(collection(db, 'media'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as MediaItem[];
+      setMediaItems(data);
+    }, () => {
+      setMediaItems([]);
     });
     return () => unsubscribe();
   }, [isAdmin]);
@@ -181,6 +200,28 @@ export const AdminPanel: React.FC = () => {
       toast.success('Sản phẩm đã được sao chép thành công!');
     } catch {
       toast.error('Lỗi khi sao chép sản phẩm');
+    }
+  };
+
+  const handleSaveMedia = async (url: string) => {
+    try {
+      await addDoc(collection(db, 'media'), {
+        url,
+        createdAt: serverTimestamp()
+      });
+      toast.success('Đã lưu ảnh vào thư viện!');
+    } catch {
+      toast.error('Lỗi khi lưu vào thư viện');
+    }
+  };
+
+  const handleDeleteMedia = async (id: string) => {
+    if (!window.confirm('Xóa ảnh này khỏi thư viện?')) return;
+    try {
+      await deleteDoc(doc(db, 'media', id));
+      toast.success('Đã xóa ảnh');
+    } catch {
+      toast.error('Lỗi khi xóa ảnh');
     }
   };
 
@@ -775,8 +816,8 @@ export const AdminPanel: React.FC = () => {
                     </div>
                   </div>
                   <ImageUpload
-                    onUploadComplete={(url) => { toast.success('Upload thành công!'); console.log(url); }}
-                    folder="products"
+                    onUploadComplete={handleSaveMedia}
+                    folder="media"
                     label="Kéo thả hoặc nhấn để chọn ảnh"
                   />
                 </div>
@@ -795,6 +836,57 @@ export const AdminPanel: React.FC = () => {
                       </div>
                     ))}
                   </div>
+                </div>
+              </div>
+
+              {/* Media Gallery */}
+              <div className="bg-[#13161f] border border-white/5 rounded-2xl overflow-hidden">
+                <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between">
+                  <h3 className="text-white font-black text-sm uppercase tracking-widest">Ảnh đã tải lên</h3>
+                  <p className="text-white/30 text-xs font-medium">{mediaItems.length} ảnh</p>
+                </div>
+                <div className="p-6">
+                  {mediaItems.length === 0 ? (
+                    <div className="py-20 text-center">
+                      <ImageIcon className="h-12 w-12 text-white/10 mx-auto mb-3" />
+                      <p className="text-white/30 font-bold text-sm">Chưa có ảnh nào trong thư viện</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                      {mediaItems.map((item) => (
+                        <div key={item.id} className="group relative aspect-square rounded-xl overflow-hidden bg-white/5 border border-white/5 hover:border-[#0082c8]/50 transition-all">
+                          <img 
+                            src={item.url} 
+                            alt="" 
+                            className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          />
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(item.url);
+                                toast.success('Đã sao chép link!');
+                              }}
+                              className="p-2 bg-white/10 hover:bg-[#0082c8] rounded-lg text-white transition-all"
+                              title="Sao chép link"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteMedia(item.id)}
+                              className="p-2 bg-white/10 hover:bg-red-500 rounded-lg text-white transition-all"
+                              title="Xóa"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                          {/* Info overlay on mobile/hover */}
+                          <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                            <p className="text-[8px] text-white/50 truncate font-mono">{item.url}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
