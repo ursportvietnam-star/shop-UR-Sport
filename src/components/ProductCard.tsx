@@ -73,7 +73,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
             </div>
             
             <div className="mt-auto flex items-center justify-between">
-              <div className="flex items-baseline gap-2">
+              <div className="flex flex-col">
+                {product.discountPrice && (
+                  <span className="text-[13px] text-zinc-400 line-through font-medium -mb-1">
+                    {product.price.toLocaleString('vi-VN')}₫
+                  </span>
+                )}
                 <span className="text-[19px] font-bold text-black">
                   {(product.discountPrice || product.price).toLocaleString('vi-VN')}₫
                 </span>

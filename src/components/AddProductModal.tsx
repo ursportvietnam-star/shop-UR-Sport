@@ -213,6 +213,16 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
     setIsHtmlMode(v => !v);
     setImageToolbar(null);
   };
+  
+  const formatDisplayPrice = (val: string | number) => {
+    if (!val) return '';
+    return val.toString().replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  };
+
+  const parsePrice = (val: string) => {
+    return val.replace(/\D/g, '');
+  };
+
   const [formData, setFormData] = useState({
     name: '',
     price: '',
@@ -1042,25 +1052,37 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                 <div className="space-y-4 pt-6 border-t border-zinc-200">
                   <h3 className="text-[11px] font-black uppercase tracking-widest text-zinc-500">Giá bán & Tồn kho</h3>
                   <div className="space-y-4">
-                    <div className="bg-white p-1 rounded-md border border-zinc-200 focus-within:border-[#10b981] focus-within:ring-1 focus-within:ring-[#10b981] transition-all">
+                    <div className="bg-white p-1 rounded-md border border-zinc-200 focus-within:border-[#10b981] focus-within:ring-1 focus-within:ring-[#10b981] transition-all relative">
                       <label className="text-[10px] font-bold text-zinc-400 uppercase px-2 pt-1 block">Giá niêm yết (₫)</label>
                       <input 
-                        type="number"
-                        value={formData.price}
-                        onChange={(e) => setFormData({...formData, price: e.target.value})}
+                        type="text"
+                        inputMode="numeric"
+                        value={formatDisplayPrice(formData.price)}
+                        onChange={(e) => setFormData({...formData, price: parsePrice(e.target.value)})}
                         className="w-full h-8 px-2 text-[15px] font-bold text-zinc-900 bg-transparent outline-none"
                         placeholder="Giá gốc chưa giảm..."
                       />
+                      {formData.price && (
+                        <div className="absolute right-3 bottom-2 text-[10px] font-bold text-zinc-300 pointer-events-none">
+                          {Number(formData.price).toLocaleString('vi-VN')}₫
+                        </div>
+                      )}
                     </div>
-                    <div className="bg-white p-1 rounded-md border border-zinc-200 focus-within:border-[#10b981] focus-within:ring-1 focus-within:ring-[#10b981] transition-all">
+                    <div className="bg-white p-1 rounded-md border border-zinc-200 focus-within:border-[#10b981] focus-within:ring-1 focus-within:ring-[#10b981] transition-all relative">
                       <label className="text-[10px] font-bold text-[#10b981] uppercase px-2 pt-1 block">Giá khuyến mãi (₫)</label>
                       <input 
-                        type="number"
-                        value={formData.discountPrice}
-                        onChange={(e) => setFormData({...formData, discountPrice: e.target.value})}
+                        type="text"
+                        inputMode="numeric"
+                        value={formatDisplayPrice(formData.discountPrice)}
+                        onChange={(e) => setFormData({...formData, discountPrice: parsePrice(e.target.value)})}
                         className="w-full h-8 px-2 text-[15px] font-bold text-[#10b981] bg-transparent outline-none"
                         placeholder="Để trống nếu không giảm giá"
                       />
+                      {formData.discountPrice && (
+                        <div className="absolute right-3 bottom-2 text-[10px] font-bold text-[#10b981]/30 pointer-events-none">
+                          {Number(formData.discountPrice).toLocaleString('vi-VN')}₫
+                        </div>
+                      )}
                     </div>
                     <div className="bg-white p-1 rounded-md border border-zinc-200 focus-within:border-[#10b981] focus-within:ring-1 focus-within:ring-[#10b981] transition-all">
                       <label className="text-[10px] font-bold text-zinc-400 uppercase px-2 pt-1 block">Tồn kho</label>
