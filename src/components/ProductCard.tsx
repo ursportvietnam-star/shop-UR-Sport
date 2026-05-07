@@ -28,7 +28,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
       className="group cursor-pointer"
       onClick={onClick}
     >
-      <Card className="overflow-hidden border-none shadow-none bg-white rounded-2xl h-full transition-all duration-500 group-hover:shadow-[0_20px_50px_-20px_rgba(0,0,0,0.15)] relative">
+      <Card className="overflow-hidden border-none ring-0 shadow-none bg-white rounded-2xl h-full transition-all duration-500 group-hover:shadow-[0_20px_50px_-20px_rgba(0,0,0,0.15)] relative">
         <CardContent className="p-0 flex flex-col h-full">
           <div className="relative aspect-[4/5] overflow-hidden bg-zinc-50 rounded-2xl">
             {product.images && product.images[0] ? (
