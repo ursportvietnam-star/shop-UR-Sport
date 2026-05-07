@@ -46,6 +46,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-500" />
             
             {/* Floating Actions - Streamlined */}
+            <div className="absolute top-4 left-4 flex flex-col gap-2">
+              {product.discountPrice && (
+                <div className="bg-[#ff4d4f] text-white text-[11px] font-black px-2.5 py-1 rounded-full shadow-lg shadow-red-500/30">
+                  -{Math.round(((product.price - product.discountPrice) / product.price) * 100)}%
+                </div>
+              )}
+            </div>
+
             <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0 duration-500">
               <Button size="icon" variant="secondary" className="h-9 w-9 rounded-full bg-white shadow-xl hover:bg-zinc-50 hover:scale-110 active:scale-95 transition-all">
                 <Heart className="h-4 w-4 text-zinc-600" />
@@ -80,15 +88,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
                 </span>
                 
                 {product.discountPrice && (
-                  <>
-                    <span className="text-[13px] text-zinc-400 line-through font-medium">
-                      {product.price.toLocaleString('vi-VN')}
-                      <span className="text-[11px] ml-0.5 underline">đ</span>
-                    </span>
-                    <span className="px-1.5 py-0.5 bg-red-50 text-red-500 text-[10px] font-bold rounded">
-                      -{Math.round(((product.price - product.discountPrice) / product.price) * 100)}%
-                    </span>
-                  </>
+                  <span className="text-[13px] text-zinc-400 line-through font-medium">
+                    {product.price.toLocaleString('vi-VN')}
+                    <span className="text-[11px] ml-0.5 underline">đ</span>
+                  </span>
                 )}
               </div>
               
