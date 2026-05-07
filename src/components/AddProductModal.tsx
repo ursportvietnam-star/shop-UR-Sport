@@ -216,6 +216,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
   const [formData, setFormData] = useState({
     name: '',
     price: '',
+    discountPrice: '',
     category: CATEGORIES[0],
     description: '',
     stock: '',
@@ -263,6 +264,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
       setFormData({
         name: product.name || '',
         price: product.price?.toString() || '',
+        discountPrice: product.discountPrice?.toString() || '',
         category: product.category || CATEGORIES[0],
         description: product.description || '',
         stock: product.stock?.toString() || '',
@@ -288,6 +290,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
       setFormData({
         name: '',
         price: '',
+        discountPrice: '',
         category: CATEGORIES[0],
         description: '',
         stock: '',
@@ -482,6 +485,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         colorImages: validVariants.map(v => ({ name: v.name.trim(), image: v.image })),
         images: allImages,
         price: Number(formData.price),
+        discountPrice: formData.discountPrice ? Number(formData.discountPrice) : null,
         stock: Number(formData.stock),
         sizes: parsedSizes.length > 0 ? parsedSizes : ['S', 'M', 'L', 'XL'],
         sizeGuideUrl: formData.sizeGuideUrl,
@@ -520,6 +524,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         setFormData({
           name: '',
           price: '',
+          discountPrice: '',
           category: CATEGORIES[0],
           description: '',
           stock: '',
@@ -1038,13 +1043,23 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                   <h3 className="text-[11px] font-black uppercase tracking-widest text-zinc-500">Giá bán & Tồn kho</h3>
                   <div className="space-y-4">
                     <div className="bg-white p-1 rounded-md border border-zinc-200 focus-within:border-[#10b981] focus-within:ring-1 focus-within:ring-[#10b981] transition-all">
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase px-2 pt-1 block">Giá bán (₫)</label>
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase px-2 pt-1 block">Giá niêm yết (₫)</label>
                       <input 
                         type="number"
                         value={formData.price}
                         onChange={(e) => setFormData({...formData, price: e.target.value})}
                         className="w-full h-8 px-2 text-[15px] font-bold text-zinc-900 bg-transparent outline-none"
-                        placeholder="0"
+                        placeholder="Giá gốc chưa giảm..."
+                      />
+                    </div>
+                    <div className="bg-white p-1 rounded-md border border-zinc-200 focus-within:border-[#10b981] focus-within:ring-1 focus-within:ring-[#10b981] transition-all">
+                      <label className="text-[10px] font-bold text-[#10b981] uppercase px-2 pt-1 block">Giá khuyến mãi (₫)</label>
+                      <input 
+                        type="number"
+                        value={formData.discountPrice}
+                        onChange={(e) => setFormData({...formData, discountPrice: e.target.value})}
+                        className="w-full h-8 px-2 text-[15px] font-bold text-[#10b981] bg-transparent outline-none"
+                        placeholder="Để trống nếu không giảm giá"
                       />
                     </div>
                     <div className="bg-white p-1 rounded-md border border-zinc-200 focus-within:border-[#10b981] focus-within:ring-1 focus-within:ring-[#10b981] transition-all">

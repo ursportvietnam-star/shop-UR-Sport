@@ -515,9 +515,9 @@ export const AdminPanel: React.FC = () => {
                               </span>
                             </td>
                             <td className="px-6 py-4">
-                              <p className="text-[#0082c8] font-black text-sm">{product.price.toLocaleString('vi-VN')}₫</p>
+                              <p className="text-[#10b981] font-black text-sm">{(product.discountPrice || product.price).toLocaleString('vi-VN')}₫</p>
                               {product.discountPrice && (
-                                <p className="text-white/25 text-xs font-medium line-through">{product.discountPrice.toLocaleString('vi-VN')}₫</p>
+                                <p className="text-white/25 text-xs font-medium line-through">{product.price.toLocaleString('vi-VN')}₫</p>
                               )}
                             </td>
                             <td className="px-6 py-4 hidden lg:table-cell">
