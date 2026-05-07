@@ -920,6 +920,22 @@ export const ProductDetail: React.FC = () => {
         </div>
       </div>
 
+      {/* Mobile Sticky Action Bar */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-md border-t border-zinc-200 p-3 pb-safe flex gap-2 shadow-[0_-8px_20px_-10px_rgba(0,0,0,0.1)]">
+        <button 
+          onClick={handleAddToCart}
+          className="flex-1 h-12 bg-[#f0f9ff] border-2 border-[#0082c8] text-[#0082c8] font-bold rounded-xl text-[13px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-transform"
+        >
+          <ShoppingCart className="h-4 w-4" /> Thêm
+        </button>
+        <button 
+          onClick={handleBuyNow}
+          className="flex-[1.2] h-12 bg-[#0082c8] text-white font-bold rounded-xl text-[13px] uppercase tracking-widest active:scale-95 transition-transform shadow-lg shadow-blue-500/20"
+        >
+          Mua Ngay
+        </button>
+      </div>
+
       {/* Size Guide Modal */}
       {isSizeGuideOpen && product.sizeGuideUrl && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setIsSizeGuideOpen(false)}>
