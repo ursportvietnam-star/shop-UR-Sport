@@ -114,32 +114,22 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
           </div>
 
           <div className="p-4 pt-5 flex flex-col flex-grow">
-            <h3 className="text-[15px] font-medium text-zinc-900 leading-tight mb-1 line-clamp-2">
+            <h3 className="text-[15px] font-medium text-zinc-900 leading-tight mb-3 line-clamp-2">
               {product.name}
             </h3>
-            
-            <p className="text-[11px] font-medium text-zinc-400 tracking-tight mb-2">
-              CODE: {product.id.split('-')[0].toUpperCase()}
-            </p>
 
-            <div className="flex items-center gap-1.5 mb-2">
-              <div className="flex items-center">
+            <div className="flex items-center gap-0.5 mb-4">
+              {[1, 2, 3, 4, 5].map((star) => (
                 <Star 
+                  key={star}
                   className={cn(
-                    "h-3 w-3",
-                    (product.reviewsCount || 0) > 0 ? "fill-[#fbbf24] text-[#fbbf24]" : "text-zinc-300"
+                    "h-3.5 w-3.5",
+                    star <= (product.rating || 0) 
+                      ? "fill-[#fbbf24] text-[#fbbf24]" 
+                      : "text-zinc-200"
                   )} 
                 />
-                <span className="text-xs font-bold ml-1">{product.rating || 0}</span>
-              </div>
-              <span className="text-[11px] text-zinc-400 font-medium">(Đánh giá: {product.reviewsCount || 0})</span>
-              <div className="h-3 w-3 rounded-full bg-[#0082c8]/20 flex items-center justify-center">
-                <div className="h-1 w-1 rounded-full bg-[#0082c8]" />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-[11px] font-bold text-[#0082c8]">Còn hàng</span>
+              ))}
             </div>
             
             <div className="mt-auto flex items-center justify-between">
