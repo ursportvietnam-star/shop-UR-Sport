@@ -14,14 +14,37 @@
 @layer base {
   @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@100;200;300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
-  body {
+  html, body {
     @apply antialiased text-slate-900 bg-white;
     font-family: var(--font-sans);
+    overflow-x: hidden;
+    width: 100%;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  * {
+    @apply box-border;
+    max-width: 100vw;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-sans);
-    @apply font-bold tracking-tight;
+    @apply font-bold tracking-tight break-words;
+  }
+
+  p, span, div {
+    @apply break-words;
+  }
+
+  img {
+    @apply max-w-full h-auto;
+  }
+
+  /* Prevent horizontal bounce on iOS */
+  html, body {
+    overscroll-behavior-x: none;
+    -webkit-overflow-scrolling: touch;
   }
 }
 
@@ -47,7 +70,12 @@
   }
 
   .btn-premium {
-    @apply relative overflow-hidden px-8 py-4 rounded-xl font-black uppercase tracking-widest text-sm transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-blue-500/25;
+    @apply relative overflow-hidden px-8 py-4 rounded-xl font-black uppercase tracking-widest text-sm transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-blue-500/25 max-w-full text-center;
+  }
+
+  /* Responsive Utilities */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
   }
 }
 

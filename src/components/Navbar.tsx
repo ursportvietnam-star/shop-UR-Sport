@@ -79,26 +79,26 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
         <div className="flex h-16 items-center px-4 gap-0">
 
           {/* ─── LEFT: Hamburger + Logo ─── */}
-          <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
             <button
               onClick={() => setIsSidebarOpen(true)}
-              className={`${iconBtn} text-zinc-600 hover:bg-zinc-100`}
+              className={`${iconBtn} text-zinc-600 hover:bg-zinc-100 shrink-0`}
               aria-label="Menu"
             >
               <Menu className="h-5 w-5" />
             </button>
 
-            <Link to="/" className="flex flex-col items-start active:opacity-70 transition-opacity min-w-0">
+            <Link to="/" className="flex flex-col items-start active:opacity-70 transition-opacity min-w-0 shrink">
               <motion.div
                 animate={{ scale: isScrolled ? 0.92 : 1 }}
-                className="text-[22px] font-black italic tracking-tighter leading-none flex items-baseline origin-left"
+                className="text-[18px] xs:text-[20px] sm:text-[22px] font-black italic tracking-tighter leading-none flex items-baseline origin-left truncate"
               >
                 <span className="text-[#0082c8]">UR</span>
                 <span className="text-zinc-900">SPORT</span>
               </motion.div>
               <motion.span
                 animate={{ opacity: isScrolled ? 0 : 1 }}
-                className="text-[8px] font-semibold uppercase tracking-widest text-zinc-400 mt-px"
+                className="text-[7px] sm:text-[8px] font-semibold uppercase tracking-widest text-zinc-400 mt-px truncate"
               >
                 Phong Cách Thể Thao
               </motion.span>

@@ -352,9 +352,9 @@ export const ProductDetail: React.FC = () => {
         <nav className="flex items-center gap-2 text-xs font-medium text-zinc-400">
           <Link to="/" className="hover:text-black transition-colors">Home</Link>
           <ChevronRight className="h-3 w-3 text-zinc-300" />
-          <Link to={`/apparel/${categorySlug}`} className="hover:text-black transition-colors">{categoryName}</Link>
-          <ChevronRight className="h-3 w-3 text-zinc-300" />
-          <span className="text-zinc-500 truncate max-w-[200px] sm:max-w-md">{product.name}</span>
+          <Link to={`/apparel/${categorySlug}`} className="hover:text-black transition-colors shrink-0">{categoryName}</Link>
+          <ChevronRight className="h-3 w-3 text-zinc-300 shrink-0" />
+          <span className="text-zinc-500 truncate max-w-[120px] xs:max-w-[150px] sm:max-w-md">{product.name}</span>
         </nav>
 
         <div className="flex items-center gap-4 h-full">
@@ -577,8 +577,8 @@ export const ProductDetail: React.FC = () => {
                             { label: 'Phong cách', value: product.fashionStyle || 'Thể thao, Cơ bản, Hàn Quốc, Đường phố, Công sở' },
                             { label: 'Cổ áo', value: product.collarType || 'Cổ tròn' }
                           ].map(row => (
-                            <div key={row.label} className="flex items-center py-[14px] border-b border-zinc-100 last:border-0">
-                              <span className="text-zinc-400 text-[14px] w-44 shrink-0">{row.label}</span>
+                            <div key={row.label} className="flex flex-col sm:flex-row sm:items-center py-[14px] border-b border-zinc-100 last:border-0 gap-1 sm:gap-0">
+                              <span className="text-zinc-400 text-[13px] sm:text-[14px] w-full sm:w-44 shrink-0">{row.label}</span>
                               <span className="text-zinc-800 text-[14px] font-semibold">{row.value}</span>
                             </div>
                           ))}

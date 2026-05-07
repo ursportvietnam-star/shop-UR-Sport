@@ -549,7 +549,7 @@ function AppContent() {
     <AuthProvider>
       <ProductsProvider>
         <CartProvider>
-        <div className="min-h-screen bg-white font-sans selection:bg-black selection:text-white">
+        <div className="min-h-screen bg-white font-sans selection:bg-black selection:text-white w-full overflow-x-hidden relative">
           {!isAdminRoute && (
             <Navbar 
               onCartClick={() => setIsCartOpen(true)} 
