@@ -73,15 +73,23 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
             </div>
             
             <div className="mt-auto flex items-center justify-between">
-              <div className="flex flex-col">
-                {product.discountPrice && (
-                  <span className="text-[13px] text-zinc-400 line-through font-medium -mb-1">
-                    {product.price.toLocaleString('vi-VN')}₫
-                  </span>
-                )}
-                <span className="text-[19px] font-bold text-black">
-                  {(product.discountPrice || product.price).toLocaleString('vi-VN')}₫
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[19px] font-bold text-[#ff4d4f]">
+                  {(product.discountPrice || product.price).toLocaleString('vi-VN')}
+                  <span className="text-[14px] ml-0.5 underline">đ</span>
                 </span>
+                
+                {product.discountPrice && (
+                  <>
+                    <span className="text-[13px] text-zinc-400 line-through font-medium">
+                      {product.price.toLocaleString('vi-VN')}
+                      <span className="text-[11px] ml-0.5 underline">đ</span>
+                    </span>
+                    <span className="px-1.5 py-0.5 bg-red-50 text-red-500 text-[10px] font-bold rounded">
+                      -{Math.round(((product.price - product.discountPrice) / product.price) * 100)}%
+                    </span>
+                  </>
+                )}
               </div>
               
               <button 
