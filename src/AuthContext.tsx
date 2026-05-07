@@ -23,8 +23,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
       setUser(authUser);
       if (authUser) {
-        // Special case: Default admin email
-        if (authUser.email === 'ursportvietnam@gmail.com' && authUser.emailVerified) {
+        // Special case: hardcoded admin email — no emailVerified check needed
+        if (authUser.email === 'ursportvietnam@gmail.com') {
           setIsAdmin(true);
         } else {
           try {
@@ -46,9 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
-    // Force account selection to avoid blank window issues
     provider.setCustomParameters({ prompt: 'select_account' });
-    
     try {
       const result = await signInWithPopup(auth, provider);
       setUser(result.user);

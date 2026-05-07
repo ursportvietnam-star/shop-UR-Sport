@@ -69,6 +69,7 @@ export interface Order {
     phone: string;
     address: string;
   };
+  paymentMethod?: 'cod' | 'bank_transfer' | 'momo' | 'zalopay' | 'shopeepay' | string;
   note?: string;
   createdAt: any;
 }

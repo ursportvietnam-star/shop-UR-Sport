@@ -5,46 +5,69 @@ import { Button } from '@/components/ui/button';
 
 export const Hero: React.FC<{ onShopClick: () => void }> = ({ onShopClick }) => {
   return (
-    <div className="relative h-[80vh] w-full overflow-hidden bg-black">
-      <div className="absolute inset-0">
+    <div className="relative h-[85vh] w-full overflow-hidden bg-black">
+      <motion.div 
+        initial={{ scale: 1.1, opacity: 0 }}
+        animate={{ scale: 1, opacity: 0.7 }}
+        transition={{ duration: 2, ease: "easeOut" }}
+        className="absolute inset-0"
+      >
         <img
           src="https://images.unsplash.com/photo-1544919982-b61976f0ba43?auto=format&fit=crop&q=80&w=2000"
           alt="Hero"
-          className="h-full w-full object-cover opacity-70 scale-105"
+          className="h-full w-full object-cover"
           referrerPolicy="no-referrer"
         />
-        <div className="absolute inset-0 bg-black/30" />
-        <div className="absolute inset-0 bg-linear-to-r from-black/60 to-transparent" />
-      </div>
+      </motion.div>
+      <div className="absolute inset-0 bg-black/40" />
+      <div className="absolute inset-0 bg-linear-to-r from-black/80 to-transparent" />
 
       <div className="relative mx-auto flex h-full max-w-[1440px] flex-col justify-center px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, x: -50 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          className="max-w-3xl"
-        >
-          <span className="text-secondary font-black uppercase tracking-widest text-sm mb-6 block">
-            BỘ SƯU TẬP THIẾT BỊ CAO CẤP
-          </span>
-          <h1 className="text-5xl sm:text-7xl lg:text-8xl font-black italic tracking-tighter text-white uppercase leading-[1] mb-8">
-            Hiệu Suất <br />
-            Vượt Trội <br />
-            Bắt Đầu Từ Đây.
-          </h1>
-          <p className="text-lg sm:text-xl text-zinc-300 max-w-lg mb-10 leading-relaxed font-medium">
-            Trang bị đồ thể thao hiện đại, mang lại sự tự tin và thoải mái tuyệt đối trong mọi buổi tập.
-          </p>
+        <div className="max-w-4xl">
+          <motion.span 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.6 }}
+            className="text-[#0082c8] font-bold uppercase tracking-[0.3em] text-xs sm:text-sm mb-6 block"
+          >
+            BỘ SƯU TẬP THIẾT BỊ CAO CẤP 2026
+          </motion.span>
           
-          <div className="flex flex-wrap gap-4">
+          <motion.h1 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7, duration: 0.8 }}
+            className="text-6xl sm:text-8xl lg:text-9xl font-bold tracking-tighter text-white uppercase leading-[0.9] mb-8"
+          >
+            HIỆU SUẤT <br />
+            <span className="text-[#0082c8]">VƯỢT TRỘI</span> <br />
+            MỖI NGÀY.
+          </motion.h1>
+          
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.9, duration: 0.6 }}
+            className="text-lg sm:text-xl text-zinc-300 max-w-xl mb-12 leading-relaxed font-medium"
+          >
+            Trang bị đồ thể thao hiện đại, mang lại sự tự tin và thoải mái tuyệt đối trong mọi buổi tập.
+          </motion.p>
+          
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.1, duration: 0.6 }}
+            className="flex flex-wrap gap-4"
+          >
             <Button 
               onClick={onShopClick}
-              className="bg-[#0082c8] border-2 border-[#0082c8] text-white hover:bg-white hover:text-[#0082c8] font-black px-10 py-6 rounded-full text-sm uppercase tracking-widest transition-all shadow-lg shadow-blue-500/30"
+              className="bg-[#0082c8] border-2 border-[#0082c8] text-white hover:bg-white hover:text-[#0082c8] font-bold px-12 py-8 rounded-2xl text-[13px] uppercase tracking-widest transition-all shadow-2xl shadow-blue-500/40 hover:scale-105 active:scale-95"
             >
-              Khám phá Bộ sưu tập UR
+              Khám phá ngay
+              <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
     </div>
   );

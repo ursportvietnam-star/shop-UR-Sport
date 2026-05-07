@@ -38,7 +38,8 @@ import {
   X,
   Truck,
   ShieldCheck,
-  RefreshCcw
+  RefreshCcw,
+  MessageCircle
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { toast } from 'sonner';
@@ -337,42 +338,59 @@ export const ProductDetail: React.FC = () => {
   };
 
   return (
-    <div className="bg-white min-h-screen pb-20 font-sans text-zinc-900">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="bg-white min-h-screen pt-6 pb-32 font-sans text-zinc-900"
+    >
       {/* 1. SEO Breadcrumbs & Nav Row */}
-      <div className="mx-auto max-w-[1400px] px-4 py-3 sm:px-6 lg:px-8 flex items-center justify-between border-b border-zinc-100 mb-8">
-        <nav className="flex items-center gap-2 text-[11px] font-medium text-zinc-400 tracking-wider">
+      <motion.div 
+        initial={{ y: -10, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="mx-auto max-w-[1400px] px-4 h-14 sm:px-6 lg:px-8 flex items-center justify-between border-b border-zinc-100 mb-8"
+      >
+        <nav className="flex items-center gap-2 text-xs font-medium text-zinc-400">
           <Link to="/" className="hover:text-black transition-colors">Home</Link>
-          <span className="opacity-30">/</span>
+          <ChevronRight className="h-3 w-3 text-zinc-300" />
           <Link to={`/apparel/${categorySlug}`} className="hover:text-black transition-colors">{categoryName}</Link>
-          <span className="opacity-30">/</span>
-          <span className="text-zinc-600">{product.name}</span>
+          <ChevronRight className="h-3 w-3 text-zinc-300" />
+          <span className="text-zinc-500 truncate max-w-[200px] sm:max-w-md">{product.name}</span>
         </nav>
 
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={() => prevProduct && navigate(`/apparel/${categorySlug}/${prevProduct.slug}`)}
-            disabled={!prevProduct}
-            className="w-8 h-8 rounded-full border border-zinc-200 flex items-center justify-center hover:bg-zinc-50 disabled:opacity-30 transition-all"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <span className="text-[10px] font-bold min-w-[50px] text-center text-zinc-400">
-            {currentIndex + 1} / {categoryProducts.length}
-          </span>
-          <button 
-            onClick={() => nextProduct && navigate(`/apparel/${categorySlug}/${nextProduct.slug}`)}
-            disabled={!nextProduct}
-            className="w-8 h-8 rounded-full border border-zinc-200 flex items-center justify-center hover:bg-zinc-50 disabled:opacity-30 transition-all"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
+        <div className="flex items-center gap-4 h-full">
+          <div className="flex items-center gap-2 h-full">
+            <button 
+              onClick={() => prevProduct && navigate(`/apparel/${categorySlug}/${prevProduct.slug}`)}
+              disabled={!prevProduct}
+              className="w-8 h-8 rounded-full border border-zinc-100 flex items-center justify-center hover:bg-zinc-50 disabled:opacity-20 transition-all group"
+            >
+              <ChevronLeft className="h-3.5 w-3.5 text-zinc-400 group-hover:text-zinc-900" />
+            </button>
+            
+            <span className="text-xs font-medium text-zinc-400 min-w-[40px] text-center">
+              {currentIndex + 1} <span className="text-zinc-200 mx-0.5">/</span> {categoryProducts.length}
+            </span>
 
+            <button 
+              onClick={() => nextProduct && navigate(`/apparel/${categorySlug}/${nextProduct.slug}`)}
+              disabled={!nextProduct}
+              className="w-8 h-8 rounded-full border border-zinc-100 flex items-center justify-center hover:bg-zinc-50 disabled:opacity-20 transition-all group"
+            >
+              <ChevronRight className="h-3.5 w-3.5 text-zinc-400 group-hover:text-zinc-900" />
+            </button>
+          </div>
+        </div>
+      </motion.div>
+ 
       <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-          {/* Left: Product Gallery */}
-          <div className="lg:col-span-5 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16">
+          {/* Left: Images */}
+          <motion.div 
+            initial={{ x: -20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ delay: 0.1 }}
+            className="lg:col-span-5 space-y-6"
+          >
             <div className="relative aspect-square w-full overflow-hidden bg-white border border-zinc-100 rounded-2xl shadow-sm">
               {mainImage && (
                 <motion.img 
@@ -393,16 +411,33 @@ export const ProductDetail: React.FC = () => {
                 </button>
               ))}
             </div>
-          </div>
+          </motion.div>
 
           {/* Right: Product Info */}
-          <div className="lg:col-span-7 space-y-10 lg:sticky lg:top-24">
+          <motion.div 
+            initial={{ x: 20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="lg:col-span-7 space-y-10 lg:sticky lg:top-24"
+          >
             <div className="space-y-6">
               <div className="space-y-2">
-                <p className="text-[13px] font-bold text-[#00a651] uppercase tracking-widest">UR SPORT Official</p>
-                <h1 className="text-[20px] font-medium text-zinc-900 leading-tight">
+                <motion.p 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="text-[13px] font-bold text-[#00a651] uppercase tracking-widest"
+                >
+                  UR SPORT Official
+                </motion.p>
+                <motion.h1 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="text-[20px] font-medium text-zinc-900 leading-tight"
+                >
                   {product.name}
-                </h1>
+                </motion.h1>
                 <div className="flex items-center flex-wrap gap-6 pt-4">
                   <div className="flex items-center gap-1.5">
                     {[...Array(5)].map((_, i) => (
@@ -473,7 +508,7 @@ export const ProductDetail: React.FC = () => {
                 </div>
               </div>
 
-                <div className="flex items-center gap-4 h-16 pt-4">
+                <div className="hidden md:flex items-center gap-4 h-16 pt-4">
                   <div className="flex items-center border-2 border-zinc-100 rounded-2xl bg-white overflow-hidden h-full">
                     <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-14 h-full flex items-center justify-center text-zinc-400 hover:text-[#0082c8] hover:bg-zinc-50 transition-colors"><Minus className="h-4 w-4" /></button>
                     <div className="w-14 h-full flex items-center justify-center font-bold text-zinc-900 text-lg border-x-2 border-zinc-50">{quantity}</div>
@@ -517,11 +552,11 @@ export const ProductDetail: React.FC = () => {
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-
-        {/* Tabs Section */}
-        <div className="mt-12 border-t border-zinc-100 pt-12">
+            </motion.div>
+        </div>
+ 
+        {/* Bottom: Tabs/Description */}
+        <div className="mt-20 pt-20 border-t border-zinc-100">
           <div className="w-full">
             <div className="space-y-12">
 
@@ -896,7 +931,7 @@ export const ProductDetail: React.FC = () => {
           </motion.div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 };
 

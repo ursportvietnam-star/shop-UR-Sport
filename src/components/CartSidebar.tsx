@@ -54,9 +54,15 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose, onChe
                   </div>
                 ) : (
                   <div className="py-6 space-y-6">
-                    {cart.map((item) => (
-                      <div key={`${item.id}-${item.selectedColor}-${item.selectedSize}`} className="flex gap-4">
-                        <div className="h-24 w-20 flex-shrink-0 overflow-hidden bg-zinc-100">
+                    {cart.map((item, idx) => (
+                      <motion.div 
+                        key={`${item.id}-${item.selectedColor}-${item.selectedSize}`}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: idx * 0.1 }}
+                        className="flex gap-4"
+                      >
+                        <div className="h-24 w-20 flex-shrink-0 overflow-hidden bg-zinc-100 rounded-xl">
                           {item.images && item.images[0] ? (
                             <img src={item.images[0]} alt={item.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                           ) : (
@@ -65,39 +71,39 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose, onChe
                         </div>
                         <div className="flex flex-1 flex-col justify-between">
                           <div>
-                            <div className="flex justify-between">
-                              <h3 className="text-sm font-black uppercase line-clamp-1">{item.name}</h3>
-                              <p className="text-sm font-black">{((item.discountPrice || item.price) * item.quantity).toLocaleString('vi-VN')}₫</p>
+                            <div className="flex justify-between items-start">
+                              <h3 className="text-[13px] font-bold text-zinc-900 leading-tight line-clamp-2 pr-4">{item.name}</h3>
+                              <p className="text-[13px] font-bold text-zinc-900 shrink-0">{((item.discountPrice || item.price) * item.quantity).toLocaleString('vi-VN')}₫</p>
                             </div>
-                            <p className="text-xs text-zinc-500 font-medium mt-1">
+                            <p className="text-[11px] text-zinc-400 font-medium mt-1">
                               {item.selectedColor} / {item.selectedSize}
                             </p>
                           </div>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center border rounded-none">
+                          <div className="flex items-center justify-between mt-2">
+                            <div className="flex items-center border border-zinc-100 rounded-lg overflow-hidden">
                               <button 
                                 onClick={() => updateQuantity(item.id, item.selectedColor, item.selectedSize, item.quantity - 1)}
-                                className="p-1 hover:bg-zinc-50"
+                                className="p-1.5 hover:bg-zinc-50 text-zinc-400"
                               >
                                 <Minus className="h-3 w-3" />
                               </button>
-                              <span className="w-8 text-center text-xs font-bold">{item.quantity}</span>
+                              <span className="w-8 text-center text-xs font-bold text-zinc-900">{item.quantity}</span>
                               <button 
                                 onClick={() => updateQuantity(item.id, item.selectedColor, item.selectedSize, item.quantity + 1)}
-                                className="p-1 hover:bg-zinc-50"
+                                className="p-1.5 hover:bg-zinc-50 text-zinc-400"
                               >
                                 <Plus className="h-3 w-3" />
                               </button>
                             </div>
                             <button 
                               onClick={() => removeFromCart(item.id, item.selectedColor, item.selectedSize)}
-                              className="text-zinc-400 hover:text-red-500 transition-colors"
+                              className="h-8 w-8 flex items-center justify-center text-zinc-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
                         </div>
-                      </div>
+                      </motion.div>
                     ))}
                   </div>
                 )}
@@ -114,9 +120,9 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose, onChe
                   </p>
                   <Button 
                     onClick={onCheckout}
-                    className="w-full bg-black text-white hover:bg-zinc-800 font-black py-8 rounded-none text-lg tracking-tight flex items-center justify-center gap-2"
+                    className="w-full bg-[#0082c8] text-white hover:bg-[#0071ae] font-bold h-14 rounded-xl text-sm uppercase tracking-widest shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
                   >
-                    THANH TOÁN NGAY <ArrowRight className="h-5 w-5" />
+                    Tiến hành thanh toán <ArrowRight className="h-4 w-4" />
                   </Button>
                 </div>
               )}
