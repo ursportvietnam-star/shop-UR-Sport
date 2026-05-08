@@ -557,18 +557,14 @@ export const ProductDetail: React.FC = () => {
  
         {/* Bottom: Tabs/Description */}
         <div className="mt-20 pt-20 border-t border-zinc-100">
-          <div className="w-full">
-            <div className="space-y-12">
-
-              <div>
-                  <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-0">
-                    {/* Left Column: Main Content */}
-                    <div className="min-w-0 lg:border-r lg:border-zinc-200 lg:pr-10 space-y-10 overflow-hidden w-full">
+          <div className="space-y-16">
+                    {/* Full Width Content Section */}
+                    <div className="min-w-0 space-y-12 w-full">
 
                       {/* ── 1. CHI TIẾT SẢN PHẨM ── */}
                       <div>
-                        <h4 className="text-[16px] font-bold text-zinc-900 italic mb-6 pb-4 border-b border-zinc-200">CHI TIẾT SẢN PHẨM</h4>
-                        <div className="grid grid-cols-1 gap-y-0 w-full">
+                        <h4 className="text-[18px] font-bold text-zinc-900 italic mb-6 pb-4 border-b-2 border-zinc-900 inline-block pr-8">CHI TIẾT SẢN PHẨM</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-0 w-full max-w-[1000px]">
                           {[
                             { label: 'Thương hiệu', value: product.brand || 'UR SPORT' },
                             { label: 'Xuất xứ', value: product.origin || 'Việt Nam' },
@@ -577,8 +573,8 @@ export const ProductDetail: React.FC = () => {
                             { label: 'Phong cách', value: product.fashionStyle || 'Thể thao, Cơ bản, Hàn Quốc, Đường phố, Công sở' },
                             { label: 'Cổ áo', value: product.collarType || 'Cổ tròn' }
                           ].map(row => (
-                            <div key={row.label} className="flex flex-col sm:flex-row sm:items-center py-[14px] border-b border-zinc-100 last:border-0 gap-1 sm:gap-0 w-full">
-                              <span className="text-zinc-400 text-[13px] sm:text-[14px] w-full sm:w-44 shrink-0">{row.label}</span>
+                            <div key={row.label} className="flex items-center py-[14px] border-b border-zinc-100 last:border-0 gap-4 w-full">
+                              <span className="text-zinc-400 text-[14px] w-32 shrink-0">{row.label}</span>
                               <span className="text-zinc-800 text-[14px] font-semibold break-keep">{row.value}</span>
                             </div>
                           ))}
@@ -588,32 +584,34 @@ export const ProductDetail: React.FC = () => {
                       {/* ── 2. HƯỚNG DẪN CHỌN SIZE ── */}
                       {product.sizeGuideUrl && (
                         <div>
-                          <h4 className="text-[16px] font-bold text-zinc-900 italic mb-6 pb-4 border-b border-zinc-200">Hướng Dẫn Chọn Size</h4>
-                          <img src={product.sizeGuideUrl} alt="Hướng dẫn chọn size" className="w-full max-w-[700px] h-auto rounded-lg border border-zinc-200" />
+                          <h4 className="text-[18px] font-bold text-zinc-900 italic mb-6 pb-4 border-b-2 border-zinc-900 inline-block pr-8">HƯỚNG DẪN CHỌN SIZE</h4>
+                          <div className="flex justify-start">
+                            <img src={product.sizeGuideUrl} alt="Hướng dẫn chọn size" className="w-full max-w-[800px] h-auto rounded-lg border border-zinc-200" />
+                          </div>
                         </div>
                       )}
 
                       {/* ── 3. MÔ TẢ SẢN PHẨM ── */}
                       <div className="w-full">
-                        <h4 className="text-[16px] font-bold text-zinc-900 italic mb-6 pb-4 border-b border-zinc-200">MÔ TẢ SẢN PHẨM</h4>
+                        <h4 className="text-[18px] font-bold text-zinc-900 italic mb-8 pb-4 border-b-2 border-zinc-900 inline-block pr-8">MÔ TẢ SẢN PHẨM</h4>
                         <div className="relative w-full">
                           <div className={cn(
-                            "product-description-container notranslate max-w-none text-zinc-600 leading-loose overflow-hidden transition-all duration-700 w-full",
-                            !isDescriptionExpanded ? "max-h-[800px]" : "max-h-none"
+                            "product-description-container notranslate ql-editor max-w-none text-zinc-600 leading-loose transition-all duration-700 w-full",
+                            !isDescriptionExpanded ? "max-h-[1200px] overflow-hidden" : "max-h-none"
                           )}>
                             <div 
                               dangerouslySetInnerHTML={{ __html: product.description }} 
-                              className="w-full break-normal pr-12 [&_*]:max-w-full [&_img]:w-full [&_img]:h-auto [&_table]:w-full [&_table]:table-fixed"
+                              className="w-full prose prose-zinc prose-lg max-w-none [&_img]:mx-auto [&_img]:rounded-xl [&_img]:shadow-sm"
                               style={{ wordBreak: 'normal', overflowWrap: 'normal' }}
                             />
                           </div>
-                          {!isDescriptionExpanded && <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-white to-transparent pointer-events-none" />}
-                          <div className="flex justify-center pt-8">
+                          {!isDescriptionExpanded && <div className="absolute bottom-0 left-0 right-0 h-60 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none" />}
+                          <div className="flex justify-center pt-12">
                             <button 
                               onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                              className="px-5 py-2 bg-white border border-zinc-200 text-[#0082c8] text-sm font-bold rounded-full shadow-sm hover:text-black hover:border-zinc-300 hover:shadow-md transition-all flex items-center gap-2"
+                              className="px-8 py-3 bg-zinc-900 text-white text-sm font-bold rounded-full shadow-lg hover:bg-[#0082c8] hover:-translate-y-1 transition-all flex items-center gap-2"
                             >
-                              {isDescriptionExpanded ? 'Thu gọn' : 'Xem thêm nội dung'}
+                              {isDescriptionExpanded ? 'Thu gọn nội dung' : 'Xem thêm mô tả chi tiết'}
                               <ChevronDown className={cn("h-4 w-4 transition-transform", isDescriptionExpanded && "rotate-180")} />
                             </button>
                           </div>
@@ -621,29 +619,27 @@ export const ProductDetail: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Right Column: Sidebar */}
-                    <div className="hidden lg:block w-[280px] shrink-0 pl-10">
-                      <div className="sticky top-24">
-                        <h4 className="text-[14px] text-zinc-400 mb-6 font-bold uppercase tracking-widest">Sản Phẩm Nổi Bật</h4>
-                        <div className="space-y-8">
-                          {categoryProducts.filter(p => p.id !== product.id).slice(0, 4).map(p => (
-                            <Link to={`/apparel/${categorySlug || 'all'}/${p.slug}`} key={p.id} className="block group">
-                              <div className="aspect-[4/5] w-full overflow-hidden bg-zinc-50 mb-3 relative rounded-xl border border-zinc-100">
-                                <img src={p.images?.[0]} alt={p.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                                {p.videos && p.videos.length > 0 && (
-                                  <div className="absolute bottom-2 right-2 w-7 h-7 bg-black/40 backdrop-blur-sm rounded-full flex items-center justify-center">
-                                    <Play className="h-3 w-3 text-white fill-white" />
-                                  </div>
-                                )}
-                              </div>
-                              <h5 className="text-[13px] font-bold text-zinc-800 leading-snug line-clamp-2 group-hover:text-[#0082c8] transition-colors mb-2">{p.name}</h5>
-                              <p className="text-[#ff3b30] font-black text-[15px]">
-                                {p.discountPrice ? p.discountPrice.toLocaleString('vi-VN') : p.price.toLocaleString('vi-VN')}₫
-                              </p>
-                            </Link>
-                          ))}
-                        </div>
+                    {/* Bottom Suggestions: Suggested Products (was sidebar) */}
+                    <div className="w-full pt-16 border-t border-zinc-200">
+                      <div className="flex items-center justify-between mb-10">
+                        <h4 className="text-[20px] font-bold text-zinc-900 uppercase tracking-tight">CÓ THỂ BẠN CŨNG THÍCH</h4>
+                        <Link to={`/apparel/${categorySlug || 'all'}`} className="text-[#0082c8] text-sm font-bold hover:underline">Xem tất cả</Link>
                       </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                        {categoryProducts.filter(p => p.id !== product.id).slice(0, 5).map(p => (
+                          <Link to={`/apparel/${categorySlug || 'all'}/${p.slug}`} key={p.id} className="block group">
+                            <div className="aspect-[4/5] w-full bg-zinc-50 mb-4 relative rounded-2xl border border-zinc-100 shadow-sm group-hover:shadow-md transition-all">
+                              <img src={p.images?.[0]} alt={p.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                              {p.videos && p.videos.length > 0 && (
+                                <div className="absolute bottom-3 right-3 w-8 h-8 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center">
+                                  <Play className="h-3 w-3 text-white fill-white" />
+                                </div>
+                              )}
+                            </div>
+                            <h5 className="text-[14px] font-bold text-zinc-800 leading-snug line-clamp-2 group-hover:text-[#0082c8] transition-colors mb-2">{p.name}</h5>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[#ff3b30] font-black text-[16px]">
+                                {p.discountPrice ? p.discountPrice.toLocaleString('vi-VN') : p.price.toLocaleString('vi-VN')}₫
                     </div>
                   </div>
               </div>
