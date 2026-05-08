@@ -93,7 +93,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
                 animate={{ scale: isScrolled ? 0.92 : 1 }}
                 className="text-[18px] xs:text-[20px] sm:text-[22px] font-black italic tracking-tighter leading-none flex items-baseline origin-left truncate"
               >
-                <span className="text-[#0082c8]">UR</span>
+                <span className="text-[#1e4b64]">UR</span>
                 <span className="text-zinc-900">SPORT</span>
               </motion.div>
               <motion.span
@@ -113,11 +113,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Tìm kiếm sản phẩm..."
-                className="w-full bg-zinc-50 border border-zinc-200 rounded-full py-2.5 px-5 pr-12 text-sm focus:bg-white focus:ring-2 focus:ring-[#0082c8]/15 focus:border-[#0082c8] placeholder:text-zinc-400 font-medium outline-none transition-all"
+                className="w-full bg-zinc-50 border border-zinc-200 rounded-full py-2.5 px-5 pr-12 text-sm focus:bg-white focus:ring-2 focus:ring-[#1e4b64]/15 focus:border-[#1e4b64] placeholder:text-zinc-400 font-medium outline-none transition-all"
               />
               <button
                 type="submit"
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center bg-zinc-900 rounded-full text-white group-focus-within:bg-[#0082c8] transition-colors"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center bg-zinc-900 rounded-full text-white group-focus-within:bg-[#1e4b64] transition-colors"
               >
                 <Search className="h-3.5 w-3.5" />
               </button>
@@ -132,7 +132,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
               href="tel:+84917722425"
               className="hidden lg:flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-zinc-50 transition-colors text-zinc-600 mr-2"
             >
-              <div className="p-1.5 bg-blue-50 text-[#0082c8] rounded-lg">
+              <div className="p-1.5 bg-blue-50 text-[#1e4b64] rounded-lg">
                 <Phone className="h-3.5 w-3.5" />
               </div>
               <span className="text-[12px] font-bold">+84 917 722 425</span>
@@ -141,7 +141,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
             {/* Search icon — mobile only */}
             <button
               onClick={() => setIsMobileSearchOpen(v => !v)}
-              className={`${iconBtn} md:hidden ${isMobileSearchOpen ? 'text-[#0082c8] bg-blue-50' : 'text-zinc-600 hover:bg-zinc-100'}`}
+              className={`${iconBtn} md:hidden ${isMobileSearchOpen ? 'text-[#1e4b64] bg-blue-50' : 'text-zinc-600 hover:bg-zinc-100'}`}
               aria-label="Tìm kiếm"
             >
               <Search className="h-5 w-5" />
@@ -171,7 +171,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
                   </button>
                   <button
                     onClick={() => openAuthModal('register')}
-                    className="h-9 flex items-center gap-2 px-4 rounded-xl bg-[#0082c8] hover:bg-[#0071ae] text-sm font-bold text-white shadow-sm transition-all active:scale-95"
+                    className="h-9 flex items-center gap-2 px-4 rounded-xl bg-[#1e4b64] hover:bg-[#153446] text-sm font-bold text-white shadow-sm transition-all active:scale-95"
                   >
                     <UserPlus className="h-4 w-4" />
                     Đăng ký
@@ -210,7 +210,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     exit={{ scale: 0 }}
-                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center bg-[#0082c8] text-white text-[10px] font-black rounded-full border-2 border-white"
+                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center bg-[#1e4b64] text-white text-[10px] font-black rounded-full border-2 border-white"
                   >
                     {cartCount}
                   </motion.span>

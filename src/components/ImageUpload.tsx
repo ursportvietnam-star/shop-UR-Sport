@@ -140,8 +140,8 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
               ? "border-red-400 bg-red-50/5"
               : isDone
               ? "border-emerald-500/50 bg-emerald-500/5"
-              : "border-[#0082c8] bg-blue-500/5"
-            : "border-white/10 hover:border-[#0082c8] hover:bg-white/[0.02]",
+              : "border-[#1e4b64] bg-blue-500/5"
+            : "border-white/10 hover:border-[#1e4b64] hover:bg-white/[0.02]",
           isUploading && "pointer-events-none"
         )}
       >
@@ -170,7 +170,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                   <button
                     type="button"
                     onClick={handleCopyUrl}
-                    className="p-2 bg-[#0f1117]/80 backdrop-blur-md border border-white/10 rounded-lg text-white hover:bg-[#0082c8] transition-all"
+                    className="p-2 bg-[#0f1117]/80 backdrop-blur-md border border-white/10 rounded-lg text-white hover:bg-[#1e4b64] transition-all"
                     title="Sao chép link"
                   >
                     <CheckCircle2 className="h-4 w-4" />
@@ -183,7 +183,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
               <div className={cn("w-full space-y-2", compact ? "max-w-[40px]" : "max-w-[200px]")}>
                 <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-[#0082c8] rounded-full transition-all duration-200"
+                    className="h-full bg-[#1e4b64] rounded-full transition-all duration-200"
                     style={{ width: `${progress}%` }}
                   />
                 </div>
@@ -213,7 +213,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
         ) : (
           <>
             <div className={cn("bg-zinc-100 rounded-full group-hover:bg-blue-100 transition-colors flex items-center justify-center", compact ? "p-2" : "p-4 mb-3")}>
-              <Upload className={cn("text-zinc-400 group-hover:text-[#0082c8] transition-colors", compact ? "h-4 w-4" : "h-7 w-7")} />
+              <Upload className={cn("text-zinc-400 group-hover:text-[#1e4b64] transition-colors", compact ? "h-4 w-4" : "h-7 w-7")} />
             </div>
             {!compact && (
               <>

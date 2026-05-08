@@ -300,7 +300,7 @@ export const ProductDetail: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="h-12 w-12 rounded-full border-4 border-[#0082c8] border-t-transparent animate-spin" />
+        <div className="h-12 w-12 rounded-full border-4 border-[#1e4b64] border-t-transparent animate-spin" />
       </div>
     );
   }
@@ -461,7 +461,7 @@ export const ProductDetail: React.FC = () => {
             <div className="space-y-8">
               <div className="space-y-4">
                 <p className="text-[14px] font-bold text-zinc-900 uppercase tracking-wider">
-                  Màu sắc: <span className="text-[#0082c8] font-bold ml-1">{selectedColor}</span>
+                  Màu sắc: <span className="text-[#1e4b64] font-bold ml-1">{selectedColor}</span>
                 </p>
                 <div className="flex flex-wrap gap-3">
                   {(product.colors || []).map((color) => (
@@ -470,7 +470,7 @@ export const ProductDetail: React.FC = () => {
                       onClick={() => setSelectedColor(color)}
                       className={cn(
                         "px-6 h-12 rounded-xl border-2 transition-all font-bold uppercase text-[13px] tracking-wide",
-                        selectedColor === color ? "border-[#0082c8] bg-blue-50/30 text-[#0082c8]" : "border-zinc-100 text-zinc-600 hover:border-zinc-300"
+                        selectedColor === color ? "border-[#1e4b64] bg-blue-50/30 text-[#1e4b64]" : "border-zinc-100 text-zinc-600 hover:border-zinc-300"
                       )}
                     >
                       {color}
@@ -482,7 +482,7 @@ export const ProductDetail: React.FC = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <p className="text-[14px] font-bold text-zinc-900 uppercase tracking-wider">
-                    Kích cỡ: <span className="text-[#0082c8] font-bold ml-1">{selectedSize}</span>
+                    Kích cỡ: <span className="text-[#1e4b64] font-bold ml-1">{selectedSize}</span>
                   </p>
                   <button onClick={() => setIsSizeGuideOpen(true)} className="text-[12px] font-bold text-[#0068c9] hover:underline uppercase tracking-widest italic">
                     Size Guide
@@ -495,7 +495,7 @@ export const ProductDetail: React.FC = () => {
                       onClick={() => setSelectedSize(size)}
                       className={cn(
                         "min-w-[70px] h-12 rounded-xl text-[14px] font-bold transition-all border-2 flex items-center justify-center",
-                        selectedSize === size ? "border-[#0082c8] text-[#0082c8] bg-blue-50/30" : "border-zinc-100 text-zinc-600 hover:border-zinc-300"
+                        selectedSize === size ? "border-[#1e4b64] text-[#1e4b64] bg-blue-50/30" : "border-zinc-100 text-zinc-600 hover:border-zinc-300"
                       )}
                     >
                       {size}
@@ -506,15 +506,15 @@ export const ProductDetail: React.FC = () => {
 
               <div className="hidden md:flex items-center gap-4 h-16 pt-4">
                 <div className="flex items-center border-2 border-zinc-100 rounded-2xl bg-white overflow-hidden h-full">
-                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-14 h-full flex items-center justify-center text-zinc-400 hover:text-[#0082c8] hover:bg-zinc-50 transition-colors">
+                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-14 h-full flex items-center justify-center text-zinc-400 hover:text-[#1e4b64] hover:bg-zinc-50 transition-colors">
                     <Minus className="h-4 w-4" />
                   </button>
                   <div className="w-14 h-full flex items-center justify-center font-bold text-zinc-900 text-lg border-x-2 border-zinc-50">{quantity}</div>
-                  <button onClick={() => setQuantity(quantity + 1)} className="w-14 h-full flex items-center justify-center text-zinc-400 hover:text-[#0082c8] hover:bg-zinc-50 transition-colors">
+                  <button onClick={() => setQuantity(quantity + 1)} className="w-14 h-full flex items-center justify-center text-zinc-400 hover:text-[#1e4b64] hover:bg-zinc-50 transition-colors">
                     <Plus className="h-4 w-4" />
                   </button>
                 </div>
-                <button onClick={handleAddToCart} className="flex-1 h-full bg-[#f0f9ff] border-2 border-[#0082c8] text-[#0082c8] font-bold rounded-2xl text-[14px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-blue-100 transition-all active:scale-[0.98]">
+                <button onClick={handleAddToCart} className="flex-1 h-full bg-[#f0f9ff] border-2 border-[#1e4b64] text-[#1e4b64] font-bold rounded-2xl text-[14px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-blue-100 transition-all active:scale-[0.98]">
                   <ShoppingCart className="h-5 w-5" /> Thêm vào giỏ
                 </button>
                 <button onClick={handleBuyNow} className="flex-1 h-full bg-[#1e4b64] text-white font-bold rounded-2xl text-[14px] uppercase tracking-widest hover:bg-[#153a4d] transition-all active:scale-[0.98] shadow-lg">
@@ -527,7 +527,7 @@ export const ProductDetail: React.FC = () => {
                 <div className="bg-zinc-50/80 rounded-2xl p-5 grid grid-cols-2 gap-4">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                      <Truck className="h-5 w-5 text-[#0082c8]" />
+                      <Truck className="h-5 w-5 text-[#1e4b64]" />
                     </div>
                     <div>
                       <p className="text-[11px] font-black uppercase tracking-tight">Miễn phí giao hàng</p>
@@ -536,7 +536,7 @@ export const ProductDetail: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                      <ShieldCheck className="h-5 w-5 text-[#0082c8]" />
+                      <ShieldCheck className="h-5 w-5 text-[#1e4b64]" />
                     </div>
                     <div>
                       <p className="text-[11px] font-black uppercase tracking-tight">Thanh toán an toàn</p>
@@ -631,7 +631,7 @@ export const ProductDetail: React.FC = () => {
                 <div className="flex justify-center pt-10">
                   <button
                     onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                    className="px-8 py-3 bg-white text-[#005fa3] border border-zinc-200 text-sm font-bold rounded-full shadow-sm hover:text-[#0082c8] hover:border-[#0082c8] hover:-translate-y-1 transition-all flex items-center gap-2 group"
+                    className="px-8 py-3 bg-white text-[#153446] border border-zinc-200 text-sm font-bold rounded-full shadow-sm hover:text-[#1e4b64] hover:border-[#1e4b64] hover:-translate-y-1 transition-all flex items-center gap-2 group"
                   >
                     {isDescriptionExpanded ? 'Thu gọn' : 'Xem thêm'}
                     <ChevronDown className={cn("h-4 w-4 transition-all duration-300", isDescriptionExpanded && "rotate-180")} />
@@ -644,7 +644,7 @@ export const ProductDetail: React.FC = () => {
             <div className="w-full pt-12 border-t border-zinc-200">
               <div className="flex items-center justify-between mb-10">
                 <h4 className="text-[20px] font-bold text-zinc-900 uppercase tracking-tight">CÓ THỂ BẠN CŨNG THÍCH</h4>
-                <Link to={`/apparel/${categorySlug || 'all'}`} className="text-[#0082c8] text-sm font-bold hover:underline">
+                <Link to={`/apparel/${categorySlug || 'all'}`} className="text-[#1e4b64] text-sm font-bold hover:underline">
                   Xem tất cả
                 </Link>
               </div>
@@ -663,7 +663,7 @@ export const ProductDetail: React.FC = () => {
                         </div>
                       )}
                     </div>
-                    <h5 className="text-[14px] font-bold text-zinc-800 leading-snug line-clamp-2 group-hover:text-[#0082c8] transition-colors mb-2">
+                    <h5 className="text-[14px] font-bold text-zinc-800 leading-snug line-clamp-2 group-hover:text-[#1e4b64] transition-colors mb-2">
                       {p.name}
                     </h5>
                     <div className="flex items-center gap-2">
@@ -970,13 +970,13 @@ export const ProductDetail: React.FC = () => {
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-md border-t border-zinc-200 p-3 pb-safe flex gap-2 shadow-[0_-8px_20px_-10px_rgba(0,0,0,0.1)]">
         <button
           onClick={handleAddToCart}
-          className="flex-1 h-12 bg-[#f0f9ff] border-2 border-[#0082c8] text-[#0082c8] font-bold rounded-xl text-[13px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-transform"
+          className="flex-1 h-12 bg-[#f0f9ff] border-2 border-[#1e4b64] text-[#1e4b64] font-bold rounded-xl text-[13px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-transform"
         >
           <ShoppingCart className="h-4 w-4" /> Thêm
         </button>
         <button
           onClick={handleBuyNow}
-          className="flex-[1.2] h-12 bg-[#0082c8] text-white font-bold rounded-xl text-[13px] uppercase tracking-widest active:scale-95 transition-transform shadow-lg shadow-blue-500/20"
+          className="flex-[1.2] h-12 bg-[#1e4b64] text-white font-bold rounded-xl text-[13px] uppercase tracking-widest active:scale-95 transition-transform shadow-lg shadow-blue-500/20"
         >
           Mua Ngay
         </button>

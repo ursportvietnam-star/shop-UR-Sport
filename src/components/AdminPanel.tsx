@@ -339,7 +339,7 @@ export const AdminPanel: React.FC = () => {
     return (
       <div className="min-h-screen bg-[#0f1117] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-12 w-12 rounded-full border-4 border-[#0082c8] border-t-transparent animate-spin" />
+          <div className="h-12 w-12 rounded-full border-4 border-[#1e4b64] border-t-transparent animate-spin" />
           <p className="text-white/50 font-medium text-sm">Đang xác thực...</p>
         </div>
       </div>
@@ -359,7 +359,7 @@ export const AdminPanel: React.FC = () => {
           </p>
           <button
             onClick={() => window.location.href = '/'}
-            className="px-8 py-3 bg-[#0082c8] hover:bg-[#0071ae] text-white font-bold rounded-xl transition-all"
+            className="px-8 py-3 bg-[#1e4b64] hover:bg-[#153446] text-white font-bold rounded-xl transition-all"
           >
             Về trang chủ
           </button>
@@ -391,11 +391,11 @@ export const AdminPanel: React.FC = () => {
         {/* Logo */}
         <div className="h-16 flex items-center justify-between px-6 border-b border-white/5">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 bg-[#0082c8] rounded-lg flex items-center justify-center">
+            <div className="h-8 w-8 bg-[#1e4b64] rounded-lg flex items-center justify-center">
               <BarChart2 className="h-4 w-4 text-white" />
             </div>
             <div>
-              <span className="text-white font-black text-base italic tracking-tight">UR<span className="text-[#0082c8]">SPORT</span></span>
+              <span className="text-white font-black text-base italic tracking-tight">UR<span className="text-[#1e4b64]">SPORT</span></span>
               <p className="text-[9px] font-bold text-white/30 uppercase tracking-widest -mt-0.5">Admin Panel</p>
             </div>
           </div>
@@ -413,7 +413,7 @@ export const AdminPanel: React.FC = () => {
               className={cn(
                 "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-200",
                 activeTab === item.id
-                  ? "bg-[#0082c8] text-white shadow-lg shadow-blue-500/20"
+                  ? "bg-[#1e4b64] text-white shadow-lg shadow-[#1e4b64]/20"
                   : "text-white/40 hover:text-white hover:bg-white/5"
               )}
             >
@@ -468,7 +468,7 @@ export const AdminPanel: React.FC = () => {
           <div className="flex items-center gap-3">
             <button className="relative p-2 rounded-xl text-white/40 hover:text-white hover:bg-white/5 transition-all">
               <Bell className="h-5 w-5" />
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-[#0082c8] rounded-full" />
+              <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-[#1e4b64] rounded-full" />
             </button>
             {activeTab === 'products' && (
               <button
@@ -476,7 +476,7 @@ export const AdminPanel: React.FC = () => {
                   setEditingProduct(null);
                   setIsAddModalOpen(true);
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-[#0082c8] hover:bg-[#0071ae] text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-500/20 transition-all hover:scale-105 active:scale-95"
+                className="flex items-center gap-2 px-4 py-2 bg-[#1e4b64] hover:bg-[#153446] text-white text-sm font-bold rounded-xl shadow-lg shadow-[#1e4b64]/20 transition-all hover:scale-105 active:scale-95"
               >
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">Thêm sản phẩm</span>
@@ -488,7 +488,7 @@ export const AdminPanel: React.FC = () => {
                   setEditingBlogPost(null);
                   setIsBlogModalOpen(true);
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-[#0082c8] hover:bg-[#0071ae] text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-500/20 transition-all hover:scale-105 active:scale-95"
+                className="flex items-center gap-2 px-4 py-2 bg-[#1e4b64] hover:bg-[#153446] text-white text-sm font-bold rounded-xl shadow-lg shadow-[#1e4b64]/20 transition-all hover:scale-105 active:scale-95"
               >
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">Thêm bài viết</span>
@@ -528,7 +528,7 @@ export const AdminPanel: React.FC = () => {
               <div className="bg-[#13161f] border border-white/5 rounded-2xl overflow-hidden">
                 <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
                   <h2 className="text-white font-black text-sm uppercase tracking-widest">Sản phẩm mới nhất</h2>
-                  <button onClick={() => setActiveTab('products')} className="text-[#0082c8] text-xs font-bold hover:underline">Xem tất cả →</button>
+                  <button onClick={() => setActiveTab('products')} className="text-[#1e4b64] text-xs font-bold hover:underline">Xem tất cả →</button>
                 </div>
                 <div className="divide-y divide-white/5">
                   {products.slice(0, 5).map(p => (
@@ -540,7 +540,7 @@ export const AdminPanel: React.FC = () => {
                         <p className="text-white text-sm font-bold truncate">{p.name}</p>
                         <p className="text-white/30 text-xs font-medium">{p.category}</p>
                       </div>
-                      <p className="text-[#0082c8] font-black text-sm shrink-0">{p.price.toLocaleString('vi-VN')}₫</p>
+                      <p className="text-[#1e4b64] font-black text-sm shrink-0">{p.price.toLocaleString('vi-VN')}₫</p>
                     </div>
                   ))}
                 </div>
@@ -559,7 +559,7 @@ export const AdminPanel: React.FC = () => {
                   placeholder="Tìm kiếm sản phẩm..."
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  className="w-full bg-[#13161f] border border-white/5 rounded-xl pl-11 pr-4 py-3 text-white text-sm font-medium placeholder:text-white/25 focus:outline-none focus:border-[#0082c8]/50 transition-all"
+                  className="w-full bg-[#13161f] border border-white/5 rounded-xl pl-11 pr-4 py-3 text-white text-sm font-medium placeholder:text-white/25 focus:outline-none focus:border-[#1e4b64]/50 transition-all"
                 />
               </div>
 
@@ -574,7 +574,7 @@ export const AdminPanel: React.FC = () => {
               <div className="bg-[#13161f] border border-white/5 rounded-2xl overflow-hidden">
                 {loading ? (
                   <div className="py-20 flex items-center justify-center">
-                    <div className="h-8 w-8 rounded-full border-4 border-[#0082c8] border-t-transparent animate-spin" />
+                    <div className="h-8 w-8 rounded-full border-4 border-[#1e4b64] border-t-transparent animate-spin" />
                   </div>
                 ) : filteredProducts.length === 0 ? (
                   <div className="py-20 text-center">
@@ -704,7 +704,7 @@ export const AdminPanel: React.FC = () => {
                   placeholder="Tìm kiếm bài viết..."
                   value={blogSearchQuery}
                   onChange={e => setBlogSearchQuery(e.target.value)}
-                  className="w-full bg-[#13161f] border border-white/5 rounded-xl pl-11 pr-4 py-3 text-white text-sm font-medium placeholder:text-white/25 focus:outline-none focus:border-[#0082c8]/50 transition-all"
+                  className="w-full bg-[#13161f] border border-white/5 rounded-xl pl-11 pr-4 py-3 text-white text-sm font-medium placeholder:text-white/25 focus:outline-none focus:border-[#1e4b64]/50 transition-all"
                 />
               </div>
 
@@ -830,7 +830,7 @@ export const AdminPanel: React.FC = () => {
                               </span>
                             </td>
                             <td className="px-6 py-4">
-                              <p className="text-[#0082c8] font-black text-sm">{order.total.toLocaleString('vi-VN')}₫</p>
+                              <p className="text-[#1e4b64] font-black text-sm">{order.total.toLocaleString('vi-VN')}₫</p>
                               <div className="mt-2 space-y-1">
                                 {order.items.map((item, idx) => (
                                   <div key={idx} className="flex items-center gap-2 text-[10px] bg-white/[0.03] border border-white/5 rounded px-2 py-1">
@@ -923,7 +923,7 @@ export const AdminPanel: React.FC = () => {
                             </span>
                           </td>
                           <td className="px-6 py-4">
-                            <p className="text-[#0082c8] font-black text-sm">{customer.totalSpent.toLocaleString('vi-VN')}₫</p>
+                            <p className="text-[#1e4b64] font-black text-sm">{customer.totalSpent.toLocaleString('vi-VN')}₫</p>
                           </td>
                         </tr>
                       ))}
@@ -997,7 +997,7 @@ export const AdminPanel: React.FC = () => {
                   ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                       {mediaItems.map((item) => (
-                        <div key={item.id} className="group relative aspect-square rounded-xl overflow-hidden bg-white/5 border border-white/5 hover:border-[#0082c8]/50 transition-all">
+                        <div key={item.id} className="group relative aspect-square rounded-xl overflow-hidden bg-white/5 border border-white/5 hover:border-[#1e4b64]/50 transition-all">
                           <img 
                             src={item.url} 
                             alt="" 
@@ -1009,7 +1009,7 @@ export const AdminPanel: React.FC = () => {
                                 navigator.clipboard.writeText(item.url);
                                 toast.success('Đã sao chép link!');
                               }}
-                              className="p-2 bg-white/10 hover:bg-[#0082c8] rounded-lg text-white transition-all"
+                              className="p-2 bg-white/10 hover:bg-[#1e4b64] rounded-lg text-white transition-all"
                               title="Sao chép link"
                             >
                               <Copy className="h-4 w-4" />
@@ -1063,7 +1063,7 @@ export const AdminPanel: React.FC = () => {
                         "flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold transition-all",
                         cssSaved
                           ? "bg-emerald-500 text-white"
-                          : "bg-[#0082c8] hover:bg-[#0071ae] text-white"
+                          : "bg-[#1e4b64] hover:bg-[#153446] text-white"
                       )}
                     >
                       {cssSaved ? <CheckIcon className="h-3.5 w-3.5" /> : <Upload className="h-3.5 w-3.5" />}
@@ -1159,7 +1159,7 @@ export const AdminPanel: React.FC = () => {
                                   updated[idx].title = e.target.value;
                                   setBanners(updated);
                                 }}
-                                className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#0082c8]/50"
+                                className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#1e4b64]/50"
                               />
                             </div>
                             <div>
@@ -1172,7 +1172,7 @@ export const AdminPanel: React.FC = () => {
                                   updated[idx].subtitle = e.target.value;
                                   setBanners(updated);
                                 }}
-                                className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#0082c8]/50"
+                                className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#1e4b64]/50"
                               />
                             </div>
                             <div>
@@ -1185,7 +1185,7 @@ export const AdminPanel: React.FC = () => {
                                   updated[idx].link = e.target.value;
                                   setBanners(updated);
                                 }}
-                                className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#0082c8]/50"
+                                className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#1e4b64]/50"
                               />
                             </div>
                           </div>
@@ -1208,7 +1208,7 @@ export const AdminPanel: React.FC = () => {
                     <div className="flex justify-end pt-2">
                       <button 
                         onClick={() => handleSaveBanners(banners)}
-                        className="px-6 py-2 bg-[#0082c8] hover:bg-[#0071ae] text-white text-sm font-bold rounded-xl shadow-lg transition-all"
+                        className="px-6 py-2 bg-[#1e4b64] hover:bg-[#153446] text-white text-sm font-bold rounded-xl shadow-lg transition-all"
                       >
                         Lưu thay đổi Banner
                       </button>
@@ -1265,7 +1265,7 @@ export const AdminPanel: React.FC = () => {
                                   updated[idx].label = e.target.value;
                                   setNavigation(updated);
                                 }}
-                                className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#0082c8]/50"
+                                className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
                               />
                             </div>
                             <div>
@@ -1277,7 +1277,7 @@ export const AdminPanel: React.FC = () => {
                                   updated[idx].group = e.target.value;
                                   setNavigation(updated);
                                 }}
-                                className="w-full bg-[#1c1f26] border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#0082c8]/50"
+                                className="w-full bg-[#1c1f26] border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
                               >
                                 <option value="main">Danh mục chính</option>
                                 <option value="category">Danh mục sản phẩm</option>
@@ -1294,7 +1294,7 @@ export const AdminPanel: React.FC = () => {
                                 updated[idx].link = e.target.value;
                                 setNavigation(updated);
                               }}
-                              className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#0082c8]/50"
+                              className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
                             />
                           </div>
                         </div>
@@ -1316,7 +1316,7 @@ export const AdminPanel: React.FC = () => {
                     <div className="col-span-full flex justify-end pt-2">
                       <button 
                         onClick={() => handleSaveNavigation(navigation)}
-                        className="px-6 py-2 bg-[#0082c8] hover:bg-[#0071ae] text-white text-sm font-bold rounded-xl shadow-lg transition-all"
+                        className="px-6 py-2 bg-[#1e4b64] hover:bg-[#153446] text-white text-sm font-bold rounded-xl shadow-lg transition-all"
                       >
                         Lưu Menu Navigation
                       </button>
@@ -1338,7 +1338,7 @@ export const AdminPanel: React.FC = () => {
                         value={floatingMenu.zaloPhone}
                         onChange={(e) => setFloatingMenu({...floatingMenu, zaloPhone: e.target.value})}
                         placeholder="0917722425"
-                        className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#0082c8]/50"
+                        className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#1e4b64]/50"
                       />
                     </div>
                     <div>
@@ -1348,12 +1348,12 @@ export const AdminPanel: React.FC = () => {
                         value={floatingMenu.callPhone}
                         onChange={(e) => setFloatingMenu({...floatingMenu, callPhone: e.target.value})}
                         placeholder="0917722425"
-                        className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#0082c8]/50"
+                        className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#1e4b64]/50"
                       />
                     </div>
                     <button 
                       onClick={handleSaveFloatingMenu}
-                      className="px-6 py-2.5 bg-[#0082c8] hover:bg-[#0071ae] text-white text-sm font-bold rounded-xl shadow-lg transition-all"
+                      className="px-6 py-2.5 bg-[#1e4b64] hover:bg-[#153446] text-white text-sm font-bold rounded-xl shadow-lg transition-all"
                     >
                       Lưu thông tin liên hệ
                     </button>
@@ -1399,8 +1399,8 @@ export const AdminPanel: React.FC = () => {
                     { label: 'Ẩn footer', css: 'footer { display: none; }' },
                     { label: 'Font hệ thống', css: 'body { font-family: \'Inter\', sans-serif; }' },
                     { label: 'Responsive Video', css: '.video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; }\n.video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }' },
-                    { label: 'Scrollbar tùy biến', css: '::-webkit-scrollbar { width: 6px; }\n::-webkit-scrollbar-thumb { background: #0082c8; border-radius: 3px; }' },
-                    { label: 'Nút CTA nổi bật', css: '.btn-primary { background: linear-gradient(135deg, #0082c8, #005fa3); box-shadow: 0 4px 15px rgba(0,130,200,0.4); }' },
+                    { label: 'Scrollbar tùy biến', css: '::-webkit-scrollbar { width: 6px; }\n::-webkit-scrollbar-thumb { background: #1e4b64; border-radius: 3px; }' },
+                    { label: 'Nút CTA nổi bật', css: '.btn-primary { background: linear-gradient(135deg, #1e4b64, #153446); box-shadow: 0 4px 15px rgba(30,75,100,0.4); }' },
                   ].map((snippet, i) => (
                     <button
                       key={i}
@@ -1419,7 +1419,7 @@ export const AdminPanel: React.FC = () => {
       </div>
 
       <AddProductModal
-        key={editingProduct?.id || (isAddModalOpen ? 'new-product' : 'closed')}
+        key={isAddModalOpen ? (editingProduct?.id || editingProduct?.slug || 'new') : 'closed'}
         isOpen={isAddModalOpen}
         onClose={() => {
           setIsAddModalOpen(false);
@@ -1430,7 +1430,7 @@ export const AdminPanel: React.FC = () => {
       />
 
       <AddBlogPostModal
-        key={editingBlogPost?.id || (isBlogModalOpen ? 'new-blog' : 'closed')}
+        key={isBlogModalOpen ? (editingBlogPost?.id || editingBlogPost?.slug || 'new') : 'closed'}
         isOpen={isBlogModalOpen}
         onClose={() => {
           setIsBlogModalOpen(false);

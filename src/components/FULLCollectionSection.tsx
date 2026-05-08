@@ -41,9 +41,9 @@ export function FULLCollectionSection({ onCategorySelect }: FULLCollectionSectio
     <section className="mx-auto max-w-[1440px] px-4 py-16 sm:px-6 lg:px-8 bg-white">
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
         <div>
-          <span className="text-[#0082c8] font-black tracking-widest uppercase text-xs mb-2 block">Premium Collections</span>
+          <span className="text-[#1e4b64] font-black tracking-widest uppercase text-xs mb-2 block">Premium Collections</span>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tighter text-zinc-900 leading-none">
-            Khám phá <span className="text-[#0082c8]">Bộ Sưu Tập</span>
+            Khám phá <span className="text-[#1e4b64]">Bộ Sưu Tập</span>
           </h2>
         </div>
         <p className="text-zinc-500 font-medium max-w-sm text-sm sm:text-base">
@@ -94,7 +94,7 @@ export function FULLCollectionSection({ onCategorySelect }: FULLCollectionSectio
               />
               <div className="absolute bottom-0 left-0 p-6 z-20">
                 <h3 className="text-2xl font-black text-white mb-2 transform transition duration-500 group-hover:-translate-y-1">{cat.name}</h3>
-                <div className="flex items-center gap-2 text-white/90 text-sm font-bold opacity-0 -translate-x-4 transition-all duration-500 group-hover:opacity-100 group-hover:translate-x-0 group-hover:text-[#0082c8]">
+                <div className="flex items-center gap-2 text-white/90 text-sm font-bold opacity-0 -translate-x-4 transition-all duration-500 group-hover:opacity-100 group-hover:translate-x-0 group-hover:text-[#1e4b64]">
                   Xem thêm <ArrowRight className="h-4 w-4" />
                 </div>
               </div>
@@ -118,7 +118,7 @@ export function FULLCollectionSection({ onCategorySelect }: FULLCollectionSectio
             <div className="relative z-20">
               <h3 className="text-2xl font-black text-white mb-3">{CATEGORY_METADATA[4].name}</h3>
               <p className="text-zinc-400 text-sm font-medium mb-6">Trang bị hoàn hảo cho luyện tập</p>
-              <span className="inline-flex items-center justify-center px-6 py-2.5 bg-white text-zinc-900 font-bold rounded-full text-sm group-hover:bg-[#0082c8] group-hover:text-white transition-colors duration-300">
+              <span className="inline-flex items-center justify-center px-6 py-2.5 bg-white text-zinc-900 font-bold rounded-full text-sm group-hover:bg-[#1e4b64] group-hover:text-white transition-colors duration-300">
                 Xem phụ kiện
               </span>
             </div>

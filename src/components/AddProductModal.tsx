@@ -1308,7 +1308,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                         type="text"
                         value={formData.brand}
                         onChange={(e) => setFormData({...formData, brand: e.target.value})}
-                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#0082c8]"
+                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#1e4b64]"
                         placeholder="UR SPORT"
                       />
                     </div>
@@ -1318,7 +1318,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                         type="text"
                         value={formData.origin}
                         onChange={(e) => setFormData({...formData, origin: e.target.value})}
-                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#0082c8]"
+                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#1e4b64]"
                         placeholder="Việt Nam"
                       />
                     </div>
@@ -1328,7 +1328,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                         type="text"
                         value={formData.style}
                         onChange={(e) => setFormData({...formData, style: e.target.value})}
-                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#0082c8]"
+                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#1e4b64]"
                         placeholder="Slim Fit"
                       />
                     </div>
@@ -1338,7 +1338,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                         type="text"
                         value={formData.material}
                         onChange={(e) => setFormData({...formData, material: e.target.value})}
-                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#0082c8]"
+                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#1e4b64]"
                         placeholder="Cotton Premium"
                       />
                     </div>
@@ -1348,7 +1348,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                         type="text"
                         value={formData.fashionStyle || ''}
                         onChange={(e) => setFormData({...formData, fashionStyle: e.target.value})}
-                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#0082c8]"
+                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#1e4b64]"
                         placeholder="Thể thao, Cơ bản, Hàn Quốc"
                       />
                     </div>
@@ -1358,7 +1358,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                         type="text"
                         value={formData.collarType || ''}
                         onChange={(e) => setFormData({...formData, collarType: e.target.value})}
-                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#0082c8]"
+                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#1e4b64]"
                         placeholder="Cổ tròn"
                       />
                     </div>
@@ -1369,7 +1369,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                 <div className="space-y-6 pt-8 border-t border-zinc-200">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="p-2 bg-blue-100 rounded-lg">
-                      <TrendingUp className="h-5 w-5 text-[#0082c8]" />
+                      <TrendingUp className="h-5 w-5 text-[#1e4b64]" />
                     </div>
                     <div>
                       <h3 className="text-[11px] font-black uppercase tracking-widest text-zinc-500">Cấu hình SEO</h3>
@@ -1392,7 +1392,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                           value={formData.slug}
                           onChange={(e) => setFormData(prev => ({...prev, slug: e.target.value}))}
                           placeholder="mac-dinh-theo-ten"
-                          className="w-full pl-[74px] pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-[#0082c8]/20 focus:border-[#0082c8] transition-all font-medium"
+                          className="w-full pl-[74px] pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-[#1e4b64]/20 focus:border-[#1e4b64] transition-all font-medium"
                         />
                       </div>
                     </div>
@@ -1404,7 +1404,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                         value={formData.seoTitle}
                         onChange={(e) => setFormData(prev => ({...prev, seoTitle: e.target.value}))}
                         placeholder="Tiêu đề hiển thị trên Google (Mặc định là tên sản phẩm)"
-                        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-[#0082c8]/20 focus:border-[#0082c8] transition-all"
+                        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-[#1e4b64]/20 focus:border-[#1e4b64] transition-all"
                       />
                       <div className="flex justify-between px-1">
                          <p className="text-[10px] text-zinc-400">Đề xuất: 50-60 ký tự</p>
@@ -1421,7 +1421,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                         value={formData.metaDescription}
                         onChange={(e) => setFormData(prev => ({...prev, metaDescription: e.target.value}))}
                         placeholder="Mô tả ngắn hiển thị trên Google..."
-                        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-[#0082c8]/20 focus:border-[#0082c8] transition-all resize-none"
+                        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-[#1e4b64]/20 focus:border-[#1e4b64] transition-all resize-none"
                       />
                       <div className="flex justify-between px-1">
                          <p className="text-[10px] text-zinc-400">Đề xuất: 150-160 ký tự</p>
@@ -1438,7 +1438,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                         value={formData.keywords}
                         onChange={(e) => setFormData(prev => ({...prev, keywords: e.target.value}))}
                         placeholder="ao thun nam, ao the thao, ursport..."
-                        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-[#0082c8]/20 focus:border-[#0082c8] transition-all"
+                        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-[#1e4b64]/20 focus:border-[#1e4b64] transition-all"
                       />
                     </div>
                   </div>
@@ -1471,7 +1471,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                       onClick={() => setVideoModal({ isOpen: true, type: 'url' })}
                       className={cn(
                         "h-11 rounded-xl text-sm font-black flex items-center justify-center gap-2 transition-all",
-                        videoModal.type !== 'file' ? "bg-white text-[#0082c8] shadow-sm" : "text-zinc-500 hover:text-zinc-900"
+                        videoModal.type !== 'file' ? "bg-white text-[#1e4b64] shadow-sm" : "text-zinc-500 hover:text-zinc-900"
                       )}
                     >
                       <LinkIcon className="h-4 w-4" />
@@ -1482,7 +1482,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                       onClick={() => setVideoModal({ isOpen: true, type: 'file' })}
                       className={cn(
                         "h-11 rounded-xl text-sm font-black flex items-center justify-center gap-2 transition-all",
-                        videoModal.type === 'file' ? "bg-white text-[#0082c8] shadow-sm" : "text-zinc-500 hover:text-zinc-900"
+                        videoModal.type === 'file' ? "bg-white text-[#1e4b64] shadow-sm" : "text-zinc-500 hover:text-zinc-900"
                       )}
                     >
                       <Upload className="h-4 w-4" />
@@ -1494,10 +1494,10 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                     <div className="space-y-3">
                       <label className="text-[12px] font-black uppercase tracking-widest text-zinc-400">File video</label>
                       <label className={cn(
-                        "flex min-h-[190px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-zinc-200 bg-zinc-50 px-6 text-center transition-all hover:border-[#0082c8] hover:bg-blue-50/40",
+                        "flex min-h-[190px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-zinc-200 bg-zinc-50 px-6 text-center transition-all hover:border-[#1e4b64] hover:bg-blue-50/40",
                         isUploadingVideo && "pointer-events-none opacity-60"
                       )}>
-                        <Upload className="h-8 w-8 text-[#0082c8] mb-3" />
+                        <Upload className="h-8 w-8 text-[#1e4b64] mb-3" />
                         <span className="text-sm font-black text-zinc-900">Chọn video để upload</span>
                         <span className="mt-1 text-xs font-medium text-zinc-500">MP4/WebM/MOV, tối đa 100MB. Video sẽ được canh phải trong mô tả.</span>
                         <input
@@ -1542,7 +1542,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                   <Button
                     onClick={handleInsertVideo}
                     disabled={videoModal.type === 'file' || !videoInput.trim()}
-                    className="bg-[#0082c8] hover:bg-[#0071ae] text-white font-black px-8 h-11 rounded-xl shadow-lg shadow-blue-500/20"
+                    className="bg-[#1e4b64] hover:bg-[#153446] text-white font-black px-8 h-11 rounded-xl shadow-lg shadow-[#1e4b64]/20"
                   >
                     Chèn Video
                   </Button>

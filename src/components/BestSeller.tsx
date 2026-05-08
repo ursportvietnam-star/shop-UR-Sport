@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Product } from '../types';
 import { ProductCard } from './ProductCard';
-import { Star, ChevronRight } from 'lucide-react';
+import { ChevronRight, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface BestSellerProps {
@@ -10,26 +10,54 @@ interface BestSellerProps {
 
 export function BestSeller({ products }: BestSellerProps) {
   const navigate = useNavigate();
-  const bestSellers = products.filter(p => p.isBestSeller).slice(0, 8);
+  const [activeTab, setActiveTab] = useState<'new' | 'best_seller'>('new');
 
-  if (bestSellers.length === 0) return null;
+  const newProducts = products.filter(p => p.isNew).slice(0, 8);
+  const bestSellers = products.filter(p => p.isBestSeller).slice(0, 8);
+  
+  // Fallback if no specific new/bestseller
+  const displayNew = newProducts.length > 0 ? newProducts : products.slice(0, 8);
+  const displayBest = bestSellers.length > 0 ? bestSellers : products.slice(0, 8);
+
+  const displayProducts = activeTab === 'new' ? displayNew : displayBest;
 
   return (
-    <section className="mx-auto max-w-[1440px] px-4 py-16 sm:px-6 lg:px-8 bg-zinc-50 sm:rounded-[3rem] my-12 border border-zinc-100">
-      <div className="flex flex-col items-center mb-12 text-center">
-        <div className="inline-flex items-center justify-center p-3 bg-yellow-100 rounded-2xl mb-5 shadow-sm">
-          <Star className="h-7 w-7 text-yellow-500 fill-yellow-500" />
+    <section className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8 py-8 sm:py-12 my-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-4">
+        <div className="flex items-center gap-3 overflow-x-auto pb-2 sm:pb-0 w-full sm:w-auto scrollbar-hide">
+          <button 
+            onClick={() => setActiveTab('new')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all ${
+              activeTab === 'new' 
+                ? 'bg-black text-white shadow-md' 
+                : 'bg-white text-zinc-600 border border-zinc-200 hover:border-black hover:text-black'
+            }`}
+          >
+            Sản phẩm mới {activeTab === 'new' && <Star className="w-3.5 h-3.5 fill-white" />}
+          </button>
+          
+          <button 
+            onClick={() => setActiveTab('best_seller')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all ${
+              activeTab === 'best_seller' 
+                ? 'bg-black text-white shadow-md' 
+                : 'bg-white text-zinc-600 border border-zinc-200 hover:border-black hover:text-black'
+            }`}
+          >
+            Bán chạy nhất {activeTab === 'best_seller' && <Star className="w-3.5 h-3.5 fill-white" />}
+          </button>
         </div>
-        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tighter text-zinc-900 leading-none mb-4">
-          Sản phẩm <span className="text-[#0082c8]">Bán chạy</span>
-        </h2>
-        <p className="text-zinc-500 font-medium max-w-lg text-sm sm:text-base">
-          Những sản phẩm được khách hàng yêu thích và lựa chọn nhiều nhất tại UR Sport.
-        </p>
+
+        <button 
+          onClick={() => navigate('/shop')}
+          className="hidden sm:inline-flex text-sm font-bold text-zinc-900 underline underline-offset-4 hover:text-[#1e4b64] transition-colors"
+        >
+          Xem thêm
+        </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3 lg:grid-cols-4">
-        {bestSellers.map((product) => (
+      <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-10 lg:grid-cols-4">
+        {displayProducts.map((product) => (
           <ProductCard 
             key={product.id} 
             product={product} 
@@ -38,13 +66,12 @@ export function BestSeller({ products }: BestSellerProps) {
         ))}
       </div>
 
-      <div className="flex justify-center mt-12">
+      <div className="flex justify-center mt-8 sm:hidden">
         <button 
           onClick={() => navigate('/shop')}
-          className="group inline-flex items-center gap-2 px-8 py-3.5 bg-zinc-900 text-white text-sm font-bold rounded-full transition-all hover:bg-[#0082c8] hover:shadow-lg hover:shadow-blue-500/25 active:scale-95"
+          className="inline-flex items-center justify-center w-full py-3.5 border border-zinc-200 rounded-full text-sm font-bold text-zinc-900 active:bg-zinc-50"
         >
-          Xem tất cả sản phẩm
-          <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+          Xem thêm sản phẩm
         </button>
       </div>
     </section>

@@ -33,8 +33,8 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, isOpe
         {/* Header */}
         <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
           <div className="flex items-center gap-4">
-            <div className="h-10 w-10 bg-[#0082c8]/10 rounded-xl flex items-center justify-center">
-              <Package className="h-5 w-5 text-[#0082c8]" />
+            <div className="h-10 w-10 bg-[#1e4b64]/10 rounded-xl flex items-center justify-center">
+              <Package className="h-5 w-5 text-[#1e4b64]" />
             </div>
             <div>
               <h3 className="text-white font-black text-lg uppercase tracking-tight">Chi tiết đơn hàng #{order.id.substring(0, 8)}</h3>
@@ -59,7 +59,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, isOpe
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Recipient Info */}
             <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-5 space-y-4">
-              <div className="flex items-center gap-2 text-[#0082c8]">
+              <div className="flex items-center gap-2 text-[#1e4b64]">
                 <User className="h-4 w-4" />
                 <span className="text-[10px] font-black uppercase tracking-widest">Người nhận</span>
               </div>
@@ -136,7 +136,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, isOpe
                         <p className="text-white font-bold text-sm">x{item.quantity}</p>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <p className="text-[#0082c8] font-black text-sm">
+                        <p className="text-[#1e4b64] font-black text-sm">
                           {((item.discountPrice || item.price) * item.quantity).toLocaleString('vi-VN')}₫
                         </p>
                       </td>
@@ -177,10 +177,10 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, isOpe
                 <div className="h-px bg-white/5 my-2" />
                 <div className="flex justify-between items-baseline">
                   <div className="flex items-center gap-2">
-                    <Tag className="h-4 w-4 text-[#0082c8]" />
+                    <Tag className="h-4 w-4 text-[#1e4b64]" />
                     <span className="text-white font-black uppercase text-sm italic tracking-tight">Tổng cộng</span>
                   </div>
-                  <span className="text-2xl font-black text-[#0082c8] italic tracking-tighter">
+                  <span className="text-2xl font-black text-[#1e4b64] italic tracking-tighter">
                     {order.total.toLocaleString('vi-VN')}₫
                   </span>
                 </div>

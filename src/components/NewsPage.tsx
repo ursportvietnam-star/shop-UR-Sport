@@ -256,7 +256,7 @@ export function NewsPage() {
             <div className="flex justify-center pt-8 mb-12">
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="px-8 py-3 bg-white text-[#005fa3] border border-zinc-200 text-sm font-bold rounded-full shadow-sm hover:text-[#0082c8] hover:border-[#0082c8] hover:-translate-y-1 transition-all flex items-center gap-2 group"
+                className="px-8 py-3 bg-white text-[#1e4b64] border border-zinc-200 text-sm font-bold rounded-full shadow-sm hover:text-[#153446] hover:border-[#1e4b64] hover:-translate-y-1 transition-all flex items-center gap-2 group"
               >
                 {isExpanded ? 'Thu gọn' : 'Xem thêm'}
                 <ChevronDown className={cn("h-4 w-4 transition-all duration-300", isExpanded && "rotate-180")} />

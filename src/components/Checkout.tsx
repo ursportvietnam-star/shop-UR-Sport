@@ -91,10 +91,10 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
      return (
         <div className="mx-auto max-w-7xl px-4 py-24 flex flex-col items-center justify-center text-center">
             <div className="h-24 w-24 bg-blue-50 rounded-full flex items-center justify-center mb-6">
-               <Truck className="h-12 w-12 text-[#0082c8]" />
+               <Truck className="h-12 w-12 text-[#1e4b64]" />
             </div>
             <h2 className="text-3xl font-black mb-6 uppercase tracking-tight text-zinc-900">GIỎ HÀNG CỦA BẠN ĐANG TRỐNG</h2>
-            <Button onClick={onComplete} className="bg-[#0082c8] hover:bg-[#0071ae] text-white px-10 py-7 rounded-2xl font-bold text-lg shadow-xl shadow-blue-500/20 transition-all active:scale-95">
+            <Button onClick={onComplete} className="bg-[#1e4b64] hover:bg-[#153446] text-white px-10 py-7 rounded-2xl font-bold text-lg shadow-xl shadow-[#1e4b64]/20 transition-all active:scale-95">
                QUAY LẠI CỬA HÀNG
             </Button>
         </div>
@@ -105,7 +105,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
     <div className="bg-slate-50/50 min-h-screen">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row items-baseline gap-4 mb-12">
-           <h1 className="text-4xl md:text-5xl font-black italic tracking-tighter uppercase text-[#0082c8]">THANH TOÁN</h1>
+           <h1 className="text-4xl md:text-5xl font-black italic tracking-tighter uppercase text-[#1e4b64]">THANH TOÁN</h1>
            <div className="flex items-center gap-2 px-3 py-1 bg-white border border-blue-100 rounded-full shadow-sm">
              <Lock className="h-3 w-3 text-green-500" /> 
              <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Hệ thống bảo mật 256-bit</span>
@@ -117,7 +117,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
             {/* Step 1: Shipping Info */}
             <section className="bg-white rounded-[32px] p-8 shadow-sm border border-zinc-100">
               <div className="flex items-center gap-4 mb-8">
-                <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-blue-50 text-[#0082c8] font-black text-lg">1</div>
+                <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-blue-50 text-[#1e4b64] font-black text-lg">1</div>
                 <h2 className="text-xl font-black uppercase tracking-tight text-zinc-900">THÔNG TIN GIAO HÀNG</h2>
               </div>
               
@@ -126,7 +126,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                   <label className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-zinc-400">
                     <User className="h-3 w-3" /> Họ và tên
                   </label>
-                  <Input {...register('fullName')} className="rounded-2xl border-zinc-100 bg-zinc-50/50 focus-visible:ring-[#0082c8] h-14 font-semibold text-zinc-900 placeholder:text-zinc-300 transition-all focus:bg-white" placeholder="Nguyễn Văn A" />
+                  <Input {...register('fullName')} className="rounded-2xl border-zinc-100 bg-zinc-50/50 focus-visible:ring-[#1e4b64] h-14 font-semibold text-zinc-900 placeholder:text-zinc-300 transition-all focus:bg-white" placeholder="Nguyễn Văn A" />
                   {errors.fullName && <p className="text-[11px] text-red-500 font-bold ml-2">{errors.fullName.message}</p>}
                 </div>
                 
@@ -134,7 +134,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                   <label className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-zinc-400">
                     <Mail className="h-3 w-3" /> Địa chỉ Email
                   </label>
-                  <Input {...register('email')} className="rounded-2xl border-zinc-100 bg-zinc-50/50 focus-visible:ring-[#0082c8] h-14 font-semibold text-zinc-900 transition-all focus:bg-white" placeholder="email@example.com" />
+                  <Input {...register('email')} className="rounded-2xl border-zinc-100 bg-zinc-50/50 focus-visible:ring-[#1e4b64] h-14 font-semibold text-zinc-900 transition-all focus:bg-white" placeholder="email@example.com" />
                   {errors.email && <p className="text-[11px] text-red-500 font-bold ml-2">{errors.email.message}</p>}
                 </div>
 
@@ -142,7 +142,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                   <label className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-zinc-400">
                     <Phone className="h-3 w-3" /> Số điện thoại
                   </label>
-                  <Input {...register('phone')} className="rounded-2xl border-zinc-100 bg-zinc-50/50 focus-visible:ring-[#0082c8] h-14 font-semibold text-zinc-900 transition-all focus:bg-white" placeholder="09xx xxx xxx" />
+                  <Input {...register('phone')} className="rounded-2xl border-zinc-100 bg-zinc-50/50 focus-visible:ring-[#1e4b64] h-14 font-semibold text-zinc-900 transition-all focus:bg-white" placeholder="09xx xxx xxx" />
                   {errors.phone && <p className="text-[11px] text-red-500 font-bold ml-2">{errors.phone.message}</p>}
                 </div>
 
@@ -150,7 +150,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                   <label className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-zinc-400">
                     <MapPin className="h-3 w-3" /> Tỉnh / Thành phố
                   </label>
-                  <Input {...register('city')} className="rounded-2xl border-zinc-100 bg-zinc-50/50 focus-visible:ring-[#0082c8] h-14 font-semibold text-zinc-900 transition-all focus:bg-white" placeholder="Hà Nội, TP.HCM..." />
+                  <Input {...register('city')} className="rounded-2xl border-zinc-100 bg-zinc-50/50 focus-visible:ring-[#1e4b64] h-14 font-semibold text-zinc-900 transition-all focus:bg-white" placeholder="Hà Nội, TP.HCM..." />
                   {errors.city && <p className="text-[11px] text-red-500 font-bold ml-2">{errors.city.message}</p>}
                 </div>
 
@@ -158,7 +158,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                   <label className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-zinc-400">
                     <MapPin className="h-3 w-3" /> Địa chỉ giao hàng chi tiết
                   </label>
-                  <Input {...register('address')} className="rounded-2xl border-zinc-100 bg-zinc-50/50 focus-visible:ring-[#0082c8] h-14 font-semibold text-zinc-900 transition-all focus:bg-white" placeholder="Số nhà, tên đường, phường/xã..." />
+                  <Input {...register('address')} className="rounded-2xl border-zinc-100 bg-zinc-50/50 focus-visible:ring-[#1e4b64] h-14 font-semibold text-zinc-900 transition-all focus:bg-white" placeholder="Số nhà, tên đường, phường/xã..." />
                   {errors.address && <p className="text-[11px] text-red-500 font-bold ml-2">{errors.address.message}</p>}
                 </div>
 
@@ -168,7 +168,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                   </label>
                   <textarea 
                     {...register('note')} 
-                    className="w-full rounded-2xl border border-zinc-100 bg-zinc-50/50 focus:ring-2 focus:ring-[#0082c8]/20 p-4 font-semibold text-sm text-zinc-900 min-h-[100px] outline-none focus:border-[#0082c8] focus:bg-white transition-all resize-none"
+                    className="w-full rounded-2xl border border-zinc-100 bg-zinc-50/50 focus:ring-2 focus:ring-[#1e4b64]/20 p-4 font-semibold text-sm text-zinc-900 min-h-[100px] outline-none focus:border-[#1e4b64] focus:bg-white transition-all resize-none"
                     placeholder="Ví dụ: Giao giờ hành chính, gọi trước khi đến..."
                   />
                 </div>
@@ -178,7 +178,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
             {/* Step 2: Payment Method */}
             <section className="bg-white rounded-[32px] p-8 shadow-sm border border-zinc-100">
               <div className="flex items-center gap-4 mb-8">
-                <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-blue-50 text-[#0082c8] font-black text-lg">2</div>
+                <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-blue-50 text-[#1e4b64] font-black text-lg">2</div>
                 <h2 className="text-xl font-black uppercase tracking-tight text-zinc-900">PHƯƠNG THỨC THANH TOÁN</h2>
               </div>
               
@@ -194,7 +194,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                     className={cn(
                       "group relative border-2 p-6 rounded-2xl flex items-center justify-between cursor-pointer transition-all duration-300",
                       paymentMethod === method.id 
-                        ? "border-[#0082c8] bg-blue-50/30 ring-4 ring-blue-500/5 shadow-md" 
+                        ? "border-[#1e4b64] bg-blue-50/30 ring-4 ring-[#1e4b64]/5 shadow-md" 
                         : "border-zinc-50 hover:border-blue-100 hover:bg-zinc-50"
                     )}
                   >
@@ -202,13 +202,13 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                       <div className={cn(
                         "h-14 w-14 rounded-2xl flex items-center justify-center transition-all duration-300 shadow-sm",
                         paymentMethod === method.id 
-                          ? "bg-[#0082c8] text-white scale-110" 
-                          : "bg-white text-zinc-400 group-hover:text-[#0082c8]"
+                          ? "bg-[#1e4b64] text-white scale-110" 
+                          : "bg-white text-zinc-400 group-hover:text-[#1e4b64]"
                       )}>
                         <method.icon className="h-6 w-6" />
                       </div>
                       <div>
-                        <p className={cn("font-black text-sm uppercase tracking-tight", paymentMethod === method.id ? "text-[#0082c8]" : "text-zinc-900")}>
+                        <p className={cn("font-black text-sm uppercase tracking-tight", paymentMethod === method.id ? "text-[#1e4b64]" : "text-zinc-900")}>
                           {method.title}
                         </p>
                         <p className="text-[12px] text-zinc-500 font-medium">{method.desc}</p>
@@ -216,7 +216,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                     </div>
                     <div className={cn(
                       "h-6 w-6 rounded-full border-2 flex items-center justify-center transition-all",
-                      paymentMethod === method.id ? "border-[#0082c8] bg-[#0082c8]" : "border-zinc-200"
+                      paymentMethod === method.id ? "border-[#1e4b64] bg-[#1e4b64]" : "border-zinc-200"
                     )}>
                       {paymentMethod === method.id && <div className="h-2 w-2 rounded-full bg-white shadow-sm" />}
                     </div>
@@ -282,7 +282,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                           
                           <div className="space-y-4">
                              <p className="text-sm font-black text-zinc-900 leading-tight">
-                               Vui lòng mở ứng dụng <span className="uppercase text-[#0082c8]">{activeWallet}</span> và quét mã QR để hoàn tất thanh toán.
+                               Vui lòng mở ứng dụng <span className="uppercase text-[#1e4b64]">{activeWallet}</span> và quét mã QR để hoàn tất thanh toán.
                              </p>
                              <div className="grid grid-cols-2 gap-4">
                                 <div className="p-4 bg-zinc-50 rounded-2xl">
@@ -291,7 +291,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                                 </div>
                                 <div className="p-4 bg-zinc-50 rounded-2xl">
                                    <p className="text-[10px] text-zinc-400 font-black uppercase mb-1">Số tiền</p>
-                                   <p className="font-black text-sm text-[#0082c8]">{total.toLocaleString('vi-VN')}₫</p>
+                                   <p className="font-black text-sm text-[#1e4b64]">{total.toLocaleString('vi-VN')}₫</p>
                                 </div>
                              </div>
                           </div>
@@ -324,7 +324,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                           <div className="h-8 w-8 rounded-full bg-green-50 flex items-center justify-center">
                             <ShieldCheck className="h-4 w-4 text-green-500" />
                           </div>
-                          <span className="text-[11px] font-black uppercase tracking-[0.2em] text-[#0082c8]">Xác thực bởi VietQR</span>
+                          <span className="text-[11px] font-black uppercase tracking-[0.2em] text-[#1e4b64]">Xác thực bởi VietQR</span>
                         </div>
                         
                         <div className="grid grid-cols-2 gap-y-6 gap-x-4">
@@ -334,7 +334,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                           </div>
                           <div>
                             <p className="text-[10px] text-zinc-400 font-black uppercase tracking-widest mb-1">Số tài khoản</p>
-                            <p className="font-black text-2xl text-[#0082c8] tracking-tight">0917722425</p>
+                            <p className="font-black text-2xl text-[#1e4b64] tracking-tight">0917722425</p>
                           </div>
                           <div>
                             <p className="text-[10px] text-zinc-400 font-black uppercase tracking-widest mb-1">Tên tài khoản</p>
@@ -343,7 +343,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                         </div>
                         
                         <div className="pt-4 border-t border-blue-100 flex items-center gap-3">
-                           <RefreshCcw className="h-4 w-4 text-[#0082c8] animate-spin-slow" />
+                           <RefreshCcw className="h-4 w-4 text-[#1e4b64] animate-spin-slow" />
                            <p className="text-[11px] text-blue-600/70 font-semibold italic">
                              Hệ thống sẽ tự động xác nhận sau khi nhận được tiền.
                            </p>
@@ -358,7 +358,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
             <Button 
               type="submit" 
               disabled={isProcessing}
-              className="w-full bg-[#0082c8] hover:bg-[#0071ae] text-white font-black py-10 rounded-[28px] text-xl tracking-tight uppercase shadow-2xl shadow-blue-500/20 transition-all hover:scale-[1.01] active:scale-[0.98] mt-4"
+              className="w-full bg-[#1e4b64] hover:bg-[#153446] text-white font-black py-10 rounded-[28px] text-xl tracking-tight uppercase shadow-2xl shadow-[#1e4b64]/20 transition-all hover:scale-[1.01] active:scale-[0.98] mt-4"
             >
               {isProcessing ? (
                  <div className="flex items-center gap-3">
@@ -372,7 +372,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
           {/* Order Summary Sidebar */}
           <div className="lg:col-span-4 lg:sticky lg:top-24">
              <Card className="rounded-[32px] border-none shadow-xl shadow-zinc-200/50 overflow-hidden">
-               <CardHeader className="bg-[#0082c8] p-6">
+               <CardHeader className="bg-[#1e4b64] p-6">
                   <CardTitle className="text-white text-base font-black uppercase tracking-widest flex items-center gap-2">
                     <ShoppingCart className="h-5 w-5" /> ĐƠN HÀNG CỦA BẠN
                   </CardTitle>
@@ -385,13 +385,13 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                               {item.images && item.images[0] && (
                                  <img src={item.images[0]} alt="" className="h-full w-full object-cover transition-transform group-hover:scale-110" referrerPolicy="no-referrer" />
                               )}
-                              <div className="absolute top-1 right-1 h-5 w-5 bg-[#0082c8] text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-lg">
+                              <div className="absolute top-1 right-1 h-5 w-5 bg-[#1e4b64] text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-lg">
                                  {item.quantity}
                               </div>
                            </div>
                            <div className="flex-1 min-w-0">
                               <div className="flex justify-between items-start gap-2">
-                                <p className="text-[13px] font-black text-zinc-900 uppercase line-clamp-1 group-hover:text-[#0082c8] transition-colors">{item.name}</p>
+                                <p className="text-[13px] font-black text-zinc-900 uppercase line-clamp-1 group-hover:text-[#1e4b64] transition-colors">{item.name}</p>
                                 <button 
                                   type="button"
                                   onClick={() => removeFromCart(item.id, item.selectedColor, item.selectedSize)}
@@ -403,7 +403,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                               <p className="text-[10px] text-zinc-400 font-bold uppercase mt-1 flex items-center gap-2">
                                  {item.selectedColor} <span className="h-1 w-1 bg-zinc-200 rounded-full" /> Size {item.selectedSize}
                               </p>
-                              <p className="text-sm font-black text-[#0082c8] mt-2">
+                              <p className="text-sm font-black text-[#1e4b64] mt-2">
                                  {((item.discountPrice || item.price) * item.quantity).toLocaleString('vi-VN')}₫
                               </p>
                            </div>

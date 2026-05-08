@@ -89,7 +89,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
                       placeholder="Tên của bạn"
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
-                      className="w-full h-14 pl-12 pr-4 rounded-2xl bg-zinc-50 border border-zinc-100 focus:bg-white focus:border-[#0082c8] focus:ring-4 focus:ring-[#0082c8]/5 outline-none transition-all font-medium"
+                      className="w-full h-14 pl-12 pr-4 rounded-2xl bg-zinc-50 border border-zinc-100 focus:bg-white focus:border-[#1e4b64] focus:ring-4 focus:ring-[#1e4b64]/5 outline-none transition-all font-medium"
                     />
                   </div>
                 )}
@@ -101,7 +101,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
                     placeholder="Email của bạn"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full h-14 pl-12 pr-4 rounded-2xl bg-zinc-50 border border-zinc-100 focus:bg-white focus:border-[#0082c8] focus:ring-4 focus:ring-[#0082c8]/5 outline-none transition-all font-medium"
+                    className="w-full h-14 pl-12 pr-4 rounded-2xl bg-zinc-50 border border-zinc-100 focus:bg-white focus:border-[#1e4b64] focus:ring-4 focus:ring-[#1e4b64]/5 outline-none transition-all font-medium"
                   />
                 </div>
 
@@ -112,12 +112,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
                     placeholder="Mật khẩu"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full h-14 pl-12 pr-12 rounded-2xl bg-zinc-50 border border-zinc-100 focus:bg-white focus:border-[#0082c8] focus:ring-4 focus:ring-[#0082c8]/5 outline-none transition-all font-medium"
+                    className="w-full h-14 pl-12 pr-12 rounded-2xl bg-zinc-50 border border-zinc-100 focus:bg-white focus:border-[#1e4b64] focus:ring-4 focus:ring-[#1e4b64]/5 outline-none transition-all font-medium"
                   />
                   <button 
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-zinc-400 hover:text-[#0082c8] transition-colors"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-zinc-400 hover:text-[#1e4b64] transition-colors"
                   >
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
@@ -131,20 +131,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
                       placeholder="Nhập lại mật khẩu"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full h-14 pl-12 pr-4 rounded-2xl bg-zinc-50 border border-zinc-100 focus:bg-white focus:border-[#0082c8] focus:ring-4 focus:ring-[#0082c8]/5 outline-none transition-all font-medium"
+                      className="w-full h-14 pl-12 pr-4 rounded-2xl bg-zinc-50 border border-zinc-100 focus:bg-white focus:border-[#1e4b64] focus:ring-4 focus:ring-[#1e4b64]/5 outline-none transition-all font-medium"
                     />
                   </div>
                 )}
 
                 {mode === 'login' && (
                   <div className="flex justify-end">
-                    <button type="button" className="text-xs font-bold text-[#0082c8] hover:underline">Quên mật khẩu?</button>
+                    <button type="button" className="text-xs font-bold text-[#1e4b64] hover:underline">Quên mật khẩu?</button>
                   </div>
                 )}
 
                 <button 
                   type="submit"
-                  className="w-full h-14 rounded-2xl bg-[#0082c8] text-white font-bold text-lg flex items-center justify-center gap-2 shadow-[0_8px_20px_rgba(0,130,200,0.25)] hover:shadow-[0_12px_28px_rgba(0,130,200,0.35)] hover:-translate-y-0.5 transition-all active:scale-95 group"
+                  className="w-full h-14 rounded-2xl bg-[#1e4b64] text-white font-bold text-lg flex items-center justify-center gap-2 shadow-[0_8px_20px_rgba(30,75,100,0.25)] hover:shadow-[0_12px_28px_rgba(30,75,100,0.35)] hover:-translate-y-0.5 transition-all active:scale-95 group"
                 >
                   {mode === 'login' ? (
                     <>
@@ -172,9 +172,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
               <div className="grid grid-cols-2 gap-4">
                 <button 
                   onClick={handleGoogleLogin}
-                  className="flex items-center justify-center gap-3 h-14 rounded-2xl border border-zinc-100 bg-zinc-50 hover:bg-white hover:border-[#0082c8]/30 transition-all group"
+                  className="flex items-center justify-center gap-3 h-14 rounded-2xl border border-zinc-100 bg-zinc-50 hover:bg-white hover:border-[#1e4b64]/30 transition-all group"
                 >
-                  <div className="bg-white p-1.5 rounded-lg border border-zinc-100 group-hover:border-[#0082c8]/20 transition-all">
+                  <div className="bg-white p-1.5 rounded-lg border border-zinc-100 group-hover:border-[#1e4b64]/20 transition-all">
                     <Chrome className="h-5 w-5 text-[#ea4335]" />
                   </div>
                   <span className="font-bold text-zinc-700">Google</span>
@@ -197,7 +197,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
                 {' '}
                 <button 
                   onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
-                  className="text-[#0082c8] font-bold hover:underline"
+                  className="text-[#1e4b64] font-bold hover:underline"
                 >
                   {mode === 'login' ? 'Đăng ký ngay' : 'Đăng nhập ngay'}
                 </button>

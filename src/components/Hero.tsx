@@ -91,13 +91,13 @@ export const Hero: React.FC<{ onShopClick: () => void }> = ({ onShopClick }) => 
         <div className="hidden sm:block">
           <button 
             onClick={handlePrev}
-            className="absolute left-6 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-white/5 backdrop-blur-md border border-white/10 text-white opacity-0 group-hover/hero:opacity-100 transition-all hover:bg-[#0082c8] hover:border-[#0082c8] shadow-2xl"
+            className="absolute left-6 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-white/5 backdrop-blur-md border border-white/10 text-white opacity-0 group-hover/hero:opacity-100 transition-all hover:bg-[#1e4b64] hover:border-[#1e4b64] shadow-2xl"
           >
             <ChevronLeft className="h-6 w-6" />
           </button>
           <button 
             onClick={handleNext}
-            className="absolute right-6 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-white/5 backdrop-blur-md border border-white/10 text-white opacity-0 group-hover/hero:opacity-100 transition-all hover:bg-[#0082c8] hover:border-[#0082c8] shadow-2xl"
+            className="absolute right-6 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-white/5 backdrop-blur-md border border-white/10 text-white opacity-0 group-hover/hero:opacity-100 transition-all hover:bg-[#1e4b64] hover:border-[#1e4b64] shadow-2xl"
           >
             <ChevronRight className="h-6 w-6" />
           </button>
@@ -111,7 +111,7 @@ export const Hero: React.FC<{ onShopClick: () => void }> = ({ onShopClick }) => 
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <span className="text-[#0082c8] font-black uppercase tracking-[0.5em] text-[9px] sm:text-[11px] mb-4 block drop-shadow-md">
+            <span className="text-[#1e4b64] font-black uppercase tracking-[0.5em] text-[9px] sm:text-[11px] mb-4 block drop-shadow-md">
               UR SPORT PERFORMANCE
             </span>
             
@@ -127,7 +127,7 @@ export const Hero: React.FC<{ onShopClick: () => void }> = ({ onShopClick }) => 
                 >
                   {(activeBanners[currentIndex]?.title || "").split('\n').map((line: string, i: number) => (
                     <React.Fragment key={i}>
-                      {i === 1 ? <span className="text-[#0082c8]">{line}</span> : line}
+                      {i === 1 ? <span className="text-[#1e4b64]">{line}</span> : line}
                       <br />
                     </React.Fragment>
                   ))}
@@ -147,7 +147,7 @@ export const Hero: React.FC<{ onShopClick: () => void }> = ({ onShopClick }) => 
             <div className="flex flex-wrap gap-4">
               <button 
                 onClick={handleButtonClick}
-                className="group relative bg-white text-black hover:bg-[#0082c8] hover:text-white font-black px-10 py-4 rounded-full text-[12px] uppercase tracking-widest transition-all flex items-center gap-3 shadow-2xl active:scale-95 overflow-hidden"
+                className="group relative bg-white text-black hover:bg-[#1e4b64] hover:text-white font-black px-10 py-4 rounded-full text-[12px] uppercase tracking-widest transition-all flex items-center gap-3 shadow-2xl active:scale-95 overflow-hidden"
               >
                 <span className="relative z-10">Khám phá ngay</span>
                 <ArrowRight className="h-4 w-4 relative z-10 group-hover:translate-x-1 transition-transform" />
@@ -166,7 +166,7 @@ export const Hero: React.FC<{ onShopClick: () => void }> = ({ onShopClick }) => 
                 className={cn(
                   "h-1 rounded-full transition-all duration-500",
                   currentIndex === i 
-                    ? "w-12 bg-[#0082c8] shadow-[0_0_15px_rgba(0,130,200,0.6)]" 
+                    ? "w-12 bg-[#1e4b64] shadow-[0_0_15px_rgba(30,75,100,0.6)]" 
                     : "w-4 bg-white/20 hover:bg-white/40"
                 )}
               />
@@ -188,7 +188,7 @@ export const Hero: React.FC<{ onShopClick: () => void }> = ({ onShopClick }) => 
             <motion.div 
               animate={{ y: [0, 64] }}
               transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
-              className="absolute top-0 left-0 w-full h-1/2 bg-[#0082c8]"
+              className="absolute top-0 left-0 w-full h-1/2 bg-[#1e4b64]"
             />
           </div>
           <span className="text-white/20 text-[9px] font-black uppercase tracking-[0.3em] vertical-text transform rotate-180" style={{ writingMode: 'vertical-rl' }}>

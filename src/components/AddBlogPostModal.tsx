@@ -365,7 +365,7 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
                 <input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#0082c8]"
+                  className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#1e4b64]"
                   placeholder="Nhập tiêu đề"
                 />
               </label>
@@ -374,7 +374,7 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
                 <input
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}
-                  className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#0082c8]"
+                  className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#1e4b64]"
                   placeholder="ví dụ: huong-dan-chon-do-the-thao"
                 />
               </label>
@@ -491,7 +491,7 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#0082c8]"
+                className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#1e4b64]"
               >
                 <option>Tin tức</option>
                 <option>Xem nhiều</option>
@@ -506,7 +506,7 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
               <input
                 value={author}
                 onChange={(e) => setAuthor(e.target.value)}
-                className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#0082c8]"
+                className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#1e4b64]"
               />
             </label>
 
@@ -515,7 +515,7 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
               <textarea
                 value={excerpt}
                 onChange={(e) => setExcerpt(e.target.value)}
-                className="h-24 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#0082c8] resize-none"
+                className="h-24 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#1e4b64] resize-none"
               />
             </label>
 
@@ -526,7 +526,7 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
                   type="file"
                   accept="image/*"
                   onChange={handleCoverImageUpload}
-                  className="block w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none file:mr-4 file:border-0 file:bg-[#0082c8] file:px-4 file:py-2 file:text-white file:font-semibold file:rounded-full"
+                  className="block w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none file:mr-4 file:border-0 file:bg-[#1e4b64] file:px-4 file:py-2 file:text-white file:font-semibold file:rounded-full"
                 />
               </label>
               {coverImage && (
@@ -551,7 +551,7 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
                   accept="image/*"
                   multiple
                   onChange={(e) => handleMediaUpload(e, 'image')}
-                  className="block w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none file:mr-4 file:border-0 file:bg-[#0082c8] file:px-4 file:py-2 file:text-white file:font-semibold file:rounded-full"
+                  className="block w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none file:mr-4 file:border-0 file:bg-[#1e4b64] file:px-4 file:py-2 file:text-white file:font-semibold file:rounded-full"
                 />
               </label>
               <label className="space-y-2 text-sm font-semibold text-zinc-700">
@@ -561,7 +561,7 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
                   accept="video/*"
                   multiple
                   onChange={(e) => handleMediaUpload(e, 'video')}
-                  className="block w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none file:mr-4 file:border-0 file:bg-[#0082c8] file:px-4 file:py-2 file:text-white file:font-semibold file:rounded-full"
+                  className="block w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none file:mr-4 file:border-0 file:bg-[#1e4b64] file:px-4 file:py-2 file:text-white file:font-semibold file:rounded-full"
                 />
               </label>
             </div>

@@ -90,7 +90,7 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
             className="fixed left-0 top-0 z-[10000] h-screen w-[310px] bg-white shadow-2xl flex flex-col overflow-hidden"
           >
             {/* Header: Brand Blue Background */}
-            <div className="bg-[#0082c8] px-5 pt-6 pb-8 text-white relative shrink-0">
+            <div className="bg-[#1e4b64] px-5 pt-6 pb-8 text-white relative shrink-0">
                 <div className="flex justify-between items-start mb-5">
                     <div className="flex flex-col">
                         <Link to="/" onClick={onClose} className="text-xl font-black italic tracking-tighter leading-none flex items-center">
@@ -116,7 +116,7 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
                             <img src={user.photoURL} alt="" className="h-full w-full object-cover rounded-full" referrerPolicy="no-referrer" />
                         ) : (
                             <div className="h-full w-full rounded-full flex items-center justify-center">
-                                <User className="h-5 w-5 text-[#0082c8]" />
+                                <User className="h-5 w-5 text-[#1e4b64]" />
                             </div>
                         )}
                     </div>
@@ -146,7 +146,7 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
                               key={idx}
                               to={link.link}
                               onClick={onClose}
-                              className="block w-full text-left py-2.5 text-[15px] font-black italic tracking-tight uppercase text-zinc-900 hover:text-[#0082c8] transition-colors"
+                              className="block w-full text-left py-2.5 text-[15px] font-black italic tracking-tight uppercase text-zinc-900 hover:text-[#1e4b64] transition-colors"
                           >
                               {link.label}
                           </Link>
@@ -181,7 +181,7 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
                                     }}
                                     className={`w-full flex items-center gap-4 py-3 px-6 transition-all group relative border-b border-zinc-50 ${
                                         activeCategory === cat.label 
-                                          ? 'bg-[#0082c8]/5' 
+                                          ? 'bg-[#1e4b64]/5' 
                                           : 'hover:bg-zinc-50 bg-white'
                                     }`}
                                 >
@@ -190,14 +190,14 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
                                           <img src={cat.icon} alt={cat.label} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                                         ) : (
                                           <div className="h-full w-full bg-zinc-50 flex items-center justify-center">
-                                            <Sparkles className="h-5 w-5 text-[#0082c8]/20" />
+                                            <Sparkles className="h-5 w-5 text-[#1e4b64]/20" />
                                           </div>
                                         )}
                                     </div>
-                                    <span className={`text-[15px] font-bold tracking-tight text-left flex-1 text-zinc-900 group-hover:text-[#0082c8] transition-colors`}>
+                                    <span className={`text-[15px] font-bold tracking-tight text-left flex-1 text-zinc-900 group-hover:text-[#1e4b64] transition-colors`}>
                                         {cat.label}
                                     </span>
-                                    <ChevronRight className="h-4 w-4 text-zinc-300 group-hover:text-[#0082c8] transition-colors" />
+                                    <ChevronRight className="h-4 w-4 text-zinc-300 group-hover:text-[#1e4b64] transition-colors" />
                                 </motion.button>
                             ))}
                         </div>
@@ -205,7 +205,7 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
 
                     <div className="mt-6 px-5 pb-10">
                         <Button 
-                            className="w-full bg-[#0082c8] text-white font-black h-14 uppercase tracking-widest text-[11px] rounded-xl shadow-xl hover:bg-[#0071ae] transition-all mb-4"
+                            className="w-full bg-[#1e4b64] text-white font-black h-14 uppercase tracking-widest text-[11px] rounded-xl shadow-xl hover:bg-[#153446] transition-all mb-4"
                             onClick={() => { onCategorySelect('All' as any); onClose(); }}
                         >
                             XEM TẤT CẢ SẢN PHẨM

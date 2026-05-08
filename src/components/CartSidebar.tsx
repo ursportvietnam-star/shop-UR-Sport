@@ -120,7 +120,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose, onChe
                   </p>
                   <Button 
                     onClick={onCheckout}
-                    className="w-full bg-[#0082c8] text-white hover:bg-[#0071ae] font-bold h-14 rounded-xl text-sm uppercase tracking-widest shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+                    className="w-full bg-[#1e4b64] text-white hover:bg-[#153446] font-bold h-14 rounded-xl text-sm uppercase tracking-widest shadow-lg shadow-[#1e4b64]/20 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
                   >
                     Tiến hành thanh toán <ArrowRight className="h-4 w-4" />
                   </Button>

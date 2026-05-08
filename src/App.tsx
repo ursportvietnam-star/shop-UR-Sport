@@ -82,12 +82,12 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
           <div>
             <span className="section-subtitle">Performance Collection</span>
             <h2 className="section-title">
-              Sản phẩm <span className="text-[#0082c8]">Áo thể thao</span> nổi bật
+              Sản phẩm <span className="text-[#1e4b64]">Áo thể thao</span> nổi bật
             </h2>
           </div>
           <button 
              onClick={() => onCategorySelect('Áo thun thể thao nam')}
-             className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#0082c8] hover:translate-x-2 transition-transform group"
+             className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#1e4b64] hover:translate-x-2 transition-transform group"
           >
             Tất cả sản phẩm <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
           </button>
@@ -116,7 +116,7 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
           <Button 
              variant="outline" 
              onClick={() => onCategorySelect('Áo thun thể thao nam')}
-             className="rounded-full border-zinc-200 bg-white text-zinc-900 hover:text-white hover:bg-[#0082c8] hover:border-[#0082c8] transition-all font-bold px-10 h-12 text-[12px] uppercase tracking-widest shadow-md"
+             className="rounded-full border-zinc-200 bg-white text-zinc-900 hover:text-white hover:bg-[#1e4b64] hover:border-[#1e4b64] transition-all font-bold px-10 h-12 text-[12px] uppercase tracking-widest shadow-md"
           >
              Xem thêm
           </Button>
@@ -132,11 +132,11 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
           className="flex items-center justify-between mb-8"
         >
           <h2 className="section-title">
-            Bộ sưu tập <span className="text-[#0082c8]">Áo Polo Nam</span>
+            Bộ sưu tập <span className="text-[#1e4b64]">Áo Polo Nam</span>
           </h2>
           <button 
              onClick={() => onCategorySelect('Áo polo nam')}
-             className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-[#0082c8] transition-colors"
+             className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-[#1e4b64] transition-colors"
           >
             Khám phá <ChevronRight className="h-4 w-4" />
           </button>
@@ -165,7 +165,7 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
           <Button 
              variant="outline" 
              onClick={() => onCategorySelect('Áo polo nam')}
-             className="rounded-full border-zinc-200 bg-white text-zinc-900 hover:text-white hover:bg-[#0082c8] hover:border-[#0082c8] transition-all font-bold px-10 h-12 text-[12px] uppercase tracking-widest shadow-md"
+             className="rounded-full border-zinc-200 bg-white text-zinc-900 hover:text-white hover:bg-[#1e4b64] hover:border-[#1e4b64] transition-all font-bold px-10 h-12 text-[12px] uppercase tracking-widest shadow-md"
           >
              Xem thêm
           </Button>
@@ -181,11 +181,11 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
           className="flex items-center justify-between mb-8"
         >
           <h2 className="section-title">
-            <span className="text-[#0082c8]">Áo Thun Nam</span> Thời Trang
+            <span className="text-[#1e4b64]">Áo Thun Nam</span> Thời Trang
           </h2>
           <button 
              onClick={() => onCategorySelect('Áo thun nam')}
-             className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-[#0082c8] transition-colors"
+             className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-[#1e4b64] transition-colors"
           >
             Xem ngay <ChevronRight className="h-4 w-4" />
           </button>
@@ -214,7 +214,7 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
           <Button 
              variant="outline" 
              onClick={() => onCategorySelect('Áo thun nam')}
-             className="rounded-full border-zinc-200 bg-white text-zinc-900 hover:text-white hover:bg-[#0082c8] hover:border-[#0082c8] transition-all font-bold px-10 h-12 text-[12px] uppercase tracking-widest shadow-md"
+             className="rounded-full border-zinc-200 bg-white text-zinc-900 hover:text-white hover:bg-[#1e4b64] hover:border-[#1e4b64] transition-all font-bold px-10 h-12 text-[12px] uppercase tracking-widest shadow-md"
           >
              Xem thêm
           </Button>
@@ -231,9 +231,9 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
         >
           <span className="section-subtitle">Tạp chí UR SPORT</span>
           <h2 className="section-title">
-            Stay updated with <span className="text-[#0082c8]">UR NEWS</span>
+            Stay updated with <span className="text-[#1e4b64]">UR NEWS</span>
           </h2>
-          <div className="h-1 w-12 bg-[#0082c8] mt-6 rounded-full" />
+          <div className="h-1 w-12 bg-[#1e4b64] mt-6 rounded-full" />
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
@@ -254,7 +254,7 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
                 />
                 <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
                 <div className="absolute bottom-8 left-8">
-                  <div className="bg-[#0082c8] px-4 py-1.5 rounded-full text-[10px] font-black text-white uppercase tracking-widest mb-3 inline-block">
+                  <div className="bg-[#1e4b64] px-4 py-1.5 rounded-full text-[10px] font-black text-white uppercase tracking-widest mb-3 inline-block">
                     {STATIC_BLOG_POSTS[0].date}
                   </div>
                   <h3 className="text-2xl sm:text-3xl font-black text-white leading-tight uppercase tracking-tighter">
@@ -287,7 +287,7 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
                       {item.date}
                     </div>
                   </div>
-                  <h4 className="text-[16px] font-black text-zinc-900 group-hover:text-[#0082c8] transition-colors leading-tight line-clamp-2 uppercase italic tracking-tight">
+                  <h4 className="text-[16px] font-black text-zinc-900 group-hover:text-[#1e4b64] transition-colors leading-tight line-clamp-2 uppercase italic tracking-tight">
                     {item.title}
                   </h4>
                </motion.div>
@@ -566,8 +566,8 @@ function AppContent() {
                             transition={{ delay: idx * 0.1 }}
                             className="flex items-center gap-4 group"
                           >
-                            <div className="h-14 w-14 shrink-0 rounded-2xl bg-white flex items-center justify-center shadow-sm border border-zinc-100 group-hover:bg-[#0082c8] group-hover:border-[#0082c8] transition-all duration-500">
-                              <badge.icon className="h-6 w-6 text-[#0082c8] group-hover:text-white transition-colors duration-500" />
+                            <div className="h-14 w-14 shrink-0 rounded-2xl bg-white flex items-center justify-center shadow-sm border border-zinc-100 group-hover:bg-[#1e4b64] group-hover:border-[#1e4b64] transition-all duration-500">
+                              <badge.icon className="h-6 w-6 text-[#1e4b64] group-hover:text-white transition-colors duration-500" />
                             </div>
                             <div>
                               <h4 className="text-[11px] sm:text-[12px] font-black uppercase tracking-widest text-zinc-900 mb-1">{badge.title}</h4>

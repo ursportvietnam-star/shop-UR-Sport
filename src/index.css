@@ -4,8 +4,8 @@
   --font-sans: "Be Vietnam Pro", "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Be Vietnam Pro", "Inter", ui-serif, Georgia, serif;
   
-  --color-brand-blue: #0082c8;
-  --color-brand-blue-dark: #005fa3;
+  --color-brand-blue: #1e4b64;
+  --color-brand-blue-dark: #153446;
   --color-brand-black: #0f172a;
   --color-brand-white: #ffffff;
   --color-brand-gray: #f8fafc;
@@ -34,7 +34,7 @@
   }
 
   ::selection {
-    @apply bg-[#0082c8] text-white;
+    @apply bg-[#1e4b64] text-white;
   }
 
   /* FIX: đổi từ normal sang break-word để chữ tự xuống dòng */
@@ -156,7 +156,7 @@
   }
 
   .section-subtitle {
-    @apply text-[9px] sm:text-[10px] font-black uppercase tracking-[0.4em] text-[#0082c8] mb-3 block;
+    @apply text-[9px] sm:text-[10px] font-black uppercase tracking-[0.4em] text-[#1e4b64] mb-3 block;
   }
 
   .btn-premium {
@@ -230,11 +230,11 @@ html {
 .product-description-content strong { @apply font-bold text-slate-900; }
 
 .product-description-content blockquote {
-  @apply border-l-4 border-[#0082c8] pl-6 py-4 bg-slate-50 italic rounded-r-2xl my-8 text-slate-700;
+  @apply border-l-4 border-[#1e4b64] pl-6 py-4 bg-slate-50 italic rounded-r-2xl my-8 text-slate-700;
 }
 
 .product-description-content a {
-  @apply text-[#0082c8] underline hover:text-[#005fa3] transition-colors font-bold;
+  @apply text-[#1e4b64] underline hover:text-[#153446] transition-colors font-bold;
 }
 
 .ql-align-center { text-align: center; }

@@ -48,7 +48,7 @@ const socialLinks = [
 const Logo = ({ inverse }: { inverse?: boolean }) => (
   <div className="flex flex-col items-start mb-2">
     <div className={`text-4xl font-black italic tracking-tighter uppercase leading-none ${inverse ? 'text-white' : 'text-black'}`}>
-      <span className="text-[#0082c8]">UR</span>
+      <span className="text-[#1e4b64]">UR</span>
       <span>SPORT</span>
     </div>
     <span className={`text-xs font-bold italic uppercase tracking-tighter mt-1 ${inverse ? 'text-white/70' : 'text-zinc-500'}`}>
@@ -124,7 +124,7 @@ export function Footer({ onPageChange, onCategorySelect }: FooterProps) {
                 />
               </div>
               <button
-                className="inline-flex h-11 items-center gap-2 rounded-md bg-[#0082c8] px-4 text-sm font-black text-white hover:bg-[#0071ae] transition duration-300 hover:scale-[1.02] active:scale-95"
+                className="inline-flex h-11 items-center gap-2 rounded-md bg-[#1e4b64] px-4 text-sm font-black text-white hover:bg-[#153446] transition duration-300 hover:scale-[1.02] active:scale-95"
                 type="submit"
               >
                 <Send className="h-4 w-4" />
@@ -140,9 +140,9 @@ export function Footer({ onPageChange, onCategorySelect }: FooterProps) {
                 <li key={link.value}>
                   <button
                     onClick={() => onCategorySelect(link.value)}
-                    className="group/link inline-flex w-fit items-center text-sm font-semibold text-slate-300 transition duration-300 hover:translate-x-1 hover:text-[#0082c8]"
+                    className="group/link inline-flex w-fit items-center text-sm font-semibold text-slate-300 transition duration-300 hover:translate-x-1 hover:text-[#1e4b64]"
                   >
-                    <span className="bg-gradient-to-r from-[#0082c8] to-[#0082c8] bg-[length:0%_1px] bg-left-bottom bg-no-repeat transition-[background-size] duration-300 group-hover/link:bg-[length:100%_1px]">
+                    <span className="bg-gradient-to-r from-[#1e4b64] to-[#1e4b64] bg-[length:0%_1px] bg-left-bottom bg-no-repeat transition-[background-size] duration-300 group-hover/link:bg-[length:100%_1px]">
                       {link.label}
                     </span>
                   </button>
@@ -158,9 +158,9 @@ export function Footer({ onPageChange, onCategorySelect }: FooterProps) {
                 <li key={link.label}>
                   <button
                     onClick={() => link.href !== '#' && onPageChange(link.href)}
-                    className="group/link inline-flex w-fit items-center text-sm font-semibold text-slate-300 transition duration-300 hover:translate-x-1 hover:text-[#0082c8]"
+                    className="group/link inline-flex w-fit items-center text-sm font-semibold text-slate-300 transition duration-300 hover:translate-x-1 hover:text-[#1e4b64]"
                   >
-                    <span className="bg-gradient-to-r from-[#0082c8] to-[#0082c8] bg-[length:0%_1px] bg-left-bottom bg-no-repeat transition-[background-size] duration-300 group-hover/link:bg-[length:100%_1px]">
+                    <span className="bg-gradient-to-r from-[#1e4b64] to-[#1e4b64] bg-[length:0%_1px] bg-left-bottom bg-no-repeat transition-[background-size] duration-300 group-hover/link:bg-[length:100%_1px]">
                       {link.label}
                     </span>
                   </button>
@@ -173,19 +173,19 @@ export function Footer({ onPageChange, onCategorySelect }: FooterProps) {
             <h3 className="text-base font-black">Thông tin liên hệ</h3>
             <ul className="mt-5 space-y-4 text-sm font-semibold text-slate-300">
               <li className="flex gap-3">
-                <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-[#0082c8]" />
+                <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-[#1e4b64]" />
                 <span>72 Nguyễn Trãi, Quận 1, TP. Hồ Chí Minh</span>
               </li>
               <li className="flex gap-3">
-                <Phone className="mt-0.5 h-5 w-5 shrink-0 text-[#0082c8]" />
-                <a className="transition hover:text-[#0082c8]" href="tel:+84917722425">
+                <Phone className="mt-0.5 h-5 w-5 shrink-0 text-[#1e4b64]" />
+                <a className="transition hover:text-[#1e4b64]" href="tel:+84917722425">
                   +84 917 722 425
                 </a>
               </li>
               <li className="flex gap-3">
-                <Mail className="mt-0.5 h-5 w-5 shrink-0 text-[#0082c8]" />
+                <Mail className="mt-0.5 h-5 w-5 shrink-0 text-[#1e4b64]" />
                 <a
-                  className="transition hover:text-[#0082c8]"
+                  className="transition hover:text-[#1e4b64]"
                   href="mailto:support@ursport.vn"
                 >
                   support@ursport.vn
@@ -209,7 +209,7 @@ export function Footer({ onPageChange, onCategorySelect }: FooterProps) {
               <h3 className="text-base font-black">Mạng xã hội</h3>
               <button
                 aria-label="Chuyển dark mode"
-                className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/[0.08] text-[#0082c8] transition duration-300 hover:scale-105 hover:bg-white/[0.12]"
+                className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/[0.08] text-[#1e4b64] transition duration-300 hover:scale-105 hover:bg-white/[0.12]"
                 onClick={() => setIsDark((current) => !current)}
                 type="button"
               >
@@ -223,7 +223,7 @@ export function Footer({ onPageChange, onCategorySelect }: FooterProps) {
                 return (
                   <a
                     aria-label={social.label}
-                    className="grid h-11 w-11 place-items-center rounded-full bg-white/[0.08] text-slate-200 ring-1 ring-white/10 transition duration-300 hover:-translate-y-1 hover:scale-105 hover:bg-[#0082c8] hover:text-white"
+                    className="grid h-11 w-11 place-items-center rounded-full bg-white/[0.08] text-slate-200 ring-1 ring-white/10 transition duration-300 hover:-translate-y-1 hover:scale-105 hover:bg-[#1e4b64] hover:text-white"
                     href={social.href}
                     key={social.label}
                     rel="noreferrer"
@@ -236,7 +236,7 @@ export function Footer({ onPageChange, onCategorySelect }: FooterProps) {
             </div>
 
             <div className="mt-6 rounded-lg border border-white/10 bg-white/[0.06] p-4">
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0082c8]">
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#1e4b64]">
                 Thanh toán
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -285,7 +285,7 @@ export function Footer({ onPageChange, onCategorySelect }: FooterProps) {
                       <li key={section.isCategory ? link.value : link.label}>
                         <button
                           onClick={() => section.isCategory ? onCategorySelect(link.value) : (link.href !== '#' && onPageChange(link.href))}
-                          className="text-sm font-semibold text-slate-300 hover:text-[#0082c8] transition-colors"
+                          className="text-sm font-semibold text-slate-300 hover:text-[#1e4b64] transition-colors"
                         >
                           {link.label}
                         </button>
