@@ -41,8 +41,8 @@
 
 .product-description-container * {
   max-width: 100% !important;
-  word-break: break-word;
-  overflow-wrap: anywhere;
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 
 .product-description-container img,

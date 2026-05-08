@@ -603,8 +603,8 @@ export const ProductDetail: React.FC = () => {
                           )}>
                             <div 
                               dangerouslySetInnerHTML={{ __html: product.description }} 
-                              className="w-full overflow-wrap-anywhere [&_*]:max-w-full [&_*]:break-words [&_img]:w-full [&_img]:h-auto [&_table]:w-full [&_table]:table-fixed"
-                              style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
+                              className="w-full break-words [&_*]:max-w-full [&_img]:w-full [&_img]:h-auto [&_table]:w-full [&_table]:table-fixed"
+                              style={{ wordBreak: 'normal', overflowWrap: 'break-word' }}
                             />
                           </div>
                           {!isDescriptionExpanded && <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-white to-transparent pointer-events-none" />}
