@@ -35,7 +35,8 @@
 
   p, span, div {
     overflow-wrap: normal;
-    word-break: normal;
+    word-break: keep-all;
+    hyphens: none;
   }
 
   img {
