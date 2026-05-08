@@ -81,16 +81,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
             </div>
             
             <div className="mt-auto flex items-center justify-between gap-2">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-0 sm:gap-2">
-                <span className="text-[16px] sm:text-[20px] font-black text-[#0082c8]">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-nowrap overflow-hidden">
+                <span className="text-[15px] sm:text-[20px] font-black text-[#0082c8] whitespace-nowrap">
                   {(product.discountPrice || product.price).toLocaleString('vi-VN')}
-                  <span className="text-[12px] sm:text-[14px] ml-0.5">₫</span>
+                  <span className="text-[11px] sm:text-[14px] ml-0.5">₫</span>
                 </span>
                 
                 {product.discountPrice && (
-                  <span className="text-[11px] sm:text-[13px] text-zinc-400 line-through font-medium">
+                  <span className="text-[10px] sm:text-[13px] text-zinc-400 line-through font-medium whitespace-nowrap">
                     {product.price.toLocaleString('vi-VN')}
-                    <span className="text-[10px] sm:text-[11px] ml-0.5">₫</span>
+                    <span className="text-[9px] sm:text-[11px] ml-0.5">₫</span>
                   </span>
                 )}
               </div>
