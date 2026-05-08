@@ -332,13 +332,13 @@ export const ProductDetail: React.FC = () => {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="bg-white min-h-screen pt-6 pb-32 font-sans text-zinc-900"
+      className="bg-white min-h-screen pt-2 pb-32 font-sans text-zinc-900"
     >
       {/* Breadcrumbs & Nav Row */}
       <motion.div
         initial={{ y: -10, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="mx-auto max-w-[1400px] px-4 h-14 sm:px-6 lg:px-8 flex items-center justify-between border-b border-zinc-100 mb-6"
+        className="mx-auto max-w-[1400px] px-4 h-10 sm:px-6 lg:px-8 flex items-center justify-between border-b border-zinc-100 mb-4"
       >
         <nav className="flex items-center gap-2 text-xs font-medium text-zinc-400 overflow-hidden">
           <Link to="/" className="hover:text-black transition-colors shrink-0">Home</Link>
@@ -564,7 +564,7 @@ export const ProductDetail: React.FC = () => {
 
               {/* ── 1. CHI TIẾT SẢN PHẨM ── */}
               <div>
-                <h4 className="text-[18px] font-bold text-zinc-900 italic mb-6 pb-4 border-b-2 border-zinc-900 inline-block pr-8">
+                <h4 className="text-[18px] font-bold text-zinc-900 italic mb-4 pb-3 border-b-2 border-zinc-900 inline-block pr-8">
                   CHI TIẾT SẢN PHẨM
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-0 w-full max-w-[1000px]">
@@ -602,7 +602,7 @@ export const ProductDetail: React.FC = () => {
 
               {/* ── 3. MÔ TẢ SẢN PHẨM ── */}
               <div className="w-full">
-                <h4 className="text-[18px] font-bold text-zinc-900 italic mb-8 pb-4 border-b-2 border-zinc-900 inline-block pr-8">
+                <h4 className="text-[18px] font-bold text-zinc-900 italic mb-5 pb-3 border-b-2 border-zinc-900 inline-block pr-8">
                   MÔ TẢ SẢN PHẨM
                 </h4>
 
