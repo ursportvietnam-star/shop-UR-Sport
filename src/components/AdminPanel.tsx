@@ -1419,6 +1419,7 @@ export const AdminPanel: React.FC = () => {
       </div>
 
       <AddProductModal
+        key={editingProduct?.id || (isAddModalOpen ? 'new-product' : 'closed')}
         isOpen={isAddModalOpen}
         onClose={() => {
           setIsAddModalOpen(false);
@@ -1429,6 +1430,7 @@ export const AdminPanel: React.FC = () => {
       />
 
       <AddBlogPostModal
+        key={editingBlogPost?.id || (isBlogModalOpen ? 'new-blog' : 'closed')}
         isOpen={isBlogModalOpen}
         onClose={() => {
           setIsBlogModalOpen(false);

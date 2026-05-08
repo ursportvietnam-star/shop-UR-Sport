@@ -296,6 +296,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         fashionStyle: product.fashionStyle || 'Thể thao, Cơ bản',
         collarType: product.collarType || 'Cổ tròn',
       });
+      setHtmlSource(product.description || '');
     } else {
       setFormData({
         name: '',
@@ -322,6 +323,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         fashionStyle: 'Thể thao, Cơ bản',
         collarType: 'Cổ tròn',
       });
+      setHtmlSource('');
     }
   }, [isOpen, product]);
 

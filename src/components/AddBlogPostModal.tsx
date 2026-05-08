@@ -68,6 +68,7 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
       setAuthor(post.author || 'UrSport Team');
       setExcerpt(post.excerpt || '');
       setContent(post.content || '');
+      setHtmlSource(post.content || '');
       setCoverImage(post.image || '');
       setImageUrls(post.images || []);
       setVideoUrls(post.videos || []);

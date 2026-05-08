@@ -87,7 +87,8 @@ Nhận chủ đề bài viết và trả về đúng một object JSON chuẩn, 
 
 async function callGemini(systemInstruction: string, userPrompt: string) {
   const apiKey = getGeminiApiKey();
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  // Using gemini-1.5-flash which is stable and supports JSON mode
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
   
   const payload = {
     contents: [
@@ -115,10 +116,13 @@ async function callGemini(systemInstruction: string, userPrompt: string) {
   
   if (!text) throw new Error('Không nhận được dữ liệu từ AI');
   
+  // Clean up any potential markdown formatting even with responseMimeType
+  const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+  
   try {
-    return JSON.parse(text);
+    return JSON.parse(cleanText);
   } catch (e) {
     console.error("Failed to parse JSON:", text);
-    throw new Error('AI trả về sai định dạng JSON');
+    throw new Error('AI trả về sai định dạng JSON. Vui lòng thử lại.');
   }
 }
