@@ -561,14 +561,14 @@ export const ProductDetail: React.FC = () => {
             <div className="space-y-12">
 
               <div>
-                  <div className="flex flex-col lg:flex-row gap-0">
-                    {/* Left Column: Main Content (~81%) */}
-                    <div className="flex-1 min-w-0 lg:border-r lg:border-zinc-200 lg:pr-8 space-y-10 overflow-visible">
+                  <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-0">
+                    {/* Left Column: Main Content */}
+                    <div className="min-w-0 lg:border-r lg:border-zinc-200 lg:pr-10 space-y-10 overflow-hidden w-full">
 
                       {/* ── 1. CHI TIẾT SẢN PHẨM ── */}
                       <div>
                         <h4 className="text-[16px] font-bold text-zinc-900 italic mb-6 pb-4 border-b border-zinc-200">CHI TIẾT SẢN PHẨM</h4>
-                        <div className="grid grid-cols-1 gap-y-0">
+                        <div className="grid grid-cols-1 gap-y-0 w-full">
                           {[
                             { label: 'Thương hiệu', value: product.brand || 'UR SPORT' },
                             { label: 'Xuất xứ', value: product.origin || 'Việt Nam' },
@@ -577,9 +577,9 @@ export const ProductDetail: React.FC = () => {
                             { label: 'Phong cách', value: product.fashionStyle || 'Thể thao, Cơ bản, Hàn Quốc, Đường phố, Công sở' },
                             { label: 'Cổ áo', value: product.collarType || 'Cổ tròn' }
                           ].map(row => (
-                            <div key={row.label} className="flex flex-col sm:flex-row sm:items-center py-[14px] border-b border-zinc-100 last:border-0 gap-1 sm:gap-0">
+                            <div key={row.label} className="flex flex-col sm:flex-row sm:items-center py-[14px] border-b border-zinc-100 last:border-0 gap-1 sm:gap-0 w-full">
                               <span className="text-zinc-400 text-[13px] sm:text-[14px] w-full sm:w-44 shrink-0">{row.label}</span>
-                              <span className="text-zinc-800 text-[14px] font-semibold">{row.value}</span>
+                              <span className="text-zinc-800 text-[14px] font-semibold break-keep">{row.value}</span>
                             </div>
                           ))}
                         </div>
@@ -594,14 +594,14 @@ export const ProductDetail: React.FC = () => {
                       )}
 
                       {/* ── 3. MÔ TẢ SẢN PHẨM ── */}
-                      <div>
+                      <div className="w-full">
                         <h4 className="text-[16px] font-bold text-zinc-900 italic mb-6 pb-4 border-b border-zinc-200">MÔ TẢ SẢN PHẨM</h4>
-                        <div className="relative">
+                        <div className="relative w-full">
                           <div className={cn(
-                            "product-description-container notranslate max-w-none text-zinc-600 leading-loose overflow-visible transition-all duration-700 break-keep pr-10",
-                            !isDescriptionExpanded ? "max-h-[800px] overflow-hidden" : "max-h-none"
+                            "product-description-container notranslate max-w-none text-zinc-600 leading-loose overflow-hidden transition-all duration-700 break-keep pr-4 w-full",
+                            !isDescriptionExpanded ? "max-h-[800px]" : "max-h-none"
                           )}>
-                            <div dangerouslySetInnerHTML={{ __html: product.description }} />
+                            <div dangerouslySetInnerHTML={{ __html: product.description }} className="w-full" />
                           </div>
                           {!isDescriptionExpanded && <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-white to-transparent pointer-events-none" />}
                           <div className="flex justify-center pt-8">
@@ -617,23 +617,23 @@ export const ProductDetail: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Right Column: Sidebar (~19%) */}
-                    <div className="hidden lg:block w-[220px] shrink-0 pl-6">
+                    {/* Right Column: Sidebar */}
+                    <div className="hidden lg:block w-[280px] shrink-0 pl-10">
                       <div className="sticky top-24">
-                        <h4 className="text-[14px] text-zinc-400 mb-6">Top Sản Phẩm Nổi Bật</h4>
-                        <div className="space-y-6">
+                        <h4 className="text-[14px] text-zinc-400 mb-6 font-bold uppercase tracking-widest">Sản Phẩm Nổi Bật</h4>
+                        <div className="space-y-8">
                           {categoryProducts.filter(p => p.id !== product.id).slice(0, 4).map(p => (
                             <Link to={`/apparel/${categorySlug || 'all'}/${p.slug}`} key={p.id} className="block group">
-                              <div className="aspect-[4/5] w-full overflow-hidden bg-zinc-100 mb-2 relative">
-                                <img src={p.images?.[0]} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                              <div className="aspect-[4/5] w-full overflow-hidden bg-zinc-50 mb-3 relative rounded-xl border border-zinc-100">
+                                <img src={p.images?.[0]} alt={p.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                                 {p.videos && p.videos.length > 0 && (
-                                  <div className="absolute bottom-2 right-2 w-6 h-6 bg-black/50 rounded-full flex items-center justify-center">
+                                  <div className="absolute bottom-2 right-2 w-7 h-7 bg-black/40 backdrop-blur-sm rounded-full flex items-center justify-center">
                                     <Play className="h-3 w-3 text-white fill-white" />
                                   </div>
                                 )}
                               </div>
-                              <h5 className="text-[13px] font-medium text-zinc-700 leading-snug line-clamp-2 group-hover:text-[#0082c8] transition-colors">{p.name}</h5>
-                              <p className="text-[#ee4d2d] font-medium text-[14px] mt-1">
+                              <h5 className="text-[13px] font-bold text-zinc-800 leading-snug line-clamp-2 group-hover:text-[#0082c8] transition-colors mb-2">{p.name}</h5>
+                              <p className="text-[#ff3b30] font-black text-[15px]">
                                 {p.discountPrice ? p.discountPrice.toLocaleString('vi-VN') : p.price.toLocaleString('vi-VN')}₫
                               </p>
                             </Link>
