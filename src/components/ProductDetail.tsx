@@ -338,7 +338,7 @@ export const ProductDetail: React.FC = () => {
       <motion.div
         initial={{ y: -10, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="mx-auto max-w-[1400px] px-4 h-14 sm:px-6 lg:px-8 flex items-center justify-between border-b border-zinc-100 mb-8"
+        className="mx-auto max-w-[1400px] px-4 h-14 sm:px-6 lg:px-8 flex items-center justify-between border-b border-zinc-100 mb-6"
       >
         <nav className="flex items-center gap-2 text-xs font-medium text-zinc-400 overflow-hidden">
           <Link to="/" className="hover:text-black transition-colors shrink-0">Home</Link>
@@ -443,7 +443,7 @@ export const ProductDetail: React.FC = () => {
                 </div>
               </div>
 
-              <div className="space-y-3 pt-8 border-t border-zinc-100">
+              <div className="space-y-3 pt-6 border-t border-zinc-100">
                 <div className="flex items-baseline gap-4">
                   <span className="text-5xl font-bold text-[#ff3b30] tracking-tighter">
                     {(product.discountPrice || product.price).toLocaleString('vi-VN')}₫
@@ -524,7 +524,7 @@ export const ProductDetail: React.FC = () => {
 
               {/* Trust Badges */}
               <div className="pt-6 border-t border-zinc-100">
-                <div className="bg-zinc-50/80 rounded-2xl p-6 grid grid-cols-2 gap-4">
+                <div className="bg-zinc-50/80 rounded-2xl p-5 grid grid-cols-2 gap-4">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center shadow-sm">
                       <Truck className="h-5 w-5 text-[#0082c8]" />
@@ -544,7 +544,7 @@ export const ProductDetail: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <div className="mt-4 flex items-center justify-center gap-6">
+                <div className="mt-3 flex items-center justify-center gap-6">
                   {["COD", "Bank Transfer", "Momo", "ZaloPay"].map((method) => (
                     <span key={method} className="text-[9px] font-black uppercase tracking-widest text-zinc-300">
                       {method}
@@ -557,10 +557,10 @@ export const ProductDetail: React.FC = () => {
         </div>
 
         {/* Bottom: Description & Details */}
-        <div className="mt-20 pt-20 border-t border-zinc-100">
-          <div className="space-y-16">
+        <div className="mt-12 pt-12 border-t border-zinc-100">
+          <div className="space-y-12">
             {/* Full Width Content Section */}
-            <div className="w-full space-y-12">
+            <div className="w-full space-y-8">
 
               {/* ── 1. CHI TIẾT SẢN PHẨM ── */}
               <div>
@@ -641,7 +641,7 @@ export const ProductDetail: React.FC = () => {
             </div>
 
             {/* Suggested Products */}
-            <div className="w-full pt-16 border-t border-zinc-200">
+            <div className="w-full pt-12 border-t border-zinc-200">
               <div className="flex items-center justify-between mb-10">
                 <h4 className="text-[20px] font-bold text-zinc-900 uppercase tracking-tight">CÓ THỂ BẠN CŨNG THÍCH</h4>
                 <Link to={`/apparel/${categorySlug || 'all'}`} className="text-[#0082c8] text-sm font-bold hover:underline">
