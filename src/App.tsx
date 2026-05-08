@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useParams } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
@@ -294,9 +295,6 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
           </div>
         </div>
       </section>
-    </>
-  );
-}
     </>
   );
 }
