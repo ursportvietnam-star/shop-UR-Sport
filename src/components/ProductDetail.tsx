@@ -6,25 +6,25 @@ import { useAuth } from '../AuthContext';
 import { useProducts } from '../ProductsContext';
 import { Button } from '@/components/ui/button';
 import { db } from '../firebase';
-import { 
-  collection, 
-  addDoc, 
-  query, 
-  where, 
-  onSnapshot, 
+import {
+  collection,
+  addDoc,
+  query,
+  where,
+  onSnapshot,
   serverTimestamp,
   doc,
   runTransaction
 } from 'firebase/firestore';
 import { Review, Product } from '../types';
-import { 
-  Star, 
-  ShoppingBag, 
+import {
+  Star,
+  ShoppingBag,
   ShoppingCart,
-  Heart, 
-  Minus, 
-  Plus, 
-  ChevronDown, 
+  Heart,
+  Minus,
+  Plus,
+  ChevronDown,
   ChevronUp,
   ChevronLeft,
   ChevronRight,
@@ -50,16 +50,14 @@ export const ProductDetail: React.FC = () => {
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
   const { products, loading } = useProducts();
-  
-  // Find current product
+
   const product = products.find(p => p.slug === productSlug);
-  
-  // SEO Navigation Logic (Prev/Next)
+
   const catMetadata = CATEGORY_METADATA.find(c => c.slug === categorySlug);
   const categoryName = catMetadata ? catMetadata.name : product?.category;
   const categoryProducts = products.filter(p => p.category === categoryName);
   const currentIndex = categoryProducts.findIndex(p => p.slug === productSlug);
-  
+
   const prevProduct = currentIndex > 0 ? categoryProducts[currentIndex - 1] : null;
   const nextProduct = currentIndex < categoryProducts.length - 1 ? categoryProducts[currentIndex + 1] : null;
 
@@ -98,17 +96,16 @@ export const ProductDetail: React.FC = () => {
         id: doc.id,
         ...doc.data()
       })) as Review[];
-      
+
       const sortedReviews = [...reviewsData].sort((a, b) => {
         const timeA = a.createdAt?.seconds || 0;
         const timeB = b.createdAt?.seconds || 0;
         return timeB - timeA;
       });
-      
+
       setReviews(sortedReviews);
     });
 
-    // Kiểm tra trạng thái mua hàng
     const checkPurchaseStatus = async () => {
       if (!user) {
         setHasPurchased(false);
@@ -120,11 +117,11 @@ export const ProductDetail: React.FC = () => {
         const { getDocs } = await import('firebase/firestore');
         const ordersRef = collection(db, 'orders');
         const purchaseQuery = query(
-          ordersRef, 
+          ordersRef,
           where('userId', '==', user.uid),
           where('status', '==', 'delivered')
         );
-        
+
         const querySnapshot = await getDocs(purchaseQuery);
         const purchased = querySnapshot.docs.some(doc => {
           const orderData = doc.data();
@@ -179,9 +176,8 @@ export const ProductDetail: React.FC = () => {
 
     setIsSubmittingReview(true);
     const uploadToast = toast.loading('Đang chuẩn bị gửi đánh giá...');
-    
+
     try {
-      // 1. Upload media to Cloudinary
       const imageUrls: string[] = [];
       const videoUrls: string[] = [];
 
@@ -193,7 +189,7 @@ export const ProductDetail: React.FC = () => {
           const file = selectedReviewFiles[i];
           const isVideo = file.type.startsWith('video');
           toast.loading(`Đang tải ${isVideo ? 'video' : 'ảnh'} (${i + 1}/${selectedReviewFiles.length})...`, { id: uploadToast });
-          
+
           const formData = new FormData();
           formData.append('file', file);
           formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
@@ -205,7 +201,7 @@ export const ProductDetail: React.FC = () => {
           );
 
           if (!response.ok) throw new Error('Lỗi upload Cloudinary');
-          
+
           const data = await response.json();
           if (isVideo) {
             videoUrls.push(data.secure_url);
@@ -217,7 +213,6 @@ export const ProductDetail: React.FC = () => {
 
       toast.loading('Đang lưu thông tin đánh giá...', { id: uploadToast });
 
-      // 2. Thêm review mới
       await addDoc(collection(db, 'reviews'), {
         productId: product.id,
         userId: user.uid,
@@ -230,9 +225,8 @@ export const ProductDetail: React.FC = () => {
         createdAt: serverTimestamp()
       });
 
-      // 3. Sử dụng Transaction để cập nhật rating và reviewsCount của sản phẩm
       const productRef = doc(db, 'products', product.id);
-      
+
       await runTransaction(db, async (transaction) => {
         const productDoc = await transaction.get(productRef);
         if (!productDoc.exists()) return;
@@ -240,10 +234,10 @@ export const ProductDetail: React.FC = () => {
         const currentData = productDoc.data();
         const currentCount = currentData.reviewsCount || 0;
         const currentRating = currentData.rating || 0;
-        
+
         const newCount = currentCount + 1;
         const newAvgRating = parseFloat(((currentRating * currentCount + newReview.rating) / newCount).toFixed(1));
-        
+
         transaction.update(productRef, {
           rating: newAvgRating,
           reviewsCount: newCount
@@ -269,9 +263,8 @@ export const ProductDetail: React.FC = () => {
       setMainImage(product.images?.[0] || '');
       window.scrollTo(0, 0);
 
-      // Dynamic SEO Meta Tags
       document.title = product.seoTitle || `${product.name} | UR Sport - Phong cách thể thao`;
-      
+
       const metaDescription = document.querySelector('meta[name="description"]');
       const descContent = product.metaDescription || product.description.replace(/<[^>]*>?/gm, '').slice(0, 160);
       if (metaDescription) {
@@ -294,8 +287,7 @@ export const ProductDetail: React.FC = () => {
       }
     }
   }, [product]);
-  
-  // Update main image when color selection changes
+
   useEffect(() => {
     if (product && selectedColor) {
       const variant = product.colorImages?.find(ci => ci.name === selectedColor);
@@ -324,7 +316,6 @@ export const ProductDetail: React.FC = () => {
 
   const handleAddToCart = () => {
     addToCart(product, selectedColor, selectedSize, quantity);
-    
     toast.success(`Đã thêm ${product.name} vào giỏ hàng`, {
       description: `${selectedColor} / Size ${selectedSize} (qty: ${quantity})`,
       position: 'top-center',
@@ -338,54 +329,53 @@ export const ProductDetail: React.FC = () => {
   };
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className="bg-white min-h-screen pt-6 pb-32 font-sans text-zinc-900"
     >
-      {/* 1. SEO Breadcrumbs & Nav Row */}
-      <motion.div 
+      {/* Breadcrumbs & Nav Row */}
+      <motion.div
         initial={{ y: -10, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         className="mx-auto max-w-[1400px] px-4 h-14 sm:px-6 lg:px-8 flex items-center justify-between border-b border-zinc-100 mb-8"
       >
-        <nav className="flex items-center gap-2 text-xs font-medium text-zinc-400">
-          <Link to="/" className="hover:text-black transition-colors">Home</Link>
-          <ChevronRight className="h-3 w-3 text-zinc-300" />
+        <nav className="flex items-center gap-2 text-xs font-medium text-zinc-400 overflow-hidden">
+          <Link to="/" className="hover:text-black transition-colors shrink-0">Home</Link>
+          <ChevronRight className="h-3 w-3 text-zinc-300 shrink-0" />
           <Link to={`/apparel/${categorySlug}`} className="hover:text-black transition-colors shrink-0">{categoryName}</Link>
           <ChevronRight className="h-3 w-3 text-zinc-300 shrink-0" />
-          <span className="text-zinc-500 truncate max-w-[120px] xs:max-w-[150px] sm:max-w-md">{product.name}</span>
+          <span className="text-zinc-500 truncate">{product.name}</span>
         </nav>
 
-        <div className="flex items-center gap-4 h-full">
-          <div className="flex items-center gap-2 h-full">
-            <button 
-              onClick={() => prevProduct && navigate(`/apparel/${categorySlug}/${prevProduct.slug}`)}
-              disabled={!prevProduct}
-              className="w-8 h-8 rounded-full border border-zinc-100 flex items-center justify-center hover:bg-zinc-50 disabled:opacity-20 transition-all group"
-            >
-              <ChevronLeft className="h-3.5 w-3.5 text-zinc-400 group-hover:text-zinc-900" />
-            </button>
-            
-            <span className="text-xs font-medium text-zinc-400 min-w-[40px] text-center">
-              {currentIndex + 1} <span className="text-zinc-200 mx-0.5">/</span> {categoryProducts.length}
-            </span>
+        <div className="flex items-center gap-2 h-full shrink-0 ml-4">
+          <button
+            onClick={() => prevProduct && navigate(`/apparel/${categorySlug}/${prevProduct.slug}`)}
+            disabled={!prevProduct}
+            className="w-8 h-8 rounded-full border border-zinc-100 flex items-center justify-center hover:bg-zinc-50 disabled:opacity-20 transition-all group"
+          >
+            <ChevronLeft className="h-3.5 w-3.5 text-zinc-400 group-hover:text-zinc-900" />
+          </button>
 
-            <button 
-              onClick={() => nextProduct && navigate(`/apparel/${categorySlug}/${nextProduct.slug}`)}
-              disabled={!nextProduct}
-              className="w-8 h-8 rounded-full border border-zinc-100 flex items-center justify-center hover:bg-zinc-50 disabled:opacity-20 transition-all group"
-            >
-              <ChevronRight className="h-3.5 w-3.5 text-zinc-400 group-hover:text-zinc-900" />
-            </button>
-          </div>
+          <span className="text-xs font-medium text-zinc-400 min-w-[40px] text-center">
+            {currentIndex + 1} <span className="text-zinc-200 mx-0.5">/</span> {categoryProducts.length}
+          </span>
+
+          <button
+            onClick={() => nextProduct && navigate(`/apparel/${categorySlug}/${nextProduct.slug}`)}
+            disabled={!nextProduct}
+            className="w-8 h-8 rounded-full border border-zinc-100 flex items-center justify-center hover:bg-zinc-50 disabled:opacity-20 transition-all group"
+          >
+            <ChevronRight className="h-3.5 w-3.5 text-zinc-400 group-hover:text-zinc-900" />
+          </button>
         </div>
       </motion.div>
- 
+
       <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
+        {/* Product Info Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16">
           {/* Left: Images */}
-          <motion.div 
+          <motion.div
             initial={{ x: -20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: 0.1 }}
@@ -393,12 +383,12 @@ export const ProductDetail: React.FC = () => {
           >
             <div className="relative aspect-square w-full overflow-hidden bg-white border border-zinc-100 rounded-2xl shadow-sm">
               {mainImage && (
-                <motion.img 
+                <motion.img
                   key={mainImage}
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  src={mainImage} 
-                  alt={product.name} 
+                  src={mainImage}
+                  alt={product.name}
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
                 />
@@ -414,7 +404,7 @@ export const ProductDetail: React.FC = () => {
           </motion.div>
 
           {/* Right: Product Info */}
-          <motion.div 
+          <motion.div
             initial={{ x: 20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: 0.2 }}
@@ -422,7 +412,7 @@ export const ProductDetail: React.FC = () => {
           >
             <div className="space-y-6">
               <div className="space-y-2">
-                <motion.p 
+                <motion.p
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.3 }}
@@ -430,7 +420,7 @@ export const ProductDetail: React.FC = () => {
                 >
                   UR SPORT Official
                 </motion.p>
-                <motion.h1 
+                <motion.h1
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 }}
@@ -447,7 +437,7 @@ export const ProductDetail: React.FC = () => {
                   </div>
                   <div className="h-4 w-px bg-zinc-200" />
                   <div className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2">
-                    CODE: <span className="text-zinc-900 font-bold">UR-{product.id.substring(0,6).toUpperCase()}</span>
+                    CODE: <span className="text-zinc-900 font-bold">UR-{product.id.substring(0, 6).toUpperCase()}</span>
                     <Copy className="h-3.5 w-3.5 cursor-pointer hover:text-black transition-colors" />
                   </div>
                 </div>
@@ -470,9 +460,11 @@ export const ProductDetail: React.FC = () => {
             {/* Selection UI */}
             <div className="space-y-8">
               <div className="space-y-4">
-                <p className="text-[14px] font-bold text-zinc-900 uppercase tracking-wider">Màu sắc: <span className="text-[#0082c8] font-bold ml-1">{selectedColor}</span></p>
+                <p className="text-[14px] font-bold text-zinc-900 uppercase tracking-wider">
+                  Màu sắc: <span className="text-[#0082c8] font-bold ml-1">{selectedColor}</span>
+                </p>
                 <div className="flex flex-wrap gap-3">
-                  {(product.colors || []).map((color, idx) => (
+                  {(product.colors || []).map((color) => (
                     <button
                       key={color}
                       onClick={() => setSelectedColor(color)}
@@ -489,8 +481,12 @@ export const ProductDetail: React.FC = () => {
 
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-[14px] font-bold text-zinc-900 uppercase tracking-wider">Kích cỡ: <span className="text-[#0082c8] font-bold ml-1">{selectedSize}</span></p>
-                  <button onClick={() => setIsSizeGuideOpen(true)} className="text-[12px] font-bold text-[#0068c9] hover:underline uppercase tracking-widest italic">Size Guide</button>
+                  <p className="text-[14px] font-bold text-zinc-900 uppercase tracking-wider">
+                    Kích cỡ: <span className="text-[#0082c8] font-bold ml-1">{selectedSize}</span>
+                  </p>
+                  <button onClick={() => setIsSizeGuideOpen(true)} className="text-[12px] font-bold text-[#0068c9] hover:underline uppercase tracking-widest italic">
+                    Size Guide
+                  </button>
                 </div>
                 <div className="flex flex-wrap gap-3">
                   {(product.sizes || []).map(size => (
@@ -508,146 +504,184 @@ export const ProductDetail: React.FC = () => {
                 </div>
               </div>
 
-                <div className="hidden md:flex items-center gap-4 h-16 pt-4">
-                  <div className="flex items-center border-2 border-zinc-100 rounded-2xl bg-white overflow-hidden h-full">
-                    <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-14 h-full flex items-center justify-center text-zinc-400 hover:text-[#0082c8] hover:bg-zinc-50 transition-colors"><Minus className="h-4 w-4" /></button>
-                    <div className="w-14 h-full flex items-center justify-center font-bold text-zinc-900 text-lg border-x-2 border-zinc-50">{quantity}</div>
-                    <button onClick={() => setQuantity(quantity + 1)} className="w-14 h-full flex items-center justify-center text-zinc-400 hover:text-[#0082c8] hover:bg-zinc-50 transition-colors"><Plus className="h-4 w-4" /></button>
-                  </div>
-                  <button onClick={handleAddToCart} className="flex-1 h-full bg-[#f0f9ff] border-2 border-[#0082c8] text-[#0082c8] font-bold rounded-2xl text-[14px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-blue-100 transition-all active:scale-[0.98]">
-                    <ShoppingCart className="h-5 w-5" /> Thêm vào giỏ
+              <div className="hidden md:flex items-center gap-4 h-16 pt-4">
+                <div className="flex items-center border-2 border-zinc-100 rounded-2xl bg-white overflow-hidden h-full">
+                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-14 h-full flex items-center justify-center text-zinc-400 hover:text-[#0082c8] hover:bg-zinc-50 transition-colors">
+                    <Minus className="h-4 w-4" />
                   </button>
-                  <button onClick={handleBuyNow} className="flex-1 h-full bg-[#1e4b64] text-white font-bold rounded-2xl text-[14px] uppercase tracking-widest hover:bg-[#153a4d] transition-all active:scale-[0.98] shadow-lg">Mua Ngay</button>
+                  <div className="w-14 h-full flex items-center justify-center font-bold text-zinc-900 text-lg border-x-2 border-zinc-50">{quantity}</div>
+                  <button onClick={() => setQuantity(quantity + 1)} className="w-14 h-full flex items-center justify-center text-zinc-400 hover:text-[#0082c8] hover:bg-zinc-50 transition-colors">
+                    <Plus className="h-4 w-4" />
+                  </button>
                 </div>
+                <button onClick={handleAddToCart} className="flex-1 h-full bg-[#f0f9ff] border-2 border-[#0082c8] text-[#0082c8] font-bold rounded-2xl text-[14px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-blue-100 transition-all active:scale-[0.98]">
+                  <ShoppingCart className="h-5 w-5" /> Thêm vào giỏ
+                </button>
+                <button onClick={handleBuyNow} className="flex-1 h-full bg-[#1e4b64] text-white font-bold rounded-2xl text-[14px] uppercase tracking-widest hover:bg-[#153a4d] transition-all active:scale-[0.98] shadow-lg">
+                  Mua Ngay
+                </button>
+              </div>
 
-                {/* Trust Badges - Improved for Conversion */}
-                <div className="pt-6 border-t border-zinc-100">
-                  <div className="bg-zinc-50/80 rounded-2xl p-6 grid grid-cols-2 gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                        <Truck className="h-5 w-5 text-[#0082c8]" />
-                      </div>
-                      <div>
-                        <p className="text-[11px] font-black uppercase tracking-tight">Miễn phí giao hàng</p>
-                        <p className="text-[10px] text-zinc-400 font-bold uppercase">Cho đơn từ 500k</p>
-                      </div>
+              {/* Trust Badges */}
+              <div className="pt-6 border-t border-zinc-100">
+                <div className="bg-zinc-50/80 rounded-2xl p-6 grid grid-cols-2 gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center shadow-sm">
+                      <Truck className="h-5 w-5 text-[#0082c8]" />
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                        <ShieldCheck className="h-5 w-5 text-[#0082c8]" />
-                      </div>
-                      <div>
-                        <p className="text-[11px] font-black uppercase tracking-tight">Thanh toán an toàn</p>
-                        <p className="text-[10px] text-zinc-400 font-bold uppercase">COD, Bank, E-Wallet</p>
-                      </div>
+                    <div>
+                      <p className="text-[11px] font-black uppercase tracking-tight">Miễn phí giao hàng</p>
+                      <p className="text-[10px] text-zinc-400 font-bold uppercase">Cho đơn từ 500k</p>
                     </div>
                   </div>
-                  
-                  <div className="mt-4 flex items-center justify-center gap-6">
-                    {["COD", "Bank Transfer", "Momo", "ZaloPay"].map((method) => (
-                      <span key={method} className="text-[9px] font-black uppercase tracking-widest text-zinc-300">
-                        {method}
-                      </span>
-                    ))}
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center shadow-sm">
+                      <ShieldCheck className="h-5 w-5 text-[#0082c8]" />
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-black uppercase tracking-tight">Thanh toán an toàn</p>
+                      <p className="text-[10px] text-zinc-400 font-bold uppercase">COD, Bank, E-Wallet</p>
+                    </div>
                   </div>
+                </div>
+                <div className="mt-4 flex items-center justify-center gap-6">
+                  {["COD", "Bank Transfer", "Momo", "ZaloPay"].map((method) => (
+                    <span key={method} className="text-[9px] font-black uppercase tracking-widest text-zinc-300">
+                      {method}
+                    </span>
+                  ))}
                 </div>
               </div>
-            </motion.div>
+            </div>
+          </motion.div>
         </div>
- 
-        {/* Bottom: Tabs/Description */}
+
+        {/* Bottom: Description & Details */}
         <div className="mt-20 pt-20 border-t border-zinc-100">
           <div className="space-y-16">
-                    {/* Full Width Content Section */}
-                    <div className="min-w-0 space-y-12 w-full">
+            {/* Full Width Content Section */}
+            <div className="w-full space-y-12">
 
-                      {/* ── 1. CHI TIẾT SẢN PHẨM ── */}
-                      <div>
-                        <h4 className="text-[18px] font-bold text-zinc-900 italic mb-6 pb-4 border-b-2 border-zinc-900 inline-block pr-8">CHI TIẾT SẢN PHẨM</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-0 w-full max-w-[1000px]">
-                          {[
-                            { label: 'Thương hiệu', value: product.brand || 'UR SPORT' },
-                            { label: 'Xuất xứ', value: product.origin || 'Việt Nam' },
-                            { label: 'Kiểu dáng', value: product.style || 'Slim Fit' },
-                            { label: 'Chất liệu', value: product.material || 'Cotton Premium' },
-                            { label: 'Phong cách', value: product.fashionStyle || 'Thể thao, Cơ bản, Hàn Quốc, Đường phố, Công sở' },
-                            { label: 'Cổ áo', value: product.collarType || 'Cổ tròn' }
-                          ].map(row => (
-                            <div key={row.label} className="flex items-center py-[14px] border-b border-zinc-100 last:border-0 gap-4 w-full">
-                              <span className="text-zinc-400 text-[14px] w-32 shrink-0">{row.label}</span>
-                              <span className="text-zinc-800 text-[14px] font-semibold break-keep">{row.value}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+              {/* ── 1. CHI TIẾT SẢN PHẨM ── */}
+              <div>
+                <h4 className="text-[18px] font-bold text-zinc-900 italic mb-6 pb-4 border-b-2 border-zinc-900 inline-block pr-8">
+                  CHI TIẾT SẢN PHẨM
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-0 w-full max-w-[1000px]">
+                  {[
+                    { label: 'Thương hiệu', value: product.brand || 'UR SPORT' },
+                    { label: 'Xuất xứ', value: product.origin || 'Việt Nam' },
+                    { label: 'Kiểu dáng', value: product.style || 'Slim Fit' },
+                    { label: 'Chất liệu', value: product.material || 'Cotton Premium' },
+                    { label: 'Phong cách', value: product.fashionStyle || 'Thể thao, Cơ bản, Hàn Quốc, Đường phố, Công sở' },
+                    { label: 'Cổ áo', value: product.collarType || 'Cổ tròn' }
+                  ].map(row => (
+                    <div key={row.label} className="flex items-center py-[14px] border-b border-zinc-100 last:border-0 gap-4 w-full">
+                      <span className="text-zinc-400 text-[14px] w-32 shrink-0">{row.label}</span>
+                      <span className="text-zinc-800 text-[14px] font-semibold">{row.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-                      {/* ── 2. HƯỚNG DẪN CHỌN SIZE ── */}
-                      {product.sizeGuideUrl && (
-                        <div>
-                          <h4 className="text-[18px] font-bold text-zinc-900 italic mb-6 pb-4 border-b-2 border-zinc-900 inline-block pr-8">HƯỚNG DẪN CHỌN SIZE</h4>
-                          <div className="flex justify-start">
-                            <img src={product.sizeGuideUrl} alt="Hướng dẫn chọn size" className="w-full max-w-[800px] h-auto rounded-lg border border-zinc-200" />
-                          </div>
+              {/* ── 2. HƯỚNG DẪN CHỌN SIZE ── */}
+              {product.sizeGuideUrl && (
+                <div>
+                  <h4 className="text-[18px] font-bold text-zinc-900 italic mb-6 pb-4 border-b-2 border-zinc-900 inline-block pr-8">
+                    HƯỚNG DẪN CHỌN SIZE
+                  </h4>
+                  <div className="flex justify-start">
+                    <img
+                      src={product.sizeGuideUrl}
+                      alt="Hướng dẫn chọn size"
+                      className="w-full max-w-[800px] h-auto rounded-lg border border-zinc-200"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* ── 3. MÔ TẢ SẢN PHẨM ── */}
+              <div className="w-full">
+                <h4 className="text-[18px] font-bold text-zinc-900 italic mb-8 pb-4 border-b-2 border-zinc-900 inline-block pr-8">
+                  MÔ TẢ SẢN PHẨM
+                </h4>
+
+                {/* Wrapper: clip chiều cao khi chưa expand, luôn clip overflow ngang */}
+                <div className="relative w-full overflow-x-hidden">
+                  <div
+                    className={cn(
+                      "product-description-container notranslate w-full text-zinc-600 leading-loose transition-[max-height] duration-700 ease-in-out overflow-x-hidden",
+                      !isDescriptionExpanded
+                        ? "max-h-[1200px] overflow-y-hidden"
+                        : "max-h-none overflow-y-visible"
+                    )}
+                    dangerouslySetInnerHTML={{ 
+                      __html: product.description
+                        .replace(/&nbsp;/g, ' ')
+                        .replace(/\u00a0/g, ' ')
+                    }}
+                  />
+
+                  {/* Gradient fade khi thu gọn */}
+                  {!isDescriptionExpanded && (
+                    <div className="absolute bottom-0 left-0 right-0 h-60 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none" />
+                  )}
+                </div>
+
+                <div className="flex justify-center pt-10">
+                  <button
+                    onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                    className="px-8 py-3 bg-white text-[#005fa3] border border-zinc-200 text-sm font-bold rounded-full shadow-sm hover:text-[#0082c8] hover:border-[#0082c8] hover:-translate-y-1 transition-all flex items-center gap-2 group"
+                  >
+                    {isDescriptionExpanded ? 'Thu gọn' : 'Xem thêm'}
+                    <ChevronDown className={cn("h-4 w-4 transition-all duration-300", isDescriptionExpanded && "rotate-180")} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Suggested Products */}
+            <div className="w-full pt-16 border-t border-zinc-200">
+              <div className="flex items-center justify-between mb-10">
+                <h4 className="text-[20px] font-bold text-zinc-900 uppercase tracking-tight">CÓ THỂ BẠN CŨNG THÍCH</h4>
+                <Link to={`/apparel/${categorySlug || 'all'}`} className="text-[#0082c8] text-sm font-bold hover:underline">
+                  Xem tất cả
+                </Link>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                {categoryProducts.filter(p => p.id !== product.id).slice(0, 5).map(p => (
+                  <Link to={`/apparel/${categorySlug || 'all'}/${p.slug}`} key={p.id} className="block group">
+                    <div className="aspect-[4/5] w-full overflow-hidden bg-zinc-50 mb-4 relative rounded-2xl border border-zinc-100 shadow-sm group-hover:shadow-md transition-all">
+                      <img
+                        src={p.images?.[0]}
+                        alt={p.name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      />
+                      {p.videos && p.videos.length > 0 && (
+                        <div className="absolute bottom-3 right-3 w-8 h-8 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center">
+                          <Play className="h-3 w-3 text-white fill-white" />
                         </div>
                       )}
-
-                      {/* ── 3. MÔ TẢ SẢN PHẨM ── */}
-                      <div className="w-full">
-                        <h4 className="text-[18px] font-bold text-zinc-900 italic mb-8 pb-4 border-b-2 border-zinc-900 inline-block pr-8">MÔ TẢ SẢN PHẨM</h4>
-                        <div className="relative w-full">
-                          <div className={cn(
-                            "product-description-container notranslate ql-editor max-w-none text-zinc-600 leading-loose transition-all duration-700 w-full",
-                            !isDescriptionExpanded ? "max-h-[1200px] overflow-hidden" : "max-h-none"
-                          )}>
-                            <div 
-                              dangerouslySetInnerHTML={{ __html: product.description }} 
-                              className="w-full prose prose-zinc prose-lg max-w-none [&_img]:mx-auto [&_img]:rounded-xl [&_img]:shadow-sm"
-                              style={{ wordBreak: 'normal', overflowWrap: 'normal' }}
-                            />
-                          </div>
-                          {!isDescriptionExpanded && <div className="absolute bottom-0 left-0 right-0 h-60 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none" />}
-                          <div className="flex justify-center pt-12">
-                            <button 
-                              onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                              className="px-8 py-3 bg-zinc-900 text-white text-sm font-bold rounded-full shadow-lg hover:bg-[#0082c8] hover:-translate-y-1 transition-all flex items-center gap-2"
-                            >
-                              {isDescriptionExpanded ? 'Thu gọn nội dung' : 'Xem thêm mô tả chi tiết'}
-                              <ChevronDown className={cn("h-4 w-4 transition-transform", isDescriptionExpanded && "rotate-180")} />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
                     </div>
-
-                    {/* Bottom Suggestions: Suggested Products (was sidebar) */}
-                    <div className="w-full pt-16 border-t border-zinc-200">
-                      <div className="flex items-center justify-between mb-10">
-                        <h4 className="text-[20px] font-bold text-zinc-900 uppercase tracking-tight">CÓ THỂ BẠN CŨNG THÍCH</h4>
-                        <Link to={`/apparel/${categorySlug || 'all'}`} className="text-[#0082c8] text-sm font-bold hover:underline">Xem tất cả</Link>
-                      </div>
-                      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                        {categoryProducts.filter(p => p.id !== product.id).slice(0, 5).map(p => (
-                          <Link to={`/apparel/${categorySlug || 'all'}/${p.slug}`} key={p.id} className="block group">
-                            <div className="aspect-[4/5] w-full bg-zinc-50 mb-4 relative rounded-2xl border border-zinc-100 shadow-sm group-hover:shadow-md transition-all">
-                              <img src={p.images?.[0]} alt={p.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                              {p.videos && p.videos.length > 0 && (
-                                <div className="absolute bottom-3 right-3 w-8 h-8 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center">
-                                  <Play className="h-3 w-3 text-white fill-white" />
-                                </div>
-                              )}
-                            </div>
-                            <h5 className="text-[14px] font-bold text-zinc-800 leading-snug line-clamp-2 group-hover:text-[#0082c8] transition-colors mb-2">{p.name}</h5>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[#ff3b30] font-black text-[16px]">
-                                {p.discountPrice ? p.discountPrice.toLocaleString('vi-VN') : p.price.toLocaleString('vi-VN')}₫
+                    <h5 className="text-[14px] font-bold text-zinc-800 leading-snug line-clamp-2 group-hover:text-[#0082c8] transition-colors mb-2">
+                      {p.name}
+                    </h5>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[#ff3b30] font-black text-[16px]">
+                        {p.discountPrice ? p.discountPrice.toLocaleString('vi-VN') : p.price.toLocaleString('vi-VN')}₫
+                      </span>
+                      {p.discountPrice && (
+                        <span className="text-zinc-400 text-xs line-through">{p.price.toLocaleString('vi-VN')}₫</span>
+                      )}
                     </div>
-                  </div>
+                  </Link>
+                ))}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Dedicated Reviews Section */}
+        {/* Reviews Section */}
         <div id="reviews-section" className="mt-12 bg-zinc-50/50 rounded-[40px] p-6 sm:p-8 border border-zinc-100 shadow-sm">
           <div className="space-y-6">
             <div className="text-left">
@@ -666,7 +700,7 @@ export const ProductDetail: React.FC = () => {
                   ))}
                 </div>
               </div>
-              
+
               <div className="flex-1 flex flex-wrap gap-2.5">
                 {(() => {
                   const formatCount = (count: number) => {
@@ -689,8 +723,8 @@ export const ProductDetail: React.FC = () => {
                       onClick={() => { setReviewFilter(filter.id); setCurrentPage(1); }}
                       className={cn(
                         "px-4 py-2 text-[14px] rounded-sm border transition-all min-w-[100px] h-10 flex items-center justify-center",
-                        reviewFilter === filter.id 
-                          ? "bg-white border-[#ee4d2d] text-[#ee4d2d]" 
+                        reviewFilter === filter.id
+                          ? "bg-white border-[#ee4d2d] text-[#ee4d2d]"
                           : "bg-white border-zinc-200 text-zinc-800 hover:border-zinc-300"
                       )}
                     >
@@ -718,7 +752,7 @@ export const ProductDetail: React.FC = () => {
 
                   <div className="space-y-6">
                     {!user && (
-                      <input 
+                      <input
                         type="text"
                         placeholder="Họ và tên của bạn..."
                         value={newReview.userName}
@@ -726,7 +760,7 @@ export const ProductDetail: React.FC = () => {
                         className="w-full px-6 py-4 bg-zinc-50 border-none rounded-2xl text-sm font-medium focus:ring-2 focus:ring-[#ee4d2d]/20 outline-none transition-all"
                       />
                     )}
-                    <textarea 
+                    <textarea
                       rows={4}
                       placeholder="Sản phẩm mặc có mát không? Form dáng thế nào?..."
                       value={newReview.comment}
@@ -735,7 +769,6 @@ export const ProductDetail: React.FC = () => {
                     />
                   </div>
 
-                  {/* Media Upload */}
                   <div className="space-y-4">
                     <div className="flex flex-wrap gap-4">
                       <label className="flex items-center gap-2 px-6 py-3 bg-zinc-50 hover:bg-zinc-100 rounded-xl cursor-pointer transition-all border-2 border-dashed border-zinc-200 text-zinc-600 font-bold text-xs uppercase tracking-widest group">
@@ -759,7 +792,7 @@ export const ProductDetail: React.FC = () => {
                                 </div>
                               </div>
                             )}
-                            <button 
+                            <button
                               type="button"
                               onClick={() => removeFile(idx)}
                               className="absolute top-1 right-1 w-6 h-6 bg-black/60 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
@@ -771,7 +804,7 @@ export const ProductDetail: React.FC = () => {
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="flex justify-end">
                     <Button type="submit" disabled={isSubmittingReview} className="bg-[#ee4d2d] hover:bg-[#d73211] text-white px-12 py-7 rounded-2xl font-bold tracking-widest shadow-xl shadow-red-500/20 active:scale-95 transition-all">
                       {isSubmittingReview ? 'Đang gửi...' : 'Gửi đánh giá ngay'}
@@ -786,7 +819,8 @@ export const ProductDetail: React.FC = () => {
                 </div>
                 <h5 className="text-lg font-bold text-zinc-900 mb-2">Chỉ người mua hàng mới có thể đánh giá</h5>
                 <p className="text-zinc-500 text-sm max-w-md mx-auto leading-relaxed">
-                  Bạn cần mua sản phẩm này và đơn hàng phải ở trạng thái <strong className="text-[#ee4d2d]">"Đã giao hàng"</strong> để có thể chia sẻ trải nghiệm của mình.
+                  Bạn cần mua sản phẩm này và đơn hàng phải ở trạng thái{' '}
+                  <strong className="text-[#ee4d2d]">"Đã giao hàng"</strong> để có thể chia sẻ trải nghiệm của mình.
                 </p>
                 {!user && (
                   <Button onClick={() => window.location.href = '/login'} className="mt-6 bg-[#ee4d2d] text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-red-500/20">
@@ -814,7 +848,7 @@ export const ProductDetail: React.FC = () => {
                       <div key={review.id} className="bg-white p-8 rounded-[28px] border border-zinc-100 shadow-sm space-y-6 transition-all hover:shadow-md">
                         <div className="flex justify-between items-start">
                           <div className="flex items-center gap-4">
-                            <div className="h-14 w-14 rounded-full bg-gradient-to-br from-[#ee4d2d] to-[#ff7337] flex items-center justify-center text-white font-bold text-xl border-4 border-white shadow-md">
+                            <div className="h-14 w-14 rounded-full bg-gradient-to-br from-[#ee4d2d] to-[#ff7337] flex items-center justify-center text-white font-bold text-xl border-4 border-white shadow-md shrink-0">
                               {review.userName.charAt(0).toUpperCase()}
                             </div>
                             <div>
@@ -842,7 +876,6 @@ export const ProductDetail: React.FC = () => {
                             {review.comment}
                           </p>
 
-                          {/* Review Media Display */}
                           {(review.images?.length || review.videos?.length) && (
                             <div className="flex flex-wrap gap-4 pt-2">
                               {review.images?.map((img: string, i: number) => (
@@ -863,11 +896,16 @@ export const ProductDetail: React.FC = () => {
 
                           <div className="flex items-center gap-6 pt-4">
                             <button className="flex items-center gap-2 text-zinc-400 hover:text-[#ee4d2d] transition-colors group">
-                              <svg className="h-5 w-5 transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M7 10v12M15 5.88l-1.42 1.42a4.41 4.41 0 0 1-6.23 0l-1.42-1.42a1 1 0 0 0-1.42 1.42l1.42 1.42a6.41 6.41 0 0 0 9.06 0l1.42-1.42a1 1 0 0 0-1.42-1.42Z"/><path d="M14 10V4.5a2.5 2.5 0 0 0-5 0V10"/></svg>
+                              <svg className="h-5 w-5 transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M7 10v12M15 5.88l-1.42 1.42a4.41 4.41 0 0 1-6.23 0l-1.42-1.42a1 1 0 0 0-1.42 1.42l1.42 1.42a6.41 6.41 0 0 0 9.06 0l1.42-1.42a1 1 0 0 0-1.42-1.42Z" />
+                                <path d="M14 10V4.5a2.5 2.5 0 0 0-5 0V10" />
+                              </svg>
                               <span className="text-sm font-bold">Hữu ích</span>
                             </button>
                             <button className="text-zinc-400 hover:text-zinc-600 transition-colors">
-                              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <circle cx="12" cy="12" r="1" /><circle cx="12" cy="5" r="1" /><circle cx="12" cy="19" r="1" />
+                              </svg>
                             </button>
                           </div>
                         </div>
@@ -876,25 +914,30 @@ export const ProductDetail: React.FC = () => {
 
                     {totalPages > 1 && (
                       <div className="flex justify-center items-center gap-2 mt-12 pt-8 border-t border-zinc-100">
-                        <button 
+                        <button
                           disabled={currentPage === 1}
-                          onClick={() => { setCurrentPage(prev => prev - 1); window.scrollTo({ top: document.getElementById('reviews-section')?.offsetTop || 0, behavior: 'smooth' }); }}
+                          onClick={() => {
+                            setCurrentPage(prev => prev - 1);
+                            window.scrollTo({ top: document.getElementById('reviews-section')?.offsetTop || 0, behavior: 'smooth' });
+                          }}
                           className="w-10 h-10 flex items-center justify-center rounded-sm border border-zinc-200 disabled:opacity-30 hover:bg-zinc-50 transition-colors"
                         >
                           <ChevronLeft className="h-4 w-4" />
                         </button>
-                        
+
                         {[...Array(totalPages)].map((_, i) => {
                           const page = i + 1;
-                          // Hiển thị logic rút gọn trang nếu cần, nhưng ở đây ta cứ hiện hết cho đơn giản nếu số lượng ít
                           return (
                             <button
                               key={page}
-                              onClick={() => { setCurrentPage(page); window.scrollTo({ top: document.getElementById('reviews-section')?.offsetTop || 0, behavior: 'smooth' }); }}
+                              onClick={() => {
+                                setCurrentPage(page);
+                                window.scrollTo({ top: document.getElementById('reviews-section')?.offsetTop || 0, behavior: 'smooth' });
+                              }}
                               className={cn(
                                 "w-10 h-10 flex items-center justify-center rounded-sm text-sm font-medium transition-all",
-                                currentPage === page 
-                                  ? "bg-[#ee4d2d] text-white shadow-md" 
+                                currentPage === page
+                                  ? "bg-[#ee4d2d] text-white shadow-md"
                                   : "text-zinc-500 hover:bg-zinc-50 border border-transparent hover:border-zinc-200"
                               )}
                             >
@@ -903,9 +946,12 @@ export const ProductDetail: React.FC = () => {
                           );
                         })}
 
-                        <button 
+                        <button
                           disabled={currentPage === totalPages}
-                          onClick={() => { setCurrentPage(prev => prev + 1); window.scrollTo({ top: document.getElementById('reviews-section')?.offsetTop || 0, behavior: 'smooth' }); }}
+                          onClick={() => {
+                            setCurrentPage(prev => prev + 1);
+                            window.scrollTo({ top: document.getElementById('reviews-section')?.offsetTop || 0, behavior: 'smooth' });
+                          }}
                           className="w-10 h-10 flex items-center justify-center rounded-sm border border-zinc-200 disabled:opacity-30 hover:bg-zinc-50 transition-colors"
                         >
                           <ChevronRight className="h-4 w-4" />
@@ -922,13 +968,13 @@ export const ProductDetail: React.FC = () => {
 
       {/* Mobile Sticky Action Bar */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-md border-t border-zinc-200 p-3 pb-safe flex gap-2 shadow-[0_-8px_20px_-10px_rgba(0,0,0,0.1)]">
-        <button 
+        <button
           onClick={handleAddToCart}
           className="flex-1 h-12 bg-[#f0f9ff] border-2 border-[#0082c8] text-[#0082c8] font-bold rounded-xl text-[13px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-transform"
         >
           <ShoppingCart className="h-4 w-4" /> Thêm
         </button>
-        <button 
+        <button
           onClick={handleBuyNow}
           className="flex-[1.2] h-12 bg-[#0082c8] text-white font-bold rounded-xl text-[13px] uppercase tracking-widest active:scale-95 transition-transform shadow-lg shadow-blue-500/20"
         >
@@ -938,9 +984,22 @@ export const ProductDetail: React.FC = () => {
 
       {/* Size Guide Modal */}
       {isSizeGuideOpen && product.sizeGuideUrl && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setIsSizeGuideOpen(false)}>
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="relative max-w-4xl w-full bg-white rounded-3xl overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
-            <button onClick={() => setIsSizeGuideOpen(false)} className="absolute top-4 right-4 w-10 h-10 bg-black/10 hover:bg-black/20 text-black flex items-center justify-center rounded-full z-10 transition-colors"><X className="h-5 w-5" /></button>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          onClick={() => setIsSizeGuideOpen(false)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative max-w-4xl w-full bg-white rounded-3xl overflow-hidden shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setIsSizeGuideOpen(false)}
+              className="absolute top-4 right-4 w-10 h-10 bg-black/10 hover:bg-black/20 text-black flex items-center justify-center rounded-full z-10 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
             <div className="max-h-[85vh] overflow-auto">
               <img src={product.sizeGuideUrl} alt="Size Guide" className="w-full h-auto" />
             </div>

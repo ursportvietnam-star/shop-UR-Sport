@@ -94,7 +94,7 @@ export function FULLCollectionSection({ onCategorySelect }: FULLCollectionSectio
               />
               <div className="absolute bottom-0 left-0 p-6 z-20">
                 <h3 className="text-2xl font-black text-white mb-2 transform transition duration-500 group-hover:-translate-y-1">{cat.name}</h3>
-                <div className="flex items-center gap-2 text-white/90 text-sm font-bold opacity-0 -translate-x-4 transition-all duration-500 group-hover:opacity-100 group-hover:translate-x-0">
+                <div className="flex items-center gap-2 text-white/90 text-sm font-bold opacity-0 -translate-x-4 transition-all duration-500 group-hover:opacity-100 group-hover:translate-x-0 group-hover:text-[#0082c8]">
                   Xem thêm <ArrowRight className="h-4 w-4" />
                 </div>
               </div>

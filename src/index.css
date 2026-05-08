@@ -33,25 +33,12 @@
     @apply font-bold tracking-tight;
   }
 
+  /* FIX: đổi từ normal sang break-word để chữ tự xuống dòng */
   p, span, div {
-    overflow-wrap: normal;
-    word-break: normal;
+    overflow-wrap: break-word;
+    word-break: break-word;
     hyphens: none;
   }
-
-.product-description-container * {
-  max-width: 100% !important;
-  word-break: normal !important;
-  overflow-wrap: normal !important;
-  text-align: left !important;
-}
-
-.product-description-container img,
-.product-description-container video,
-.product-description-container iframe {
-  width: 100% !important;
-  height: auto !important;
-}
 
   img {
     @apply max-w-full h-auto;
@@ -64,6 +51,67 @@
   }
 }
 
+.product-description-container {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.product-description-container * {
+  max-width: 100% !important;
+  /* Chống bẻ đôi từ tuyệt đối */
+  word-break: normal !important; 
+  overflow-wrap: break-word !important;
+  white-space: normal !important;
+  box-sizing: border-box !important;
+}
+
+/* Inline elements */
+.product-description-container strong,
+.product-description-container em,
+.product-description-container span,
+.product-description-container a,
+.product-description-container b {
+  display: inline !important;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+}
+
+/* Block elements */
+.product-description-container p,
+.product-description-container li,
+.product-description-container h1,
+.product-description-container h2,
+.product-description-container h3,
+.product-description-container h4,
+.product-description-container div {
+  display: block !important;
+  width: 100% !important;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+  margin-bottom: 0.8em !important;
+}
+
+.product-description-container img,
+.product-description-container video,
+.product-description-container iframe,
+.product-description-container table {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  display: block !important;
+  margin-top: 1.5em !important;
+  margin-bottom: 1.5em !important;
+}
+
+.product-description-container table {
+  table-layout: fixed !important;
+}
+
+/* ────────────────────────────────────────────────
+   COMPONENTS
+──────────────────────────────────────────────── */
 @layer components {
   .container-custom {
     @apply mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8;
@@ -89,13 +137,14 @@
     @apply relative overflow-hidden px-8 py-4 rounded-xl font-black uppercase tracking-widest text-sm transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-blue-500/25 max-w-full text-center;
   }
 
-  /* Responsive Utilities */
   .touch-target {
     @apply min-h-[44px] min-w-[44px];
   }
 }
 
-/* Custom Scrollbar */
+/* ────────────────────────────────────────────────
+   SCROLLBAR
+──────────────────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 8px;
 }
@@ -123,7 +172,9 @@ html {
   @apply absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0;
 }
 
-/* Quill & Product Description Styling */
+/* ────────────────────────────────────────────────
+   QUILL & PRODUCT DESCRIPTION STYLING
+──────────────────────────────────────────────── */
 .product-description-content {
   @apply text-slate-600 leading-relaxed text-base;
 }

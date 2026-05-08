@@ -80,7 +80,7 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
           <Button 
              variant="outline" 
              onClick={() => onCategorySelect('Áo thun thể thao nam')}
-             className="rounded-full border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50 font-bold px-8 h-10 text-[13px] shadow-sm"
+             className="rounded-full border-zinc-200 bg-white text-[#005fa3] hover:text-[#0082c8] hover:border-[#0082c8] hover:-translate-y-1 transition-all font-bold px-8 h-10 text-[13px] shadow-sm"
           >
              Xem thêm
           </Button>
@@ -95,7 +95,7 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
           </h2>
           <button 
              onClick={() => onCategorySelect('Áo polo nam')}
-             className="flex items-center gap-1.5 text-sm font-bold text-blue-600 hover:underline"
+             className="flex items-center gap-1.5 text-sm font-bold text-[#005fa3] hover:text-[#0082c8] transition-colors"
           >
             Xem thêm <ChevronRight className="h-4 w-4" />
           </button>
@@ -117,7 +117,7 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
           <Button 
              variant="outline" 
              onClick={() => onCategorySelect('Áo polo nam')}
-             className="rounded-full border-zinc-200 text-zinc-900 hover:bg-zinc-50 font-bold px-8 h-10 text-[13px] shadow-sm"
+             className="rounded-full border-zinc-200 bg-white text-[#005fa3] hover:text-[#0082c8] hover:border-[#0082c8] hover:-translate-y-1 transition-all font-bold px-8 h-10 text-[13px] shadow-sm"
           >
              Xem thêm
           </Button>
@@ -132,7 +132,7 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
           </h2>
           <button 
              onClick={() => onCategorySelect('Áo thun nam')}
-             className="flex items-center gap-1.5 text-sm font-bold text-blue-600 hover:underline"
+             className="flex items-center gap-1.5 text-sm font-bold text-[#005fa3] hover:text-[#0082c8] transition-colors"
           >
             Xem thêm <ChevronRight className="h-4 w-4" />
           </button>
@@ -154,7 +154,7 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
           <Button 
              variant="outline" 
              onClick={() => onCategorySelect('Áo thun nam')}
-             className="rounded-full border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50 font-bold px-8 h-10 text-[13px] shadow-sm"
+             className="rounded-full border-zinc-200 bg-white text-[#005fa3] hover:text-[#0082c8] hover:border-[#0082c8] hover:-translate-y-1 transition-all font-bold px-8 h-10 text-[13px] shadow-sm"
           >
              Xem thêm
           </Button>

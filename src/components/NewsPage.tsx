@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, Calendar, User, ArrowLeft, ArrowRight, Share2, MessageCircle } from 'lucide-react';
+import { ChevronRight, ChevronDown, Calendar, User, ArrowLeft, ArrowRight, Share2, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -26,6 +26,11 @@ export function NewsPage() {
   const [tocHeadings, setTocHeadings] = useState<TocHeading[]>([]);
   const [showToc, setShowToc] = useState(false);
   const [activeHeadingId, setActiveHeadingId] = useState<string>('');
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  useEffect(() => {
+    setIsExpanded(false);
+  }, [slug]);
 
   useEffect(() => {
     const q = query(collection(db, 'blogPosts'), orderBy('createdAt', 'desc'));
@@ -234,8 +239,29 @@ export function NewsPage() {
               />
             </div>
 
-            <div className="blog-content prose prose-lg max-w-none text-zinc-600">
-              <div dangerouslySetInnerHTML={{ __html: contentHtml }} />
+            <div className="relative w-full overflow-x-hidden">
+              <div 
+                className={cn(
+                  "blog-content prose prose-lg max-w-none text-zinc-600 transition-[max-height] duration-700 ease-in-out overflow-hidden",
+                  !isExpanded ? "max-h-[1000px]" : "max-h-none"
+                )}
+              >
+                <div dangerouslySetInnerHTML={{ __html: contentHtml }} />
+              </div>
+              
+              {!isExpanded && (
+                <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none z-10" />
+              )}
+            </div>
+
+            <div className="flex justify-center pt-8 mb-12">
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="px-8 py-3 bg-white text-[#005fa3] border border-zinc-200 text-sm font-bold rounded-full shadow-sm hover:text-[#0082c8] hover:border-[#0082c8] hover:-translate-y-1 transition-all flex items-center gap-2 group"
+              >
+                {isExpanded ? 'Thu gọn' : 'Xem thêm'}
+                <ChevronDown className={cn("h-4 w-4 transition-all duration-300", isExpanded && "rotate-180")} />
+              </button>
             </div>
 
             {selectedPost.images?.length > 0 && (
@@ -387,15 +413,6 @@ export function NewsPage() {
               {post.excerpt}
             </p>
 
-            <button 
-              className="flex items-center gap-2 text-sm font-black text-black group-hover:gap-4 transition-all"
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/news/${post.id}`);
-              }}
-            >
-              ĐỌC THÊM <ArrowRight className="h-4 w-4" />
-            </button>
           </article>
         ))}
       </div>
