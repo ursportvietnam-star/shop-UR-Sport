@@ -598,10 +598,14 @@ export const ProductDetail: React.FC = () => {
                         <h4 className="text-[16px] font-bold text-zinc-900 italic mb-6 pb-4 border-b border-zinc-200">MÔ TẢ SẢN PHẨM</h4>
                         <div className="relative w-full">
                           <div className={cn(
-                            "product-description-container notranslate max-w-none text-zinc-600 leading-loose overflow-hidden transition-all duration-700 break-keep pr-4 w-full",
+                            "product-description-container notranslate max-w-none text-zinc-600 leading-loose overflow-hidden transition-all duration-700 w-full",
                             !isDescriptionExpanded ? "max-h-[800px]" : "max-h-none"
                           )}>
-                            <div dangerouslySetInnerHTML={{ __html: product.description }} className="w-full" />
+                            <div 
+                              dangerouslySetInnerHTML={{ __html: product.description }} 
+                              className="w-full overflow-wrap-anywhere [&_*]:max-w-full [&_*]:break-words [&_img]:w-full [&_img]:h-auto [&_table]:w-full [&_table]:table-fixed"
+                              style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
+                            />
                           </div>
                           {!isDescriptionExpanded && <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-white to-transparent pointer-events-none" />}
                           <div className="flex justify-center pt-8">

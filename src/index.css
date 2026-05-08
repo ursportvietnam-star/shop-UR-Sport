@@ -34,10 +34,23 @@
   }
 
   p, span, div {
-    overflow-wrap: normal !important;
-    word-break: keep-all !important;
-    hyphens: none !important;
+    overflow-wrap: normal;
+    word-break: normal;
+    hyphens: none;
   }
+
+.product-description-container * {
+  max-width: 100% !important;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.product-description-container img,
+.product-description-container video,
+.product-description-container iframe {
+  width: 100% !important;
+  height: auto !important;
+}
 
   img {
     @apply max-w-full h-auto;
