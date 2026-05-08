@@ -598,7 +598,7 @@ export const ProductDetail: React.FC = () => {
                         <h4 className="text-[16px] font-bold text-zinc-900 italic mb-6 pb-4 border-b border-zinc-200">MÔ TẢ SẢN PHẨM</h4>
                         <div className="relative">
                           <div className={cn(
-                            "product-description-container max-w-none text-zinc-600 leading-loose overflow-visible transition-all duration-700 break-keep pr-10",
+                            "product-description-container notranslate max-w-none text-zinc-600 leading-loose overflow-visible transition-all duration-700 break-keep pr-10",
                             !isDescriptionExpanded ? "max-h-[800px] overflow-hidden" : "max-h-none"
                           )}>
                             <div dangerouslySetInnerHTML={{ __html: product.description }} />
