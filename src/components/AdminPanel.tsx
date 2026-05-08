@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { collection, onSnapshot, query, orderBy, deleteDoc, doc, setDoc, getDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
-import { PRODUCTS as STATIC_PRODUCTS, STATIC_BLOG_POSTS, STATIC_ORDERS, STATIC_CUSTOMERS } from '../data';
+import { PRODUCTS as STATIC_PRODUCTS, STATIC_BLOG_POSTS, STATIC_ORDERS, STATIC_CUSTOMERS, CATEGORY_METADATA } from '../data';
 import { ImageUpload } from './ImageUpload';
 import { AddProductModal } from './AddProductModal';
 import { AddBlogPostModal } from './AddBlogPostModal';
@@ -59,6 +59,14 @@ export const AdminPanel: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isOrderDetailModalOpen, setIsOrderDetailModalOpen] = useState(false);
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
+  const [banners, setBanners] = useState<any[]>([]);
+  const [navigation, setNavigation] = useState<any[]>([]);
+  const [floatingMenu, setFloatingMenu] = useState({
+    zaloPhone: '0917722425',
+    callPhone: '0917722425',
+    zaloIcon: 'https://res.cloudinary.com/dcj4qhcfh/image/upload/v1778164803/media/rbkdvi2xgqeg6b79cq1n.webp',
+    callIcon: 'https://res.cloudinary.com/dcj4qhcfh/image/upload/v1778166005/media/ximp16qsaxdt7noebddh.jpg'
+  });
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -110,11 +118,36 @@ export const AdminPanel: React.FC = () => {
     return () => unsubscribe();
   }, [isAdmin]);
 
-  // Load custom CSS from Firestore
+  // Load settings from Firestore
   useEffect(() => {
     if (!isAdmin) return;
     getDoc(doc(db, 'settings', 'customCss')).then(snap => {
       if (snap.exists()) setCustomCss(snap.data().css || '');
+    });
+    getDoc(doc(db, 'settings', 'banners')).then(snap => {
+      if (snap.exists()) setBanners(snap.data().items || []);
+    });
+    getDoc(doc(db, 'settings', 'navigation')).then(snap => {
+      if (snap.exists()) {
+        setNavigation(snap.data().items || []);
+      } else {
+        // Pre-populate with defaults so user can edit them
+        const defaults = [
+          { id: 1, label: 'Cửa hàng', link: '/shop', icon: '', group: 'main' },
+          { id: 2, label: 'Blog', link: '/blog', icon: '', group: 'main' },
+          ...CATEGORY_METADATA.map((cat, i) => ({
+            id: 100 + i,
+            label: cat.name,
+            link: `/shop?category=${cat.name}`,
+            icon: cat.icon,
+            group: 'category'
+          }))
+        ];
+        setNavigation(defaults);
+      }
+    });
+    getDoc(doc(db, 'settings', 'floatingMenu')).then(snap => {
+      if (snap.exists()) setFloatingMenu(prev => ({ ...prev, ...snap.data() }));
     });
   }, [isAdmin]);
 
@@ -217,6 +250,35 @@ export const AdminPanel: React.FC = () => {
       toast.success('Đã lưu ảnh vào thư viện!');
     } catch {
       toast.error('Lỗi khi lưu vào thư viện');
+    }
+  };
+
+  const handleSaveBanners = async (newBanners: any[]) => {
+    try {
+      await setDoc(doc(db, 'settings', 'banners'), { items: newBanners });
+      setBanners(newBanners);
+      toast.success('Đã lưu cài đặt Banner');
+    } catch (error) {
+      toast.error('Lỗi khi lưu Banner');
+    }
+  };
+
+  const handleSaveNavigation = async (newNav: any[]) => {
+    try {
+      await setDoc(doc(db, 'settings', 'navigation'), { items: newNav });
+      setNavigation(newNav);
+      toast.success('Đã lưu Menu Navigation');
+    } catch (error) {
+      toast.error('Lỗi khi lưu Menu');
+    }
+  };
+
+  const handleSaveFloatingMenu = async () => {
+    try {
+      await setDoc(doc(db, 'settings', 'floatingMenu'), floatingMenu);
+      toast.success('Đã cập nhật cài đặt Menu nổi!');
+    } catch {
+      toast.error('Lỗi khi lưu cài đặt');
     }
   };
 
@@ -1047,6 +1109,284 @@ export const AdminPanel: React.FC = () => {
                     {customCss.split('\n').length} dòng • {customCss.length} ký tự • Lưu nhanh: <kbd className="bg-white/10 px-1.5 py-0.5 rounded text-white/40">Ctrl+S</kbd>
                   </p>
                   <p className="text-white/25 text-[11px]">Tab = 2 spaces</p>
+                </div>
+              </div>
+
+              {/* Banner Management */}
+              <div className="bg-[#13161f] border border-white/5 rounded-2xl p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="text-white font-black text-sm uppercase tracking-widest">Quản lý Hero Banners</h3>
+                    <p className="text-white/30 text-xs mt-1">Tùy chỉnh các hình ảnh và tiêu đề chạy ở đầu trang chủ</p>
+                  </div>
+                  <button 
+                    onClick={() => handleSaveBanners([...banners, { id: Date.now(), image: '', title: 'TIÊU ĐỀ MỚI', subtitle: 'Subtitle', link: '' }])}
+                    className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white text-xs font-bold transition-all flex items-center gap-2"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Thêm Banner
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {banners.length === 0 ? (
+                    <div className="py-10 text-center border-2 border-dashed border-white/5 rounded-2xl">
+                      <p className="text-white/20 text-sm font-medium">Chưa có banner nào. Hãy thêm banner đầu tiên.</p>
+                    </div>
+                  ) : (
+                    banners.map((banner, idx) => (
+                      <div key={banner.id} className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 space-y-4">
+                        <div className="flex items-start gap-4">
+                          <div className="w-48 shrink-0">
+                            <ImageUpload 
+                              folder="banners"
+                              label=""
+                              externalPreview={banner.image}
+                              onUploadComplete={(url) => {
+                                const updated = [...banners];
+                                updated[idx].image = url;
+                                setBanners(updated);
+                              }}
+                            />
+                          </div>
+                          <div className="flex-1 space-y-3">
+                            <div>
+                              <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Tiêu đề (Dùng \n để xuống dòng)</label>
+                              <input 
+                                type="text"
+                                value={banner.title}
+                                onChange={(e) => {
+                                  const updated = [...banners];
+                                  updated[idx].title = e.target.value;
+                                  setBanners(updated);
+                                }}
+                                className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#0082c8]/50"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Phụ đề (Subtitle)</label>
+                              <input 
+                                type="text"
+                                value={banner.subtitle || ''}
+                                onChange={(e) => {
+                                  const updated = [...banners];
+                                  updated[idx].subtitle = e.target.value;
+                                  setBanners(updated);
+                                }}
+                                className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#0082c8]/50"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Đường dẫn (Link - Ví dụ: /ao-thun)</label>
+                              <input 
+                                type="text"
+                                value={banner.link || ''}
+                                onChange={(e) => {
+                                  const updated = [...banners];
+                                  updated[idx].link = e.target.value;
+                                  setBanners(updated);
+                                }}
+                                className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#0082c8]/50"
+                              />
+                            </div>
+                          </div>
+                          <button 
+                            onClick={() => {
+                              if(window.confirm('Xóa banner này?')) {
+                                const updated = banners.filter((_, i) => i !== idx);
+                                handleSaveBanners(updated);
+                              }
+                            }}
+                            className="p-2 text-white/20 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                  {banners.length > 0 && (
+                    <div className="flex justify-end pt-2">
+                      <button 
+                        onClick={() => handleSaveBanners(banners)}
+                        className="px-6 py-2 bg-[#0082c8] hover:bg-[#0071ae] text-white text-sm font-bold rounded-xl shadow-lg transition-all"
+                      >
+                        Lưu thay đổi Banner
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Navigation Menu Settings */}
+              <div className="bg-[#13161f] border border-white/5 rounded-2xl p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="text-white font-black text-sm uppercase tracking-widest">Quản lý Menu Navigation</h3>
+                    <p className="text-white/30 text-xs mt-1">Tùy chỉnh các mục menu và danh mục sản phẩm có icon</p>
+                  </div>
+                  <button 
+                    onClick={() => setNavigation([...navigation, { id: Date.now(), label: 'Mục mới', link: '/', icon: '', group: 'main' }])}
+                    className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white text-xs font-bold transition-all flex items-center gap-2"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Thêm Mục Menu
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {navigation.length === 0 ? (
+                    <div className="col-span-full py-10 text-center border-2 border-dashed border-white/5 rounded-2xl">
+                      <p className="text-white/20 text-sm font-medium">Chưa có mục menu nào. Hãy thêm mục đầu tiên.</p>
+                    </div>
+                  ) : (
+                    navigation.map((nav, idx) => (
+                      <div key={nav.id} className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex gap-4">
+                        <div className="w-20 shrink-0">
+                          <ImageUpload 
+                            folder="nav"
+                            label=""
+                            compact={true}
+                            externalPreview={nav.icon}
+                            onUploadComplete={(url) => {
+                              const updated = [...navigation];
+                              updated[idx].icon = url;
+                              setNavigation(updated);
+                            }}
+                          />
+                        </div>
+                        <div className="flex-1 space-y-2">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Nhãn (Label)</label>
+                              <input 
+                                type="text"
+                                value={nav.label}
+                                onChange={(e) => {
+                                  const updated = [...navigation];
+                                  updated[idx].label = e.target.value;
+                                  setNavigation(updated);
+                                }}
+                                className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#0082c8]/50"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Nhóm</label>
+                              <select 
+                                value={nav.group}
+                                onChange={(e) => {
+                                  const updated = [...navigation];
+                                  updated[idx].group = e.target.value;
+                                  setNavigation(updated);
+                                }}
+                                className="w-full bg-[#1c1f26] border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#0082c8]/50"
+                              >
+                                <option value="main">Danh mục chính</option>
+                                <option value="category">Danh mục sản phẩm</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Đường dẫn (Link)</label>
+                            <input 
+                              type="text"
+                              value={nav.link}
+                              onChange={(e) => {
+                                const updated = [...navigation];
+                                updated[idx].link = e.target.value;
+                                setNavigation(updated);
+                              }}
+                              className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#0082c8]/50"
+                            />
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => {
+                            if(window.confirm('Xóa mục này?')) {
+                              const updated = navigation.filter((_, i) => i !== idx);
+                              handleSaveNavigation(updated);
+                            }
+                          }}
+                          className="h-8 w-8 flex items-center justify-center text-white/20 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                  {navigation.length > 0 && (
+                    <div className="col-span-full flex justify-end pt-2">
+                      <button 
+                        onClick={() => handleSaveNavigation(navigation)}
+                        className="px-6 py-2 bg-[#0082c8] hover:bg-[#0071ae] text-white text-sm font-bold rounded-xl shadow-lg transition-all"
+                      >
+                        Lưu Menu Navigation
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Floating Contact Settings */}
+              <div className="bg-[#13161f] border border-white/5 rounded-2xl p-6">
+                <h3 className="text-white font-black text-sm uppercase tracking-widest mb-6">Cài đặt Menu Liên hệ (Nút nổi)</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Số điện thoại Zalo</label>
+                      <input 
+                        type="text"
+                        value={floatingMenu.zaloPhone}
+                        onChange={(e) => setFloatingMenu({...floatingMenu, zaloPhone: e.target.value})}
+                        placeholder="0917722425"
+                        className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#0082c8]/50"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Số điện thoại Hotline</label>
+                      <input 
+                        type="text"
+                        value={floatingMenu.callPhone}
+                        onChange={(e) => setFloatingMenu({...floatingMenu, callPhone: e.target.value})}
+                        placeholder="0917722425"
+                        className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#0082c8]/50"
+                      />
+                    </div>
+                    <button 
+                      onClick={handleSaveFloatingMenu}
+                      className="px-6 py-2.5 bg-[#0082c8] hover:bg-[#0071ae] text-white text-sm font-bold rounded-xl shadow-lg transition-all"
+                    >
+                      Lưu thông tin liên hệ
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-white/30 block">Ảnh Icon Zalo</label>
+                      <ImageUpload 
+                        folder="settings"
+                        label=""
+                        externalPreview={floatingMenu.zaloIcon}
+                        onUploadComplete={(url) => {
+                          const updated = {...floatingMenu, zaloIcon: url};
+                          setFloatingMenu(updated);
+                          setDoc(doc(db, 'settings', 'floatingMenu'), updated);
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-white/30 block">Ảnh Icon Tổng (Nút chính)</label>
+                      <ImageUpload 
+                        folder="settings"
+                        label=""
+                        externalPreview={floatingMenu.callIcon}
+                        onUploadComplete={(url) => {
+                          const updated = {...floatingMenu, callIcon: url};
+                          setFloatingMenu(updated);
+                          setDoc(doc(db, 'settings', 'floatingMenu'), updated);
+                        }}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 

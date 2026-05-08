@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { useParams, useNavigate } from 'react-router-dom';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
+import { STATIC_BLOG_POSTS as POSTS } from '../data';
 
 interface TocHeading {
   id: string;
@@ -13,8 +14,6 @@ interface TocHeading {
 }
 
 const POST_CATEGORIES = ['Tất cả', 'Xu hướng', 'Kinh nghiệm', 'Sự kiện'];
-
-import { STATIC_BLOG_POSTS as POSTS } from '../data';
 
 export function NewsPage() {
   const { slug } = useParams<{ slug?: string }>();

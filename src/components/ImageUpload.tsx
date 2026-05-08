@@ -8,6 +8,7 @@ interface ImageUploadProps {
   folder?: string;
   label?: string;
   externalPreview?: string;
+  compact?: boolean;
 }
 
 // ─── Cloudinary config ───────────────────────────────────────────────────────
@@ -20,7 +21,8 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   onUploadComplete,
   folder = 'products',
   label = 'Tải ảnh lên',
-  externalPreview
+  externalPreview,
+  compact = false
 }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -126,13 +128,14 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
 
   return (
     <div className="w-full space-y-3">
-      {label && <label className="text-sm font-bold text-white/40 uppercase tracking-widest">{label}</label>}
+      {label && !compact && <label className="text-sm font-bold text-white/40 uppercase tracking-widest">{label}</label>}
 
       <div
         onClick={openFilePicker}
         className={cn(
-          "relative group cursor-pointer border-2 border-dashed rounded-2xl p-6 transition-all duration-300 flex flex-col items-center justify-center min-h-[180px]",
-          previewUrl
+          "relative group cursor-pointer border-2 border-dashed rounded-2xl transition-all duration-300 flex flex-col items-center justify-center",
+          compact ? "p-2 min-h-[64px] aspect-square" : "p-6 min-h-[180px]",
+          previewUrl || externalPreview
             ? uploadError
               ? "border-red-400 bg-red-50/5"
               : isDone
@@ -152,14 +155,17 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
         />
 
         {(externalPreview || previewUrl) ? (
-          <div className="relative w-full flex flex-col items-center gap-4">
+          <div className="relative w-full flex flex-col items-center justify-center">
             <div className="relative">
               <img
                 src={externalPreview || previewUrl!}
                 alt="Preview"
-                className="max-h-40 rounded-xl object-cover shadow-2xl border border-white/10"
+                className={cn(
+                  "rounded-xl object-cover shadow-2xl border border-white/10",
+                  compact ? "h-12 w-12" : "max-h-40"
+                )}
               />
-              {isDone && !previewUrl?.startsWith('blob:') && (
+              {isDone && !previewUrl?.startsWith('blob:') && !compact && (
                 <div className="absolute top-2 right-2 flex gap-2">
                   <button
                     type="button"
@@ -174,72 +180,49 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
             </div>
 
             {isUploading && (
-              <div className="w-full max-w-[200px] space-y-2">
-                <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <div className={cn("w-full space-y-2", compact ? "max-w-[40px]" : "max-w-[200px]")}>
+                <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-[#0082c8] rounded-full transition-all duration-200"
                     style={{ width: `${progress}%` }}
                   />
                 </div>
-                <div className="flex items-center justify-center gap-2 text-[#0082c8]">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  <span className="text-[10px] font-black">{progress}%</span>
-                </div>
               </div>
             )}
 
-            {uploadError && (
-              <div className="flex items-center gap-2 text-red-400">
-                <AlertCircle className="h-4 w-4" />
-                <span className="text-xs font-bold text-center">{uploadError}</span>
-              </div>
-            )}
-
-            {isDone && (
-              <div className="w-full space-y-3">
+            {isDone && !compact && (
+              <div className="w-full mt-4 space-y-3 text-center">
                 <div className="flex items-center justify-center gap-2 text-emerald-400">
                   <CheckCircle2 className="h-4 w-4" />
-                  <span className="text-sm font-bold">Tải lên thành công!</span>
+                  <span className="text-sm font-bold">Thành công!</span>
                 </div>
-                
-                {!previewUrl?.startsWith('blob:') && (
-                  <div className="flex items-center gap-2 p-2 bg-white/5 border border-white/5 rounded-xl">
-                    <input 
-                      type="text" 
-                      readOnly 
-                      value={previewUrl || ''} 
-                      className="flex-1 bg-transparent border-none text-[10px] text-white/50 outline-none truncate font-mono"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleCopyUrl}
-                      className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white text-[10px] font-bold rounded-lg transition-all flex items-center gap-1.5"
-                    >
-                      <Copy className="h-3 w-3" />
-                      Sao chép
-                    </button>
-                  </div>
-                )}
               </div>
             )}
 
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); removeImage(); }}
-              className="absolute -top-3 -right-3 bg-[#0f1117] border border-white/10 p-2 rounded-full shadow-xl text-white/50 hover:text-red-400 transition-colors"
+              className={cn(
+                "absolute bg-[#0f1117] border border-white/10 rounded-full shadow-xl text-white/50 hover:text-red-400 transition-colors",
+                compact ? "-top-2 -right-2 p-1" : "-top-3 -right-3 p-2"
+              )}
             >
-              <X className="h-4 w-4" />
+              <X className="h-3 w-3" />
             </button>
           </div>
         ) : (
           <>
-            <div className="bg-zinc-100 p-4 rounded-full mb-3 group-hover:bg-blue-100 transition-colors">
-              <Upload className="h-7 w-7 text-zinc-400 group-hover:text-[#0082c8] transition-colors" />
+            <div className={cn("bg-zinc-100 rounded-full group-hover:bg-blue-100 transition-colors flex items-center justify-center", compact ? "p-2" : "p-4 mb-3")}>
+              <Upload className={cn("text-zinc-400 group-hover:text-[#0082c8] transition-colors", compact ? "h-4 w-4" : "h-7 w-7")} />
             </div>
-            <p className="text-sm font-bold text-zinc-500 group-hover:text-zinc-700 text-center">
-              Kéo thả hoặc click để chọn ảnh
-            </p>
-            <p className="text-xs text-zinc-400 mt-1">JPG, PNG, WebP • Tối đa 10MB</p>
+            {!compact && (
+              <>
+                <p className="text-sm font-bold text-zinc-500 group-hover:text-zinc-700 text-center">
+                  Kéo thả hoặc click để chọn ảnh
+                </p>
+                <p className="text-xs text-zinc-400 mt-1">JPG, PNG, WebP • Tối đa 10MB</p>
+              </>
+            )}
           </>
         )}
       </div>

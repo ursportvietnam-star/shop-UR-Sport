@@ -8,6 +8,9 @@ import { Separator } from '@/components/ui/separator';
 import { CATEGORY_METADATA } from '../data';
 import { Category } from '../types';
 
+import { getDoc, doc } from 'firebase/firestore';
+import { db } from '../firebase';
+
 interface MobileSidebarProps {
   isOpen: boolean;
   onClose: () => void;
@@ -27,6 +30,27 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
   activeCategory,
   user 
 }) => {
+  const [navItems, setNavItems] = React.useState<any[]>([]);
+
+  useEffect(() => {
+    getDoc(doc(db, 'settings', 'navigation')).then(snap => {
+      if (snap.exists() && snap.data().items?.length > 0) {
+        setNavItems(snap.data().items);
+      }
+    });
+  }, []);
+
+  const mainLinks = navItems.length > 0 
+    ? navItems.filter(item => item.group === 'main')
+    : [
+        { label: 'Cửa hàng', link: '/shop' },
+        { label: 'Blog', link: '/blog' }
+      ];
+
+  const categoryLinks = navItems.length > 0
+    ? navItems.filter(item => item.group === 'category')
+    : CATEGORY_METADATA.map(cat => ({ label: cat.name, link: `/shop?category=${cat.name}`, icon: cat.icon, isStatic: true }));
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -82,7 +106,7 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
                     </button>
                 </div>
 
-                {/* User Card - Styled like the screenshot's login section */}
+                {/* User Card */}
                 <div 
                     onClick={() => { if(!user) onLogin(); onClose(); }}
                     className="relative overflow-hidden bg-white/10 backdrop-blur-md p-4 rounded-xl shadow-lg border border-white/20 cursor-pointer group transition-all active:scale-[0.98] flex items-center gap-4"
@@ -109,7 +133,7 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
 
             <div className="flex-1 overflow-y-auto bg-white">
                 <div className="py-0">
-                    {/* Quick Menu */}
+                    {/* Main Menu */}
                     <div className="bg-zinc-50 py-4 px-6 border-b border-zinc-100 mb-2">
                         <p className="text-[11px] font-extrabold uppercase tracking-widest text-zinc-400">
                             DANH MỤC CHÍNH
@@ -117,20 +141,16 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
                     </div>
 
                     <div className="px-6 space-y-4 mb-6">
-                        <Link 
-                            to="/shop"
-                            onClick={onClose}
-                            className="block w-full text-left py-2 text-[17px] font-black italic tracking-tighter uppercase text-zinc-900 hover:text-[#0082c8] transition-colors"
-                        >
-                            Cửa hàng
-                        </Link>
-                        <Link 
-                            to="/blog"
-                            onClick={onClose}
-                            className="block w-full text-left py-2 text-[17px] font-black italic tracking-tighter uppercase text-zinc-900 hover:text-[#0082c8] transition-colors"
-                        >
-                            Blog
-                        </Link>
+                        {mainLinks.map((link, idx) => (
+                          <Link 
+                              key={idx}
+                              to={link.link}
+                              onClick={onClose}
+                              className="block w-full text-left py-2 text-[17px] font-black italic tracking-tighter uppercase text-zinc-900 hover:text-[#0082c8] transition-colors"
+                          >
+                              {link.label}
+                          </Link>
+                        ))}
                     </div>
 
                     <div className="bg-zinc-50 py-4 px-6 border-b border-zinc-100">
@@ -141,27 +161,42 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
                     
                     <div className="px-0">
                         <div className="flex flex-col">
-                            {CATEGORY_METADATA.map((cat, i) => (
+                            {categoryLinks.map((cat, i) => (
                                 <motion.button
-                                    key={cat.slug}
+                                    key={i}
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: i * 0.05 }}
                                     onClick={() => {
-                                        onCategorySelect(cat.name);
+                                        if (cat.isStatic) {
+                                            onCategorySelect(cat.label as any);
+                                        } else {
+                                            // Handle dynamic link (can be a relative path or full URL)
+                                            if (cat.link.startsWith('http')) {
+                                              window.open(cat.link, '_blank');
+                                            } else {
+                                              window.location.href = cat.link;
+                                            }
+                                        }
                                         onClose();
                                     }}
                                     className={`w-full flex items-center gap-4 py-4 px-6 transition-all group relative border-b border-zinc-100 ${
-                                        activeCategory === cat.name 
+                                        activeCategory === cat.label 
                                           ? 'bg-[#0082c8]/5' 
                                           : 'hover:bg-zinc-50 bg-white'
                                     }`}
                                 >
                                     <div className="h-14 w-14 rounded-full overflow-hidden border border-zinc-200 group-hover:scale-105 transition-transform bg-zinc-50 flex-shrink-0 relative shadow-inner">
-                                        <img src={cat.icon} alt={cat.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                                        {cat.icon ? (
+                                          <img src={cat.icon} alt={cat.label} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                                        ) : (
+                                          <div className="h-full w-full bg-zinc-100 flex items-center justify-center">
+                                            <Sparkles className="h-6 w-6 text-zinc-300" />
+                                          </div>
+                                        )}
                                     </div>
                                     <span className={`text-[17px] font-black tracking-tight text-left flex-1 text-zinc-900`}>
-                                        {cat.name}
+                                        {cat.label}
                                     </span>
                                     <ChevronRight className="h-4 w-4 text-zinc-300" />
                                 </motion.button>

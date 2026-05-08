@@ -1,18 +1,29 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Phone, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-const ZALO_URL = 'https://zalo.me/0917722425';
-const PHONE_NUMBER = 'tel:0917722425';
-
-// iOS-style Zalo icon (white bg + blue chat bubble) — dùng làm nút toggle chính
-const ZALO_ICON_IOS = 'https://res.cloudinary.com/dcj4qhcfh/image/upload/v1778166005/media/ximp16qsaxdt7noebddh.jpg';
+import { getDoc, doc } from 'firebase/firestore';
+import { db } from '../firebase';
 
 export function FloatingContactMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const [showPhone, setShowPhone] = useState(false);
   const [isZaloHovered, setIsZaloHovered] = useState(false);
+  const [settings, setSettings] = useState({
+    zaloPhone: '0917722425',
+    callPhone: '0917722425',
+    zaloIcon: 'https://res.cloudinary.com/dcj4qhcfh/image/upload/v1778164803/media/rbkdvi2xgqeg6b79cq1n.webp',
+    callIcon: 'https://res.cloudinary.com/dcj4qhcfh/image/upload/v1778166005/media/ximp16qsaxdt7noebddh.jpg'
+  });
+
   const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    getDoc(doc(db, 'settings', 'floatingMenu')).then(snap => {
+      if (snap.exists()) {
+        setSettings(prev => ({ ...prev, ...snap.data() }));
+      }
+    });
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -41,7 +52,7 @@ export function FloatingContactMenu() {
       >
         {/* Zalo Option */}
         <a
-          href={ZALO_URL}
+          href={`https://zalo.me/${settings.zaloPhone}`}
           target="_blank"
           rel="noopener noreferrer"
           className="group flex items-center gap-3 outline-none"
@@ -56,7 +67,7 @@ export function FloatingContactMenu() {
           </div>
           <div className="h-12 w-12 rounded-[18px] bg-white p-0.5 shadow-xl group-hover:scale-110 group-active:scale-95 transition-all duration-300 border border-white/50 overflow-hidden">
             <img 
-              src='https://res.cloudinary.com/dcj4qhcfh/image/upload/v1778164803/media/rbkdvi2xgqeg6b79cq1n.webp' 
+              src={settings.zaloIcon} 
               alt="Zalo" 
               className="h-full w-full object-cover rounded-[16px]" 
             />
@@ -72,8 +83,8 @@ export function FloatingContactMenu() {
             )}
           >
             <Phone className="h-3.5 w-3.5 text-[#1a56e8] fill-[#1a56e8]/10" />
-            <a href={PHONE_NUMBER} className="text-[#1a56e8] font-black text-xs tracking-widest">
-              0917.722.425
+            <a href={`tel:${settings.callPhone}`} className="text-[#1a56e8] font-black text-xs tracking-widest">
+              {settings.callPhone}
             </a>
           </div>
           <button
@@ -108,7 +119,7 @@ export function FloatingContactMenu() {
           <div className="absolute -inset-1 border border-blue-400/20 rounded-[24px] animate-[ping_3s_infinite]" />
           <div className="relative z-10 h-14 w-14 rounded-[20px] overflow-hidden">
             <img 
-              src={ZALO_ICON_IOS} 
+              src={settings.callIcon} 
               alt="Contact" 
               className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700" 
             />
