@@ -30,11 +30,11 @@
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-sans);
-    @apply font-bold tracking-tight break-words;
+    @apply font-bold tracking-tight;
   }
 
   p, span, div {
-    @apply break-words;
+    /* overflow-wrap: anywhere; or normal behavior */
   }
 
   img {
