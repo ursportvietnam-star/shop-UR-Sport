@@ -90,42 +90,42 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
             className="fixed left-0 top-0 z-[10000] h-screen w-[310px] bg-white shadow-2xl flex flex-col overflow-hidden"
           >
             {/* Header: Brand Blue Background */}
-            <div className="bg-[#0082c8] px-5 pt-8 pb-10 text-white relative shrink-0">
-                <div className="flex justify-between items-start mb-6">
+            <div className="bg-[#0082c8] px-5 pt-6 pb-8 text-white relative shrink-0">
+                <div className="flex justify-between items-start mb-5">
                     <div className="flex flex-col">
-                        <Link to="/" onClick={onClose} className="text-2xl font-black italic tracking-tighter leading-none flex items-center">
+                        <Link to="/" onClick={onClose} className="text-xl font-black italic tracking-tighter leading-none flex items-center">
                             <span className="text-white">UR</span>
                             <span className="text-white ml-1">SPORT</span>
                         </Link>
-                        <span className="text-[10px] font-bold italic tracking-tight text-white/80 mt-1 uppercase">
+                        <span className="text-[7px] font-bold italic tracking-[0.2em] text-white/70 mt-1 uppercase">
                             Phong Cách Thể Thao
                         </span>
                     </div>
                     <button onClick={onClose} className="p-1 hover:bg-white/10 rounded-full transition-colors text-white">
-                        <X className="h-6 w-6" />
+                        <X className="h-5 w-5" />
                     </button>
                 </div>
 
                 {/* User Card */}
                 <div 
                     onClick={() => { if(!user) onLogin(); onClose(); }}
-                    className="relative overflow-hidden bg-white/10 backdrop-blur-md p-4 rounded-xl shadow-lg border border-white/20 cursor-pointer group transition-all active:scale-[0.98] flex items-center gap-4"
+                    className="relative overflow-hidden bg-white/10 backdrop-blur-md p-3 rounded-xl shadow-lg border border-white/20 cursor-pointer group transition-all active:scale-[0.98] flex items-center gap-3"
                 >
-                    <div className="h-12 w-12 rounded-full bg-white flex items-center justify-center flex-shrink-0 shadow-md">
+                    <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center flex-shrink-0 shadow-md">
                         {user?.photoURL ? (
                             <img src={user.photoURL} alt="" className="h-full w-full object-cover rounded-full" referrerPolicy="no-referrer" />
                         ) : (
                             <div className="h-full w-full rounded-full flex items-center justify-center">
-                                <User className="h-6 w-6 text-[#0082c8]" />
+                                <User className="h-5 w-5 text-[#0082c8]" />
                             </div>
                         )}
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="font-extrabold text-[15px] tracking-tight truncate text-white">
+                        <p className="font-extrabold text-[14px] tracking-tight truncate text-white">
                             {user ? user.displayName : 'Đăng nhập | Đăng ký'}
                         </p>
-                        <p className="text-[10px] font-medium text-white/80 mt-0.5 tracking-tight truncate">
-                            {user ? 'Chào đón bạn trở lại' : 'Đăng nhập để nhận ưu đãi tốt hơn'}
+                        <p className="text-[9px] font-medium text-white/70 mt-0.5 tracking-tight truncate">
+                            {user ? 'Chào đón bạn trở lại' : 'Nhận ưu đãi độc quyền ngay'}
                         </p>
                     </div>
                 </div>
@@ -134,27 +134,27 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
             <div className="flex-1 overflow-y-auto bg-white">
                 <div className="py-0">
                     {/* Main Menu */}
-                    <div className="bg-zinc-50 py-4 px-6 border-b border-zinc-100 mb-2">
-                        <p className="text-[11px] font-extrabold uppercase tracking-widest text-zinc-400">
-                            DANH MỤC CHÍNH
+                    <div className="bg-zinc-50/50 py-3 px-6 border-b border-zinc-100">
+                        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-400">
+                            KHÁM PHÁ UR SPORT
                         </p>
                     </div>
 
-                    <div className="px-6 space-y-4 mb-6">
+                    <div className="px-6 py-2 space-y-1 mb-4">
                         {mainLinks.map((link, idx) => (
                           <Link 
                               key={idx}
                               to={link.link}
                               onClick={onClose}
-                              className="block w-full text-left py-2 text-[17px] font-black italic tracking-tighter uppercase text-zinc-900 hover:text-[#0082c8] transition-colors"
+                              className="block w-full text-left py-2.5 text-[15px] font-black italic tracking-tight uppercase text-zinc-900 hover:text-[#0082c8] transition-colors"
                           >
                               {link.label}
                           </Link>
                         ))}
                     </div>
 
-                    <div className="bg-zinc-50 py-4 px-6 border-b border-zinc-100">
-                        <p className="text-[11px] font-extrabold uppercase tracking-widest text-zinc-400">
+                    <div className="bg-zinc-50/50 py-3 px-6 border-b border-zinc-100">
+                        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-400">
                             DANH MỤC SẢN PHẨM
                         </p>
                     </div>
@@ -171,7 +171,6 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
                                         if (cat.isStatic) {
                                             onCategorySelect(cat.label as any);
                                         } else {
-                                            // Handle dynamic link (can be a relative path or full URL)
                                             if (cat.link.startsWith('http')) {
                                               window.open(cat.link, '_blank');
                                             } else {
@@ -180,39 +179,39 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
                                         }
                                         onClose();
                                     }}
-                                    className={`w-full flex items-center gap-4 py-4 px-6 transition-all group relative border-b border-zinc-100 ${
+                                    className={`w-full flex items-center gap-4 py-3 px-6 transition-all group relative border-b border-zinc-50 ${
                                         activeCategory === cat.label 
                                           ? 'bg-[#0082c8]/5' 
                                           : 'hover:bg-zinc-50 bg-white'
                                     }`}
                                 >
-                                    <div className="h-14 w-14 rounded-full overflow-hidden border border-zinc-200 group-hover:scale-105 transition-transform bg-zinc-50 flex-shrink-0 relative shadow-inner">
+                                    <div className="h-12 w-12 rounded-full overflow-hidden border border-zinc-100 group-hover:scale-105 transition-transform bg-zinc-50 flex-shrink-0 relative shadow-sm">
                                         {cat.icon ? (
                                           <img src={cat.icon} alt={cat.label} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                                         ) : (
-                                          <div className="h-full w-full bg-zinc-100 flex items-center justify-center">
-                                            <Sparkles className="h-6 w-6 text-zinc-300" />
+                                          <div className="h-full w-full bg-zinc-50 flex items-center justify-center">
+                                            <Sparkles className="h-5 w-5 text-[#0082c8]/20" />
                                           </div>
                                         )}
                                     </div>
-                                    <span className={`text-[17px] font-black tracking-tight text-left flex-1 text-zinc-900`}>
+                                    <span className={`text-[15px] font-bold tracking-tight text-left flex-1 text-zinc-900 group-hover:text-[#0082c8] transition-colors`}>
                                         {cat.label}
                                     </span>
-                                    <ChevronRight className="h-4 w-4 text-zinc-300" />
+                                    <ChevronRight className="h-4 w-4 text-zinc-300 group-hover:text-[#0082c8] transition-colors" />
                                 </motion.button>
                             ))}
                         </div>
                     </div>
 
-                    <div className="mt-8 px-5 pb-12">
+                    <div className="mt-6 px-5 pb-10">
                         <Button 
-                            className="w-full bg-zinc-950 text-white font-black h-16 uppercase tracking-widest text-[13px] rounded-xl shadow-lg hover:bg-black transition-all mb-4"
+                            className="w-full bg-[#0082c8] text-white font-black h-14 uppercase tracking-widest text-[11px] rounded-xl shadow-xl hover:bg-[#0071ae] transition-all mb-4"
                             onClick={() => { onCategorySelect('All' as any); onClose(); }}
                         >
-                            KHÁM PHÁ BỘ SƯU TẬP
+                            XEM TẤT CẢ SẢN PHẨM
                         </Button>
-                        <p className="text-[11px] text-zinc-400 text-center font-bold tracking-tight uppercase opacity-50">
-                            Miễn phí đổi size trong 7 ngày
+                        <p className="text-[10px] text-zinc-400 text-center font-bold tracking-tight uppercase opacity-50">
+                            Chất lượng vượt trội • Giao hàng nhanh
                         </p>
                     </div>
                 </div>

@@ -43,13 +43,41 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
     <>
       <Hero onShopClick={() => navigate('/shop')} />
       
-      <FlashSale products={products} />
-      <FULLCollectionSection onCategorySelect={onCategorySelect} />
-      <BestSeller products={products} />
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6 }}
+      >
+        <FlashSale products={products} />
+      </motion.div>
+
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+      >
+        <FULLCollectionSection onCategorySelect={onCategorySelect} />
+      </motion.div>
+
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6 }}
+      >
+        <BestSeller products={products} />
+      </motion.div>
 
       {/* In Demand Section - Athletic Shirts */}
-      <section className="mx-auto max-w-[1440px] px-4 pt-20 pb-12 sm:px-6 lg:px-8 bg-white">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+      <section className="container-custom section-padding bg-white">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4"
+        >
           <div>
             <span className="section-subtitle">Performance Collection</span>
             <h2 className="section-title">
@@ -58,29 +86,36 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
           </div>
           <button 
              onClick={() => onCategorySelect('Áo thun thể thao nam')}
-             className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-[#0082c8] hover:translate-x-2 transition-transform"
+             className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#0082c8] hover:translate-x-2 transition-transform group"
           >
-            Xem tất cả bộ sưu tập <ChevronRight className="h-4 w-4" />
+            Tất cả sản phẩm <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
           </button>
-        </div>
+        </motion.div>
 
         <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
           {products
             .filter(p => p.category === 'Áo thun thể thao nam')
             .slice(0, 6)
-            .map((product) => (
-              <ProductCard 
-                key={product.id} 
-                product={product} 
-                onClick={() => navigate(getProductUrl(product))}
-              />
+            .map((product, idx) => (
+              <motion.div
+                key={product.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1 }}
+              >
+                <ProductCard 
+                  product={product} 
+                  onClick={() => navigate(getProductUrl(product))}
+                />
+              </motion.div>
             ))}
         </div>
-        <div className="flex justify-center mt-5">
+        <div className="flex justify-center mt-12">
           <Button 
              variant="outline" 
              onClick={() => onCategorySelect('Áo thun thể thao nam')}
-             className="rounded-full border-zinc-200 bg-white text-[#005fa3] hover:text-[#0082c8] hover:border-[#0082c8] hover:-translate-y-1 transition-all font-bold px-8 h-10 text-[13px] shadow-sm"
+             className="rounded-full border-zinc-200 bg-white text-zinc-900 hover:text-white hover:bg-[#0082c8] hover:border-[#0082c8] transition-all font-bold px-10 h-12 text-[12px] uppercase tracking-widest shadow-md"
           >
              Xem thêm
           </Button>
@@ -88,36 +123,48 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
       </section>
 
       {/* Polo Shirts Section */}
-      <section className="mx-auto max-w-[1440px] px-4 pt-0 pb-6 sm:px-6 lg:px-8 bg-white">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl sm:text-3xl font-black tracking-tighter text-zinc-900 leading-none">
-            Bộ sưu tập <span className="text-blue-600">Áo Polo Nam</span>
+      <section className="container-custom section-padding-bottom bg-white">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="flex items-center justify-between mb-8"
+        >
+          <h2 className="section-title">
+            Bộ sưu tập <span className="text-[#0082c8]">Áo Polo Nam</span>
           </h2>
           <button 
              onClick={() => onCategorySelect('Áo polo nam')}
-             className="flex items-center gap-1.5 text-sm font-bold text-[#005fa3] hover:text-[#0082c8] transition-colors"
+             className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-[#0082c8] transition-colors"
           >
-            Xem thêm <ChevronRight className="h-4 w-4" />
+            Khám phá <ChevronRight className="h-4 w-4" />
           </button>
-        </div>
+        </motion.div>
 
         <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
           {products
             .filter(p => p.category === 'Áo polo nam')
             .slice(0, 6)
-            .map((product) => (
-              <ProductCard 
-                key={product.id} 
-                product={product} 
-                onClick={() => navigate(getProductUrl(product))}
-              />
+            .map((product, idx) => (
+              <motion.div
+                key={product.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1 }}
+              >
+                <ProductCard 
+                  product={product} 
+                  onClick={() => navigate(getProductUrl(product))}
+                />
+              </motion.div>
             ))}
         </div>
-        <div className="flex justify-center mt-5">
+        <div className="flex justify-center mt-12">
           <Button 
              variant="outline" 
              onClick={() => onCategorySelect('Áo polo nam')}
-             className="rounded-full border-zinc-200 bg-white text-[#005fa3] hover:text-[#0082c8] hover:border-[#0082c8] hover:-translate-y-1 transition-all font-bold px-8 h-10 text-[13px] shadow-sm"
+             className="rounded-full border-zinc-200 bg-white text-zinc-900 hover:text-white hover:bg-[#0082c8] hover:border-[#0082c8] transition-all font-bold px-10 h-12 text-[12px] uppercase tracking-widest shadow-md"
           >
              Xem thêm
           </Button>
@@ -125,94 +172,131 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
       </section>
 
       {/* Men's T-Shirts Section */}
-      <section className="mx-auto max-w-[1440px] px-4 pt-0 pb-12 sm:px-6 lg:px-8 bg-white">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl sm:text-3xl font-black tracking-tighter text-zinc-900 leading-none">
+      <section className="container-custom section-padding-bottom bg-white">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="flex items-center justify-between mb-8"
+        >
+          <h2 className="section-title">
             <span className="text-[#0082c8]">Áo Thun Nam</span> Thời Trang
           </h2>
           <button 
              onClick={() => onCategorySelect('Áo thun nam')}
-             className="flex items-center gap-1.5 text-sm font-bold text-[#005fa3] hover:text-[#0082c8] transition-colors"
+             className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-[#0082c8] transition-colors"
           >
-            Xem thêm <ChevronRight className="h-4 w-4" />
+            Xem ngay <ChevronRight className="h-4 w-4" />
           </button>
-        </div>
+        </motion.div>
 
         <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
           {products
             .filter(p => p.category === 'Áo thun nam')
             .slice(0, 6)
-            .map((product) => (
-              <ProductCard 
-                key={product.id} 
-                product={product} 
-                onClick={() => navigate(getProductUrl(product))}
-              />
+            .map((product, idx) => (
+              <motion.div
+                key={product.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1 }}
+              >
+                <ProductCard 
+                  product={product} 
+                  onClick={() => navigate(getProductUrl(product))}
+                />
+              </motion.div>
             ))}
         </div>
-        <div className="flex justify-center mt-5">
+        <div className="flex justify-center mt-12">
           <Button 
              variant="outline" 
              onClick={() => onCategorySelect('Áo thun nam')}
-             className="rounded-full border-zinc-200 bg-white text-[#005fa3] hover:text-[#0082c8] hover:border-[#0082c8] hover:-translate-y-1 transition-all font-bold px-8 h-10 text-[13px] shadow-sm"
+             className="rounded-full border-zinc-200 bg-white text-zinc-900 hover:text-white hover:bg-[#0082c8] hover:border-[#0082c8] transition-all font-bold px-10 h-12 text-[12px] uppercase tracking-widest shadow-md"
           >
              Xem thêm
           </Button>
         </div>
       </section>
 
-      {/* Latest News Section - Matching Screenshot */}
-      <section className="mx-auto max-w-[1440px] px-4 pt-4 pb-4 sm:px-6 lg:px-8 bg-white border-t border-zinc-100">
-        <div className="flex items-center justify-center gap-4 mb-10">
-          <div className="h-px bg-zinc-200 flex-1" />
-          <h2 className="text-3xl sm:text-4xl font-black tracking-tighter text-zinc-900 leading-none whitespace-wrap text-center">
-            Stay updated with the <span className="text-[#16a34a]">latest news</span>
+      {/* Latest News Section */}
+      <section className="container-custom section-padding border-t border-zinc-100">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="flex flex-col items-center text-center mb-16"
+        >
+          <span className="section-subtitle">Tạp chí UR SPORT</span>
+          <h2 className="section-title">
+            Stay updated with <span className="text-[#0082c8]">UR NEWS</span>
           </h2>
-          <div className="h-px bg-zinc-200 flex-1" />
-        </div>
+          <div className="h-1 w-12 bg-[#0082c8] mt-6 rounded-full" />
+        </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           {/* Large Featured Article */}
           {STATIC_BLOG_POSTS[0] && (
-            <div className="lg:col-span-5 group cursor-pointer" onClick={() => navigate(`/news/${STATIC_BLOG_POSTS[0].id}`)}>
-              <div className="relative aspect-[4/3] sm:aspect-square lg:aspect-auto lg:h-[450px] overflow-hidden rounded-[40px] mb-6">
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="lg:col-span-5 group cursor-pointer" 
+              onClick={() => navigate(`/news/${STATIC_BLOG_POSTS[0].id}`)}
+            >
+              <div className="relative aspect-[4/3] sm:aspect-square lg:aspect-auto lg:h-[500px] overflow-hidden rounded-[32px] mb-6 shadow-2xl">
                 <img 
                   src={STATIC_BLOG_POSTS[0].image} 
                   alt={STATIC_BLOG_POSTS[0].title} 
                   className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
-                <div className="absolute bottom-6 left-6 bg-blue-600/90 backdrop-blur-md px-4 py-1.5 rounded-full text-[11px] font-black text-white uppercase tracking-widest shadow-lg leading-none">
-                  {STATIC_BLOG_POSTS[0].date}
+                <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
+                <div className="absolute bottom-8 left-8">
+                  <div className="bg-[#0082c8] px-4 py-1.5 rounded-full text-[10px] font-black text-white uppercase tracking-widest mb-3 inline-block">
+                    {STATIC_BLOG_POSTS[0].date}
+                  </div>
+                  <h3 className="text-2xl sm:text-3xl font-black text-white leading-tight uppercase tracking-tighter">
+                    {STATIC_BLOG_POSTS[0].title}
+                  </h3>
                 </div>
               </div>
-              <h3 className="text-2xl font-black leading-tight text-zinc-900 group-hover:text-[#16a34a] transition-colors">
-                {STATIC_BLOG_POSTS[0].title}
-              </h3>
-            </div>
+            </motion.div>
           )}
 
           {/* Grid of smaller articles */}
-          <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12">
-             {STATIC_BLOG_POSTS.slice(1, 7).map((item, i) => (
-               <div key={i} className="group cursor-pointer" onClick={() => navigate(`/news/${item.id}`)}>
-                  <div className="relative aspect-[4/3] overflow-hidden rounded-[25px] mb-3">
+          <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-12">
+             {STATIC_BLOG_POSTS.slice(1, 5).map((item, i) => (
+               <motion.div 
+                  key={i} 
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  className="group cursor-pointer" 
+                  onClick={() => navigate(`/news/${item.id}`)}
+                >
+                  <div className="relative aspect-[16/10] overflow-hidden rounded-2xl mb-4 shadow-lg">
                     <img 
                       src={item.image} 
                       alt={item.title} 
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
-                    <div className="absolute bottom-3 left-3 bg-zinc-900/80 backdrop-blur-sm px-3 py-1 rounded-full text-[11px] font-black text-white tracking-widest leading-none">
+                    <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black text-zinc-900 tracking-widest leading-none">
                       {item.date}
                     </div>
                   </div>
-                  <h4 className="text-[14px] font-bold text-zinc-900 group-hover:text-[#16a34a] transition-colors leading-snug line-clamp-2">
+                  <h4 className="text-[16px] font-black text-zinc-900 group-hover:text-[#0082c8] transition-colors leading-tight line-clamp-2 uppercase italic tracking-tight">
                     {item.title}
                   </h4>
-               </div>
+               </motion.div>
              ))}
           </div>
         </div>
       </section>
+    </>
+  );
+}
     </>
   );
 }
@@ -467,24 +551,31 @@ function AppContent() {
                   <HomePage onProductSelect={() => {}} onCategorySelect={handleCategorySelect} />
                   
                   {/* Trust Badges Section - Premium Feel */}
-                  <section className="bg-slate-50 border-b border-slate-100">
-                    <div className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-8">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                  <section className="bg-zinc-50/50 border-y border-zinc-100">
+                    <div className="container-custom py-12">
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
                         {[
                           { icon: Truck, title: 'Miễn phí vận chuyển', desc: 'Cho đơn hàng từ 500k' },
-                          { icon: ShieldCheck, title: 'Thanh toán linh hoạt', desc: 'COD, Chuyển khoản, Ví điện tử' },
+                          { icon: ShieldCheck, title: 'Thanh toán an toàn', desc: 'Bảo mật thông tin 100%' },
                           { icon: RefreshCcw, title: 'Đổi trả 30 ngày', desc: 'Dễ dàng và nhanh chóng' },
-                          { icon: Phone, title: 'Hỗ trợ 24/7', desc: 'Hotline: 0917 722 425' },
+                          { icon: Phone, title: 'Hỗ trợ tận tâm', desc: 'Hotline: 0917 722 425' },
                         ].map((badge, idx) => (
-                          <div key={idx} className="flex items-center gap-4 group">
-                            <div className="h-12 w-12 rounded-2xl bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-300">
-                              <badge.icon className="h-6 w-6 text-[#0082c8]" />
+                          <motion.div 
+                            key={idx} 
+                            initial={{ opacity: 0, y: 10 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: idx * 0.1 }}
+                            className="flex items-center gap-4 group"
+                          >
+                            <div className="h-14 w-14 shrink-0 rounded-2xl bg-white flex items-center justify-center shadow-sm border border-zinc-100 group-hover:bg-[#0082c8] group-hover:border-[#0082c8] transition-all duration-500">
+                              <badge.icon className="h-6 w-6 text-[#0082c8] group-hover:text-white transition-colors duration-500" />
                             </div>
                             <div>
-                              <h4 className="text-sm font-black uppercase tracking-tight text-slate-900">{badge.title}</h4>
-                              <p className="text-[11px] font-medium text-slate-400">{badge.desc}</p>
+                              <h4 className="text-[11px] sm:text-[12px] font-black uppercase tracking-widest text-zinc-900 mb-1">{badge.title}</h4>
+                              <p className="text-[10px] sm:text-[11px] font-medium text-zinc-400">{badge.desc}</p>
                             </div>
-                          </div>
+                          </motion.div>
                         ))}
                       </div>
                     </div>
