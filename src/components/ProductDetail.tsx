@@ -444,12 +444,12 @@ export const ProductDetail: React.FC = () => {
               </div>
 
               <div className="space-y-3 pt-6 border-t border-zinc-100">
-                <div className="flex items-baseline gap-4">
-                  <span className="text-5xl font-bold text-[#ff3b30] tracking-tighter">
+                <div className="flex items-baseline gap-2 sm:gap-4 flex-nowrap">
+                  <span className="text-3xl sm:text-5xl font-bold text-[#ff3b30] tracking-tighter whitespace-nowrap">
                     {(product.discountPrice || product.price).toLocaleString('vi-VN')}₫
                   </span>
                   {product.discountPrice && (
-                    <span className="text-2xl text-zinc-300 line-through font-bold">
+                    <span className="text-lg sm:text-2xl text-zinc-300 line-through font-bold whitespace-nowrap">
                       {product.price.toLocaleString('vi-VN')}₫
                     </span>
                   )}
