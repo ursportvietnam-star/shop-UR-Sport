@@ -3,15 +3,18 @@ import {
   LayoutDashboard, Package, ShoppingBag, Users, MessageSquare,
   Image as ImageIcon, Settings, Plus, Trash2, Edit2, LogOut,
   TrendingUp, Eye, DollarSign, BarChart2, Menu, X, Bell,
-  Search, ChevronRight, Upload, Star, AlertCircle, Copy, ExternalLink, Code2, Check as CheckIcon
+  Search, ChevronRight, Upload, Star, AlertCircle, Copy, ExternalLink, Code2, Check as CheckIcon, Bot, Sparkles
 } from 'lucide-react';
 import { collection, onSnapshot, query, orderBy, deleteDoc, doc, setDoc, getDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
-import { PRODUCTS as STATIC_PRODUCTS } from '../data';
+import { PRODUCTS as STATIC_PRODUCTS, STATIC_BLOG_POSTS, STATIC_ORDERS, STATIC_CUSTOMERS } from '../data';
 import { ImageUpload } from './ImageUpload';
 import { AddProductModal } from './AddProductModal';
 import { AddBlogPostModal } from './AddBlogPostModal';
 import { OrderDetailModal } from './OrderDetailModal';
+import { AIProductAssistant } from './AIProductAssistant';
+import { AIBlogAssistant } from './AIBlogAssistant';
+import { AIProductData, AIBlogData } from '../lib/gemini';
 import { useAuth } from '../AuthContext';
 import { Product, BlogPost, Order } from '../types';
 import { toast } from 'sonner';
@@ -23,12 +26,14 @@ interface MediaItem {
   createdAt: any;
 }
 
-type AdminTab = 'dashboard' | 'products' | 'orders' | 'customers' | 'blog' | 'media' | 'settings';
+type AdminTab = 'dashboard' | 'products' | 'orders' | 'customers' | 'blog' | 'media' | 'settings' | 'ai-product' | 'ai-blog';
 
 const NAV_ITEMS: { id: AdminTab; label: string; icon: React.FC<any> }[] = [
   { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },
   { id: 'products', label: 'Sản phẩm', icon: Package },
+  { id: 'ai-product', label: 'AI Sản Phẩm', icon: Bot },
   { id: 'blog', label: 'Blog', icon: MessageSquare },
+  { id: 'ai-blog', label: 'AI Blog', icon: Sparkles },
   { id: 'orders', label: 'Đơn hàng', icon: ShoppingBag },
   { id: 'customers', label: 'Khách hàng', icon: Users },
   { id: 'media', label: 'Thư viện ảnh', icon: ImageIcon },
@@ -74,9 +79,9 @@ export const AdminPanel: React.FC = () => {
     const q = query(collection(db, 'blogPosts'), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as BlogPost[];
-      setBlogPosts(data);
+      setBlogPosts(data.length > 0 ? data : STATIC_BLOG_POSTS);
     }, () => {
-      setBlogPosts([]);
+      setBlogPosts(STATIC_BLOG_POSTS);
     });
     return () => unsubscribe();
   }, [isAdmin]);
@@ -86,9 +91,9 @@ export const AdminPanel: React.FC = () => {
     const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Order[];
-      setOrders(data);
+      setOrders(data.length > 0 ? data : STATIC_ORDERS);
     }, () => {
-      setOrders([]);
+      setOrders(STATIC_ORDERS);
     });
     return () => unsubscribe();
   }, [isAdmin]);
@@ -230,6 +235,42 @@ export const AdminPanel: React.FC = () => {
       ? product.category.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')
       : 'san-pham';
     window.open(`/apparel/${catSlug}/${product.slug}`, '_blank');
+  };
+
+  const handleApplyAIProduct = (data: AIProductData) => {
+    const newProduct: Partial<Product> = {
+      name: data.name,
+      slug: data.slug,
+      description: data.descriptionHtml,
+      seoTitle: data.metaTitle,
+      metaDescription: data.metaDescription,
+      keywords: data.seoKeywords,
+      specifications: data.descriptionHtml,
+      brand: 'UR SPORT',
+      origin: 'Việt Nam',
+      material: 'Cotton Premium',
+      style: 'Slim Fit',
+      fashionStyle: 'Thể thao, Cơ bản',
+      collarType: 'Cổ tròn'
+    };
+    setEditingProduct(newProduct as Product);
+    setIsAddModalOpen(true);
+    toast.success('Đã áp dụng nội dung AI vào form sản phẩm!');
+  };
+
+  const handleApplyAIBlog = (data: AIBlogData) => {
+    const newBlog: Partial<BlogPost> = {
+      title: data.title,
+      slug: data.slug,
+      content: data.contentHtml,
+      excerpt: data.metaDescription,
+      category: 'Xu hướng thời trang',
+      author: 'UR SPORT Team',
+      date: new Date().toLocaleDateString('vi-VN')
+    };
+    setEditingBlogPost(newBlog as BlogPost);
+    setIsBlogModalOpen(true);
+    toast.success('Đã áp dụng nội dung AI vào form bài viết!');
   };
 
   if (authLoading) {
@@ -792,13 +833,53 @@ export const AdminPanel: React.FC = () => {
 
           {/* ─── CUSTOMERS ─── */}
           {activeTab === 'customers' && (
-            <div className="bg-[#13161f] border border-white/5 rounded-2xl p-16 flex flex-col items-center text-center">
-              <div className="h-20 w-20 bg-purple-500/10 rounded-full flex items-center justify-center mb-5">
-                <Users className="h-10 w-10 text-purple-400" />
+            <div className="space-y-4">
+              <div className="bg-[#13161f] border border-white/5 rounded-2xl overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-white/5">
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Khách hàng</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Email</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Số điện thoại</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Đơn hàng</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Tổng chi tiêu</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/[0.04]">
+                      {STATIC_CUSTOMERS.map(customer => (
+                        <tr key={customer.id} className="hover:bg-white/[0.02] transition-all">
+                          <td className="px-6 py-4">
+                            <p className="text-white text-sm font-bold">{customer.name}</p>
+                            <p className="text-white/30 text-[11px] font-medium">#{customer.id}</p>
+                          </td>
+                          <td className="px-6 py-4 text-white/70 text-sm font-medium">{customer.email}</td>
+                          <td className="px-6 py-4 text-white/70 text-sm font-medium">{customer.phone}</td>
+                          <td className="px-6 py-4">
+                            <span className="px-3 py-1 bg-blue-500/10 text-blue-400 text-xs font-black rounded-lg">
+                              {customer.ordersCount} đơn
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <p className="text-[#0082c8] font-black text-sm">{customer.totalSpent.toLocaleString('vi-VN')}₫</p>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-              <h3 className="text-white font-black text-xl uppercase tracking-tight mb-2">Danh sách khách hàng</h3>
-              <p className="text-white/30 font-medium max-w-xs">Thông tin khách hàng sẽ được hiển thị ở đây.</p>
             </div>
+          )}
+
+          {/* ─── AI PRODUCT ASSISTANT ─── */}
+          {activeTab === 'ai-product' && (
+            <AIProductAssistant onApply={handleApplyAIProduct} />
+          )}
+
+          {/* ─── AI BLOG ASSISTANT ─── */}
+          {activeTab === 'ai-blog' && (
+            <AIBlogAssistant onApply={handleApplyAIBlog} />
           )}
 
           {/* ─── MEDIA ─── */}

@@ -513,7 +513,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         collarType: formData.collarType
       };
 
-      if (product) {
+      if (product && product.id) {
         await updateDoc(doc(db, 'products', product.id), payload);
         toast.success('Cập nhật sản phẩm thành công!');
       } else {

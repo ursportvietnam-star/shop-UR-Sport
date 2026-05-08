@@ -10,7 +10,10 @@ import { AdminPanel } from './components/AdminPanel';
 import { NewsPage } from './components/NewsPage';
 import { Footer } from './components/Footer';
 import { FloatingContactMenu } from './components/FloatingContactMenu';
-import { PRODUCTS, CATEGORIES, CATEGORY_METADATA } from './data';
+import { FlashSale } from './components/FlashSale';
+import { BestSeller } from './components/BestSeller';
+import { FULLCollectionSection } from './components/FULLCollectionSection';
+import { PRODUCTS, CATEGORIES, CATEGORY_METADATA, STATIC_BLOG_POSTS } from './data';
 import { Product, Category } from './types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AuthProvider } from './AuthContext';
@@ -40,76 +43,9 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
     <>
       <Hero onShopClick={() => navigate('/shop')} />
       
-      {/* Featured Section - Possibly interested */}
-      <section className="mx-auto max-w-[1600px] px-4 pt-0 pb-4 sm:px-6 lg:px-8 xl:px-10 bg-white">
-        <div className="flex items-center justify-center gap-4 mb-6">
-          <div className="h-px bg-zinc-200 flex-1" />
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tighter text-zinc-900 leading-none whitespace-nowrap">
-            Có thể bạn sẽ <span className="text-[#0082c8]">quan tâm</span>
-          </h2>
-          <div className="h-px bg-zinc-200 flex-1" />
-        </div>
-
-        <div className="flex justify-center mb-10">
-          <div className="inline-flex items-center p-1 bg-white border border-zinc-200 rounded-full shadow-sm">
-            <button 
-              onClick={() => setFeaturedFilter('Most Popular')}
-              className={cn(
-                "px-6 py-2 text-sm font-bold rounded-full transition-all whitespace-nowrap",
-                featuredFilter === 'Most Popular' ? "bg-white text-black shadow-md border border-zinc-100" : "text-zinc-500 hover:text-zinc-800"
-              )}
-            >
-              Phổ biến nhất
-            </button>
-            <button 
-              onClick={() => setFeaturedFilter('Bestsellers')}
-              className={cn(
-                "px-6 py-2 text-sm font-bold rounded-full transition-all whitespace-nowrap",
-                featuredFilter === 'Bestsellers' ? "bg-white text-black shadow-md border border-zinc-100" : "text-zinc-500 hover:text-zinc-800"
-              )}
-            >
-              Bán chạy nhất
-            </button>
-            <button 
-              onClick={() => setFeaturedFilter('On Sale')}
-              className={cn(
-                "px-6 py-2 text-sm font-bold rounded-full transition-all whitespace-nowrap",
-                featuredFilter === 'On Sale' ? "bg-white text-black shadow-md border border-zinc-100" : "text-zinc-500 hover:text-zinc-800"
-              )}
-            >
-              Đang giảm giá
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-          {products
-            .filter(p => {
-              if (featuredFilter === 'Most Popular') return p.rating >= 4.5;
-              if (featuredFilter === 'Bestsellers') return p.isBestSeller;
-              if (featuredFilter === 'On Sale') return p.discountPrice;
-              return true;
-            })
-            .slice(0, 6)
-            .map((product) => (
-              <ProductCard 
-                key={product.id} 
-                product={product} 
-                onClick={() => navigate(getProductUrl(product))}
-              />
-            ))}
-        </div>
-
-        <div className="flex justify-center mt-5">
-          <Button 
-            variant="outline" 
-            className="rounded-full border-zinc-200 text-zinc-900 hover:bg-zinc-50 font-bold px-10 h-10 text-[14px] shadow-sm transform transition hover:scale-105"
-            onClick={() => navigate('/shop')}
-          >
-            Xem thêm
-          </Button>
-        </div>
-      </section>
+      <FlashSale products={products} />
+      <FULLCollectionSection onCategorySelect={onCategorySelect} />
+      <BestSeller products={products} />
 
       {/* In Demand Section - Athletic Shirts */}
       <section className="mx-auto max-w-[1440px] px-4 pt-20 pb-12 sm:px-6 lg:px-8 bg-white">
@@ -237,62 +173,27 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Large Featured Article */}
-          <div className="lg:col-span-5 group cursor-pointer" onClick={() => navigate('/news/1')}>
-            <div className="relative aspect-[4/3] sm:aspect-square lg:aspect-auto lg:h-[450px] overflow-hidden rounded-[40px] mb-6">
-              <img 
-                src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=1000" 
-                alt="Featured News" 
-                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-              />
-              <div className="absolute bottom-6 left-6 bg-blue-600/90 backdrop-blur-md px-4 py-1.5 rounded-full text-[11px] font-black text-white uppercase tracking-widest shadow-lg leading-none">
-                11/06/2026
+          {STATIC_BLOG_POSTS[0] && (
+            <div className="lg:col-span-5 group cursor-pointer" onClick={() => navigate(`/news/${STATIC_BLOG_POSTS[0].id}`)}>
+              <div className="relative aspect-[4/3] sm:aspect-square lg:aspect-auto lg:h-[450px] overflow-hidden rounded-[40px] mb-6">
+                <img 
+                  src={STATIC_BLOG_POSTS[0].image} 
+                  alt={STATIC_BLOG_POSTS[0].title} 
+                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                />
+                <div className="absolute bottom-6 left-6 bg-blue-600/90 backdrop-blur-md px-4 py-1.5 rounded-full text-[11px] font-black text-white uppercase tracking-widest shadow-lg leading-none">
+                  {STATIC_BLOG_POSTS[0].date}
+                </div>
               </div>
+              <h3 className="text-2xl font-black leading-tight text-zinc-900 group-hover:text-[#16a34a] transition-colors">
+                {STATIC_BLOG_POSTS[0].title}
+              </h3>
             </div>
-            <h3 className="text-2xl font-black leading-tight text-zinc-900 group-hover:text-[#16a34a] transition-colors">
-              Dành cho những người yêu thích âm thanh và chuyển động: Trải nghiệm không giới hạn
-            </h3>
-          </div>
+          )}
 
           {/* Grid of smaller articles */}
           <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12">
-             {[
-               {
-                 id: 2,
-                 title: "Thế giới trò chơi Nintendo Wii mới cập bến",
-                 image: "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&q=80&w=600",
-                 date: "10/06/2026"
-               },
-               {
-                 id: 3,
-                 title: "Mẫu lều WeatherMaster nổi tiếng đã có mặt",
-                 image: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=600",
-                 date: "09/06/2026"
-               },
-               {
-                 id: 4,
-                 title: "Những bản nhạc huyền thoại của B.B.King",
-                 image: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=80&w=600",
-                 date: "08/06/2026"
-               },
-               {
-                 id: 5,
-                 title: "Tìm kiếm điện thoại Nokia phím bấm hoài cổ",
-                 image: "https://images.unsplash.com/photo-1556906781-9a412961c28c?auto=format&fit=crop&get=80&w=600",
-                 date: "07/06/2026"
-               },
-               {
-                 id: 6,
-                 title: "Chuẩn bị cho những tình huống khẩn cấp bất ngờ",
-                 image: "https://images.unsplash.com/photo-1518310323263-d3434682054a?auto=format&fit=crop&q=80&w=600",
-                 date: "06/06/2026"
-               },
-               {
-                 id: 7,
-                 title: "Xe đạp Drifter Cruiser: Đẳng cấp Mỹ cổ điển",
-                 image: "https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?auto=format&fit=crop&q=80&w=600",
-                 date: "05/06/2026"
-               }
-             ].map((item, i) => (
+             {STATIC_BLOG_POSTS.slice(1, 7).map((item, i) => (
                <div key={i} className="group cursor-pointer" onClick={() => navigate(`/news/${item.id}`)}>
                   <div className="relative aspect-[4/3] overflow-hidden rounded-[25px] mb-3">
                     <img 

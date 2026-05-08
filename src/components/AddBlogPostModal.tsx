@@ -297,7 +297,7 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
         createdAt: serverTimestamp(),
       };
 
-      if (post?.id) {
+      if (post && post.id) {
         await updateDoc(doc(db, 'blogPosts', post.id), postData as any);
         toast.success('Bài viết đã được cập nhật.');
       } else {

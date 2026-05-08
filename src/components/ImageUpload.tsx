@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Upload, X, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
+import { Upload, X, CheckCircle2, Loader2, AlertCircle, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 

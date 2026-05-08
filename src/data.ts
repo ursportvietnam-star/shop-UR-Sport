@@ -1,4 +1,4 @@
-import { Category, Product, CategoryInfo } from './types';
+import { Category, Product, CategoryInfo, BlogPost, Order } from './types';
 
 export const CATEGORY_METADATA: CategoryInfo[] = [
   { 
@@ -167,9 +167,9 @@ export const PRODUCTS: Product[] = [
   // --- ÁO THUN THỂ THAO NAM (8 products) ---
   {
     id: 'att-1',
-    slug: 'ao-thun-the-thao-pro-dry',
-    name: 'Áo Thun Thể Thao Pro-Dry',
-    description: 'Công nghệ thoát ẩm siêu tốc, giữ cơ thể luôn khô thoáng khi tập luyện.',
+    slug: 'ao-thun-the-thao-nam-chay-bo-gym-pro-dry-khang-khuan',
+    name: 'Áo Thun Thể Thao Nam Chạy Bộ, Tập Gym Cao Cấp Pro-Dry Kháng Khuẩn',
+    description: 'Áo thun thể thao nam Pro-Dry với công nghệ dệt 3D siêu thoáng khí, thấm hút mồ hôi cực nhanh, phù hợp cho chạy bộ và tập gym. Thiết kế ôm body khỏe khoắn, chất liệu thun lạnh siêu nhẹ giúp bạn thoải mái trong mọi cử động.',
     price: 350000,
     discountPrice: 280000,
     category: 'Áo thun thể thao nam',
@@ -179,14 +179,22 @@ export const PRODUCTS: Product[] = [
     stock: 100,
     rating: 4.9,
     reviewsCount: 250,
-    features: ['Thoát ẩm Pro-Dry', 'Vải siêu nhẹ', 'Co giãn 4 chiều'],
-    isBestSeller: true
+    features: ['Công nghệ thoát ẩm Pro-Dry siêu tốc', 'Vải siêu nhẹ co giãn 4 chiều', 'Kháng khuẩn, khử mùi hôi hiệu quả', 'Phù hợp: Chạy bộ, Gym, Cầu lông'],
+    isBestSeller: true,
+    seoTitle: 'Áo Thun Thể Thao Nam Pro-Dry | Thoáng Mát, Tập Gym & Chạy Bộ | UR Sport',
+    metaDescription: 'Mua ngay áo thun thể thao nam Pro-Dry cao cấp. Áo tập gym, chạy bộ nam thoáng mát, co giãn 4 chiều, khử mùi hôi. Miễn phí vận chuyển toàn quốc!',
+    keywords: 'áo thun thể thao nam, áo thể thao nam, áo chạy bộ nam, áo tập gym nam, áo thun lạnh thể thao',
+    specifications: '<p><strong>Chất liệu:</strong> 90% Polyester, 10% Spandex<br/><strong>Kiểu dáng:</strong> Slim-fit ôm body<br/><strong>Độ co giãn:</strong> 4 chiều<br/><strong>Trọng lượng:</strong> 120g</p>',
+    brand: 'UR Sport',
+    origin: 'Việt Nam',
+    material: 'Thun lạnh cao cấp',
+    fashionStyle: 'Thể thao năng động'
   },
   {
     id: 'att-2',
-    slug: 'ao-tanktop-tap-gym-urarmor',
-    name: 'Áo Tanktop Tập Gym UrArmor',
-    description: 'Thiết kế khoét sâu nách, giúp tối ưu chuyển động và khoe trọn cơ bắp.',
+    slug: 'ao-tanktop-nam-tap-gym-khoe-co-bap-urarmor',
+    name: 'Áo Tanktop Nam Tập Gym, Khoét Nách Sâu Khoe Cơ Bắp UrArmor',
+    description: 'Áo tanktop nam tập gym thiết kế khoét nách sâu cá tính, chất liệu vải lưới thoáng khí tuyệt đối. Giải pháp hoàn hảo cho những buổi tập cơ lưng xô (Back day) hoặc tập vai, giúp tối ưu biên độ chuyển động.',
     price: 290000,
     category: 'Áo thun thể thao nam',
     images: ['https://images.unsplash.com/photo-1541534741688-6078c64b5cc5?w=800'],
@@ -195,13 +203,19 @@ export const PRODUCTS: Product[] = [
     stock: 60,
     rating: 4.7,
     reviewsCount: 110,
-    features: ['Khoét sâu nách', 'Vải lưới thoáng khí', 'Nhanh khô']
+    features: ['Thiết kế khoét sâu khoe cơ bắp', 'Vải lưới tổ ong siêu thoáng khí', 'Trọng lượng siêu nhẹ, nhanh khô'],
+    seoTitle: 'Áo Tanktop Nam Tập Gym Khoét Sâu Khoe Cơ Bắp UrArmor | UR Sport',
+    metaDescription: 'Áo tanktop nam tập gym UR Sport chất liệu thoáng khí, thấm hút mồ hôi, form dáng khoét nách cực ngầu giúp khoe trọn vóc dáng nam tính.',
+    keywords: 'áo tanktop nam, áo ba lỗ nam tập gym, áo gym nam, áo khoét nách nam, áo thun thể thao không tay',
+    brand: 'UR Sport',
+    origin: 'Việt Nam',
+    material: 'Lưới Polyester'
   },
   {
     id: 'att-3',
-    slug: 'ao-compression-dai-tay',
-    name: 'Áo Compression Dài Tay',
-    description: 'Áo ôm sát cơ thể, hỗ trợ tuần hoàn máu và bảo vệ cơ bắp khi tập nặng.',
+    slug: 'ao-compression-nam-dai-tay-giu-nhiet-tap-gym-da-bong',
+    name: 'Áo Compression Nam Dài Tay Giữ Nhiệt, Trợ Lực Tập Gym & Đá Bóng',
+    description: 'Áo lót thể thao (Compression) dài tay giúp giữ nhiệt cơ thể, ôm sát tạo áp lực nhẹ lên cơ bắp giúp kích thích tuần hoàn máu, giảm mỏi cơ sau khi tập luyện cường độ cao.',
     price: 450000,
     category: 'Áo thun thể thao nam',
     images: ['https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800'],
@@ -210,13 +224,18 @@ export const PRODUCTS: Product[] = [
     stock: 40,
     rating: 4.8,
     reviewsCount: 95,
-    features: ['Công nghệ nén cơ', 'Giữ nhiệt tốt', 'Chống tia UV']
+    features: ['Công nghệ nén cơ (Compression)', 'Giữ nhiệt tốt trong mùa đông', 'Chống tia UV (UPF 50+) khi hoạt động ngoài trời'],
+    seoTitle: 'Áo Compression Dài Tay Nam Giữ Nhiệt, Tập Gym, Bóng Đá | UR Sport',
+    metaDescription: 'Áo compression dài tay nam cao cấp. Hỗ trợ trợ lực, nén cơ bắp, giữ nhiệt cực tốt. Phù hợp cho tập gym, đá bóng và chạy bộ mùa đông.',
+    keywords: 'áo compression nam, áo lót thể thao nam dài tay, áo giữ nhiệt thể thao nam, áo body nam tập gym, áo đá bóng tay dài',
+    brand: 'UR Sport',
+    material: 'Spandex co giãn cao'
   },
   {
     id: 'att-4',
-    slug: 'ao-chay-bo-phan-quang-nightrun',
-    name: 'Áo Chạy Bộ Phản Quang NightRun',
-    description: 'Trang bị dải phản quang quanh áo, đảm bảo an toàn tuyệt đối khi chạy ban đêm.',
+    slug: 'ao-chay-bo-nam-phan-quang-cao-cap-nightrun',
+    name: 'Áo Chạy Bộ Nam Phản Quang Chống Nước Nhẹ NightRun',
+    description: 'Thiết kế riêng cho các runner chạy ban đêm hoặc sáng sớm. Áo trang bị dải phản quang 360 độ siêu sáng, kết hợp chất liệu mesh thoáng khí đỉnh cao giúp bạn an toàn và thoải mái chinh phục mọi cự ly.',
     price: 380000,
     category: 'Áo thun thể thao nam',
     images: ['https://images.unsplash.com/photo-1530143311094-34d807799e8f?w=800'],
@@ -225,13 +244,17 @@ export const PRODUCTS: Product[] = [
     stock: 35,
     rating: 4.6,
     reviewsCount: 50,
-    features: ['Phản quang 360 độ', 'Vải mesh siêu thoáng', 'Dễ giặt ủi']
+    features: ['Dải phản quang 360 độ siêu sáng', 'Chống nước nhẹ (Water-repellent)', 'Vải mesh hở siêu thoáng mát'],
+    seoTitle: 'Áo Chạy Bộ Nam Phản Quang NightRun Cao Cấp | UR Sport',
+    metaDescription: 'Bảo vệ an toàn khi chạy đêm với áo chạy bộ nam phản quang NightRun. Chất liệu nhẹ mát, thấm mồ hôi cực tốt. Phù hợp chạy bộ, đạp xe.',
+    keywords: 'áo chạy bộ nam, áo thể thao phản quang, áo chạy bộ đêm, áo phản quang nam, quần áo chạy bộ',
+    brand: 'UR Sport'
   },
   {
     id: 'att-5',
-    slug: 'ao-training-v-neck-sport',
-    name: 'Áo Training V-Neck Sport',
-    description: 'Thiết kế cổ chữ V trẻ trung, năng động, phù hợp cho mọi bộ môn thể thao.',
+    slug: 'ao-thun-the-thao-nam-co-v-tre-trung-v-neck-sport',
+    name: 'Áo Thun Thể Thao Nam Cổ V Trẻ Trung, V-Neck Sport Kháng Khuẩn',
+    description: 'Sự kết hợp hoàn hảo giữa thời trang và tính năng. Áo thun cổ chữ V tinh tế giúp cổ trông thon dài hơn, chất vải dệt kim cao cấp kháng khuẩn, chống ám mùi thích hợp mặc đi tập lẫn dạo phố.',
     price: 330000,
     category: 'Áo thun thể thao nam',
     images: ['https://images.unsplash.com/photo-1594381898411-846e7d193883?w=800'],
@@ -240,8 +263,12 @@ export const PRODUCTS: Product[] = [
     stock: 45,
     rating: 4.5,
     reviewsCount: 40,
-    features: ['Cổ V thời trang', 'Kháng khuẩn', 'Không ám mùi'],
-    isNew: true
+    features: ['Thiết kế Cổ V thời thượng', 'Kháng khuẩn và ngăn ngừa mùi mồ hôi', 'Phù hợp đa phong cách: Thể thao & Casual'],
+    isNew: true,
+    seoTitle: 'Áo Thun Thể Thao Nam Cổ V Cao Cấp | V-Neck Sport | UR Sport',
+    metaDescription: 'Sở hữu ngay áo thun thể thao nam cổ V sành điệu. Chất vải kháng khuẩn, thiết kế nam tính, phù hợp cho việc đi tập và mặc thường ngày.',
+    keywords: 'áo thun thể thao nam cổ v, áo thun nam cổ tim thể thao, áo thun nam tập gym cổ v',
+    brand: 'UR Sport'
   },
   {
     id: 'att-6',
@@ -294,9 +321,9 @@ export const PRODUCTS: Product[] = [
   // --- ÁO POLO NAM (8 products) ---
   {
     id: 'pl-1',
-    slug: 'ao-polo-golf-classic-lux',
-    name: 'Áo Polo Golf Classic Lux',
-    description: 'Form dáng sang trọng, chất liệu vải cá sấu cao cấp mang lại vẻ ngoài đẳng cấp.',
+    slug: 'ao-polo-nam-the-thao-golf-classic-lux-cao-cap',
+    name: 'Áo Polo Nam Thể Thao Golf Classic Lux Cao Cấp Chống Nhăn',
+    description: 'Áo polo nam cao cấp chuyên dụng cho Golf và dạo phố. Form dáng sang trọng, chất liệu vải cá sấu (Pique Cotton) thoáng mát, mang lại vẻ ngoài đẳng cấp và lịch lãm cho phái mạnh.',
     price: 450000,
     category: 'Áo polo nam',
     images: ['https://images.unsplash.com/photo-1586363104862-3a5e2ab60d99?w=800'],
@@ -305,14 +332,20 @@ export const PRODUCTS: Product[] = [
     stock: 45,
     rating: 4.9,
     reviewsCount: 150,
-    features: ['Vải Pique cao cấp', 'Chống nhăn', 'Cổ áo cứng cáp'],
-    isBestSeller: true
+    features: ['Vải Pique Cotton cao cấp', 'Chống nhăn tuyệt đối', 'Cổ áo cứng cáp, không mất form'],
+    isBestSeller: true,
+    seoTitle: 'Áo Polo Nam Cao Cấp Golf Classic Lux | UR Sport',
+    metaDescription: 'Mua áo polo nam thể thao cao cấp cho Golfer. Áo thun có cổ form chuẩn, vải cá sấu mềm mịn, thoáng mát, chống nhăn. Miễn phí đổi trả 7 ngày.',
+    keywords: 'áo polo nam, áo thun có cổ nam, áo golf nam, áo polo the thao nam, áo polo nam cao cấp',
+    specifications: '<p><strong>Chất liệu:</strong> 95% Pique Cotton, 5% Spandex<br/><strong>Kiểu dáng:</strong> Regular-fit<br/><strong>Cổ áo:</strong> Bẻ cứng cáp</p>',
+    brand: 'UR Sport',
+    style: 'Thanh lịch, Sang trọng'
   },
   {
     id: 'pl-2',
-    slug: 'ao-polo-sporty-mesh',
-    name: 'Áo Polo Sporty Mesh',
-    description: 'Sự kết hợp giữa thanh lịch của polo và sự năng động của đồ thể thao.',
+    slug: 'ao-polo-nam-the-thao-sporty-mesh-thoang-khi',
+    name: 'Áo Polo Nam Thể Thao Sporty Mesh Thoáng Khí',
+    description: 'Sự kết hợp hoàn hảo giữa vẻ thanh lịch của áo polo truyền thống và sự năng động của đồ thể thao. Áo polo nam Sporty Mesh giúp bạn tự tự tin từ phòng tập đến những buổi gặp gỡ bạn bè.',
     price: 420000,
     discountPrice: 380000,
     category: 'Áo polo nam',
@@ -322,13 +355,17 @@ export const PRODUCTS: Product[] = [
     stock: 30,
     rating: 4.7,
     reviewsCount: 88,
-    features: ['Vải thun lạnh', 'Logo thêu tinh xảo', 'Thoáng khí']
+    features: ['Vải thun lạnh Sporty Mesh', 'Logo thêu tinh xảo 3D', 'Siêu thoáng khí, nhanh khô'],
+    seoTitle: 'Áo Polo Nam Thể Thao Sporty Mesh | Áo Có Cổ Nam Đẹp | UR Sport',
+    metaDescription: 'Áo polo nam thể thao Sporty Mesh cực thoáng mát, thấm mồ hôi tốt. Sự lựa chọn hoàn hảo cho phong cách năng động nhưng vẫn lịch sự. Đặt hàng ngay!',
+    keywords: 'áo polo nam thể thao, áo thun nam có cổ thể thao, áo thun lạnh có cổ, áo polo nam đẹp',
+    brand: 'UR Sport'
   },
   {
     id: 'pl-3',
-    slug: 'ao-polo-phoi-bo-tay-stripe',
-    name: 'Áo Polo Phối Bo Tay Stripe',
-    description: 'Điểm nhấn kẻ sọc ở cổ và tay áo mang lại nét trẻ trung, hiện đại.',
+    slug: 'ao-polo-nam-phoi-bo-tay-stripe-thoi-trang',
+    name: 'Áo Polo Nam Phối Bo Tay Stripe Kẻ Sọc Thời Trang',
+    description: 'Điểm nhấn kẻ sọc tinh tế ở cổ và bo tay áo mang lại nét trẻ trung, hiện đại. Áo polo nam Stripe là một item không thể thiếu cho những buổi dạo phố cuối tuần.',
     price: 480000,
     category: 'Áo polo nam',
     images: ['https://images.unsplash.com/photo-1598961942613-28974b399a9a?w=800'],
@@ -337,14 +374,18 @@ export const PRODUCTS: Product[] = [
     stock: 25,
     rating: 4.6,
     reviewsCount: 42,
-    features: ['Bo tay dệt sọc', 'Cotton mịn', 'Form Slim Fit'],
-    isNew: true
+    features: ['Bo tay dệt sọc thể thao', 'Cotton mịn màng thân thiện với da', 'Form Slim Fit tôn dáng'],
+    isNew: true,
+    seoTitle: 'Áo Polo Nam Kẻ Sọc Phối Bo Tay Thời Trang | UR Sport',
+    metaDescription: 'Áo polo nam viền kẻ sọc thời thượng, thiết kế bo tay hiện đại. Áo polo dáng Slim fit giúp tôn lên nét nam tính, trẻ trung.',
+    keywords: 'áo polo nam kẻ sọc, áo thun có cổ phối viền, áo polo nam trẻ trung, áo thun cổ bẻ nam',
+    brand: 'UR Sport'
   },
   {
     id: 'pl-4',
-    slug: 'ao-polo-zipper-tech',
-    name: 'Áo Polo Zipper Tech',
-    description: 'Thay thế nút bấm bằng dây kéo tinh tế, tạo nên phong cách tương lai.',
+    slug: 'ao-polo-nam-zipper-tech-khoa-keo',
+    name: 'Áo Polo Nam Zipper Tech Khóa Kéo Tương Lai',
+    description: 'Thay thế nút bấm truyền thống bằng dây kéo kim loại tinh tế, áo polo nam Zipper Tech tạo nên phong cách thời trang Tech-wear tương lai đầy ấn tượng và khác biệt.',
     price: 520000,
     category: 'Áo polo nam',
     images: ['https://images.unsplash.com/photo-1626497748470-2819d9ca7ba3?w=800'],
@@ -353,13 +394,17 @@ export const PRODUCTS: Product[] = [
     stock: 20,
     rating: 4.8,
     reviewsCount: 30,
-    features: ['Khóa kéo kim loại', 'Vải Spandex co giãn', 'Thiết kế Tech-wear']
+    features: ['Khóa kéo kim loại chống gỉ', 'Vải Spandex co giãn đàn hồi cao', 'Thiết kế tối giản mang hơi hướng Tech-wear'],
+    seoTitle: 'Áo Polo Nam Khóa Kéo Zipper Tech Độc Đáo | UR Sport',
+    metaDescription: 'Phá cách với áo polo nam khóa kéo Zipper Tech. Vải Spandex co giãn 4 chiều, thiết kế hiện đại, độc quyền tại UR Sport.',
+    keywords: 'áo polo nam khóa kéo, áo thun nam có cổ khóa kéo, áo polo nam cao cấp độc lạ, phong cách techwear nam',
+    brand: 'UR Sport'
   },
   {
     id: 'pl-5',
-    slug: 'ao-polo-knit-texture',
-    name: 'Áo Polo Knit Texture',
-    description: 'Vải dệt kim có vân nổi độc đáo, tạo cảm giác dày dặn và sang trọng.',
+    slug: 'ao-polo-nam-det-kim-knit-texture',
+    name: 'Áo Polo Nam Dệt Kim Knit Texture Sang Trọng',
+    description: 'Bề mặt vải dệt kim (Knit) với cấu trúc vân nổi độc đáo, tạo cảm giác áo rất dày dặn, đứng form và toát lên vẻ sang trọng quyền lực cho người mặc.',
     price: 550000,
     category: 'Áo polo nam',
     images: ['https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800'],
@@ -368,7 +413,11 @@ export const PRODUCTS: Product[] = [
     stock: 15,
     rating: 4.5,
     reviewsCount: 20,
-    features: ['Dệt kim Texture', 'Giữ form tốt', 'Ấm áp']
+    features: ['Chất liệu dệt kim Texture cao cấp', 'Giữ form áo xuất sắc sau nhiều lần giặt', 'Giữ ấm nhẹ trong mùa thu đông'],
+    seoTitle: 'Áo Polo Nam Dệt Kim Knit Texture Cao Cấp | UR Sport',
+    metaDescription: 'Nâng tầm phong cách với áo polo nam dệt kim Knit Texture sang trọng. Chất liệu cao cấp, vân nổi tinh tế. Lựa chọn số 1 của quý ông.',
+    keywords: 'áo polo dệt kim nam, áo len mỏng có cổ nam, áo polo nam thu đông, áo thun nam cao cấp',
+    brand: 'UR Sport'
   },
   {
     id: 'pl-6',
@@ -667,4 +716,41 @@ export const PRODUCTS: Product[] = [
     reviewsCount: 55,
     features: ['Cao su tự nhiên', '5 mức kháng lực', 'Tặng kèm túi đựng']
   }
+];
+
+export const BANNERS = [
+  { id: 1, image: 'https://images.unsplash.com/photo-1544919982-b61976f0ba43?auto=format&fit=crop&q=80&w=2000', title: 'HIỆU SUẤT VƯỢT TRỘI' },
+  { id: 2, image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&q=80&w=2000', title: 'THỜI TRANG ĐỈNH CAO' },
+  { id: 3, image: 'https://images.unsplash.com/photo-1554568218-0f1715e72254?auto=format&fit=crop&q=80&w=2000', title: 'BỘ SƯU TẬP MỚI' },
+  { id: 4, image: 'https://images.unsplash.com/photo-1605296867304-46d5465a13f1?auto=format&fit=crop&q=80&w=2000', title: 'PHÁ VỠ GIỚI HẠN' },
+  { id: 5, image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=2000', title: 'TỰ TIN TỎA SÁNG' }
+];
+
+export const STATIC_BLOG_POSTS: BlogPost[] = [
+  { id: 'bp1', slug: 'bi-quyet-chon-ao-thun-the-thao-nam', title: 'Bí Quyết Chọn Áo Thun Thể Thao Nam Thoáng Mát, Chuẩn Form 2026', category: 'Hướng dẫn', author: 'UR Sport', date: '11/06/2026', image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&q=80&w=600', excerpt: 'Làm thế nào để chọn được áo thun thể thao nam vừa thấm hút mồ hôi tốt vừa tôn dáng? Khám phá ngay những bí quyết tối ưu hiệu suất luyện tập và phong cách thời trang của bạn.', content: '<h2>1. Tại sao việc chọn áo thun thể thao nam lại quan trọng?</h2><p>Áo thun thể thao không chỉ là trang phục mà còn là <strong>công cụ hỗ trợ đắc lực</strong> cho mỗi buổi tập. Một chiếc áo <em>áo thun nam thể thao</em> chất lượng sẽ giúp kiểm soát nhiệt độ cơ thể, giảm ma sát và mang lại sự tự tin tối đa.</p><h2>2. Chất liệu vải - Yếu tố quyết định chất lượng</h2><p>Khi mua sắm, hãy chú ý đến các chất liệu như <strong>Cotton pha Spandex</strong>, <strong>Polyester (Thun lạnh)</strong>. Những loại vải này có khả năng <strong>thoát ẩm nhanh (Quick-dry)</strong> và co giãn 4 chiều cực kỳ hiệu quả.</p><h3>Công nghệ khử mùi kháng khuẩn</h3><p>Đặc biệt với những ai thường xuyên tập Gym hay chạy bộ, công nghệ kháng khuẩn giúp hạn chế vi khuẩn gây mùi, bảo vệ sức khỏe làn da.</p><h2>3. Hướng dẫn chọn Size và Form áo</h2><p>Hãy ưu tiên form <strong>Slim-fit</strong> nếu bạn muốn tôn lên những khối cơ bắp săn chắc, hoặc <strong>Regular-fit</strong> để thoải mái linh hoạt trong mọi cử động.</p><blockquote>Đừng quên tham khảo bảng size chuẩn của thương hiệu để chọn được sản phẩm ưng ý nhất!</blockquote>' },
+  { id: 'bp2', slug: 'top-5-ao-polo-nam-cao-cap', title: 'Top 5 Mẫu Áo Polo Nam Cao Cấp Dành Cho Quý Ông Hiện Đại', category: 'Xu hướng', author: 'UR Sport', date: '10/06/2026', image: 'https://images.unsplash.com/photo-1586363104862-3a5e2ab60d99?auto=format&fit=crop&q=80&w=600', excerpt: 'Áo polo nam luôn là biểu tượng của sự thanh lịch và nam tính. Cùng điểm qua 5 mẫu áo polo nam cao cấp bán chạy nhất giúp bạn nâng tầm phong cách ngay lập tức.', content: '<h2>1. Sức hút không thể chối từ của áo polo nam</h2><p>Khác với áo thun cổ tròn thông thường, <strong>áo polo nam</strong> mang lại vẻ ngoài chững chạc, lịch sự nhưng không kém phần năng động. Đây là item \"must-have\" trong tủ đồ của bất kỳ chàng trai nào.</p><h2>2. Các tiêu chí đánh giá áo polo chuẩn xịn</h2><ul><li><strong>Cổ áo:</strong> Phải cứng cáp, không bị rũ sau nhiều lần giặt.</li><li><strong>Chất liệu:</strong> Vải cá sấu (Pique Cotton) thoáng mát, co giãn nhẹ.</li><li><strong>Đường may:</strong> Tỉ mỉ, chắc chắn ở các khớp nối vai và nách.</li></ul><h2>3. Gợi ý 5 mẫu áo polo bán chạy nhất 2026</h2><p>Tại UR Sport, các dòng áo <em>Polo Golf Classic Lux</em> và <em>Polo Sporty Mesh</em> đang làm mưa làm gió nhờ khả năng chống nhăn và kháng tia UV xuất sắc. Hãy đến ngay cửa hàng để trải nghiệm trực tiếp!</p>' },
+  { id: 'bp3', slug: 'cach-phoi-do-voi-ao-thun-the-thao-nam', title: 'Cách Phối Đồ Với Áo Thun Thể Thao Nam Cực Chất Cho Dân Gym', category: 'Style Guide', author: 'UR Sport', date: '09/06/2026', image: 'https://images.unsplash.com/photo-1581009146145-b5ef03a7401f?auto=format&fit=crop&q=80&w=600', excerpt: 'Bạn muốn trông thật ngầu và phong cách ngay cả khi đang đổ mồ hôi trong phòng tập? Học ngay bí kíp phối đồ với áo thun thể thao nam cực đỉnh.', content: '<h2>1. Phối áo thun thể thao với quần Jogger</h2><p>Combo kinh điển này chưa bao giờ hết hot. Một chiếc <strong>áo thun thể thao body</strong> kết hợp cùng quần jogger tối màu sẽ làm tôn lên triệt để đôi chân săn chắc và bờ vai rộng của bạn.</p><h2>2. Kết hợp cùng quần Short thể thao</h2><p>Vào những ngày hè oi ả hoặc khi thực hiện các bài tập chân (Leg Day), <strong>quần short tập gym</strong> kết hợp với áo thun sẽ mang lại sự thoải mái tuyệt đối.</p><h2>3. Đừng quên phụ kiện!</h2><p>Một đôi giày sneaker trợ lực tốt, túi duffel thể thao cá tính và đồng hồ thông minh là những <em>phụ kiện thể thao</em> hoàn hảo để bức tranh tổng thể trở nên hoàn mỹ.</p>' },
+  { id: 'bp4', slug: 'phong-cach-thoi-trang-the-thao-nam-athleisure', title: 'Xu Hướng Thời Trang Thể Thao Nam Athleisure: Sự Lên Ngôi Của Sự Thoải Mái', category: 'Kiến thức', author: 'UR Sport', date: '08/06/2026', image: 'https://images.unsplash.com/photo-1554568218-0f1715e72254?auto=format&fit=crop&q=80&w=600', excerpt: 'Athleisure không chỉ là xu hướng mà đã trở thành phong cách sống. Tìm hiểu cách ứng dụng phong cách này vào thời trang nam giới thường ngày.', content: '<h2>1. Athleisure là gì?</h2><p>Athleisure là sự kết hợp giữa \"Athletic\" (Thể thao) và \"Leisure\" (Giải trí). Phong cách này cho phép phái mạnh diện những bộ <strong>đồ thể thao năng động</strong> ngay cả trong những dịp đi chơi, dạo phố hay thậm chí là đi làm.</p><h2>2. Vì sao Athleisure lại được phái nam ưa chuộng?</h2><p>Sự bùng nổ của Athleisure đến từ sự <strong>tiện lợi và thoải mái</strong>. Bạn không cần phải thay đồ khi chuyển từ phòng tập đến buổi hẹn cafe cùng bạn bè. Các mẫu <em>áo polo nam</em> hay áo thun cao cấp ngày nay được thiết kế vô cùng tinh tế, phù hợp với mọi hoàn cảnh.</p><h2>3. Cách làm chủ phong cách Athleisure</h2><p>Hãy chọn những tông màu trung tính như Đen, Xám, Trắng, Navy. Tránh phối quá nhiều màu sắc sặc sỡ. Sự tối giản luôn là chìa khóa của sự sang trọng.</p>' },
+  { id: 'bp5', slug: 'bao-quan-ao-polo-va-ao-thun-the-thao', title: 'Cách Giặt Và Bảo Quản Áo Polo, Áo Thun Thể Thao Bền Đẹp Như Mới', category: 'Mẹo vặt', author: 'UR Sport', date: '07/06/2026', image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&q=80&w=600', excerpt: 'Quần áo thể thao thường xuyên tiếp xúc với mồ hôi và bụi bẩn. Bỏ túi ngay bí kíp giặt giũ giúp áo polo và áo thun luôn giữ form và màu sắc tươi mới.', content: '<h2>1. Phân loại quần áo trước khi giặt</h2><p>Luôn giặt riêng quần áo sáng màu và tối màu. Tránh giặt chung <strong>áo thun thể thao</strong> với những đồ có khóa kéo kim loại sắc nhọn để không làm xước bề mặt vải.</p><h2>2. Nhiệt độ nước và bột giặt</h2><p>Nước lạnh hoặc nước ấm (dưới 30 độ C) là lý tưởng nhất. Tránh sử dụng chất tẩy mạnh vì chúng sẽ làm phá vỡ cấu trúc sợi <strong>Spandex co giãn</strong> và làm mất đi đặc tính <em>thoát ẩm</em> của áo.</p><h2>3. Phơi và bảo quản đúng cách</h2><p>Không vắt kiệt quần áo thể thao. Hãy phơi ở nơi thoáng mát, tránh ánh nắng trực tiếp. Đối với <strong>áo polo nam</strong>, khi phơi nên gài kín nút cổ và vuốt phẳng cổ áo để giữ form tốt nhất.</p>' },
+  { id: 'bp6', slug: 'chat-lieu-vai-the-thao', title: 'Đánh giá chi tiết chất liệu vải cotton và thun lạnh trong đồ thể thao', category: 'Kiến thức', author: 'UR Sport', date: '06/06/2026', image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&q=80&w=600', excerpt: 'Tìm hiểu sự khác biệt giữa các chất liệu vải thể thao phổ biến nhất hiện nay.', content: '<p>Nội dung chi tiết...</p>' },
+  { id: 'bp7', slug: 'ao-thun-oversize-gioi-tre', title: 'Tại sao áo thun oversize lại được giới trẻ săn đón nồng nhiệt?', category: 'Xu hướng', author: 'UR Sport', date: '05/06/2026', image: 'https://images.unsplash.com/photo-1562157873-818bc0726f68?auto=format&fit=crop&q=80&w=600', excerpt: 'Cùng giải mã sức hút của những chiếc áo thun oversize trong cộng đồng thời trang trẻ.', content: '<p>Nội dung chi tiết...</p>' },
+  { id: 'bp8', slug: 'lich-trinh-tap-luyen-thoi-trang', title: 'Lịch trình tập luyện kết hợp với thời trang thể thao giúp tăng hiệu quả', category: 'Sức khỏe', author: 'UR Sport', date: '04/06/2026', image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&q=80&w=600', excerpt: 'Sự tự tin từ trang phục sẽ giúp bạn có thêm động lực hoàn thành những bài tập khó nhất.', content: '<p>Nội dung chi tiết...</p>' },
+  { id: 'bp9', slug: 'quan-dui-chay-bo-2-lop', title: 'Quần đùi chạy bộ 2 lớp: Sự lựa chọn tối ưu cho những chặng đường dài', category: 'Đánh giá', author: 'UR Sport', date: '03/06/2026', image: 'https://images.unsplash.com/photo-1533107862482-0e6974b06ec4?auto=format&fit=crop&q=80&w=600', excerpt: 'Phân tích những lợi ích tuyệt vời mà quần đùi 2 lớp mang lại cho dân chạy bộ.', content: '<p>Nội dung chi tiết...</p>' },
+  { id: 'bp10', slug: 'tui-the-thao-duffel', title: 'Phong cách năng động với túi thể thao Duffel cực chất', category: 'Style Guide', author: 'UR Sport', date: '02/06/2026', image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&q=80&w=600', excerpt: 'Túi Duffel không chỉ để đựng đồ tập mà còn là phụ kiện thời trang đầy phong cách.', content: '<p>Nội dung chi tiết...</p>' }
+];
+
+export const STATIC_ORDERS: Order[] = [
+  { id: 'ord-1001', userId: 'usr-1', items: [{ ...PRODUCTS[0], selectedColor: 'Đen', selectedSize: 'L', quantity: 2 }], total: 500000, status: 'pending', shippingAddress: { fullName: 'Nguyễn Văn A', phone: '0901234567', address: '123 Lê Lợi, Q.1, TP.HCM' }, paymentMethod: 'cod', createdAt: new Date(Date.now() - 10000) },
+  { id: 'ord-1002', userId: 'usr-2', items: [{ ...PRODUCTS[15], selectedColor: 'Trắng', selectedSize: 'M', quantity: 1 }, { ...PRODUCTS[20], selectedColor: 'Xám', selectedSize: 'L', quantity: 1 }], total: 850000, status: 'processing', shippingAddress: { fullName: 'Trần Thị B', phone: '0912345678', address: '45 Nguyễn Huệ, Q.1, TP.HCM' }, paymentMethod: 'bank_transfer', createdAt: new Date(Date.now() - 86400000) },
+  { id: 'ord-1003', userId: 'usr-3', items: [{ ...PRODUCTS[30], selectedColor: 'Xanh Navy', selectedSize: 'XL', quantity: 3 }], total: 1470000, status: 'shipped', shippingAddress: { fullName: 'Lê Hoàng C', phone: '0987654321', address: '89 Trần Hưng Đạo, Q.5, TP.HCM' }, paymentMethod: 'momo', createdAt: new Date(Date.now() - 172800000) },
+  { id: 'ord-1004', userId: 'usr-4', items: [{ ...PRODUCTS[5], selectedColor: 'Xanh Mint', selectedSize: 'M', quantity: 1 }], total: 270000, status: 'delivered', shippingAddress: { fullName: 'Phạm Văn D', phone: '0933445566', address: '12 Võ Văn Tần, Q.3, TP.HCM' }, paymentMethod: 'cod', createdAt: new Date(Date.now() - 259200000) },
+  { id: 'ord-1005', userId: 'usr-5', items: [{ ...PRODUCTS[8], selectedColor: 'Đỏ', selectedSize: 'S', quantity: 2 }], total: 700000, status: 'cancelled', shippingAddress: { fullName: 'Hoàng Thị E', phone: '0977889900', address: '55 Hai Bà Trưng, Q.1, TP.HCM' }, paymentMethod: 'zalopay', createdAt: new Date(Date.now() - 345600000) }
+];
+
+export const STATIC_CUSTOMERS = [
+  { id: 'usr-1', name: 'Nguyễn Văn A', email: 'nguyenvana@gmail.com', phone: '0901234567', ordersCount: 5, totalSpent: 2500000 },
+  { id: 'usr-2', name: 'Trần Thị B', email: 'tranthib@gmail.com', phone: '0912345678', ordersCount: 2, totalSpent: 1200000 },
+  { id: 'usr-3', name: 'Lê Hoàng C', email: 'lehoangc@gmail.com', phone: '0987654321', ordersCount: 8, totalSpent: 5400000 },
+  { id: 'usr-4', name: 'Phạm Văn D', email: 'phamvand@gmail.com', phone: '0933445566', ordersCount: 1, totalSpent: 270000 },
+  { id: 'usr-5', name: 'Hoàng Thị E', email: 'hoangthie@gmail.com', phone: '0977889900', ordersCount: 3, totalSpent: 1800000 }
 ];

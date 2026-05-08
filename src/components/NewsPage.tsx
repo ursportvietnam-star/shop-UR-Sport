@@ -14,68 +14,7 @@ interface TocHeading {
 
 const POST_CATEGORIES = ['Tất cả', 'Xu hướng', 'Kinh nghiệm', 'Sự kiện'];
 
-const POSTS = [
-  {
-    id: 1,
-    title: "Dành cho những người yêu thích âm thanh và chuyển động: Trải nghiệm không giới hạn",
-    category: "Xu hướng",
-    date: "11/06/2026",
-    author: "UrSport Team",
-    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=1000",
-    excerpt: "Khám phá sự giao thoa giữa công nghệ âm thanh đỉnh cao và phong cách sống hiện đại. Khi âm nhạc không chỉ là âm thanh mà là cảm hứng cho mọi chuyển động.",
-    content: "<h2>Mở đầu</h2><p>Trong kỷ nguyên số, ranh giới giữa thể thao, thời trang và công nghệ đang dần mờ nhạt. Một chiếc tai nghe không còn đơn thuần là thiết bị phát nhạc; nó đã trở thành một biểu tượng phong cách, một người bạn đồng hành không thể thiếu trong hành trình rèn luyện bản thân.</p><h2>Âm thanh và chuyển động</h2><p>Sự xuất hiện của các dòng sản phẩm âm thanh không dây thế hệ mới đã mở ra một hướng đi mới cho các tín đồ vận động. Không còn nỗi lo vướng víu dây dợ, người dùng giờ đây có thể tự do trải nghiệm mọi chuyển động, từ những bước chạy miệt mài trên vỉa hè đến những bài tập cường độ cao trong phòng gym.</p><h3>Thiết kế không dây</h3><p>Không còn nỗi lo vướng víu dây dợ, người dùng giờ đây có thể tự do trải nghiệm mọi chuyển động, từ những bước chạy miệt mài trên vỉa hè đến những bài tập cường độ cao trong phòng gym.</p><h2>Chất lượng và tiện ích</h2><p>Chất lượng âm thanh trung thực kết hợp cùng khả năng chống nước, chống mồ hôi vượt trội chính là những yếu tố then chốt. UrSport luôn nỗ lực tìm kiếm và giới thiệu những giải pháp tối ưu nhất, giúp bạn không chỉ tập luyện hiệu quả mà còn khẳng định cái tôi cá nhân mạnh mẽ.</p>"
-  },
-  {
-    id: 2,
-    title: "Mùa hè năng động với bộ đồ thể thao UR Sport",
-    category: "Xu hướng",
-    date: "10/06/2026",
-    author: "Stylist",
-    image: "https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&q=80&w=600",
-    excerpt: "Chọn trang phục thể thao thoáng mát và phong cách để luôn năng động trong mọi hoạt động ngoài trời.",
-    content: "Bộ đồ thể thao UR Sport được thiết kế để mang lại cảm giác thoải mái tối đa trong những ngày hè oi ả. Vải thoáng khí, khô nhanh và đường may chắc chắn giúp bạn tự tin với mọi bài tập ngoài trời.\n\nĐừng quên phối thêm giày thể thao sáng màu và phụ kiện tối giản để hoàn thiện phong cách hiện đại và năng lượng."
-  },
-  {
-    id: 3,
-    title: "Làm quen với bộ môn chạy trail cho người mới bắt đầu",
-    category: "Kinh nghiệm",
-    date: "09/06/2026",
-    author: "UrSport Team",
-    image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&q=80&w=600",
-    excerpt: "Lời khuyên hữu ích để bạn bắt đầu chạy trail an toàn và hiệu quả, dù là chuyến đi ngắn hay đường dài.",
-    content: "Chạy trail là cách tuyệt vời để kết hợp vận động và khám phá thiên nhiên. Trước khi bắt đầu, hãy chọn đôi giày chuyên dụng, kiểm tra địa hình và mang theo đủ nước.\n\nBắt đầu với những đoạn đường ngắn, giữ nhịp thở đều và dần tăng cường độ khi cơ thể đã thích nghi. Điều quan trọng là giữ an toàn và tận hưởng hành trình."
-  },
-  {
-    id: 4,
-    title: "Top 5 phụ kiện thể thao cần có trong túi gym của bạn",
-    category: "Kinh nghiệm",
-    date: "08/06/2026",
-    author: "Admin",
-    image: "https://images.unsplash.com/photo-1599058917212-4e1b9aceb4dc?auto=format&fit=crop&q=80&w=600",
-    excerpt: "Từ bình nước đến khăn lau, những phụ kiện sau sẽ giúp buổi tập của bạn trơn tru và hiệu quả hơn.",
-    content: "Một buổi tập gym đầy đủ cần chuẩn bị những phụ kiện cơ bản như bình nước, khăn lau, dây tập và tai nghe. Những món đồ nhỏ này tạo nên sự khác biệt lớn trong trải nghiệm luyện tập.\n\nChuẩn bị kỹ càng giúp bạn tiết kiệm thời gian, tăng động lực và giữ tinh thần sảng khoái trong mỗi buổi tập."
-  },
-  {
-    id: 5,
-    title: "Hướng dẫn chọn giày chạy bộ phù hợp cho mọi địa hình",
-    category: "Kinh nghiệm",
-    date: "07/06/2026",
-    author: "Stylist",
-    image: "https://images.unsplash.com/photo-1515548213390-2e8f97b26f0d?auto=format&fit=crop&q=80&w=600",
-    excerpt: "Giày chạy bộ đúng chính là bí quyết để bạn chạy tốt hơn và hạn chế chấn thương hiệu quả.",
-    content: "Khi chọn giày chạy bộ, hãy chú ý đến đệm lót, độ bám của đế giày và sự ôm sát bàn chân. Với từng loại địa hình, bạn sẽ cần một đôi giày khác nhau để tối ưu hiệu suất.\n\nĐừng quên thử giày vào cuối ngày và mang theo tất chuyên dụng để cảm nhận chính xác sự vừa vặn khi chạy."
-  },
-  {
-    id: 6,
-    title: "Chuẩn bị cho những tình huống khẩn cấp khi leo núi",
-    category: "Kinh nghiệm",
-    date: "06/06/2026",
-    author: "UrSport Team",
-    image: "https://images.unsplash.com/photo-1518310323263-d3434682054a?auto=format&fit=crop&q=80&w=600",
-    excerpt: "Trang bị kiến thức và dụng cụ thiết yếu để đảm bảo an toàn cho bản thân và đồng đội.",
-    content: "Chúng ta không thể lường trước được những gì tương lai mang lại, nhưng chúng ta hoàn toàn có thể chuẩn bị cho chúng. Một bộ kit sinh tồn cơ bản, những kiến thức sơ cứu cơ bản và tinh thần vững vàng là những gì bạn cần khi đối mặt với các tình huống khó khăn leo núi.\n\nTrong bài viết này, chúng tôi sẽ hướng dẫn bạn cách xây dựng một 'túi thoát hiểm' (Go-bag) tiêu chuẩn và danh sách những vật dụng không thể thiếu giúp bạn duy trì sự sống và liên lạc trong trường hợp mất điện hoặc thiên tai."
-  }
-];
+import { STATIC_BLOG_POSTS as POSTS } from '../data';
 
 export function NewsPage() {
   const { slug } = useParams<{ slug?: string }>();

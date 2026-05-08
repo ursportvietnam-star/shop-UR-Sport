@@ -1,29 +1,43 @@
-import React from 'react';
-import { motion } from 'motion/react';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { BANNERS } from '../data';
 
 export const Hero: React.FC<{ onShopClick: () => void }> = ({ onShopClick }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % BANNERS.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
+
   return (
     <div className="relative h-[85vh] w-full overflow-hidden bg-black">
-      <motion.div 
-        initial={{ scale: 1.1, opacity: 0 }}
-        animate={{ scale: 1, opacity: 0.7 }}
-        transition={{ duration: 2, ease: "easeOut" }}
-        className="absolute inset-0"
-      >
-        <img
-          src="https://images.unsplash.com/photo-1544919982-b61976f0ba43?auto=format&fit=crop&q=80&w=2000"
-          alt="Hero"
-          className="h-full w-full object-cover"
-          referrerPolicy="no-referrer"
-        />
-      </motion.div>
+      <AnimatePresence mode="popLayout">
+        <motion.div 
+          key={currentIndex}
+          initial={{ scale: 1.1, opacity: 0 }}
+          animate={{ scale: 1, opacity: 0.7 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 1.5, ease: "easeOut" }}
+          className="absolute inset-0"
+        >
+          <img
+            src={BANNERS[currentIndex].image}
+            alt={BANNERS[currentIndex].title}
+            className="h-full w-full object-cover"
+            referrerPolicy="no-referrer"
+          />
+        </motion.div>
+      </AnimatePresence>
       <div className="absolute inset-0 bg-black/40" />
       <div className="absolute inset-0 bg-linear-to-r from-black/80 to-transparent" />
 
       <div className="relative mx-auto flex h-full max-w-[1440px] flex-col justify-center px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl">
+        <div className="max-w-4xl relative z-10">
           <motion.span 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -33,16 +47,22 @@ export const Hero: React.FC<{ onShopClick: () => void }> = ({ onShopClick }) => 
             BỘ SƯU TẬP THIẾT BỊ CAO CẤP 2026
           </motion.span>
           
-          <motion.h1 
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7, duration: 0.8 }}
-            className="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-bold tracking-tighter text-white uppercase leading-[0.9] mb-8"
-          >
-            HIỆU SUẤT <br />
-            <span className="text-[#0082c8]">VƯỢT TRỘI</span> <br />
-            MỖI NGÀY.
-          </motion.h1>
+          <div className="h-[200px] sm:h-[250px] md:h-[300px] mb-8">
+            <AnimatePresence mode="wait">
+              <motion.h1 
+                key={currentIndex}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -30 }}
+                transition={{ duration: 0.5 }}
+                className="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-bold tracking-tighter text-white uppercase leading-[0.9]"
+              >
+                {BANNERS[currentIndex].title.split(' ')[0]} <br />
+                <span className="text-[#0082c8]">{BANNERS[currentIndex].title.split(' ').slice(1).join(' ')}</span> <br />
+                MỖI NGÀY.
+              </motion.h1>
+            </AnimatePresence>
+          </div>
           
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
@@ -67,6 +87,17 @@ export const Hero: React.FC<{ onShopClick: () => void }> = ({ onShopClick }) => 
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </motion.div>
+        </div>
+        
+        {/* Banner indicators */}
+        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+          {BANNERS.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrentIndex(i)}
+              className={`h-1.5 rounded-full transition-all duration-300 ${i === currentIndex ? 'w-8 bg-[#0082c8]' : 'w-2 bg-white/30 hover:bg-white/50'}`}
+            />
+          ))}
         </div>
       </div>
     </div>
