@@ -563,7 +563,7 @@ export const ProductDetail: React.FC = () => {
               <div>
                   <div className="flex flex-col lg:flex-row gap-0">
                     {/* Left Column: Main Content (~81%) */}
-                    <div className="flex-1 min-w-0 lg:border-r lg:border-zinc-200 lg:pr-8 space-y-10 overflow-hidden">
+                    <div className="flex-1 min-w-0 lg:border-r lg:border-zinc-200 lg:pr-8 space-y-10 overflow-visible">
 
                       {/* ── 1. CHI TIẾT SẢN PHẨM ── */}
                       <div>
@@ -598,8 +598,8 @@ export const ProductDetail: React.FC = () => {
                         <h4 className="text-[16px] font-bold text-zinc-900 italic mb-6 pb-4 border-b border-zinc-200">MÔ TẢ SẢN PHẨM</h4>
                         <div className="relative">
                           <div className={cn(
-                            "product-description-container max-w-none text-zinc-600 leading-relaxed overflow-hidden transition-all duration-700 break-normal",
-                            !isDescriptionExpanded ? "max-h-[800px]" : "max-h-none"
+                            "product-description-container max-w-none text-zinc-600 leading-loose overflow-visible transition-all duration-700 break-normal pr-4",
+                            !isDescriptionExpanded ? "max-h-[800px] overflow-hidden" : "max-h-none"
                           )}>
                             <div dangerouslySetInnerHTML={{ __html: product.description }} />
                           </div>

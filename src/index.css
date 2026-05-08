@@ -34,7 +34,8 @@
   }
 
   p, span, div {
-    /* overflow-wrap: anywhere; or normal behavior */
+    overflow-wrap: normal;
+    word-break: normal;
   }
 
   img {
