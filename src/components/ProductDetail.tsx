@@ -367,7 +367,12 @@ export const ProductDetail: React.FC = () => {
     toast.success(`Đã thêm ${product.name} vào giỏ hàng`, {
       description: `${selectedColor} / Size ${selectedSize} (qty: ${quantity})`,
       position: 'top-center',
-      className: 'font-sans font-medium'
+      className: 'font-sans font-medium',
+      action: {
+        label: 'Thanh toán ngay',
+        onClick: () => navigate('/checkout')
+      },
+      duration: 5000
     });
   };
 

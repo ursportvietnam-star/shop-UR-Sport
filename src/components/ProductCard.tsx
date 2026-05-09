@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Product } from '../types';
 import { useCart } from '../CartContext';
@@ -12,6 +13,7 @@ interface ProductCardProps {
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
+  const navigate = useNavigate();
   const { addToCart } = useCart();
   const [selectedColor, setSelectedColor] = useState(product.colors?.[0] || 'Default');
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
@@ -30,7 +32,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
     toast.success(`Đã thêm ${product.name} vào giỏ hàng`, {
       description: `Màu: ${selectedColor} / Size: ${selectedSize || 'Free Size'}`,
       position: 'top-center',
-      className: 'font-sans font-medium'
+      className: 'font-sans font-medium',
+      action: {
+        label: 'Thanh toán ngay',
+        onClick: () => navigate('/checkout')
+      },
+      duration: 5000
     });
   };
 
