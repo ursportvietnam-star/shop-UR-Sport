@@ -489,9 +489,11 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
       // Make unique
       allImages = Array.from(new Set(allImages));
       
+      const finalDescription = isHtmlMode ? htmlSource : formData.description;
+
       const payload = {
         name: formData.name,
-        description: formData.description,
+        description: finalDescription,
         category: formData.category,
         colors: validVariants.map(v => v.name.trim()),
         colorImages: validVariants.map(v => ({ name: v.name.trim(), image: v.image })),
@@ -1004,7 +1006,11 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                         ref={quillRef}
                         theme="snow"
                         value={formData.description}
-                        onChange={(content) => setFormData(prev => ({...prev, description: content}))}
+                        onChange={(content, delta, source) => {
+                          if (source === 'user') {
+                            setFormData(prev => ({...prev, description: content}));
+                          }
+                        }}
                         modules={modules}
                         placeholder="Bắt đầu viết mô tả sản phẩm..."
                       />

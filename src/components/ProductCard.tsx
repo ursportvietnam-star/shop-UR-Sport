@@ -46,18 +46,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
           <div className="h-full w-full bg-zinc-200" />
         )}
         
-        {/* Top Right: NEW Badge */}
-        {product.isNew && (
-          <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-[#1e4b64] text-white text-[9px] sm:text-[10px] font-bold px-2 py-0.5 sm:px-2 sm:py-1 rounded-sm z-10">
-            NEW
-          </div>
-        )}
-
-        {/* Top Left: Logo/Icon (Simulated based on image) */}
-        <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-white/90 backdrop-blur-sm p-0.5 sm:p-1 rounded z-10 shadow-sm border border-zinc-100">
-          <div className="w-4 h-4 sm:w-5 sm:h-5 bg-black rounded-sm flex items-center justify-center">
-            <span className="text-[6px] sm:text-[8px] text-white font-black">UR</span>
-          </div>
+        {/* Top Left: Badges */}
+        <div className="absolute top-2 left-2 sm:top-3 sm:left-3 flex flex-col items-start gap-1 sm:gap-1.5 z-10">
+          {product.discountPrice && (
+            <div className="bg-[#ffb800] text-white px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-[11px] font-bold shadow-sm">
+              -{Math.round(((product.price - product.discountPrice) / product.price) * 100)}%
+            </div>
+          )}
+          {product.isNew && (
+            <div className="bg-[#00a651] text-white px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-[11px] font-bold shadow-sm">
+              New
+            </div>
+          )}
         </div>
 
         {/* Bottom Banner: VOUCHER */}
@@ -67,7 +67,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
               <div className="w-3 h-4 sm:w-4 sm:h-5 bg-yellow-400 rounded-sm flex items-center justify-center">
                 <span className="text-[#2953a6] text-[8px] sm:text-[10px] font-black">%</span>
               </div>
-              <span className="text-white text-[10px] sm:text-[11px] font-bold tracking-wide">VOUCHER</span>
+              <span className="text-white text-[10px] sm:text-[11px] font-bold tracking-wide">
+                GIẢM {Math.round(((product.price - product.discountPrice) / product.price) * 100)}%
+              </span>
             </div>
             <div className="bg-white px-2 py-0.5 sm:px-3 sm:py-1 rounded-full">
               <span className="text-[#2953a6] text-[10px] sm:text-[12px] font-bold whitespace-nowrap">GIẢM {Math.round((product.price - product.discountPrice)/1000)}K</span>

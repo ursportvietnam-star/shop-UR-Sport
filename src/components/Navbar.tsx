@@ -200,10 +200,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
             {/* Cart */}
             <button
               onClick={onCartClick}
-              className={`${iconBtn} relative bg-zinc-950 hover:bg-zinc-800 text-white ml-1`}
+              className={`${iconBtn} relative text-[#1e4b64] hover:bg-zinc-100 ml-1`}
               aria-label="Giỏ hàng"
             >
-              <ShoppingCart className="h-5 w-5" />
+              <ShoppingCart className="h-6 w-6" />
               <AnimatePresence>
                 {cartCount > 0 && (
                   <motion.span

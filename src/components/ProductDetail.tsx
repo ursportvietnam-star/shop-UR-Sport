@@ -41,7 +41,7 @@ import {
   RefreshCcw,
   MessageCircle
 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -81,7 +81,55 @@ export const ProductDetail: React.FC = () => {
   const [newReview, setNewReview] = useState({ rating: 5, comment: '', userName: '' });
   const [selectedReviewFiles, setSelectedReviewFiles] = useState<File[]>([]);
   const [reviewPreviews, setReviewPreviews] = useState<{ url: string, type: 'image' | 'video' }[]>([]);
+  const [userHeight, setUserHeight] = useState('');
+  const [userWeight, setUserWeight] = useState('');
+  const [suggestedSize, setSuggestedSize] = useState<string | null>(null);
+  const [isSizeProfileModalOpen, setIsSizeProfileModalOpen] = useState(false);
   const { user } = useAuth();
+
+  const SHIRT_SIZES = [
+    { size: 'M', vai: 46, dai: 37, nguc: 64 },
+    { size: 'L', vai: 48, dai: 39, nguc: 66 },
+    { size: 'XL', vai: 50, dai: 41, nguc: 68 },
+    { size: 'XXL', vai: 52, dai: 43, nguc: 70 },
+    { size: 'XXXL', vai: 54, dai: 48, nguc: 72 },
+    { size: 'XXXXL', vai: 56, dai: 50, nguc: 74 }
+  ];
+
+  const handleSaveSizeProfile = () => {
+    const h = parseInt(userHeight);
+    const w = parseInt(userWeight);
+    if (!h || !w || h < 100 || w < 30) {
+      toast.error('Vui lòng nhập số đo hợp lý (cm và kg)');
+      return;
+    }
+    
+    let hIndex = 0;
+    if (h < 165) hIndex = 0;
+    else if (h <= 170) hIndex = 1;
+    else if (h <= 175) hIndex = 2;
+    else if (h <= 180) hIndex = 3;
+    else if (h <= 185) hIndex = 4;
+    else hIndex = 5;
+
+    let wIndex = 0;
+    if (w < 60) wIndex = 0;
+    else if (w <= 68) wIndex = 1;
+    else if (w <= 75) wIndex = 2;
+    else if (w <= 82) wIndex = 3;
+    else if (w <= 90) wIndex = 4;
+    else wIndex = 5;
+
+    const sizes = ['M', 'L', 'XL', 'XXL', 'XXXL', 'XXXXL'];
+    const finalIndex = Math.max(hIndex, wIndex);
+    const size = sizes[finalIndex];
+    
+    setSuggestedSize(size);
+    setIsSizeProfileModalOpen(false);
+    toast.success(`Hệ thống đã cập nhật size đề xuất cho bạn`, {
+      position: 'top-center',
+    });
+  };
 
   useEffect(() => {
     if (!product?.id) return;
@@ -585,20 +633,144 @@ export const ProductDetail: React.FC = () => {
               </div>
 
               {/* ── 2. HƯỚNG DẪN CHỌN SIZE ── */}
-              {product.sizeGuideUrl && (
-                <div>
-                  <h4 className="text-[18px] font-bold text-zinc-900 italic mb-6 pb-4 border-b-2 border-zinc-900 inline-block pr-8">
-                    HƯỚNG DẪN CHỌN SIZE
-                  </h4>
-                  <div className="flex justify-start">
-                    <img
-                      src={product.sizeGuideUrl}
-                      alt="Hướng dẫn chọn size"
-                      className="w-full max-w-[800px] h-auto rounded-lg border border-zinc-200"
-                    />
+              <div>
+                <h4 className="text-[18px] font-bold text-zinc-900 italic mb-6 pb-4 border-b-2 border-zinc-900 inline-block pr-8">
+                  HƯỚNG DẪN CHỌN SIZE
+                </h4>
+                
+                <div className="w-full max-w-[800px]">
+                  <h5 className="text-[15px] font-medium text-zinc-800 mb-4">Số đo sản phẩm</h5>
+                  
+                  {/* Banner Đề xuất Size */}
+                  <div className="w-full border border-red-200 bg-red-50/30 rounded-xl p-4 flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-2">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-500"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                      <span className="text-[14px] text-zinc-700">
+                        {suggestedSize ? (
+                          <>Size đề xuất: <strong className="text-red-500">{suggestedSize}</strong></>
+                        ) : (
+                          'Nhập chiều cao cân nặng để nhận đề xuất size'
+                        )}
+                      </span>
+                    </div>
+                    <button 
+                      onClick={() => setIsSizeProfileModalOpen(true)}
+                      className="text-[13px] text-zinc-500 hover:text-zinc-800 flex items-center gap-1 transition-colors"
+                    >
+                      Hồ sơ size <ChevronRight className="h-3 w-3" />
+                    </button>
                   </div>
+
+                  {/* Bảng thông số */}
+                  <div className="w-full overflow-x-auto rounded-xl border border-zinc-200 mb-6">
+                    <table className="w-full text-center text-[14px] min-w-[500px]">
+                      <thead className="bg-zinc-50">
+                        <tr>
+                          <th className="py-4 px-4 font-bold text-zinc-800 border-b border-zinc-200 text-left">Size (Quốc Tế)</th>
+                          <th className="py-4 px-4 font-bold text-zinc-800 border-b border-zinc-200">Vai <span className="block text-[11px] font-normal text-zinc-400 mt-0.5">(cm)</span></th>
+                          <th className="py-4 px-4 font-bold text-zinc-800 border-b border-zinc-200">Chiều dài áo <span className="block text-[11px] font-normal text-zinc-400 mt-0.5">(cm)</span></th>
+                          <th className="py-4 px-4 font-bold text-zinc-800 border-b border-zinc-200">Vòng ngực <span className="block text-[11px] font-normal text-zinc-400 mt-0.5">(cm)</span></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {SHIRT_SIZES.map((row) => {
+                          const isSuggested = suggestedSize === row.size;
+                          return (
+                            <tr key={row.size} className={cn("border-b border-zinc-100 last:border-0", isSuggested ? "bg-red-50/20" : "")}>
+                              <td className={cn("py-4 px-4 text-left font-medium", isSuggested ? "text-red-500 font-bold" : "text-zinc-600")}>{row.size}</td>
+                              <td className={cn("py-4 px-4", isSuggested ? "text-red-500 font-bold" : "text-zinc-600")}>{row.vai}</td>
+                              <td className={cn("py-4 px-4", isSuggested ? "text-red-500 font-bold" : "text-zinc-600")}>{row.dai}</td>
+                              <td className={cn("py-4 px-4", isSuggested ? "text-red-500 font-bold" : "text-zinc-600")}>{row.nguc}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                  {/* Ảnh bảng size (product.sizeGuideUrl) đã được di chuyển lên Modal 'SIZE GUIDE', không còn hiển thị ở đây */}
+                  <p className="text-[12px] text-zinc-400 mt-4">Số đo có thể thay đổi nhẹ tùy thuộc vào từng form áo.</p>
                 </div>
-              )}
+              </div>
+
+              {/* Modal Hồ Sơ Size */}
+              <AnimatePresence>
+                {isSizeProfileModalOpen && (
+                  <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <motion.div 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      onClick={() => setIsSizeProfileModalOpen(false)}
+                      className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                      className="relative w-full max-w-[500px] bg-white rounded-2xl shadow-2xl overflow-hidden"
+                    >
+                      <div className="flex items-center justify-between p-5 border-b border-zinc-100">
+                        <h3 className="text-[18px] font-medium text-zinc-800">Thông tin số đo</h3>
+                        <button 
+                          onClick={() => setIsSizeProfileModalOpen(false)}
+                          className="p-2 hover:bg-zinc-100 rounded-full transition-colors"
+                        >
+                          <X className="h-5 w-5 text-zinc-500" />
+                        </button>
+                      </div>
+                      
+                      <div className="p-6">
+                        <h4 className="text-[15px] font-medium text-zinc-800 mb-4">Các số đo cơ bản</h4>
+                        <div className="grid grid-cols-2 gap-4 mb-6">
+                          <div>
+                            <label className="block text-[13px] text-zinc-600 mb-2">Chiều cao mẫu<span className="text-red-500">*</span></label>
+                            <div className="relative">
+                              <input 
+                                type="number" 
+                                value={userHeight}
+                                onChange={(e) => setUserHeight(e.target.value)}
+                                placeholder="VD: 175"
+                                className="w-full h-11 px-4 border border-zinc-200 rounded-xl outline-none focus:border-[#1e4b64] text-[14px]"
+                              />
+                              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[13px] text-zinc-400">cm</span>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-[13px] text-zinc-600 mb-2">Cân nặng mẫu<span className="text-red-500">*</span></label>
+                            <div className="relative">
+                              <input 
+                                type="number" 
+                                value={userWeight}
+                                onChange={(e) => setUserWeight(e.target.value)}
+                                placeholder="VD: 70"
+                                className="w-full h-11 px-4 border border-zinc-200 rounded-xl outline-none focus:border-[#1e4b64] text-[14px]"
+                              />
+                              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[13px] text-zinc-400">kg</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="border-t border-zinc-100 pt-4 mb-6">
+                          <button className="w-full flex items-center justify-between text-[14px] text-zinc-800">
+                            Các số đo khác
+                            <ChevronDown className="h-4 w-4 text-zinc-400" />
+                          </button>
+                        </div>
+
+                        <div className="flex justify-end">
+                          <button 
+                            onClick={handleSaveSizeProfile}
+                            className="px-10 py-2.5 bg-[#f05d40] text-white font-bold rounded-md hover:bg-[#d94b30] transition-colors"
+                          >
+                            Lưu
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </div>
+                )}
+              </AnimatePresence>
 
               {/* ── 3. MÔ TẢ SẢN PHẨM ── */}
               <div className="w-full">
