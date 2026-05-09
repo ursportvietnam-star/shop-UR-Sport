@@ -58,7 +58,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
         <div className="p-3 sm:p-4 flex flex-col flex-grow">
           <div className="h-4 mb-1.5" /> {/* Stars space */}
           <div className="min-h-[2.4rem] mb-2" /> {/* Title space */}
-          <div className="h-10 mb-3" /> {/* Metadata space */}
+          <div className="h-5 mb-3" /> {/* Metadata space */}
           <div className="h-7 mb-3 mt-auto" /> {/* Price space */}
         </div>
       </div>
@@ -111,9 +111,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
           <div className="flex flex-col gap-0.5 mb-3">
             <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">
               Code: <span className="text-zinc-900">{product.slug.substring(0, 8).toUpperCase()}</span>
-            </p>
-            <p className="text-[10px] font-bold text-[#00a651] flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#00a651]" /> In stock
             </p>
           </div>
 
