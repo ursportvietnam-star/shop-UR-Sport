@@ -47,114 +47,102 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
       onMouseLeave={() => setIsHovered(false)}
       onClick={onClick}
     >
-      {/* 
-        This is the Base Card that stays in the flow to reserve space in the grid.
-        It must look exactly like the non-hovered card but with visibility hidden on absolute expansion.
-      */}
-      <div className="flex flex-col h-full bg-white rounded-[24px] border border-transparent">
-        <div className="relative aspect-[3/4] w-full bg-[#f8f8f8] rounded-t-[24px] overflow-hidden">
+      {/* Base Card for Grid Stability */}
+      <div className="flex flex-col h-full bg-white rounded-[20px] border border-transparent">
+        <div className="relative aspect-square w-full bg-[#f8f8f8] rounded-[20px] overflow-hidden">
           <img src={product.images?.[0] || ''} className="w-full h-full object-cover" />
         </div>
-        <div className="p-4 flex flex-col flex-grow">
-          <div className="h-4 mb-1.5" /> {/* Stars space */}
-          <div className="min-h-[2.5rem] mb-2" /> {/* Title space */}
-          <div className="h-10 mb-3" /> {/* Metadata space */}
-          <div className="h-7 mb-3 mt-auto" /> {/* Price space */}
+        <div className="p-3 flex flex-col flex-grow">
+          <div className="h-4 mb-2" />
+          <div className="min-h-[2.5rem] mb-2" />
+          <div className="h-16 mt-auto" />
         </div>
       </div>
 
-      {/* 
-        The Hover Card that actually performs the animation and overlaps.
-      */}
+      {/* Interactive Overlay Card */}
       <div className={cn(
-        "absolute top-0 left-0 right-0 bg-white rounded-[24px] transition-all duration-300 ease-out border border-transparent overflow-hidden",
+        "absolute top-0 left-0 right-0 bg-white rounded-[20px] transition-all duration-300 ease-out border border-transparent overflow-hidden",
         isHovered 
-          ? "shadow-[0_30px_60px_rgba(0,0,0,0.15)] z-50 border-zinc-100 -translate-y-1 h-auto" 
+          ? "shadow-[0_20px_40px_rgba(0,0,0,0.1)] z-50 border-zinc-100 -translate-y-1 h-auto" 
           : "h-full z-10"
       )}>
         
         {/* Image Section */}
-        <div className="relative aspect-[3/4] w-full overflow-hidden rounded-t-[24px] bg-[#f8f8f8]">
+        <div className="relative aspect-square w-full overflow-hidden rounded-[20px] bg-[#f8f8f8]">
           <AnimatePresence mode="wait">
             <motion.img
               key={isHovered && product.images?.[1] ? product.images[1] : product.images?.[0]}
-              initial={{ opacity: 0.8 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0.8 }}
-              transition={{ duration: 0.3 }}
+              initial={{ opacity: 0.9 }} animate={{ opacity: 1 }} exit={{ opacity: 0.9 }}
               src={(isHovered && product.images?.[1]) ? product.images[1] : (product.images?.[0] || '')}
-              alt={product.name}
-              className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-              referrerPolicy="no-referrer"
+              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
             />
           </AnimatePresence>
 
           {/* Badges */}
-          <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
-            {product.isNew && (
-              <div className="bg-[#00a651] text-white px-2.5 py-1 rounded-full text-[10px] font-bold shadow-sm backdrop-blur-sm uppercase tracking-wider">
-                New
-              </div>
-            )}
-            {product.isBestSeller && (
-              <div className="bg-[#ffa800] text-white px-2.5 py-1 rounded-full text-[10px] font-bold shadow-sm backdrop-blur-sm uppercase tracking-wider">
-                Hot
-              </div>
-            )}
-            {discountPercent > 0 && (
-              <div className="bg-[#ff3b30] text-white px-2.5 py-1 rounded-full text-[10px] font-bold shadow-sm">
-                -{discountPercent}%
-              </div>
-            )}
+          {discountPercent > 0 && (
+            <div className="absolute top-2 left-2 bg-[#ffa800] text-white px-3 py-1 rounded-full text-[11px] font-black shadow-sm">
+              -{discountPercent}%
+            </div>
+          )}
+
+          {/* Wishlist */}
+          <button className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center text-zinc-400 hover:text-red-500 shadow-sm transition-all">
+            <Heart className="h-4.5 w-4.5" />
+          </button>
+
+          {/* Page Indicators - Optional visual touch */}
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1">
+             {[...Array(5)].map((_, i) => (
+               <div key={i} className={cn("w-1.5 h-1.5 rounded-full", i === 0 ? "bg-[#00a651] w-3" : "bg-white/60")} />
+             ))}
           </div>
-
-          {/* Floating Actions */}
-          <div className="absolute top-3 right-3 flex flex-col gap-2 z-10 translate-x-12 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300">
-            <button className="w-9 h-9 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center text-zinc-400 hover:text-red-500 hover:bg-white shadow-sm transition-all" title="Yêu thích">
-              <Heart className="h-4.5 w-4.5" />
-            </button>
-            <button className="w-9 h-9 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center text-zinc-400 hover:text-[#1e4b64] hover:bg-white shadow-sm transition-all" title="So sánh">
-              <RefreshCcw className="h-4 w-4" />
-            </button>
-          </div>
-
-
         </div>
 
         {/* Info Section */}
-        <div className="flex flex-col p-4 flex-grow">
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <div className="flex items-center gap-0.5">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className={cn("h-3 w-3", i < Math.floor(product.rating || 0) ? "fill-[#ffa800] text-[#ffa800]" : "text-zinc-200")} />
-              ))}
-            </div>
-            <span className="text-[10px] font-medium text-zinc-400">({product.reviewsCount || 0})</span>
-          </div>
-
-          <h3 className="text-[14px] font-bold text-zinc-800 leading-tight mb-2 line-clamp-2 min-h-[2.5rem] group-hover:text-[#1e4b64] transition-colors">
+        <div className="flex flex-col p-3 flex-grow">
+          <h3 className="text-[14px] font-bold text-zinc-800 leading-snug mb-2 line-clamp-2 min-h-[2.5rem] group-hover:text-[#1e4b64] transition-colors">
             {product.name}
           </h3>
 
-          <div className="flex flex-col gap-1 mb-3">
-            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
-              Code: <span className="text-zinc-900">{product.slug.substring(0, 8).toUpperCase()}</span>
-            </p>
-            <p className="text-[10px] font-bold text-[#00a651] flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#00a651]" /> In stock
-            </p>
+          <div className="flex items-center gap-1.5 mb-2">
+            <Star className="h-3.5 w-3.5 fill-[#ffa800] text-[#ffa800]" />
+            <span className="text-[12px] font-bold text-zinc-500">{product.rating || '4.5'}</span>
+            <span className="text-[12px] font-medium text-zinc-400">({product.reviewsCount || 0})</span>
           </div>
 
-          {/* Price Area */}
-          <div className="flex items-center flex-wrap gap-x-2 gap-y-0 mb-3 mt-auto">
-            <span className="text-[16px] sm:text-[17px] font-black text-black whitespace-nowrap">
-              {(product.discountPrice || product.price).toLocaleString('vi-VN')}đ
-            </span>
-            {product.discountPrice && (
-              <span className="text-[11px] sm:text-[12px] text-zinc-300 line-through font-bold whitespace-nowrap">
-                {product.price.toLocaleString('vi-VN')}đ
+          <div className="text-[12px] font-bold text-[#00a651] mb-2">In stock</div>
+
+          <div className="flex items-end justify-between mt-auto">
+            <div className="flex flex-col">
+              <span className="text-[18px] font-black text-black leading-none mb-1">
+                {(product.discountPrice || product.price).toLocaleString('vi-VN')}đ
               </span>
-            )}
+              {product.discountPrice && (
+                <div className="flex items-center gap-2">
+                  <span className="text-[12px] text-zinc-300 line-through font-bold">
+                    {product.price.toLocaleString('vi-VN')}đ
+                  </span>
+                  <span className="text-[9px] font-black text-zinc-400 border border-zinc-200 rounded px-1">
+                    -{discountPercent}%
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Quick Add Circle Button */}
+            <button 
+              onClick={handleQuickAdd}
+              className="relative w-11 h-11 rounded-full bg-[#00a651] text-white flex items-center justify-center shadow-lg hover:bg-[#00c05d] transition-all active:scale-95 group/btn"
+            >
+              <div className="relative">
+                <ShoppingBag className="h-5 w-5" />
+                {hasOptions && (
+                  <div className="absolute -top-2 -right-2 bg-white rounded-full p-0.5 shadow-sm">
+                    <Settings className="h-3 w-3 text-zinc-900 animate-spin-slow" />
+                  </div>
+                )}
+              </div>
+            </button>
           </div>
 
           {/* Expansion Section - Hover Only */}
@@ -162,34 +150,21 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
             "overflow-hidden transition-all duration-500 ease-in-out",
             isHovered ? "max-h-60 opacity-100" : "max-h-0 opacity-0"
           )}>
-            <div className={cn(
-              "pt-3 border-t border-zinc-100 space-y-4 transform transition-transform duration-500",
-              isHovered ? "translate-y-0" : "translate-y-4"
-            )}>
+            <div className="pt-4 border-t border-zinc-100 space-y-4">
               {/* Colors */}
               <div className="flex flex-wrap gap-2">
                 {product.colorImages ? (
                   product.colorImages.map((ci, idx) => (
-                    <button 
-                      key={idx} 
-                      onClick={(e) => { e.stopPropagation(); setSelectedColor(ci.name); }}
-                      className={cn(
-                        "w-6 h-6 rounded-full border-2 p-0.5 transition-all hover:scale-110",
-                        selectedColor === ci.name ? "border-[#1e4b64]" : "border-zinc-100"
-                      )}
+                    <button key={idx} onClick={(e) => { e.stopPropagation(); setSelectedColor(ci.name); }}
+                      className={cn("w-6 h-6 rounded-full border-2 p-0.5 transition-all", selectedColor === ci.name ? "border-[#1e4b64]" : "border-zinc-100")}
                     >
                       <img src={ci.image} alt={ci.name} className="w-full h-full rounded-full object-cover" />
                     </button>
                   ))
                 ) : (
                   product.colors?.map((color, idx) => (
-                    <button 
-                      key={idx} 
-                      onClick={(e) => { e.stopPropagation(); setSelectedColor(color); }}
-                      className={cn(
-                        "w-6 h-6 rounded-full border-2 p-0.5 transition-all hover:scale-110",
-                        selectedColor === color ? "border-[#1e4b64]" : "border-zinc-100"
-                      )}
+                    <button key={idx} onClick={(e) => { e.stopPropagation(); setSelectedColor(color); }}
+                      className={cn("w-6 h-6 rounded-full border-2 p-0.5 transition-all", selectedColor === color ? "border-[#1e4b64]" : "border-zinc-100")}
                     >
                       <div className="w-full h-full rounded-full" style={{ backgroundColor: color.toLowerCase() }} />
                     </button>
@@ -200,14 +175,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
               {/* Sizes */}
               <div className="flex flex-wrap gap-1.5">
                 {(product.sizes || ['S', 'M', 'L', 'XL', 'XXL']).map((size) => (
-                  <button
-                    key={size}
-                    onClick={(e) => { e.stopPropagation(); setSelectedSize(size); }}
-                    className={cn(
-                      "min-w-[34px] h-8 px-2 flex items-center justify-center rounded-lg border text-[11px] font-bold transition-all",
-                      selectedSize === size 
-                        ? "bg-[#1e4b64] border-[#1e4b64] text-white shadow-md shadow-blue-900/20" 
-                        : "bg-zinc-50 border-zinc-100 text-zinc-500 hover:border-zinc-300"
+                  <button key={size} onClick={(e) => { e.stopPropagation(); setSelectedSize(size); }}
+                    className={cn("min-w-[34px] h-8 px-2 flex items-center justify-center rounded-lg border text-[11px] font-bold transition-all",
+                      selectedSize === size ? "bg-[#1e4b64] border-[#1e4b64] text-white" : "bg-zinc-50 border-zinc-100 text-zinc-500"
                     )}
                   >
                     {size}
@@ -215,34 +185,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
                 ))}
               </div>
 
-              {/* Selection Summary and Buy Button */}
-              <div className="pt-2 flex flex-col gap-4">
-                <div className="flex items-center justify-between px-1">
-                   <div className="flex flex-col">
-                     <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider">Màu sắc</span>
-                     <span className="text-[11px] text-zinc-900 font-black italic">{selectedColor || '--'}</span>
-                   </div>
-                   <div className="flex flex-col items-end">
-                     <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider">Kích thước</span>
-                     <span className="text-[11px] text-zinc-900 font-black italic">{selectedSize || '--'}</span>
-                   </div>
-                </div>
-                
-                <button 
-                  onClick={handleQuickAdd}
-                  className={cn(
-                    "w-full h-11 rounded-[14px] flex items-center justify-center gap-3 text-[11px] font-black uppercase tracking-[0.15em] transition-all duration-500",
-                    "bg-[#00a651] text-white hover:bg-[#00c05d] shadow-[0_10px_25px_rgba(0,166,81,0.25)] hover:shadow-[0_15px_35px_rgba(0,166,81,0.4)] active:scale-[0.97]"
-                  )}
-                >
-                  <div className="relative">
-                    <ShoppingBag className="h-4.5 w-4.5" />
-                    {hasOptions && (
-                      <Settings className="absolute -top-1 -right-1 h-2.5 w-2.5 animate-spin-slow text-white/90" />
-                    )}
-                  </div>
-                  Thêm vào giỏ
-                </button>
+              <div className="flex items-center justify-between px-1 text-[10px] font-bold uppercase tracking-tight text-zinc-400">
+                <span>Màu: <span className="text-zinc-900">{selectedColor || '--'}</span></span>
+                <span>Size: <span className="text-zinc-900">{selectedSize || '--'}</span></span>
               </div>
             </div>
           </div>
