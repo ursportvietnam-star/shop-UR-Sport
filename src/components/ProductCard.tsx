@@ -114,16 +114,39 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
             </p>
           </div>
 
-          {/* Price Area */}
-          <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5 mb-3 mt-auto">
-            <span className="text-[16px] sm:text-[17px] font-black text-black whitespace-nowrap">
-              {(product.discountPrice || product.price).toLocaleString('vi-VN')}đ
-            </span>
-            {product.discountPrice && (
-              <span className="text-[11px] text-zinc-300 line-through font-bold whitespace-nowrap">
-                {product.price.toLocaleString('vi-VN')}đ
+          {/* Price Area and Quick Add */}
+          <div className="flex items-end justify-between mt-auto mb-1">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[17px] sm:text-[18px] font-black text-black leading-tight whitespace-nowrap">
+                {(product.discountPrice || product.price).toLocaleString('vi-VN')}đ
               </span>
-            )}
+              {product.discountPrice && (
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-zinc-300 line-through font-bold whitespace-nowrap">
+                    {product.price.toLocaleString('vi-VN')}đ
+                  </span>
+                  <span className="text-[9px] font-black text-zinc-400 border border-zinc-200 rounded px-1">
+                    -{discountPercent}%
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Compact Circle Add Button */}
+            <button 
+              onClick={handleQuickAdd}
+              className="relative w-9 h-9 rounded-full bg-[#00a651] text-white flex items-center justify-center shadow-lg hover:bg-[#00c05d] transition-all active:scale-90 group/btn"
+              title="Thêm vào giỏ"
+            >
+              <div className="relative">
+                <ShoppingBag className="h-4.5 w-4.5" />
+                {hasOptions && (
+                  <div className="absolute -top-1.5 -right-1.5 bg-white rounded-full p-0.5 shadow-sm border border-zinc-50">
+                    <Settings className="h-2.5 w-2.5 text-zinc-900 animate-spin-slow" />
+                  </div>
+                )}
+              </div>
+            </button>
           </div>
 
           {/* Expansion Section */}
