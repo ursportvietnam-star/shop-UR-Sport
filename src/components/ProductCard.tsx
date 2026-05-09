@@ -56,8 +56,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
           <img src={product.images?.[0] || ''} className="w-full h-full object-cover" />
         </div>
         <div className="p-4 flex flex-col flex-grow">
-          <div className="min-h-[2.5rem]" /> {/* Title space */}
-          <div className="h-20" /> {/* Price and other info space */}
+          <div className="h-4 mb-1.5" /> {/* Stars space */}
+          <div className="min-h-[2.5rem] mb-2" /> {/* Title space */}
+          <div className="h-10 mb-3" /> {/* Metadata space */}
+          <div className="h-7 mb-3 mt-auto" /> {/* Price space */}
         </div>
       </div>
 
@@ -66,7 +68,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
       */}
       <div className={cn(
         "absolute top-0 left-0 right-0 bg-white rounded-[24px] transition-all duration-300 ease-out border border-transparent overflow-hidden",
-        "group-hover:shadow-[0_30px_60px_rgba(0,0,0,0.15)] group-hover:z-50 group-hover:border-zinc-100 group-hover:-translate-y-1"
+        isHovered 
+          ? "shadow-[0_30px_60px_rgba(0,0,0,0.15)] z-50 border-zinc-100 -translate-y-1 h-auto" 
+          : "h-full z-10"
       )}>
         
         {/* Image Section */}
