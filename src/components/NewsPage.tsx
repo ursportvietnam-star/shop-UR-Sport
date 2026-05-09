@@ -230,7 +230,7 @@ export function NewsPage() {
               </div>
             </div>
 
-            <div className="blog-hero-image relative aspect-[16/9] overflow-hidden rounded-[32px] mb-12 shadow-2xl w-full">
+            <div className="blog-hero-image relative aspect-[1024/682] overflow-hidden rounded-[32px] mb-12 shadow-2xl w-full">
               <img 
                 src={selectedPost.image} 
                 alt={selectedPost.title} 
@@ -391,7 +391,7 @@ export function NewsPage() {
             className="group cursor-pointer"
             onClick={() => navigate(`/news/${post.id}`)}
           >
-            <div className="relative aspect-[16/10] overflow-hidden rounded-3xl mb-6 shadow-sm">
+            <div className="relative aspect-[1024/682] overflow-hidden rounded-3xl mb-6 shadow-sm">
               <img 
                 src={post.image} 
                 alt={post.title} 

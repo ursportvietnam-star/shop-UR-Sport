@@ -277,7 +277,7 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
                   className="group cursor-pointer" 
                   onClick={() => navigate(`/news/${item.id}`)}
                 >
-                  <div className="relative aspect-[16/10] overflow-hidden rounded-2xl mb-4 shadow-lg">
+                  <div className="relative aspect-[1024/682] overflow-hidden rounded-2xl mb-4 shadow-lg">
                     <img 
                       src={item.image} 
                       alt={item.title} 

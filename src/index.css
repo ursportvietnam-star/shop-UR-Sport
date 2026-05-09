@@ -9,6 +9,12 @@
   --color-brand-black: #0f172a;
   --color-brand-white: #ffffff;
   --color-brand-gray: #f8fafc;
+
+  @keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  --animation-spin-slow: spin-slow 8s linear infinite;
 }
 
 @layer base {

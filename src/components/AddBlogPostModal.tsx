@@ -530,8 +530,8 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
                 />
               </label>
               {coverImage && (
-                <div className="relative overflow-hidden rounded-3xl border border-zinc-200 bg-white">
-                  <img src={coverImage} alt="Cover" className="h-40 w-full object-cover" />
+                <div className="relative aspect-[1024/682] overflow-hidden rounded-3xl border border-zinc-200 bg-white">
+                  <img src={coverImage} alt="Cover" className="h-full w-full object-cover" />
                   <button
                     type="button"
                     onClick={() => setCoverImage('')}
