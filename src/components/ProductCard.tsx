@@ -149,7 +149,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
                 <ShoppingBag className="h-4.5 w-4.5" />
                 {hasOptions && (
                   <div className="absolute -top-1.5 -right-1.5 bg-white rounded-full p-0.5 shadow-sm border border-zinc-50">
-                    <Settings className="h-2.5 w-2.5 text-zinc-900 animate-spin-slow" />
+                    {selectedSize ? (
+                      <Plus className="h-2.5 w-2.5 text-zinc-900" />
+                    ) : (
+                      <Settings className="h-2.5 w-2.5 text-zinc-900 animate-spin-slow" />
+                    )}
                   </div>
                 )}
               </div>
@@ -200,8 +204,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
                 ))}
               </div>
 
-              {/* Summary and Buy Button */}
-              <div className="pt-2 flex flex-col gap-3">
+              {/* Summary only, no big button */}
+              <div className="pt-2 flex flex-col gap-2">
                 <div className="flex items-center justify-between px-1">
                    <div className="flex flex-col">
                      <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider">Màu sắc</span>
@@ -212,20 +216,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
                      <span className="text-[11px] text-zinc-900 font-black italic">{selectedSize || '--'}</span>
                    </div>
                 </div>
-                
-                <button 
-                  onClick={handleQuickAdd}
-                  className={cn(
-                    "w-full h-11 rounded-[14px] flex items-center justify-center gap-3 text-[11px] font-black uppercase tracking-[0.15em] transition-all duration-500",
-                    "bg-[#00a651] text-white hover:bg-[#00c05d] shadow-[0_10px_25px_rgba(0,166,81,0.25)] hover:shadow-[0_15px_35px_rgba(0,166,81,0.4)] active:scale-[0.97]"
-                  )}
-                >
-                  <div className="relative">
-                    <ShoppingBag className="h-4.5 w-4.5" />
-                    {hasOptions && <Settings className="absolute -top-1 -right-1 h-2.5 w-2.5 animate-spin-slow text-white/90" />}
-                  </div>
-                  Thêm vào giỏ
-                </button>
               </div>
             </div>
           </div>
