@@ -118,18 +118,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
             </button>
           </div>
 
-          {/* Add to Cart Floating Button */}
-          <button 
-            onClick={handleQuickAdd}
-            className={cn(
-              "absolute bottom-4 right-4 h-11 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 z-20 overflow-hidden",
-              "bg-[#00a651] text-white hover:bg-[#008c44] hover:scale-105 active:scale-95 px-3.5 gap-2",
-              "opacity-100 translate-y-0 sm:opacity-0 sm:translate-y-4 sm:group-hover:opacity-100 sm:group-hover:translate-y-0"
-            )}
-          >
-            <Plus className="h-5 w-5 stroke-[2.5]" />
-            {hasOptions && <Settings className="h-3.5 w-3.5 animate-spin-slow" />}
-          </button>
+
         </div>
 
         {/* Info Section */}
@@ -226,13 +215,24 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
                 ))}
               </div>
 
-              {/* Selection Summary */}
-              <div className="flex items-center justify-between pt-2">
-                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-tight">
-                  Màu: <span className="text-zinc-900">{selectedColor}</span>
-                  <span className="mx-2 text-zinc-200">|</span>
-                  Size: <span className="text-zinc-900 font-black">{selectedSize || '--'}</span>
-                </p>
+              {/* Selection Summary and Buy Button */}
+              <div className="pt-2 flex flex-col gap-3">
+                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-tight">
+                  <span className="text-zinc-400">Màu: <span className="text-zinc-900">{selectedColor || 'Chưa chọn'}</span></span>
+                  <span className="text-zinc-400">Size: <span className="text-zinc-900">{selectedSize || '--'}</span></span>
+                </div>
+                
+                <button 
+                  onClick={handleQuickAdd}
+                  className={cn(
+                    "w-full h-10 rounded-xl flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-widest transition-all duration-300",
+                    "bg-[#00a651] text-white hover:bg-[#008c44] shadow-md hover:shadow-green-500/20 active:scale-[0.98]"
+                  )}
+                >
+                  <Plus className="h-4 w-4 stroke-[3]" />
+                  Thêm vào giỏ
+                  {hasOptions && <Settings className="h-3 w-3 animate-spin-slow opacity-60" />}
+                </button>
               </div>
             </div>
           </div>
