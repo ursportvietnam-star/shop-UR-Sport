@@ -64,7 +64,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
         </div>
         <div className="p-3 sm:p-4 flex flex-col flex-grow">
           <div className="h-4 mb-1.5" /> {/* Stars space */}
-          <div className="min-h-[2.4rem] mb-2" /> {/* Title space */}
+          <div className="h-[2.6em] mb-2" /> {/* Title space */}
           <div className="h-5 mb-3" /> {/* Metadata space */}
           <div className="h-7 mb-3 mt-auto" /> {/* Price space */}
         </div>
@@ -111,7 +111,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
             <span className="text-[11px] font-bold text-zinc-500">{product.rating || '5.0'}</span>
           </div>
 
-          <h3 className="text-[13px] sm:text-[14px] font-bold text-zinc-800 leading-tight mb-2 line-clamp-2 min-h-[2.4rem] group-hover:text-[#1e4b64] transition-colors">
+          <h3 className="text-[13px] sm:text-[14px] font-bold text-zinc-800 leading-[1.3] mb-2 line-clamp-2 h-[2.6em] overflow-hidden group-hover:text-[#1e4b64] transition-colors">
             {product.name}
           </h3>
 
