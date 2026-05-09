@@ -156,13 +156,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
               </div>
 
               {/* Sizes */}
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-1 sm:gap-1.5">
                 {(product.sizes || ['S', 'M', 'L', 'XL', 'XXL']).map((size) => (
                   <button
                     key={size}
                     onClick={(e) => { e.stopPropagation(); setSelectedSize(size); }}
                     className={cn(
-                      "min-w-[34px] h-8 px-2 flex items-center justify-center rounded-lg border text-[11px] font-bold transition-all",
+                      "min-w-[28px] sm:min-w-[34px] h-7 sm:h-8 px-1.5 sm:px-2 flex items-center justify-center rounded-lg border text-[10px] sm:text-[11px] font-bold transition-all",
                       selectedSize === size 
                         ? "bg-[#1e4b64] border-[#1e4b64] text-white" 
                         : "bg-zinc-50 border-zinc-100 text-zinc-500 hover:border-zinc-300"
