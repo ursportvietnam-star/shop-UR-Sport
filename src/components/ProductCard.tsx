@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Product } from '../types';
 import { useCart } from '../CartContext';
 import { toast } from 'sonner';
-import { Star, ShoppingCart, Heart, Plus, RefreshCcw, Settings } from 'lucide-react';
+import { Star, ShoppingCart, ShoppingBag, Heart, Plus, RefreshCcw, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ProductCardProps {
@@ -216,22 +216,32 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
               </div>
 
               {/* Selection Summary and Buy Button */}
-              <div className="pt-2 flex flex-col gap-3">
-                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-tight">
-                  <span className="text-zinc-400">Màu: <span className="text-zinc-900">{selectedColor || 'Chưa chọn'}</span></span>
-                  <span className="text-zinc-400">Size: <span className="text-zinc-900">{selectedSize || '--'}</span></span>
+              <div className="pt-2 flex flex-col gap-4">
+                <div className="flex items-center justify-between px-1">
+                   <div className="flex flex-col">
+                     <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider">Màu sắc</span>
+                     <span className="text-[11px] text-zinc-900 font-black italic">{selectedColor || '--'}</span>
+                   </div>
+                   <div className="flex flex-col items-end">
+                     <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider">Kích thước</span>
+                     <span className="text-[11px] text-zinc-900 font-black italic">{selectedSize || '--'}</span>
+                   </div>
                 </div>
                 
                 <button 
                   onClick={handleQuickAdd}
                   className={cn(
-                    "w-full h-10 rounded-xl flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-widest transition-all duration-300",
-                    "bg-[#00a651] text-white hover:bg-[#008c44] shadow-md hover:shadow-green-500/20 active:scale-[0.98]"
+                    "w-full h-11 rounded-[14px] flex items-center justify-center gap-3 text-[11px] font-black uppercase tracking-[0.15em] transition-all duration-500",
+                    "bg-[#00a651] text-white hover:bg-[#00c05d] shadow-[0_10px_25px_rgba(0,166,81,0.25)] hover:shadow-[0_15px_35px_rgba(0,166,81,0.4)] active:scale-[0.97]"
                   )}
                 >
-                  <Plus className="h-4 w-4 stroke-[3]" />
+                  <div className="relative">
+                    <ShoppingBag className="h-4.5 w-4.5" />
+                    {hasOptions && (
+                      <Settings className="absolute -top-1 -right-1 h-2.5 w-2.5 animate-spin-slow text-white/90" />
+                    )}
+                  </div>
                   Thêm vào giỏ
-                  {hasOptions && <Settings className="h-3 w-3 animate-spin-slow opacity-60" />}
                 </button>
               </div>
             </div>
