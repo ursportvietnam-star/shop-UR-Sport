@@ -124,7 +124,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
             className={cn(
               "absolute bottom-4 right-4 h-11 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 z-20 overflow-hidden",
               "bg-[#00a651] text-white hover:bg-[#008c44] hover:scale-105 active:scale-95 px-3.5 gap-2",
-              "translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100"
+              "opacity-100 translate-y-0 sm:opacity-0 sm:translate-y-4 sm:group-hover:opacity-100 sm:group-hover:translate-y-0"
             )}
           >
             <Plus className="h-5 w-5 stroke-[2.5]" />
