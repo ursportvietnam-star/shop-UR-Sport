@@ -167,10 +167,12 @@ async function callGemini(systemInstruction: string, userPrompt: string) {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      if (response.status === 404) {
-        throw new Error('Model Gemini 1.5 Flash không tìm thấy. Vui lòng kiểm tra lại API Key.');
-      }
-      throw new Error(errorData.error?.message || 'Lỗi từ Gemini API');
+      console.error("Gemini Raw Error:", errorData);
+      
+      const googleMessage = errorData.error?.message || 'Unknown Google Error';
+      const googleStatus = errorData.error?.status || 'Unknown Status';
+      
+      throw new Error(`Google AI Error: ${googleMessage} (${googleStatus}). Vui lòng kiểm tra lại Key trong phần cài đặt.`);
     }
 
     const data = await response.json();
