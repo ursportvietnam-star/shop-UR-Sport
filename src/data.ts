@@ -1,4 +1,4 @@
-import { Category, Product, CategoryInfo, BlogPost, Order } from './types';
+import { Category, Product, CategoryInfo, BlogPost, Order, Voucher } from './types';
 
 export const CATEGORY_METADATA: CategoryInfo[] = [
   { 
@@ -753,4 +753,40 @@ export const STATIC_CUSTOMERS = [
   { id: 'usr-3', name: 'Lê Hoàng C', email: 'lehoangc@gmail.com', phone: '0987654321', ordersCount: 8, totalSpent: 5400000 },
   { id: 'usr-4', name: 'Phạm Văn D', email: 'phamvand@gmail.com', phone: '0933445566', ordersCount: 1, totalSpent: 270000 },
   { id: 'usr-5', name: 'Hoàng Thị E', email: 'hoangthie@gmail.com', phone: '0977889900', ordersCount: 3, totalSpent: 1800000 }
+];
+
+export const STATIC_VOUCHERS: Voucher[] = [
+  {
+    id: 'vc-1',
+    name: 'Giảm giá cuối tuần',
+    code: 'WEEKEND20',
+    startTime: new Date().toISOString(),
+    endTime: new Date(Date.now() + 86400000 * 7).toISOString(),
+    type: 'khuyen_mai',
+    discountType: 'percent',
+    discountValue: 10,
+    maxDiscountValue: 50000,
+    minOrderValue: 200000,
+    maxUsage: 100,
+    maxUsagePerUser: 1,
+    usedCount: 15,
+    isActive: true,
+    applicableProducts: ['all']
+  },
+  {
+    id: 'vc-2',
+    name: 'Mã giảm giá Khách mới',
+    code: 'NEWBIE',
+    startTime: new Date(Date.now() - 86400000 * 30).toISOString(),
+    endTime: new Date(Date.now() + 86400000 * 30).toISOString(),
+    type: 'khuyen_mai',
+    discountType: 'fixed',
+    discountValue: 20000,
+    minOrderValue: 100000,
+    maxUsage: 500,
+    maxUsagePerUser: 1,
+    usedCount: 450,
+    isActive: true,
+    applicableProducts: ['all']
+  }
 ];

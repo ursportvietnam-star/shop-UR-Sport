@@ -8,6 +8,8 @@ interface CartContextType {
   updateQuantity: (id: string, color: string, size: string, quantity: number) => void;
   clearCart: () => void;
   total: number;
+  savedVouchers: string[];
+  saveVoucher: (code: string) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -25,9 +27,34 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   });
 
+  const [savedVouchers, setSavedVouchers] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('savedVouchers');
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      console.error('Failed to parse saved vouchers from localStorage:', e);
+      return [];
+    }
+  });
+
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(cart));
   }, [cart]);
+
+  useEffect(() => {
+    localStorage.setItem('savedVouchers', JSON.stringify(savedVouchers));
+  }, [savedVouchers]);
+
+  const saveVoucher = (code: string) => {
+    setSavedVouchers(prev => {
+      if (!prev.includes(code)) {
+        return [...prev, code];
+      }
+      return prev;
+    });
+  };
 
   const addToCart = (product: Product, color: string, size: string, quantity: number = 1) => {
     setCart(prev => {
@@ -61,7 +88,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const total = cart.reduce((sum, item) => sum + (item.discountPrice || item.price) * item.quantity, 0);
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, total }}>
+    <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, total, savedVouchers, saveVoucher }}>
       {children}
     </CartContext.Provider>
   );

@@ -9,9 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Lock, Truck, ShieldCheck, RefreshCcw, CreditCard, Wallet, MapPin, User, Phone, Mail, FileText, X } from 'lucide-react';
+import { Lock, Truck, ShieldCheck, RefreshCcw, CreditCard, Wallet, MapPin, User, Phone, Mail, FileText, X, Ticket, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { Voucher } from '../types';
+import { VoucherSelectionModal } from './VoucherSelectionModal';
 
 const checkoutSchema = z.object({
   fullName: z.string().min(2, 'Vui lòng nhập họ tên'),
@@ -34,6 +36,23 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [paymentMethod, setPaymentMethod] = React.useState<'cod' | 'bank_transfer' | 'e_wallet'>('cod');
   const [activeWallet, setActiveWallet] = React.useState<'momo' | 'zalopay' | 'shopeepay'>('momo');
+  const [isVoucherModalOpen, setIsVoucherModalOpen] = React.useState(false);
+  const [appliedVoucher, setAppliedVoucher] = React.useState<Voucher | null>(null);
+
+  const discountAmount = React.useMemo(() => {
+    if (!appliedVoucher) return 0;
+    if (total < appliedVoucher.minOrderValue) return 0;
+    if (appliedVoucher.discountType === 'percent') {
+      const calculatedDiscount = (total * appliedVoucher.discountValue) / 100;
+      if (appliedVoucher.maxDiscountValue && calculatedDiscount > appliedVoucher.maxDiscountValue) {
+        return appliedVoucher.maxDiscountValue;
+      }
+      return calculatedDiscount;
+    }
+    return appliedVoucher.discountValue;
+  }, [appliedVoucher, total]);
+
+  const finalTotal = total - discountAmount;
 
   const { register, handleSubmit, formState: { errors } } = useForm<CheckoutFormValues>({
     resolver: zodResolver(checkoutSchema),
@@ -58,6 +77,9 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
         userId: user.uid,
         items: cart,
         total: total,
+        discountAmount: discountAmount,
+        finalTotal: finalTotal,
+        voucherCode: appliedVoucher?.code || null,
         status: 'pending',
         shippingAddress: {
           fullName: data.fullName,
@@ -256,10 +278,10 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                           <img 
                             src={
                               activeWallet === 'momo' 
-                                ? `https://img.vietqr.io/image/970415-0917722425-compact2.jpg?amount=${total}&addInfo=UR%20MOMO`
+                                ? `https://img.vietqr.io/image/970415-0917722425-compact2.jpg?amount=${finalTotal}&addInfo=UR%20MOMO`
                                 : activeWallet === 'zalopay'
-                                  ? `https://img.vietqr.io/image/970436-0917722425-compact2.jpg?amount=${total}&addInfo=UR%20ZALO`
-                                  : `https://img.vietqr.io/image/970422-0917722425-compact2.jpg?amount=${total}&addInfo=UR%20SHOPEE`
+                                  ? `https://img.vietqr.io/image/970436-0917722425-compact2.jpg?amount=${finalTotal}&addInfo=UR%20ZALO`
+                                  : `https://img.vietqr.io/image/970422-0917722425-compact2.jpg?amount=${finalTotal}&addInfo=UR%20SHOPEE`
                             } 
                             alt="Wallet QR" 
                             className="w-44 h-44 object-contain"
@@ -291,7 +313,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                                 </div>
                                 <div className="p-4 bg-zinc-50 rounded-2xl">
                                    <p className="text-[10px] text-zinc-400 font-black uppercase mb-1">Số tiền</p>
-                                   <p className="font-black text-sm text-[#1e4b64]">{total.toLocaleString('vi-VN')}₫</p>
+                                   <p className="font-black text-sm text-[#1e4b64]">{finalTotal.toLocaleString('vi-VN')}₫</p>
                                 </div>
                              </div>
                           </div>
@@ -313,7 +335,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                     <div className="flex flex-col md:flex-row gap-8 items-center">
                       <div className="bg-white p-4 rounded-3xl shadow-2xl shadow-blue-200/20 ring-1 ring-blue-100 shrink-0">
                         <img 
-                          src={`https://img.vietqr.io/image/MB-0917722425-compact2.jpg?amount=${total}&addInfo=UR%20ORDER`} 
+                          src={`https://img.vietqr.io/image/MB-0917722425-compact2.jpg?amount=${finalTotal}&addInfo=UR%20ORDER`} 
                           alt="VietQR" 
                           className="w-44 h-44 object-contain"
                         />
@@ -365,7 +387,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                     <div className="h-5 w-5 border-3 border-white/30 border-t-white rounded-full animate-spin" />
                     ĐANG XỬ LÝ...
                  </div>
-              ) : `HOÀN TẤT ĐẶT HÀNG - ${total.toLocaleString('vi-VN')}₫`}
+              ) : `HOÀN TẤT ĐẶT HÀNG - ${finalTotal.toLocaleString('vi-VN')}₫`}
             </Button>
           </form>
 
@@ -412,8 +434,27 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                   </ScrollArea>
                   
                   <Separator className="bg-zinc-50" />
+
+                  <div className="py-2 flex items-center justify-between group cursor-pointer transition-opacity hover:opacity-80" onClick={() => setIsVoucherModalOpen(true)}>
+                    <div className="flex items-center gap-2">
+                      <Ticket className="h-5 w-5 text-[#ee4d2d]" />
+                      <span className="text-sm font-black text-zinc-900">Voucher của Shop</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {appliedVoucher ? (
+                        <span className="text-[13px] font-black text-[#ee4d2d] border border-[#ee4d2d] border-dashed px-2 py-0.5 rounded bg-red-50">
+                          -{discountAmount.toLocaleString('vi-VN')}₫
+                        </span>
+                      ) : (
+                        <span className="text-[12px] font-bold text-zinc-400 group-hover:text-[#ee4d2d] transition-colors">Chọn Voucher</span>
+                      )}
+                      <ChevronRight className="h-4 w-4 text-zinc-400 group-hover:text-[#ee4d2d] transition-colors" />
+                    </div>
+                  </div>
                   
-                  <div className="space-y-4">
+                  <Separator className="bg-zinc-50" />
+                  
+                  <div className="space-y-4 pt-2">
                      <div className="flex justify-between text-zinc-400 text-xs font-black uppercase tracking-wider">
                         <span>Tạm tính</span>
                         <span className="text-zinc-900">{total.toLocaleString('vi-VN')}₫</span>
@@ -422,13 +463,19 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                         <span>Vận chuyển</span>
                         <span className="text-green-500 font-black">MIỄN PHÍ</span>
                      </div>
+                     {discountAmount > 0 && (
+                       <div className="flex justify-between text-zinc-400 text-xs font-black uppercase tracking-wider">
+                          <span>Giảm giá Voucher</span>
+                          <span className="text-[#ee4d2d] font-black">-{discountAmount.toLocaleString('vi-VN')}₫</span>
+                       </div>
+                     )}
                      
                      <div className="pt-6 border-t border-zinc-100 mt-6">
                         <div className="flex justify-between items-baseline">
                            <span className="text-zinc-400 text-xs font-black uppercase tracking-widest">Tổng cộng</span>
                            <div className="text-right">
                               <p className="text-3xl font-black text-zinc-900 italic tracking-tighter leading-none">
-                                 {total.toLocaleString('vi-VN')}₫
+                                 {finalTotal.toLocaleString('vi-VN')}₫
                               </p>
                               <p className="text-[10px] text-zinc-400 font-bold uppercase mt-1 italic">Đã bao gồm phí VAT</p>
                            </div>
@@ -438,6 +485,13 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                </CardContent>
              </Card>
              
+             <VoucherSelectionModal 
+               isOpen={isVoucherModalOpen}
+               onClose={() => setIsVoucherModalOpen(false)}
+               onApply={setAppliedVoucher}
+               currentTotal={total}
+               selectedVoucher={appliedVoucher}
+             />
              {/* Simple Trust Banner */}
              <div className="mt-6 flex items-center justify-center gap-8 text-zinc-300">
                 <div className="flex flex-col items-center gap-1">

@@ -29,8 +29,8 @@ export function BestSeller({ products }: BestSellerProps) {
             onClick={() => setActiveTab('new')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all ${
               activeTab === 'new' 
-                ? 'bg-black text-white shadow-md' 
-                : 'bg-white text-zinc-600 border border-zinc-200 hover:border-black hover:text-black'
+                ? 'bg-[#1e4b64] text-white shadow-md' 
+                : 'bg-white text-zinc-600 border border-zinc-200 hover:border-[#1e4b64] hover:text-[#1e4b64]'
             }`}
           >
             Sản phẩm mới {activeTab === 'new' && <Star className="w-3.5 h-3.5 fill-white" />}
@@ -40,8 +40,8 @@ export function BestSeller({ products }: BestSellerProps) {
             onClick={() => setActiveTab('best_seller')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all ${
               activeTab === 'best_seller' 
-                ? 'bg-black text-white shadow-md' 
-                : 'bg-white text-zinc-600 border border-zinc-200 hover:border-black hover:text-black'
+                ? 'bg-[#1e4b64] text-white shadow-md' 
+                : 'bg-white text-zinc-600 border border-zinc-200 hover:border-[#1e4b64] hover:text-[#1e4b64]'
             }`}
           >
             Bán chạy nhất {activeTab === 'best_seller' && <Star className="w-3.5 h-3.5 fill-white" />}

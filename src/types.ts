@@ -88,3 +88,22 @@ export interface BlogPost {
   videos?: string[];
   createdAt?: any;
 }
+
+export interface Voucher {
+  id: string;
+  name: string;
+  code: string;
+  startTime: string;
+  endTime: string;
+  type: 'khuyen_mai' | 'hoan_xu';
+  discountType: 'fixed' | 'percent';
+  discountValue: number;
+  maxDiscountValue?: number;
+  minOrderValue: number;
+  maxUsage: number;
+  maxUsagePerUser: number;
+  usedCount: number;
+  isActive: boolean;
+  applicableProducts?: string[]; // array of product ids or 'all'
+  createdAt?: any;
+}

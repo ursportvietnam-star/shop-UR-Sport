@@ -3,20 +3,21 @@ import {
   LayoutDashboard, Package, ShoppingBag, Users, MessageSquare,
   Image as ImageIcon, Settings, Plus, Trash2, Edit2, LogOut,
   TrendingUp, Eye, DollarSign, BarChart2, Menu, X, Bell,
-  Search, ChevronRight, Upload, Star, AlertCircle, Copy, ExternalLink, Code2, Check as CheckIcon, Bot, Sparkles, Zap, Timer, Clock
+  Search, ChevronRight, Upload, Star, AlertCircle, Copy, ExternalLink, Code2, Check as CheckIcon, Bot, Sparkles, Zap, Timer, Clock, Ticket
 } from 'lucide-react';
 import { collection, onSnapshot, query, orderBy, deleteDoc, doc, setDoc, getDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
-import { PRODUCTS as STATIC_PRODUCTS, STATIC_BLOG_POSTS, STATIC_ORDERS, STATIC_CUSTOMERS, CATEGORY_METADATA } from '../data';
+import { PRODUCTS as STATIC_PRODUCTS, STATIC_BLOG_POSTS, STATIC_ORDERS, STATIC_CUSTOMERS, CATEGORY_METADATA, STATIC_VOUCHERS } from '../data';
 import { ImageUpload } from './ImageUpload';
 import { AddProductModal } from './AddProductModal';
 import { AddBlogPostModal } from './AddBlogPostModal';
+import { AddVoucherModal } from './AddVoucherModal';
 import { OrderDetailModal } from './OrderDetailModal';
 import { AIProductAssistant } from './AIProductAssistant';
 import { AIBlogAssistant } from './AIBlogAssistant';
 import { AIProductData, AIBlogData } from '../lib/gemini';
 import { useAuth } from '../AuthContext';
-import { Product, BlogPost, Order } from '../types';
+import { Product, BlogPost, Order, Voucher } from '../types';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -26,7 +27,7 @@ interface MediaItem {
   createdAt: any;
 }
 
-type AdminTab = 'dashboard' | 'products' | 'orders' | 'customers' | 'blog' | 'media' | 'settings' | 'ai-product' | 'ai-blog' | 'flash-sale';
+type AdminTab = 'dashboard' | 'products' | 'orders' | 'customers' | 'vouchers' | 'blog' | 'media' | 'settings' | 'ai-product' | 'ai-blog' | 'flash-sale';
 
 const NAV_ITEMS: { id: AdminTab; label: string; icon: React.FC<any> }[] = [
   { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },
@@ -36,6 +37,7 @@ const NAV_ITEMS: { id: AdminTab; label: string; icon: React.FC<any> }[] = [
   { id: 'ai-blog', label: 'AI Blog', icon: Sparkles },
   { id: 'orders', label: 'Đơn hàng', icon: ShoppingBag },
   { id: 'customers', label: 'Khách hàng', icon: Users },
+  { id: 'vouchers', label: 'Mã giảm giá', icon: Ticket },
   { id: 'media', label: 'Thư viện ảnh', icon: ImageIcon },
   { id: 'flash-sale', label: 'Flash Sale', icon: Zap },
   { id: 'settings', label: 'Cài đặt', icon: Settings },
@@ -55,6 +57,9 @@ export const AdminPanel: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [blogSearchQuery, setBlogSearchQuery] = useState('');
+  const [vouchers, setVouchers] = useState<Voucher[]>([]);
+  const [isVoucherModalOpen, setIsVoucherModalOpen] = useState(false);
+  const [editingVoucher, setEditingVoucher] = useState<Voucher | null>(null);
   const [customCss, setCustomCss] = useState('');
   const [cssSaved, setCssSaved] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -121,6 +126,18 @@ export const AdminPanel: React.FC = () => {
       setMediaItems(data);
     }, () => {
       setMediaItems([]);
+    });
+    return () => unsubscribe();
+  }, [isAdmin]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    const q = query(collection(db, 'vouchers'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Voucher[];
+      setVouchers(data.length > 0 ? data : STATIC_VOUCHERS);
+    }, () => {
+      setVouchers(STATIC_VOUCHERS);
     });
     return () => unsubscribe();
   }, [isAdmin]);
@@ -228,6 +245,16 @@ export const AdminPanel: React.FC = () => {
       toast.success('Đã xóa đơn hàng');
     } catch {
       toast.error('Lỗi khi xóa đơn hàng');
+    }
+  };
+
+  const handleDeleteVoucher = async (id: string) => {
+    if (!window.confirm('Bạn có chắc muốn xóa mã giảm giá này?')) return;
+    try {
+      await deleteDoc(doc(db, 'vouchers', id));
+      toast.success('Đã xóa mã giảm giá');
+    } catch {
+      toast.error('Lỗi khi xóa mã giảm giá');
     }
   };
 
@@ -526,6 +553,18 @@ export const AdminPanel: React.FC = () => {
               >
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">Thêm bài viết</span>
+              </button>
+            )}
+            {activeTab === 'vouchers' && (
+              <button
+                onClick={() => {
+                  setEditingVoucher(null);
+                  setIsVoucherModalOpen(true);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-[#ee4d2d] hover:bg-[#d73211] text-white text-sm font-bold rounded-xl shadow-lg shadow-[#ee4d2d]/20 transition-all hover:scale-105 active:scale-95"
+              >
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Tạo mã giảm giá mới</span>
               </button>
             )}
           </div>
@@ -832,6 +871,110 @@ export const AdminPanel: React.FC = () => {
                                 </button>
                                 <button
                                   onClick={() => handleDeleteBlogPost(post.id)}
+                                  title="Xóa"
+                                  className="h-8 w-8 flex items-center justify-center rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'vouchers' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-white/40 text-sm font-medium">
+                  Hiển thị <span className="text-white font-bold">{vouchers.length}</span> mã giảm giá
+                </p>
+              </div>
+
+              <div className="bg-[#13161f] border border-white/5 rounded-2xl overflow-hidden">
+                {vouchers.length === 0 ? (
+                  <div className="py-20 flex items-center justify-center">
+                    <Ticket className="h-12 w-12 text-white/10 mx-auto mb-3" />
+                    <p className="text-white/30 font-bold text-sm">Chưa có mã giảm giá nào</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                      <thead>
+                        <tr className="border-b border-white/5">
+                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Mã / Tên</th>
+                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Mức giảm</th>
+                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Thời gian</th>
+                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Đã dùng</th>
+                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Trạng thái</th>
+                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30 text-right">Thao tác</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/[0.04]">
+                        {vouchers.map(voucher => (
+                          <tr key={voucher.id} className="hover:bg-white/[0.02] transition-all group">
+                            <td className="px-6 py-4">
+                              <p className="text-[#ee4d2d] text-sm font-bold tracking-widest">{voucher.code}</p>
+                              <p className="text-white/60 text-xs mt-1">{voucher.name}</p>
+                            </td>
+                            <td className="px-6 py-4">
+                              <p className="text-white text-sm font-bold">
+                                {voucher.discountType === 'fixed' 
+                                  ? `${voucher.discountValue.toLocaleString('vi-VN')}₫` 
+                                  : `${voucher.discountValue}%`}
+                              </p>
+                              <p className="text-white/40 text-[10px] mt-0.5">Đơn tối thiểu {voucher.minOrderValue.toLocaleString('vi-VN')}₫</p>
+                            </td>
+                            <td className="px-6 py-4">
+                              <p className="text-white/80 text-xs">{new Date(voucher.startTime).toLocaleDateString('vi-VN')} - {new Date(voucher.endTime).toLocaleDateString('vi-VN')}</p>
+                            </td>
+                            <td className="px-6 py-4">
+                              <p className="text-white text-sm font-bold">{voucher.usedCount || 0} / {voucher.maxUsage}</p>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={cn(
+                                "px-2 py-1 rounded text-[10px] font-bold uppercase",
+                                voucher.isActive ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"
+                              )}>
+                                {voucher.isActive ? 'Kích hoạt' : 'Đã tắt'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center justify-end gap-1">
+                                <button
+                                  onClick={() => {
+                                    setEditingVoucher(voucher);
+                                    setIsVoucherModalOpen(true);
+                                  }}
+                                  title="Sửa"
+                                  className="h-8 w-8 flex items-center justify-center rounded-lg text-white/30 hover:text-blue-400 hover:bg-blue-500/10 transition-all"
+                                >
+                                  <Edit2 className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    const duplicatedVoucher = {
+                                      ...voucher,
+                                      id: '', // Empty ID ensures it's treated as a new voucher
+                                      code: `${voucher.code}_COPY`,
+                                      name: `${voucher.name} (Bản sao)`,
+                                      usedCount: 0, // Reset usage count
+                                    };
+                                    setEditingVoucher(duplicatedVoucher);
+                                    setIsVoucherModalOpen(true);
+                                  }}
+                                  title="Nhân bản"
+                                  className="h-8 w-8 flex items-center justify-center rounded-lg text-white/30 hover:text-green-400 hover:bg-green-500/10 transition-all"
+                                >
+                                  <Copy className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteVoucher(voucher.id)}
                                   title="Xóa"
                                   className="h-8 w-8 flex items-center justify-center rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all"
                                 >
@@ -1747,6 +1890,20 @@ export const AdminPanel: React.FC = () => {
           setSelectedOrder(null);
         }}
         order={selectedOrder}
+      />
+
+      <AddVoucherModal
+        key={isVoucherModalOpen ? (editingVoucher?.id || 'new') : 'closed'}
+        isOpen={isVoucherModalOpen}
+        onClose={() => {
+          setIsVoucherModalOpen(false);
+          setEditingVoucher(null);
+        }}
+        onSuccess={() => {
+          setIsVoucherModalOpen(false);
+          setEditingVoucher(null);
+        }}
+        voucher={editingVoucher}
       />
     </div>
   );

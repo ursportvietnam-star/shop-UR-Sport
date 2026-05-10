@@ -14,6 +14,7 @@ import { FloatingContactMenu } from './components/FloatingContactMenu';
 import { FlashSale } from './components/FlashSale';
 import { BestSeller } from './components/BestSeller';
 import { FULLCollectionSection } from './components/FULLCollectionSection';
+import { StorefrontVoucherBanner } from './components/StorefrontVoucherBanner';
 import { PRODUCTS, CATEGORIES, CATEGORY_METADATA, STATIC_BLOG_POSTS } from './data';
 import { Product, Category } from './types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -43,6 +44,8 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
   return (
     <>
       <Hero onShopClick={() => navigate('/shop')} />
+
+      <StorefrontVoucherBanner />
       
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
