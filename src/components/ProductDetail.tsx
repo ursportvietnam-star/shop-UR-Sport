@@ -14,7 +14,8 @@ import {
   onSnapshot,
   serverTimestamp,
   doc,
-  runTransaction
+  runTransaction,
+  getDoc
 } from 'firebase/firestore';
 import { Review, Product } from '../types';
 import {
@@ -39,7 +40,9 @@ import {
   Truck,
   ShieldCheck,
   RefreshCcw,
-  MessageCircle
+  MessageCircle,
+  Zap,
+  Clock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
@@ -86,6 +89,8 @@ export const ProductDetail: React.FC = () => {
   const [suggestedSize, setSuggestedSize] = useState<string | null>(null);
   const [isSizeProfileModalOpen, setIsSizeProfileModalOpen] = useState(false);
   const { user } = useAuth();
+  const [flashSaleSettings, setFlashSaleSettings] = useState<any>(null);
+  const [flashSaleCountdown, setFlashSaleCountdown] = useState({ h: '00', m: '00', s: '00', active: false });
 
   const SHIRT_SIZES = [
     { size: 'M', vai: 46, dai: 37, nguc: 64 },
@@ -186,8 +191,49 @@ export const ProductDetail: React.FC = () => {
 
     checkPurchaseStatus();
 
+    const fetchFlashSale = async () => {
+      const snap = await getDoc(doc(db, 'settings', 'flashSale'));
+      if (snap.exists()) {
+        setFlashSaleSettings(snap.data());
+      }
+    };
+    fetchFlashSale();
+
     return () => unsubscribe();
   }, [product?.id, user]);
+
+  useEffect(() => {
+    if (!flashSaleSettings || !flashSaleSettings.isActive || !product) return;
+
+    const flashSaleProduct = flashSaleSettings.products?.find((p: any) => p.id === product.id);
+    if (!flashSaleProduct) {
+      setFlashSaleCountdown(prev => ({ ...prev, active: false }));
+      return;
+    }
+
+    const timer = setInterval(() => {
+      const now = new Date().getTime();
+      const start = new Date(flashSaleSettings.startTime).getTime();
+      const end = new Date(flashSaleSettings.endTime).getTime();
+
+      if (now >= start && now <= end) {
+        const diff = end - now;
+        const h = Math.floor(diff / (1000 * 60 * 60));
+        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((diff % (1000 * 60)) / 1000);
+        setFlashSaleCountdown({
+          h: h.toString().padStart(2, '0'),
+          m: m.toString().padStart(2, '0'),
+          s: s.toString().padStart(2, '0'),
+          active: true
+        });
+      } else {
+        setFlashSaleCountdown(prev => ({ ...prev, active: false }));
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [flashSaleSettings, product]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -363,7 +409,14 @@ export const ProductDetail: React.FC = () => {
   }
 
   const handleAddToCart = () => {
-    addToCart(product, selectedColor, selectedSize, quantity);
+    const flashSaleProduct = flashSaleSettings?.products?.find((p: any) => p.id === product.id);
+    const finalPrice = (flashSaleCountdown.active && flashSaleProduct) 
+      ? flashSaleProduct.flashSalePrice 
+      : (product.discountPrice || product.price);
+
+    const cartProduct = { ...product, discountPrice: finalPrice };
+    
+    addToCart(cartProduct, selectedColor, selectedSize, quantity);
     toast.success(`Đã thêm ${product.name} vào giỏ hàng`, {
       description: `${selectedColor} / Size ${selectedSize} (qty: ${quantity})`,
       position: 'top-center',
@@ -377,7 +430,14 @@ export const ProductDetail: React.FC = () => {
   };
 
   const handleBuyNow = () => {
-    addToCart(product, selectedColor, selectedSize, quantity);
+    const flashSaleProduct = flashSaleSettings?.products?.find((p: any) => p.id === product.id);
+    const finalPrice = (flashSaleCountdown.active && flashSaleProduct) 
+      ? flashSaleProduct.flashSalePrice 
+      : (product.discountPrice || product.price);
+
+    const cartProduct = { ...product, discountPrice: finalPrice };
+    
+    addToCart(cartProduct, selectedColor, selectedSize, quantity);
     navigate('/checkout');
   };
 
@@ -496,14 +556,46 @@ export const ProductDetail: React.FC = () => {
                 </div>
               </div>
 
+              {flashSaleCountdown.active && (
+                <div className="bg-gradient-to-r from-[#ff3b30] to-[#ff9500] rounded-xl overflow-hidden shadow-lg shadow-red-500/20 mb-6">
+                  <div className="flex items-center justify-between px-4 py-3 bg-white/10 backdrop-blur-sm">
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-5 w-5 text-white fill-white animate-pulse" />
+                      <span className="text-white font-black text-lg uppercase tracking-tighter italic">FLASH SALE</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1.5 text-white/90 text-[10px] font-black uppercase tracking-widest">
+                        <Clock className="h-3.5 w-3.5" /> KẾT THÚC TRONG
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {[flashSaleCountdown.h, flashSaleCountdown.m, flashSaleCountdown.s].map((val, i) => (
+                          <React.Fragment key={i}>
+                            <span className="bg-zinc-900 text-white text-xs font-black px-1.5 py-1 rounded-md min-w-[24px] text-center shadow-xl">{val}</span>
+                            {i < 2 && <span className="text-white font-black text-xs animate-pulse">:</span>}
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-3 pt-6 border-t border-zinc-100">
                 <div className="flex items-baseline gap-2 sm:gap-4 flex-nowrap">
                   <span className="text-3xl sm:text-5xl font-bold text-[#ff3b30] tracking-tighter whitespace-nowrap">
-                    {(product.discountPrice || product.price).toLocaleString('vi-VN')}₫
+                    {(flashSaleCountdown.active 
+                      ? flashSaleSettings.products.find((p: any) => p.id === product.id)?.flashSalePrice 
+                      : (product.discountPrice || product.price)
+                    ).toLocaleString('vi-VN')}₫
                   </span>
-                  {product.discountPrice && (
+                  {(product.discountPrice || flashSaleCountdown.active) && (
                     <span className="text-lg sm:text-2xl text-zinc-300 line-through font-bold whitespace-nowrap">
                       {product.price.toLocaleString('vi-VN')}₫
+                    </span>
+                  )}
+                  {flashSaleCountdown.active && (
+                    <span className="px-2 py-1 bg-red-100 text-red-600 text-xs font-black rounded-lg">
+                      -{Math.round((1 - (flashSaleSettings.products.find((p: any) => p.id === product.id)?.flashSalePrice / product.price)) * 100)}%
                     </span>
                   )}
                 </div>

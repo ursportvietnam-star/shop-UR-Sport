@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Package, ShoppingBag, Users, MessageSquare,
   Image as ImageIcon, Settings, Plus, Trash2, Edit2, LogOut,
   TrendingUp, Eye, DollarSign, BarChart2, Menu, X, Bell,
-  Search, ChevronRight, Upload, Star, AlertCircle, Copy, ExternalLink, Code2, Check as CheckIcon, Bot, Sparkles
+  Search, ChevronRight, Upload, Star, AlertCircle, Copy, ExternalLink, Code2, Check as CheckIcon, Bot, Sparkles, Zap, Timer, Clock
 } from 'lucide-react';
 import { collection, onSnapshot, query, orderBy, deleteDoc, doc, setDoc, getDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -26,7 +26,7 @@ interface MediaItem {
   createdAt: any;
 }
 
-type AdminTab = 'dashboard' | 'products' | 'orders' | 'customers' | 'blog' | 'media' | 'settings' | 'ai-product' | 'ai-blog';
+type AdminTab = 'dashboard' | 'products' | 'orders' | 'customers' | 'blog' | 'media' | 'settings' | 'ai-product' | 'ai-blog' | 'flash-sale';
 
 const NAV_ITEMS: { id: AdminTab; label: string; icon: React.FC<any> }[] = [
   { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },
@@ -37,6 +37,7 @@ const NAV_ITEMS: { id: AdminTab; label: string; icon: React.FC<any> }[] = [
   { id: 'orders', label: 'Đơn hàng', icon: ShoppingBag },
   { id: 'customers', label: 'Khách hàng', icon: Users },
   { id: 'media', label: 'Thư viện ảnh', icon: ImageIcon },
+  { id: 'flash-sale', label: 'Flash Sale', icon: Zap },
   { id: 'settings', label: 'Cài đặt', icon: Settings },
 ];
 
@@ -66,6 +67,12 @@ export const AdminPanel: React.FC = () => {
     callPhone: '0917722425',
     zaloIcon: 'https://res.cloudinary.com/dcj4qhcfh/image/upload/v1778164803/media/rbkdvi2xgqeg6b79cq1n.webp',
     callIcon: 'https://res.cloudinary.com/dcj4qhcfh/image/upload/v1778166005/media/ximp16qsaxdt7noebddh.jpg'
+  });
+  const [flashSaleSettings, setFlashSaleSettings] = useState({
+    products: [] as { id: string; flashSalePrice: number }[],
+    startTime: '',
+    endTime: '',
+    isActive: true
   });
 
   useEffect(() => {
@@ -148,6 +155,17 @@ export const AdminPanel: React.FC = () => {
     });
     getDoc(doc(db, 'settings', 'floatingMenu')).then(snap => {
       if (snap.exists()) setFloatingMenu(prev => ({ ...prev, ...snap.data() }));
+    });
+    getDoc(doc(db, 'settings', 'flashSale')).then(snap => {
+      if (snap.exists()) {
+        const data = snap.data();
+        setFlashSaleSettings(prev => ({ 
+          ...prev, 
+          ...data,
+          // Migration/Compatibility check
+          products: data.products || (data.productIds || []).map((id: string) => ({ id, flashSalePrice: 0 }))
+        }));
+      }
     });
   }, [isAdmin]);
 
@@ -279,6 +297,15 @@ export const AdminPanel: React.FC = () => {
       toast.success('Đã cập nhật cài đặt Menu nổi!');
     } catch {
       toast.error('Lỗi khi lưu cài đặt');
+    }
+  };
+
+  const handleSaveFlashSale = async () => {
+    try {
+      await setDoc(doc(db, 'settings', 'flashSale'), flashSaleSettings);
+      toast.success('Đã lưu cài đặt Flash Sale!');
+    } catch {
+      toast.error('Lỗi khi lưu Flash Sale');
     }
   };
 
@@ -1411,6 +1438,216 @@ export const AdminPanel: React.FC = () => {
                       <p className="text-white/25 text-[10px] font-mono mt-1 truncate">{snippet.css.split('\n')[0]}</p>
                     </button>
                   ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'flash-sale' && (
+            <div className="space-y-6">
+              <div className="bg-[#13161f] border border-white/5 rounded-2xl p-6">
+                <div className="flex items-center justify-between mb-8">
+                  <div>
+                    <h3 className="text-white font-black text-lg uppercase tracking-tight">Cấu hình Flash Sale</h3>
+                    <p className="text-white/30 text-sm mt-1">Chọn sản phẩm và thời gian chạy chương trình giảm giá chớp nhoáng</p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-xl border border-white/5">
+                      <span className="text-white/40 text-xs font-bold uppercase tracking-widest">Trạng thái:</span>
+                      <button 
+                        onClick={() => setFlashSaleSettings(prev => ({ ...prev, isActive: !prev.isActive }))}
+                        className={cn(
+                          "px-3 py-1 rounded-lg text-[10px] font-black uppercase transition-all",
+                          flashSaleSettings.isActive ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"
+                        )}
+                      >
+                        {flashSaleSettings.isActive ? 'Đang bật' : 'Đang tắt'}
+                      </button>
+                    </div>
+                    <button 
+                      onClick={handleSaveFlashSale}
+                      className="px-6 py-2 bg-[#1e4b64] hover:bg-[#153446] text-white text-sm font-bold rounded-xl shadow-lg shadow-[#1e4b64]/20 transition-all flex items-center gap-2"
+                    >
+                      Lưu cấu hình
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                  <div className="space-y-4 p-6 bg-white/[0.02] border border-white/5 rounded-2xl">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Timer className="h-5 w-5 text-[#1e4b64]" />
+                      <h4 className="text-white font-bold text-sm uppercase tracking-wider">Thời gian diễn ra</h4>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-[10px] font-black uppercase text-white/30 mb-1.5 block">Thời gian bắt đầu</label>
+                        <div className="relative">
+                          <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20" />
+                          <input 
+                            type="datetime-local"
+                            value={flashSaleSettings.startTime}
+                            onChange={(e) => setFlashSaleSettings(prev => ({ ...prev, startTime: e.target.value }))}
+                            className="w-full bg-[#0f1117] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#1e4b64]/50 transition-all"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-black uppercase text-white/30 mb-1.5 block">Thời gian kết thúc</label>
+                        <div className="relative">
+                          <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20" />
+                          <input 
+                            type="datetime-local"
+                            value={flashSaleSettings.endTime}
+                            onChange={(e) => setFlashSaleSettings(prev => ({ ...prev, endTime: e.target.value }))}
+                            className="w-full bg-[#0f1117] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#1e4b64]/50 transition-all"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-6 bg-white/[0.02] border border-white/5 rounded-2xl">
+                    <div className="flex items-center gap-3 mb-4">
+                      <Package className="h-5 w-5 text-[#1e4b64]" />
+                      <h4 className="text-white font-bold text-sm uppercase tracking-wider">Tóm tắt</h4>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-white/40">Sản phẩm đã chọn:</span>
+                        <span className="text-white font-bold">{flashSaleSettings.products.length}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-white/40">Thời lượng:</span>
+                        <span className="text-white font-bold">
+                          {flashSaleSettings.startTime && flashSaleSettings.endTime ? (
+                            Math.max(0, Math.round((new Date(flashSaleSettings.endTime).getTime() - new Date(flashSaleSettings.startTime).getTime()) / (1000 * 60 * 60))) + ' giờ'
+                          ) : 'Chưa thiết lập'}
+                        </span>
+                      </div>
+                      <div className="pt-3 border-t border-white/5">
+                        <div className="flex items-center gap-2">
+                          <div className={cn(
+                            "h-2 w-2 rounded-full",
+                            flashSaleSettings.isActive && flashSaleSettings.startTime && new Date() >= new Date(flashSaleSettings.startTime) && new Date() <= new Date(flashSaleSettings.endTime)
+                              ? "bg-emerald-500 animate-pulse"
+                              : "bg-white/10"
+                          )} />
+                          <span className="text-[11px] font-black uppercase text-white/40">
+                            {flashSaleSettings.isActive && flashSaleSettings.startTime && new Date() >= new Date(flashSaleSettings.startTime) && new Date() <= new Date(flashSaleSettings.endTime)
+                              ? "Đang diễn ra"
+                              : "Đang chờ"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <h4 className="text-white font-bold text-sm uppercase tracking-wider">Chọn sản phẩm tham gia</h4>
+                      <span className="px-2 py-0.5 bg-white/5 rounded text-[10px] font-bold text-white/30 uppercase">Chỉ hiện sản phẩm có giá khuyến mãi</span>
+                    </div>
+                    <div className="relative w-64">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/20" />
+                      <input 
+                        type="text"
+                        placeholder="Tìm sản phẩm..."
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        className="w-full bg-white/5 border border-white/5 rounded-lg pl-9 pr-4 py-1.5 text-xs text-white placeholder:text-white/20 outline-none focus:border-[#1e4b64]/50"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                    {products
+                      .filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                      .sort((a, b) => {
+                        const isSelectedA = flashSaleSettings.products.some(p => p.id === a.id);
+                        const isSelectedB = flashSaleSettings.products.some(p => p.id === b.id);
+                        if (isSelectedA === isSelectedB) return 0;
+                        return isSelectedA ? -1 : 1;
+                      })
+                      .map(product => {
+                        const flashSaleProduct = flashSaleSettings.products.find(p => p.id === product.id);
+                        const isSelected = !!flashSaleProduct;
+
+                      return (
+                        <div 
+                          key={product.id}
+                          className={cn(
+                            "relative bg-[#0f1117] border rounded-xl p-3 transition-all group",
+                            isSelected 
+                              ? "border-[#1e4b64] bg-[#1e4b64]/5 shadow-lg shadow-[#1e4b64]/10" 
+                              : "border-white/5 hover:border-white/10"
+                          )}
+                        >
+                          <div 
+                            onClick={() => {
+                              setFlashSaleSettings(prev => ({
+                                ...prev,
+                                products: isSelected 
+                                  ? prev.products.filter(p => p.id !== product.id)
+                                  : [...prev.products, { id: product.id, flashSalePrice: product.discountPrice || product.price * 0.9 }]
+                              }));
+                            }}
+                            className="aspect-square rounded-lg overflow-hidden mb-3 bg-white/5 relative cursor-pointer"
+                          >
+                            <img src={product.images[0]} alt="" className="w-full h-full object-cover" />
+                            {isSelected && (
+                              <div className="absolute inset-0 bg-[#1e4b64]/20 flex items-center justify-center">
+                                <div className="h-8 w-8 bg-[#1e4b64] rounded-full flex items-center justify-center shadow-xl">
+                                  <CheckIcon className="h-4 w-4 text-white" />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          <p className="text-white text-[11px] font-bold line-clamp-2 leading-relaxed h-8">{product.name}</p>
+                          
+                          <div className="mt-3 space-y-2">
+                            {isSelected ? (
+                              <div>
+                                <label className="text-[9px] font-black uppercase text-[#1e4b64] block mb-1">Giá Flash Sale</label>
+                                <div className="relative">
+                                  <input 
+                                    type="number"
+                                    value={flashSaleProduct.flashSalePrice}
+                                    onChange={(e) => {
+                                      const val = parseInt(e.target.value) || 0;
+                                      setFlashSaleSettings(prev => ({
+                                        ...prev,
+                                        products: prev.products.map(p => p.id === product.id ? { ...p, flashSalePrice: val } : p)
+                                      }));
+                                    }}
+                                    className="w-full bg-white/5 border border-[#1e4b64]/30 rounded-lg pl-2 pr-6 py-1.5 text-xs text-white font-bold outline-none focus:border-[#1e4b64]"
+                                  />
+                                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-white/30 italic">₫</span>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-between">
+                                <p className="text-white/50 text-xs font-black">{product.price.toLocaleString('vi-VN')}₫</p>
+                                <button 
+                                  onClick={() => {
+                                    setFlashSaleSettings(prev => ({
+                                      ...prev,
+                                      products: [...prev.products, { id: product.id, flashSalePrice: product.discountPrice || product.price * 0.9 }]
+                                    }));
+                                  }}
+                                  className="p-1.5 bg-white/5 hover:bg-[#1e4b64]/20 text-white/40 hover:text-[#1e4b64] rounded-lg transition-all"
+                                >
+                                  <Plus className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             </div>
