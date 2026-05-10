@@ -69,7 +69,7 @@ export const AdminPanel: React.FC = () => {
     callIcon: 'https://res.cloudinary.com/dcj4qhcfh/image/upload/v1778166005/media/ximp16qsaxdt7noebddh.jpg'
   });
   const [flashSaleSettings, setFlashSaleSettings] = useState({
-    products: [] as { id: string; flashSalePrice: number }[],
+    products: [] as { id: string; flashSalePrice: number; sold: number }[],
     startTime: '',
     endTime: '',
     isActive: true
@@ -1591,7 +1591,7 @@ export const AdminPanel: React.FC = () => {
                                 ...prev,
                                 products: isSelected 
                                   ? prev.products.filter(p => p.id !== product.id)
-                                  : [...prev.products, { id: product.id, flashSalePrice: product.discountPrice || product.price * 0.9 }]
+                                  : [...prev.products, { id: product.id, flashSalePrice: product.discountPrice || product.price * 0.9, sold: 0 }]
                               }));
                             }}
                             className="aspect-square rounded-lg overflow-hidden mb-3 bg-white/5 relative cursor-pointer"
@@ -1608,42 +1608,61 @@ export const AdminPanel: React.FC = () => {
                           <p className="text-white text-[11px] font-bold line-clamp-2 leading-relaxed h-8">{product.name}</p>
                           
                           <div className="mt-3 space-y-2">
-                            {isSelected ? (
-                              <div>
-                                <label className="text-[9px] font-black uppercase text-[#1e4b64] block mb-1">Giá Flash Sale</label>
-                                <div className="relative">
-                                  <input 
-                                    type="number"
-                                    value={flashSaleProduct.flashSalePrice}
-                                    onChange={(e) => {
-                                      const val = parseInt(e.target.value) || 0;
-                                      setFlashSaleSettings(prev => ({
-                                        ...prev,
-                                        products: prev.products.map(p => p.id === product.id ? { ...p, flashSalePrice: val } : p)
-                                      }));
-                                    }}
-                                    className="w-full bg-white/5 border border-[#1e4b64]/30 rounded-lg pl-2 pr-6 py-1.5 text-xs text-white font-bold outline-none focus:border-[#1e4b64]"
-                                  />
-                                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-white/30 italic">₫</span>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="flex items-center justify-between">
-                                <p className="text-white/50 text-xs font-black">{product.price.toLocaleString('vi-VN')}₫</p>
-                                <button 
-                                  onClick={() => {
-                                    setFlashSaleSettings(prev => ({
-                                      ...prev,
-                                      products: [...prev.products, { id: product.id, flashSalePrice: product.discountPrice || product.price * 0.9 }]
-                                    }));
-                                  }}
-                                  className="p-1.5 bg-white/5 hover:bg-[#1e4b64]/20 text-white/40 hover:text-[#1e4b64] rounded-lg transition-all"
-                                >
-                                  <Plus className="h-3.5 w-3.5" />
-                                </button>
-                              </div>
-                            )}
-                          </div>
+                             {isSelected ? (
+                               <div className="grid grid-cols-2 gap-2">
+                                 <div>
+                                   <label className="text-[9px] font-black uppercase text-[#1e4b64] block mb-1">Giá Flash Sale</label>
+                                   <div className="relative">
+                                     <input 
+                                       type="number"
+                                       value={flashSaleProduct.flashSalePrice}
+                                       onChange={(e) => {
+                                         const val = parseInt(e.target.value) || 0;
+                                         setFlashSaleSettings(prev => ({
+                                           ...prev,
+                                           products: prev.products.map(p => p.id === product.id ? { ...p, flashSalePrice: val } : p)
+                                         }));
+                                       }}
+                                       className="w-full bg-white/5 border border-[#1e4b64]/30 rounded-lg pl-2 pr-6 py-1.5 text-xs text-white font-bold outline-none focus:border-[#1e4b64]"
+                                     />
+                                     <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-white/30 italic">₫</span>
+                                   </div>
+                                 </div>
+                                 <div>
+                                   <label className="text-[9px] font-black uppercase text-[#1e4b64] block mb-1">Đã bán</label>
+                                   <div className="relative">
+                                     <input 
+                                       type="number"
+                                       value={flashSaleProduct.sold || 0}
+                                       onChange={(e) => {
+                                         const val = parseInt(e.target.value) || 0;
+                                         setFlashSaleSettings(prev => ({
+                                           ...prev,
+                                           products: prev.products.map(p => p.id === product.id ? { ...p, sold: val } : p)
+                                         }));
+                                       }}
+                                       className="w-full bg-white/5 border border-[#1e4b64]/30 rounded-lg px-2 py-1.5 text-xs text-white font-bold outline-none focus:border-[#1e4b64]"
+                                     />
+                                   </div>
+                                 </div>
+                               </div>
+                             ) : (
+                               <div className="flex items-center justify-between">
+                                 <p className="text-white/50 text-xs font-black">{product.price.toLocaleString('vi-VN')}₫</p>
+                                 <button 
+                                   onClick={() => {
+                                     setFlashSaleSettings(prev => ({
+                                       ...prev,
+                                       products: [...prev.products, { id: product.id, flashSalePrice: product.discountPrice || product.price * 0.9, sold: 0 }]
+                                     }));
+                                   }}
+                                   className="p-1.5 bg-white/5 hover:bg-[#1e4b64]/20 text-white/40 hover:text-[#1e4b64] rounded-lg transition-all"
+                                 >
+                                   <Plus className="h-3.5 w-3.5" />
+                                 </button>
+                               </div>
+                             )}
+                           </div>
                         </div>
                       );
                     })}
