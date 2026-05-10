@@ -36,10 +36,17 @@ export const setGeminiApiKey = (key: string) => {
   localStorage.setItem('gemini_api_key', key);
 };
 
-export async function generateProductSEO(prompt: string): Promise<AIProductData> {
-  const apiKey = getGeminiApiKey();
-  if (!apiKey) throw new Error('API Key chưa được cấu hình. Vui lòng thêm vào phần cài đặt.');
+export const getDeepSeekApiKey = () => {
+  return localStorage.getItem('deepseek_api_key') || 'sk-f24bb51d84ee4fda8f9221e07842ef33';
+};
 
+export const setDeepSeekApiKey = (key: string) => {
+  localStorage.setItem('deepseek_api_key', key);
+};
+
+export type AIProvider = 'gemini' | 'deepseek';
+
+export async function generateProductSEO(prompt: string, provider: AIProvider = 'gemini'): Promise<AIProductData> {
   const systemPrompt = `Bạn là một chuyên gia thương mại điện tử và chuyên gia SEO hàng đầu, đặc biệt trong mảng thời trang thể thao nam (UR Sport). 
 Nhiệm vụ của bạn là nhận một yêu cầu ngắn và tạo ra toàn bộ dữ liệu cần thiết để đăng một sản phẩm chuẩn SEO và tối ưu chuyển đổi cao. 
 TRẢ VỀ ĐÚNG FORMAT JSON DƯỚI ĐÂY, KHÔNG CÓ MARKDOWN HAY CHỮ NÀO KHÁC BÊN NGOÀI JSON:
@@ -60,13 +67,13 @@ TRẢ VỀ ĐÚNG FORMAT JSON DƯỚI ĐÂY, KHÔNG CÓ MARKDOWN HAY CHỮ NÀO 
   "lazadaTitle": "Tên sản phẩm tối ưu cho Lazada"
 }`;
 
+  if (provider === 'deepseek') {
+    return callDeepSeek(systemPrompt, prompt);
+  }
   return callGemini(systemPrompt, prompt);
 }
 
-export async function generateBlogSEO(prompt: string): Promise<AIBlogData> {
-  const apiKey = getGeminiApiKey();
-  if (!apiKey) throw new Error('API Key chưa được cấu hình. Vui lòng thêm vào phần cài đặt.');
-
+export async function generateBlogSEO(prompt: string, provider: AIProvider = 'gemini'): Promise<AIBlogData> {
   const systemPrompt = `Bạn là một chuyên gia Content Marketing & SEO thời trang nam.
 Nhận chủ đề bài viết và trả về đúng một object JSON chuẩn, KHÔNG có markdown bên ngoài.
 {
@@ -82,12 +89,51 @@ Nhận chủ đề bài viết và trả về đúng một object JSON chuẩn, 
   "socialCaption": "Đoạn giới thiệu chia sẻ lên mạng xã hội"
 }`;
 
+  if (provider === 'deepseek') {
+    return callDeepSeek(systemPrompt, prompt);
+  }
   return callGemini(systemPrompt, prompt);
+}
+
+async function callDeepSeek(systemInstruction: string, userPrompt: string) {
+  const apiKey = getDeepSeekApiKey();
+  if (!apiKey) throw new Error('DeepSeek API Key chưa được cấu hình.');
+
+  try {
+    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [
+          { role: 'system', content: systemInstruction },
+          { role: 'user', content: userPrompt }
+        ],
+        response_format: { type: 'json_object' }
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error?.message || 'Lỗi kết nối DeepSeek API');
+    }
+
+    const data = await response.json();
+    const text = data.choices[0].message.content;
+    return JSON.parse(text);
+  } catch (error: any) {
+    console.error('DeepSeek error:', error);
+    throw new Error(error.message || 'Lỗi xử lý DeepSeek AI');
+  }
 }
 
 async function callGemini(systemInstruction: string, userPrompt: string) {
   const apiKey = getGeminiApiKey();
-  // Using gemini-1.5-flash which is stable and supports JSON mode
+  if (!apiKey) throw new Error('Gemini API Key chưa được cấu hình.');
+
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
   
   const payload = {
@@ -99,30 +145,28 @@ async function callGemini(systemInstruction: string, userPrompt: string) {
     }
   };
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    console.error("Gemini API Error:", errorData);
-    throw new Error(errorData.error?.message || 'Có lỗi xảy ra khi gọi Gemini API');
-  }
-
-  const data = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  
-  if (!text) throw new Error('Không nhận được dữ liệu từ AI');
-  
-  // Clean up any potential markdown formatting even with responseMimeType
-  const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-  
   try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error?.message || 'Lỗi từ Gemini API');
+    }
+
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    
+    if (!text) throw new Error('Không nhận được phản hồi từ AI');
+    
+    // Clean up any potential markdown formatting
+    const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
     return JSON.parse(cleanText);
-  } catch (e) {
-    console.error("Failed to parse JSON:", text);
-    throw new Error('AI trả về sai định dạng JSON. Vui lòng thử lại.');
+  } catch (error: any) {
+    console.error('Gemini error:', error);
+    throw new Error(error.message || 'Lỗi xử lý Gemini AI');
   }
 }

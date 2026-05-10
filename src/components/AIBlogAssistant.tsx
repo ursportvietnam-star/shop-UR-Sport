@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { generateBlogSEO, AIBlogData, getGeminiApiKey, setGeminiApiKey } from '../lib/gemini';
-import { Sparkles, Send, Settings, Save, AlertCircle, PenTool } from 'lucide-react';
+import { generateBlogSEO, AIBlogData, getGeminiApiKey, setGeminiApiKey, getDeepSeekApiKey, setDeepSeekApiKey, AIProvider } from '../lib/gemini';
+import { Sparkles, Send, Settings, Save, AlertCircle, PenTool, BrainCircuit } from 'lucide-react';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface AIBlogAssistantProps {
   onApply: (data: AIBlogData) => void;
@@ -12,12 +13,15 @@ export function AIBlogAssistant({ onApply }: AIBlogAssistantProps) {
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AIBlogData | null>(null);
-  const [apiKeyInput, setApiKeyInput] = useState(getGeminiApiKey());
-  const [showSettings, setShowSettings] = useState(!getGeminiApiKey());
+  const [provider, setProvider] = useState<AIProvider>('gemini');
+  const [geminiKey, setGeminiKey] = useState(getGeminiApiKey());
+  const [deepSeekKey, setDeepSeekKey] = useState(getDeepSeekApiKey());
+  const [showSettings, setShowSettings] = useState(!getGeminiApiKey() && !getDeepSeekApiKey());
 
-  const handleSaveApiKey = () => {
-    setGeminiApiKey(apiKeyInput);
-    toast.success('Đã lưu API Key!');
+  const handleSaveSettings = () => {
+    setGeminiApiKey(geminiKey);
+    setDeepSeekApiKey(deepSeekKey);
+    toast.success('Đã lưu cấu hình AI!');
     setShowSettings(false);
   };
 
@@ -28,7 +32,7 @@ export function AIBlogAssistant({ onApply }: AIBlogAssistantProps) {
     }
     setLoading(true);
     try {
-      const data = await generateBlogSEO(prompt);
+      const data = await generateBlogSEO(prompt, provider);
       setResult(data);
       toast.success('Tạo bài viết thành công!');
     } catch (error: any) {
@@ -41,42 +45,80 @@ export function AIBlogAssistant({ onApply }: AIBlogAssistantProps) {
 
   return (
     <div className="space-y-6">
-      {/* Settings Modal */}
       {showSettings && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 flex flex-col gap-4">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl space-y-6">
           <div className="flex items-start gap-3">
-            <AlertCircle className="h-6 w-6 text-yellow-600 shrink-0" />
+            <Settings className="h-6 w-6 text-purple-500 shrink-0" />
             <div>
-              <h3 className="font-bold text-yellow-800">Cấu hình Google Gemini API Key</h3>
-              <p className="text-sm text-yellow-700 mt-1">Tính năng này yêu cầu API Key của Google Gemini. Nhập Key của bạn vào bên dưới.</p>
+              <h3 className="font-bold text-white">Cấu hình AI Blog Writer</h3>
+              <p className="text-sm text-zinc-400 mt-1">Thiết lập API Key để AI bắt đầu viết bài cho bạn.</p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <input 
-              type="password" 
-              value={apiKeyInput}
-              onChange={e => setApiKeyInput(e.target.value)}
-              placeholder="AIzaSy..."
-              className="flex-1 bg-white border border-yellow-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-yellow-500"
-            />
-            <Button onClick={handleSaveApiKey} className="bg-yellow-600 hover:bg-yellow-700 text-white gap-2">
-              <Save className="h-4 w-4" /> Lưu
+          
+          <div className="space-y-4">
+            <div>
+              <label className="text-[10px] font-black uppercase text-zinc-500 mb-2 block tracking-widest">Google Gemini Key</label>
+              <input 
+                type="password" 
+                value={geminiKey}
+                onChange={e => setGeminiKey(e.target.value)}
+                placeholder="AIzaSy..."
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-purple-500"
+              />
+            </div>
+            
+            <div>
+              <label className="text-[10px] font-black uppercase text-zinc-500 mb-2 block tracking-widest">DeepSeek API Key</label>
+              <input 
+                type="password" 
+                value={deepSeekKey}
+                onChange={e => setDeepSeekKey(e.target.value)}
+                placeholder="sk-..."
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-purple-500"
+              />
+            </div>
+
+            <Button onClick={handleSaveSettings} className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-6 rounded-xl gap-2 transition-all active:scale-[0.98]">
+              <Save className="h-5 w-5" /> Lưu cấu hình
             </Button>
           </div>
         </div>
       )}
 
-      {/* Input Area */}
       <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <PenTool className="h-5 w-5 text-purple-600" />
+            <div className="p-2.5 bg-purple-600 rounded-xl">
+              <PenTool className="h-6 w-6 text-white" />
             </div>
-            <h2 className="text-xl font-bold text-zinc-900">AI Viết Blog (Chuẩn SEO)</h2>
+            <div>
+              <h2 className="text-xl font-black text-zinc-900 leading-tight uppercase tracking-tighter">AI Blog Creator</h2>
+              <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest">Content Marketing Specialist</p>
+            </div>
           </div>
-          <button onClick={() => setShowSettings(!showSettings)} className="text-zinc-500 hover:text-zinc-800 p-2">
-            <Settings className="h-5 w-5" />
+          <button onClick={() => setShowSettings(!showSettings)} className="p-2 hover:bg-zinc-100 rounded-full transition-colors">
+            <Settings className="h-5 w-5 text-zinc-400" />
+          </button>
+        </div>
+
+        <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-xl mb-6 w-fit">
+          <button 
+            onClick={() => setProvider('gemini')}
+            className={cn(
+              "px-4 py-2 rounded-lg text-xs font-black transition-all",
+              provider === 'gemini' ? "bg-white text-purple-600 shadow-sm" : "text-zinc-500 hover:text-zinc-700"
+            )}
+          >
+            Google Gemini
+          </button>
+          <button 
+            onClick={() => setProvider('deepseek')}
+            className={cn(
+              "px-4 py-2 rounded-lg text-xs font-black transition-all",
+              provider === 'deepseek' ? "bg-white text-purple-600 shadow-sm" : "text-zinc-500 hover:text-zinc-700"
+            )}
+          >
+            DeepSeek-V3
           </button>
         </div>
         
@@ -84,21 +126,21 @@ export function AIBlogAssistant({ onApply }: AIBlogAssistantProps) {
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Nhập chủ đề bài viết... (VD: Cách phối áo polo nam lịch lãm đi làm và đi chơi)"
-            className="w-full min-h-[100px] p-4 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:ring-2 focus:ring-purple-500 resize-y"
+            placeholder="Nhập chủ đề bài viết... AI sẽ viết nội dung chuyên sâu, chuẩn SEO và gợi ý link nội bộ."
+            className="w-full min-h-[140px] p-5 bg-zinc-50 border border-zinc-200 rounded-2xl outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all resize-y text-zinc-900 leading-relaxed"
           />
-          <div className="flex justify-end">
+          <div className="flex justify-end pt-2">
             <Button 
               onClick={handleGenerate} 
               disabled={loading || !prompt.trim()}
-              className="bg-purple-600 hover:bg-purple-700 text-white font-bold h-11 px-6 gap-2 rounded-xl"
+              className="bg-purple-600 hover:bg-purple-700 text-white font-black h-14 px-10 gap-3 rounded-2xl shadow-lg shadow-purple-500/20 active:scale-95 transition-all"
             >
               {loading ? (
-                <div className="h-5 w-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                <div className="h-6 w-6 rounded-full border-3 border-white border-t-transparent animate-spin" />
               ) : (
-                <Sparkles className="h-5 w-5" />
+                <BrainCircuit className="h-6 w-6" />
               )}
-              {loading ? 'AI đang viết bài...' : 'Generate Blog'}
+              {loading ? 'AI ĐANG VIẾT BÀI...' : 'WRITE BLOG WITH AI'}
             </Button>
           </div>
         </div>
