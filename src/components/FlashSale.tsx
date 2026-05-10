@@ -12,7 +12,7 @@ interface FlashSaleProps {
 }
 
 interface FlashSaleSettings {
-  products: { id: string; flashSalePrice: number }[];
+  products: { id: string; flashSalePrice: number; sold?: number }[];
   startTime: string;
   endTime: string;
   isActive: boolean;
@@ -103,30 +103,30 @@ export function FlashSale({ products }: FlashSaleProps) {
   const formatNumber = (num: number) => Math.max(0, num).toString().padStart(2, '0');
 
   return (
-    <section className="mx-auto max-w-[1440px] px-3 sm:px-4 py-6 sm:py-10 bg-white overflow-hidden">
-      <div className="flex items-center justify-between mb-5 sm:mb-8 border-b border-zinc-100 pb-4 sm:pb-5">
-        <div className="flex flex-row items-center gap-3 sm:gap-6">
-          <div className="flex items-center">
-            <h2 className="text-xl sm:text-2xl font-black tracking-tighter text-[#ee4d2d] uppercase italic flex items-center gap-1">
-              F<Zap className="h-5 w-5 sm:h-6 sm:w-6 fill-current animate-pulse" />ASH SALE
+    <section className="mx-auto max-w-[1440px] px-2 sm:px-4 py-4 sm:py-10 bg-white overflow-hidden">
+      <div className="flex items-center justify-between mb-4 sm:mb-8 border-b border-zinc-100 pb-3 sm:pb-5 gap-1 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-6 overflow-hidden">
+          <div className="flex-shrink-0">
+            <h2 className="text-sm sm:text-2xl font-black tracking-tighter text-[#ee4d2d] uppercase italic flex items-center gap-0.5 sm:gap-1">
+              F<Zap className="h-3.5 w-3.5 sm:h-6 sm:w-6 fill-current animate-pulse" />ASH SALE
             </h2>
           </div>
           
-          <div className="flex items-center gap-1 sm:gap-2 font-mono">
+          <div className="flex items-center gap-0.5 sm:gap-2 font-mono flex-shrink-0">
             {[timeLeft.hours, timeLeft.minutes, timeLeft.seconds].map((val, i) => (
               <React.Fragment key={i}>
-                <span className="bg-zinc-900 text-white text-[11px] sm:text-[13px] font-black px-1.5 sm:px-2 py-1 rounded shadow-lg min-w-[26px] sm:min-w-[32px] text-center border border-white/10">
+                <span className="bg-zinc-900 text-white text-[10px] sm:text-[13px] font-black px-1 sm:px-2 py-0.5 sm:py-1 rounded shadow-lg min-w-[20px] sm:min-w-[32px] text-center border border-white/10">
                   {formatNumber(val)}
                 </span>
-                {i < 2 && <span className="text-zinc-900 font-bold text-sm">:</span>}
+                {i < 2 && <span className="text-zinc-900 font-bold text-[10px] sm:text-sm">:</span>}
               </React.Fragment>
             ))}
           </div>
         </div>
 
-        <Link to="/shop" className="text-[#ee4d2d] text-[13px] sm:text-[14px] font-bold flex items-center gap-1 hover:opacity-80 transition-all group">
+        <Link to="/shop" className="text-[#ee4d2d] text-[11px] sm:text-[14px] font-bold flex items-center gap-0.5 sm:gap-1 hover:opacity-80 transition-all group flex-shrink-0 whitespace-nowrap">
           <span>Xem tất cả</span>
-          <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+          <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 group-hover:translate-x-1 transition-transform" />
         </Link>
       </div>
 
