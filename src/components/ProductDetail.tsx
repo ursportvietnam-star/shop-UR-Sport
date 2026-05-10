@@ -91,6 +91,17 @@ export const ProductDetail: React.FC = () => {
   const { user } = useAuth();
   const [flashSaleSettings, setFlashSaleSettings] = useState<any>(null);
   const [flashSaleCountdown, setFlashSaleCountdown] = useState({ h: '00', m: '00', s: '00', active: false });
+  const [showStickyBar, setShowStickyBar] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.innerWidth < 768) {
+        setShowStickyBar(window.scrollY > 800);
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const SHIRT_SIZES = [
     { size: 'M', vai: 46, dai: 37, nguc: 64 },
@@ -668,30 +679,40 @@ export const ProductDetail: React.FC = () => {
               </div>
 
               {/* Trust Badges */}
-              <div className="pt-6 border-t border-zinc-100">
-                <div className="bg-zinc-50/80 rounded-2xl p-5 grid grid-cols-2 gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                      <Truck className="h-5 w-5 text-[#1e4b64]" />
+              <div className="pt-8 border-t border-zinc-100">
+                <div className="bg-zinc-50/50 rounded-2xl p-6 grid grid-cols-1 sm:grid-cols-3 gap-6">
+                  <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 rounded-xl bg-white flex items-center justify-center shadow-sm border border-zinc-100">
+                      <ShieldCheck className="h-6 w-6 text-[#1e4b64]" />
                     </div>
                     <div>
-                      <p className="text-[11px] font-black uppercase tracking-tight">Miễn phí giao hàng</p>
-                      <p className="text-[10px] text-zinc-400 font-bold uppercase">Cho đơn từ 500k</p>
+                      <p className="text-[12px] font-black uppercase tracking-tight text-zinc-900">Cam kết chính hãng</p>
+                      <p className="text-[10px] text-zinc-400 font-bold uppercase">Hoàn tiền 200% nếu giả</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                      <ShieldCheck className="h-5 w-5 text-[#1e4b64]" />
+                  <div className="flex items-center gap-4 border-y sm:border-y-0 sm:border-x border-zinc-100 py-4 sm:py-0 sm:px-6">
+                    <div className="h-12 w-12 rounded-xl bg-white flex items-center justify-center shadow-sm border border-zinc-100">
+                      <RefreshCcw className="h-6 w-6 text-[#1e4b64]" />
                     </div>
                     <div>
-                      <p className="text-[11px] font-black uppercase tracking-tight">Thanh toán an toàn</p>
-                      <p className="text-[10px] text-zinc-400 font-bold uppercase">COD, Bank, E-Wallet</p>
+                      <p className="text-[12px] font-black uppercase tracking-tight text-zinc-900">7 ngày đổi trả</p>
+                      <p className="text-[10px] text-zinc-400 font-bold uppercase">Lỗi là đổi tận nơi</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 rounded-xl bg-white flex items-center justify-center shadow-sm border border-zinc-100">
+                      <Truck className="h-6 w-6 text-[#1e4b64]" />
+                    </div>
+                    <div>
+                      <p className="text-[12px] font-black uppercase tracking-tight text-zinc-900">Giao hàng hỏa tốc</p>
+                      <p className="text-[10px] text-zinc-400 font-bold uppercase">Toàn quốc từ 2-3 ngày</p>
                     </div>
                   </div>
                 </div>
-                <div className="mt-3 flex items-center justify-center gap-6">
-                  {["COD", "Bank Transfer", "Momo", "ZaloPay"].map((method) => (
-                    <span key={method} className="text-[9px] font-black uppercase tracking-widest text-zinc-300">
+                
+                <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 opacity-30 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-500">
+                  {["COD", "Bank Transfer", "Momo", "ZaloPay", "ShopeePay"].map((method) => (
+                    <span key={method} className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-900">
                       {method}
                     </span>
                   ))}
@@ -700,6 +721,39 @@ export const ProductDetail: React.FC = () => {
             </div>
           </motion.div>
         </div>
+
+        {/* Mobile Sticky Bar */}
+        <AnimatePresence>
+          {showStickyBar && (
+            <motion.div
+              initial={{ y: 100 }}
+              animate={{ y: 0 }}
+              exit={{ y: 100 }}
+              className="fixed bottom-0 left-0 right-0 z-[60] bg-white border-t border-zinc-100 p-4 pb-safe-area shadow-[0_-10px_30px_rgba(0,0,0,0.05)] md:hidden"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-lg bg-zinc-100 overflow-hidden shrink-0">
+                  <img src={mainImage} alt="" className="w-full h-full object-cover" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-bold text-zinc-900 truncate">{product.name}</p>
+                  <p className="text-[14px] font-black text-[#ff3b30]">
+                    {(flashSaleCountdown.active 
+                      ? flashSaleSettings.products.find((p: any) => p.id === product.id)?.flashSalePrice 
+                      : (product.discountPrice || product.price)
+                    ).toLocaleString('vi-VN')}₫
+                  </p>
+                </div>
+                <Button 
+                  onClick={handleBuyNow}
+                  className="bg-[#1e4b64] text-white font-black uppercase text-[12px] tracking-widest px-6 h-12 rounded-xl shadow-lg shadow-blue-900/20 active:scale-95 transition-all"
+                >
+                  Mua ngay
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Bottom: Description & Details */}
         <div className="mt-12 pt-12 border-t border-zinc-100">

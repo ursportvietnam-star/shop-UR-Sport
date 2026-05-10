@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, ChevronDown, Calendar, User, ArrowLeft, ArrowRight, Share2, MessageCircle } from 'lucide-react';
+import { ChevronRight, ChevronDown, Calendar, User, ArrowLeft, ArrowRight, Share2, MessageCircle, ShoppingBag, ChevronRight as ChevronRightIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useParams, useNavigate } from 'react-router-dom';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
 import { STATIC_BLOG_POSTS as POSTS } from '../data';
+import { useProducts } from '../ProductsContext';
 
 interface TocHeading {
   id: string;
@@ -26,6 +27,7 @@ export function NewsPage() {
   const [showToc, setShowToc] = useState(false);
   const [activeHeadingId, setActiveHeadingId] = useState<string>('');
   const [isExpanded, setIsExpanded] = useState(false);
+  const { products } = useProducts();
 
   useEffect(() => {
     setIsExpanded(false);
@@ -282,6 +284,55 @@ export function NewsPage() {
                 ))}
               </div>
             )}
+
+            {/* Suggested Products Section */}
+            <div className="mt-20 pt-16 border-t border-zinc-100">
+              <div className="flex items-center justify-between mb-10">
+                <div>
+                  <h3 className="text-2xl font-black text-zinc-900 leading-tight mb-2">Sản phẩm cho bạn</h3>
+                  <p className="text-sm font-medium text-zinc-400 uppercase tracking-widest italic">Gợi ý từ UR SPORT</p>
+                </div>
+                <Button 
+                  onClick={() => navigate('/shop')}
+                  variant="outline" 
+                  className="rounded-full border-zinc-200 text-xs font-bold uppercase tracking-widest hover:border-[#1e4b64] hover:text-[#1e4b64] transition-all"
+                >
+                  Xem tất cả <ArrowRight className="ml-2 h-3 w-3" />
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
+                {products.slice(0, 3).map((product) => (
+                  <div 
+                    key={product.id}
+                    onClick={() => navigate(`/apparel/${product.categorySlug}/${product.slug}`)}
+                    className="group cursor-pointer space-y-4"
+                  >
+                    <div className="relative aspect-[3/4] overflow-hidden rounded-3xl bg-zinc-100 border border-zinc-100 shadow-sm transition-all duration-500 group-hover:shadow-xl group-hover:-translate-y-2">
+                      <img 
+                        src={product.images[0]} 
+                        alt={product.name} 
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
+                      <button className="absolute bottom-4 right-4 w-10 h-10 rounded-full bg-white text-zinc-900 shadow-xl flex items-center justify-center opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
+                        <ShoppingBag className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">{product.category}</p>
+                      <h4 className="text-[13px] font-bold text-zinc-900 leading-tight line-clamp-2 group-hover:text-[#1e4b64] transition-colors">{product.name}</h4>
+                      <div className="flex items-center gap-2 pt-1">
+                        <span className="text-[14px] font-black text-[#ff3b30]">{(product.discountPrice || product.price).toLocaleString('vi-VN')}₫</span>
+                        {product.discountPrice && (
+                          <span className="text-[11px] text-zinc-300 line-through font-bold">{product.price.toLocaleString('vi-VN')}₫</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           <aside className="space-y-12 w-full lg:w-[320px]">

@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /quan-tri
+Disallow: /admin
+Disallow: /checkout
+
+Sitemap: https://shop-ur-sport.vercel.app/sitemap.xml

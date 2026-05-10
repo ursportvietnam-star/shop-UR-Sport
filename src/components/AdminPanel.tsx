@@ -403,6 +403,8 @@ export const AdminPanel: React.FC = () => {
   const totalRevenue = products.reduce((sum, p) => sum + p.price, 0);
   const avgRating = products.length > 0 ? (products.reduce((sum, p) => sum + (p.rating || 0), 0) / products.length).toFixed(1) : '0';
 
+  const lowStockProducts = products.filter(p => (p.stock || 0) < 10);
+
   return (
     <div className="min-h-screen bg-[#0f1117] flex" style={{ paddingTop: 0 }}>
       {/* Overlay mobile */}
@@ -438,7 +440,7 @@ export const AdminPanel: React.FC = () => {
               key={item.id}
               onClick={() => { setActiveTab(item.id); setSidebarOpen(false); }}
               className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-200",
+                "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-200 relative",
                 activeTab === item.id
                   ? "bg-[#1e4b64] text-white shadow-lg shadow-[#1e4b64]/20"
                   : "text-white/40 hover:text-white hover:bg-white/5"
@@ -446,6 +448,11 @@ export const AdminPanel: React.FC = () => {
             >
               <item.icon className="h-4 w-4 shrink-0" />
               {item.label}
+              {item.id === 'products' && lowStockProducts.length > 0 && (
+                <span className="absolute right-10 top-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] text-white animate-pulse">
+                  {lowStockProducts.length}
+                </span>
+              )}
               {activeTab === item.id && <ChevronRight className="h-3 w-3 ml-auto" />}
             </button>
           ))}
@@ -572,6 +579,40 @@ export const AdminPanel: React.FC = () => {
                   ))}
                 </div>
               </div>
+
+              {/* Low Stock Alerts */}
+              {lowStockProducts.length > 0 && (
+                <div className="bg-[#13161f] border border-red-500/20 rounded-2xl overflow-hidden shadow-xl shadow-red-500/5">
+                  <div className="flex items-center justify-between px-6 py-4 border-b border-red-500/10 bg-red-500/5">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4 text-red-500" />
+                      <h2 className="text-red-500 font-black text-sm uppercase tracking-widest">Sản phẩm sắp hết hàng (< 10)</h2>
+                    </div>
+                    <button onClick={() => setActiveTab('products')} className="text-red-500/60 text-xs font-bold hover:text-red-500 transition-colors">Xem kho →</button>
+                  </div>
+                  <div className="divide-y divide-white/5">
+                    {lowStockProducts.slice(0, 5).map(p => (
+                      <div key={p.id} className="flex items-center gap-4 px-6 py-4">
+                        <div className="h-10 w-10 rounded-xl overflow-hidden bg-white/5 shrink-0">
+                          {p.images?.[0] && <img src={p.images[0]} alt="" className="h-full w-full object-cover" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-sm font-bold truncate">{p.name}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[10px] font-black text-red-400 bg-red-400/10 px-1.5 py-0.5 rounded uppercase">Chỉ còn {p.stock || 0} sản phẩm</span>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => { setEditingProduct(p); setIsAddModalOpen(true); }}
+                          className="px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-white/60 text-xs font-bold transition-all"
+                        >
+                          Nhập thêm
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
