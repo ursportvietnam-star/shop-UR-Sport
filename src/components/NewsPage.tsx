@@ -305,7 +305,12 @@ export function NewsPage() {
                 {products.slice(0, 3).map((product) => (
                   <div 
                     key={product.id}
-                    onClick={() => navigate(`/apparel/${product.categorySlug}/${product.slug}`)}
+                    onClick={() => {
+                      const catSlug = product.category
+                        ? product.category.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')
+                        : 'san-pham';
+                      navigate(`/apparel/${catSlug}/${product.slug}`);
+                    }}
                     className="group cursor-pointer space-y-4"
                   >
                     <div className="relative aspect-[3/4] overflow-hidden rounded-3xl bg-zinc-100 border border-zinc-100 shadow-sm transition-all duration-500 group-hover:shadow-xl group-hover:-translate-y-2">
