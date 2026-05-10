@@ -92,7 +92,7 @@ export function AIProductAssistant({ onApply }: AIProductAssistantProps) {
               <Sparkles className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-black text-zinc-900 leading-tight">AI CONTENT GEN</h2>
+              <h2 className="text-xl font-black text-zinc-900 leading-tight">AI CONTENT GEN v2</h2>
               <p className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Product SEO Specialist</p>
             </div>
           </div>

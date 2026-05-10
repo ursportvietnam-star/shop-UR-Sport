@@ -149,8 +149,8 @@ async function callGemini(systemInstruction: string, userPrompt: string) {
   const apiKey = getGeminiApiKey();
   if (!apiKey) throw new Error('Gemini API Key chưa được cấu hình.');
 
-  // Sử dụng bản v1beta với model latest để đảm bảo tính tương thích cao nhất
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+  // Sử dụng bản v1 ổn định tuyệt đối
+  const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
   
   const payload = {
     contents: [
