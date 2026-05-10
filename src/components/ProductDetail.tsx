@@ -631,7 +631,16 @@ export const ProductDetail: React.FC = () => {
                   ].map(row => (
                     <div key={row.label} className="flex items-center py-[14px] border-b border-zinc-100 last:border-0 gap-4 w-full">
                       <span className="text-zinc-400 text-[14px] w-32 shrink-0">{row.label}</span>
-                      <span className="text-zinc-800 text-[14px] font-semibold">{row.value}</span>
+                      {row.label === 'Thương hiệu' ? (
+                        <Link 
+                          to={`/shop?brand=${encodeURIComponent(row.value)}`}
+                          className="text-[#1e4b64] text-[14px] font-bold hover:underline"
+                        >
+                          {row.value}
+                        </Link>
+                      ) : (
+                        <span className="text-zinc-800 text-[14px] font-semibold">{row.value}</span>
+                      )}
                     </div>
                   ))}
                 </div>

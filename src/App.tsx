@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, useParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { ProductCard } from './components/ProductCard';
@@ -305,8 +305,49 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
   const navigate = useNavigate();
   const { categorySlug } = useParams<{ categorySlug?: string }>();
   const { products } = useProducts();
-  const queryParams = new URLSearchParams(window.location.search);
-  const brandFilter = queryParams.get('brand');
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  const brandFilter = searchParams.get('brand');
+  const priceFilter = searchParams.get('price');
+  const colorFilter = searchParams.get('color');
+  const sizeFilter = searchParams.get('size');
+  const sortFilter = searchParams.get('sort') || 'newest';
+
+  // Extract unique values for filters and normalize them
+  const brands = Array.from(new Set(
+    products.map(p => p.brand?.trim())
+      .filter(Boolean)
+  )) as string[];
+  
+  const colors = Array.from(new Set(
+    products.flatMap(p => p.colors || [])
+      .map(c => c.trim().toLowerCase())
+      .filter(Boolean)
+  )).map(c => c.charAt(0).toUpperCase() + c.slice(1)) as string[];
+
+  const sizes = Array.from(new Set(
+    products.flatMap(p => p.sizes || [])
+      .map(s => s.trim().toUpperCase())
+      .filter(Boolean)
+  )) as string[];
+
+  const priceRanges = [
+    { label: 'Tất cả', value: 'all' },
+    { label: 'Dưới 100.000đ', value: '0-100000' },
+    { label: '100.000đ - 200.000đ', value: '100000-200000' },
+    { label: '200.000đ - 500.000đ', value: '200000-500000' },
+    { label: 'Trên 500.000đ', value: '500000-10000000' },
+  ];
+
+  const updateFilter = (key: string, value: string | null) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (value && value !== 'all') {
+      newParams.set(key, value);
+    } else {
+      newParams.delete(key);
+    }
+    setSearchParams(newParams);
+  };
 
   React.useEffect(() => {
     if (categorySlug) {
@@ -314,17 +355,53 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
       if (catMetadata && catMetadata.name !== activeCategory) {
         setActiveCategory(catMetadata.name);
       }
-    } else if (!brandFilter && activeCategory !== 'All') {
+    } else if (!brandFilter && !priceFilter && !colorFilter && !sizeFilter && activeCategory !== 'All') {
       setActiveCategory('All');
     }
-  }, [categorySlug, setActiveCategory, activeCategory, brandFilter]);
+  }, [categorySlug, setActiveCategory, activeCategory, brandFilter, priceFilter, colorFilter, sizeFilter]);
 
   let filteredProducts = activeCategory === 'All' 
-    ? products 
+    ? [...products]
     : products.filter(p => p.category === activeCategory);
 
   if (brandFilter) {
-    filteredProducts = products.filter(p => p.brand === brandFilter);
+    filteredProducts = filteredProducts.filter(p => p.brand?.trim().toLowerCase() === brandFilter.trim().toLowerCase());
+  }
+
+  if (colorFilter) {
+    filteredProducts = filteredProducts.filter(p => 
+      p.colors?.some(c => c.trim().toLowerCase() === colorFilter.toLowerCase())
+    );
+  }
+
+  if (sizeFilter) {
+    filteredProducts = filteredProducts.filter(p => 
+      p.sizes?.some(s => s.trim().toUpperCase() === sizeFilter.toUpperCase())
+    );
+  }
+
+  if (priceFilter) {
+    const [min, max] = priceFilter.split('-').map(Number);
+    filteredProducts = filteredProducts.filter(p => {
+      const price = p.discountPrice || p.price;
+      return price >= min && price <= max;
+    });
+  }
+
+  // Sorting
+  if (sortFilter === 'price-asc') {
+    filteredProducts.sort((a, b) => (a.discountPrice || a.price) - (b.discountPrice || b.price));
+  } else if (sortFilter === 'price-desc') {
+    filteredProducts.sort((a, b) => (b.discountPrice || b.price) - (a.discountPrice || a.price));
+  } else if (sortFilter === 'rating') {
+    filteredProducts.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+  } else {
+    // Newest first by default
+    filteredProducts.sort((a, b) => {
+       const dateA = a.createdAt?.seconds || 0;
+       const dateB = b.createdAt?.seconds || 0;
+       return dateB - dateA;
+    });
   }
 
   return (
@@ -342,17 +419,19 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
           onClick={() => {
             navigate('/shop');
             setActiveCategory('All');
+            setSearchParams({});
           }}
           className="hover:text-black transition-colors"
         >
           Cửa hàng
         </button>
-        {brandFilter ? (
+        {brandFilter && (
           <>
             <span>/</span>
             <span className="text-zinc-500 font-medium">Thương hiệu: {brandFilter}</span>
           </>
-        ) : activeCategory !== 'All' && (
+        )}
+        {activeCategory !== 'All' && !brandFilter && (
           <>
             <span>/</span>
             <span className="text-zinc-500 font-medium">{activeCategory}</span>
@@ -368,21 +447,108 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
           
           <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-zinc-100">
             <div className="flex flex-wrap items-center gap-2">
-              <Button variant="outline" className="h-11 rounded-full border-zinc-200 text-zinc-900 font-bold px-5 gap-2 hover:bg-zinc-50">
-                <SlidersHorizontal className="h-4 w-4" /> Bộ lọc <ChevronDown className="h-3 w-3 opacity-50" />
-              </Button>
-              <Button variant="outline" className="h-11 rounded-full border-zinc-200 text-zinc-900 font-bold px-5 gap-2 hover:bg-zinc-50 hidden sm:flex">
-                Giá <ChevronDown className="h-3 w-3 opacity-50" />
-              </Button>
-              <Button variant="outline" className="h-11 rounded-full border-zinc-200 text-zinc-900 font-bold px-5 gap-2 hover:bg-zinc-50 hidden sm:flex">
-                Thương hiệu <ChevronDown className="h-3 w-3 opacity-50" />
-              </Button>
-              <Button variant="outline" className="h-11 rounded-full border-zinc-200 text-zinc-900 font-bold px-5 gap-2 hover:bg-zinc-50 hidden md:flex">
-                Màu sắc <ChevronDown className="h-3 w-3 opacity-50" />
-              </Button>
-              <Button variant="outline" className="h-11 rounded-full border-zinc-200 text-zinc-900 font-bold px-5 gap-2 hover:bg-zinc-50 hidden md:flex">
-                Kích cỡ <ChevronDown className="h-3 w-3 opacity-50" />
-              </Button>
+              <div className="relative group">
+                <Button variant="outline" className="h-11 rounded-full border-zinc-200 text-zinc-900 font-bold px-5 gap-2 hover:bg-zinc-50">
+                  <SlidersHorizontal className="h-4 w-4" /> Bộ lọc <ChevronDown className="h-3 w-3 opacity-50" />
+                </Button>
+                <div className="absolute left-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-zinc-100 py-3 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-left group-hover:translate-y-0 translate-y-2">
+                  <div className="px-4 pb-2 mb-2 border-b border-zinc-50 flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Tất cả bộ lọc</span>
+                    <button onClick={() => setSearchParams({})} className="text-[10px] text-blue-600 font-bold hover:underline">Xóa tất cả</button>
+                  </div>
+                  <div className="px-2 space-y-1">
+                    {/* Compact quick filters can go here */}
+                    <div className="p-2 text-xs text-zinc-400 italic">Chọn các tùy chọn bên cạnh để lọc sản phẩm</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Price Filter */}
+              <div className="relative group">
+                <Button variant="outline" className={cn("h-11 rounded-full border-zinc-200 text-zinc-900 font-bold px-5 gap-2 hover:bg-zinc-50 hidden sm:flex", priceFilter && "border-[#1e4b64] bg-blue-50/50 text-[#1e4b64]")}>
+                  Giá {priceFilter && <span className="h-1.5 w-1.5 rounded-full bg-[#1e4b64]" />} <ChevronDown className="h-3 w-3 opacity-50" />
+                </Button>
+                <div className="absolute left-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-zinc-100 py-2 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-left group-hover:translate-y-0 translate-y-2">
+                  {priceRanges.map(range => (
+                    <button 
+                      key={range.value}
+                      onClick={() => updateFilter('price', range.value)}
+                      className={cn(
+                        "w-full text-left px-4 py-2 text-sm font-bold transition-colors hover:bg-zinc-50",
+                        priceFilter === range.value ? "text-[#1e4b64] bg-blue-50/50" : "text-zinc-600"
+                      )}
+                    >
+                      {range.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Brand Filter */}
+              <div className="relative group">
+                <Button variant="outline" className={cn("h-11 rounded-full border-zinc-200 text-zinc-900 font-bold px-5 gap-2 hover:bg-zinc-50 hidden sm:flex", brandFilter && "border-[#1e4b64] bg-blue-50/50 text-[#1e4b64]")}>
+                  Thương hiệu {brandFilter && <span className="h-1.5 w-1.5 rounded-full bg-[#1e4b64]" />} <ChevronDown className="h-3 w-3 opacity-50" />
+                </Button>
+                <div className="absolute left-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-zinc-100 py-2 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-left group-hover:translate-y-0 translate-y-2 max-h-80 overflow-y-auto">
+                  <button onClick={() => updateFilter('brand', null)} className={cn("w-full text-left px-4 py-2 text-sm font-bold transition-colors hover:bg-zinc-50", !brandFilter ? "text-[#1e4b64] bg-blue-50/50" : "text-zinc-600")}>Tất cả</button>
+                  {brands.map(brand => (
+                    <button 
+                      key={brand}
+                      onClick={() => updateFilter('brand', brand)}
+                      className={cn(
+                        "w-full text-left px-4 py-2 text-sm font-bold transition-colors hover:bg-zinc-50",
+                        brandFilter === brand ? "text-[#1e4b64] bg-blue-50/50" : "text-zinc-600"
+                      )}
+                    >
+                      {brand}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Color Filter */}
+              <div className="relative group">
+                <Button variant="outline" className={cn("h-11 rounded-full border-zinc-200 text-zinc-900 font-bold px-5 gap-2 hover:bg-zinc-50 hidden md:flex", colorFilter && "border-[#1e4b64] bg-blue-50/50 text-[#1e4b64]")}>
+                  Màu sắc {colorFilter && <span className="h-1.5 w-1.5 rounded-full bg-[#1e4b64]" />} <ChevronDown className="h-3 w-3 opacity-50" />
+                </Button>
+                <div className="absolute left-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-zinc-100 py-2 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-left group-hover:translate-y-0 translate-y-2 max-h-80 overflow-y-auto">
+                  <button onClick={() => updateFilter('color', null)} className={cn("w-full text-left px-4 py-2 text-sm font-bold transition-colors hover:bg-zinc-50", !colorFilter ? "text-[#1e4b64] bg-blue-50/50" : "text-zinc-600")}>Tất cả</button>
+                  {colors.map(color => (
+                    <button 
+                      key={color}
+                      onClick={() => updateFilter('color', color)}
+                      className={cn(
+                        "w-full text-left px-4 py-2 text-sm font-bold transition-colors hover:bg-zinc-50",
+                        colorFilter === color ? "text-[#1e4b64] bg-blue-50/50" : "text-zinc-600"
+                      )}
+                    >
+                      {color}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Size Filter */}
+              <div className="relative group">
+                <Button variant="outline" className={cn("h-11 rounded-full border-zinc-200 text-zinc-900 font-bold px-5 gap-2 hover:bg-zinc-50 hidden md:flex", sizeFilter && "border-[#1e4b64] bg-blue-50/50 text-[#1e4b64]")}>
+                  Kích cỡ {sizeFilter && <span className="h-1.5 w-1.5 rounded-full bg-[#1e4b64]" />} <ChevronDown className="h-3 w-3 opacity-50" />
+                </Button>
+                <div className="absolute left-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-zinc-100 py-2 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-left group-hover:translate-y-0 translate-y-2 max-h-80 overflow-y-auto">
+                  <button onClick={() => updateFilter('size', null)} className={cn("w-full text-left px-4 py-2 text-sm font-bold transition-colors hover:bg-zinc-50", !sizeFilter ? "text-[#1e4b64] bg-blue-50/50" : "text-zinc-600")}>Tất cả</button>
+                  {sizes.map(size => (
+                    <button 
+                      key={size}
+                      onClick={() => updateFilter('size', size)}
+                      className={cn(
+                        "w-full text-left px-4 py-2 text-sm font-bold transition-colors hover:bg-zinc-50",
+                        sizeFilter === size ? "text-[#1e4b64] bg-blue-50/50" : "text-zinc-600"
+                      )}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <div className="relative group">
@@ -405,7 +571,7 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
                    onClick={() => setActiveCategory('All')}
                    className={cn(
                      "w-full text-left px-4 py-2 text-sm font-bold transition-colors hover:bg-zinc-50",
-                     activeCategory === 'All' ? "text-blue-600 bg-blue-50/50" : "text-zinc-600"
+                     activeCategory === 'All' ? "text-[#1e4b64] bg-blue-50/50" : "text-zinc-600"
                    )}
                 >
                   All Products
@@ -416,7 +582,7 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
                     onClick={() => setActiveCategory(cat)}
                     className={cn(
                       "w-full text-left px-4 py-2 text-sm font-bold transition-colors hover:bg-zinc-50",
-                      activeCategory === cat ? "text-blue-600 bg-blue-50/50" : "text-zinc-600"
+                      activeCategory === cat ? "text-[#1e4b64] bg-blue-50/50" : "text-zinc-600"
                     )}
                   >
                     {cat}
@@ -428,49 +594,78 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
 
           <div className="flex items-center justify-between gap-4 py-4 border-t border-zinc-100 mt-2">
             <div className="flex items-center gap-6 text-[13px] font-medium text-zinc-500">
-              <div className="flex items-center gap-1.5">
-                Sort by: <span className="text-blue-600 cursor-pointer hover:underline">Newest Items First</span> <ChevronDown className="h-3 w-3" />
+              <div className="relative group">
+                <div className="flex items-center gap-1.5 cursor-pointer">
+                  Sort by: <span className="text-[#1e4b64] hover:underline">
+                    {sortFilter === 'newest' ? 'Newest Items First' : 
+                     sortFilter === 'price-asc' ? 'Price: Low to High' :
+                     sortFilter === 'price-desc' ? 'Price: High to Low' :
+                     sortFilter === 'rating' ? 'Top Rated' : 'Featured'}
+                  </span> <ChevronDown className="h-3 w-3" />
+                </div>
+                <div className="absolute left-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-zinc-100 py-2 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                  <button onClick={() => updateFilter('sort', 'newest')} className="w-full text-left px-4 py-2 text-sm font-bold hover:bg-zinc-50">Newest Items First</button>
+                  <button onClick={() => updateFilter('sort', 'price-asc')} className="w-full text-left px-4 py-2 text-sm font-bold hover:bg-zinc-50">Price: Low to High</button>
+                  <button onClick={() => updateFilter('sort', 'price-desc')} className="w-full text-left px-4 py-2 text-sm font-bold hover:bg-zinc-50">Price: High to Low</button>
+                  <button onClick={() => updateFilter('sort', 'rating')} className="w-full text-left px-4 py-2 text-sm font-bold hover:bg-zinc-50">Top Rated</button>
+                </div>
               </div>
               <div className="hidden sm:flex items-center gap-1.5">
-                Show: <span className="text-blue-600 cursor-pointer hover:underline">30</span> <ChevronDown className="h-3 w-3" />
+                Show: <span className="text-[#1e4b64] cursor-pointer hover:underline">30</span> <ChevronDown className="h-3 w-3" />
               </div>
             </div>
 
             <div className="flex items-center gap-2">
-              <button className="h-8 w-8 flex items-center justify-center text-blue-600 bg-blue-50 rounded">
+              <button className="h-8 w-8 flex items-center justify-center text-[#1e4b64] bg-blue-50 rounded">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-layout-grid"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
               </button>
               <button className="h-8 w-8 flex items-center justify-center text-zinc-400 hover:text-zinc-600">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-list"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>
-              </button>
-              <button className="h-8 w-8 flex items-center justify-center text-zinc-400 hover:text-zinc-600">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-list-todo"><rect width="6" height="6" x="3" y="3" rx="1"/><rect width="6" height="6" x="3" y="15" rx="1"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>
               </button>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3 lg:grid-cols-4 xl:gap-x-8">
-        {isLoading ? (
-          Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="space-y-4">
-              <Skeleton className="aspect-square w-full rounded-2xl" />
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-4 w-1/4" />
-              <Skeleton className="h-4 w-1/2" />
-            </div>
-          ))
-        ) : (
-          filteredProducts.map((product) => (
-            <ProductCard 
-              key={product.id} 
-              product={product} 
-              onClick={() => navigate(getProductUrl(product))} 
-            />
-          ))
-        )}
-      </div>
+      {filteredProducts.length > 0 ? (
+        <div className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3 lg:grid-cols-4 xl:gap-x-8">
+          {isLoading ? (
+            Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="space-y-4">
+                <Skeleton className="aspect-square w-full rounded-2xl" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-1/4" />
+                <Skeleton className="h-4 w-1/2" />
+              </div>
+            ))
+          ) : (
+            filteredProducts.map((product) => (
+              <ProductCard 
+                key={product.id} 
+                product={product} 
+                onClick={() => navigate(getProductUrl(product))} 
+              />
+            ))
+          )}
+        </div>
+      ) : (
+        <div className="py-20 text-center">
+          <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-zinc-50 mb-6">
+            <SlidersHorizontal className="h-8 w-8 text-zinc-300" />
+          </div>
+          <h3 className="text-xl font-bold text-zinc-900 mb-2">Không tìm thấy sản phẩm</h3>
+          <p className="text-zinc-500 mb-8">Thử thay đổi bộ lọc hoặc tìm kiếm theo danh mục khác.</p>
+          <Button 
+            onClick={() => {
+              setSearchParams({});
+              setActiveCategory('All');
+            }}
+            className="bg-[#1e4b64] hover:bg-[#153a4d] text-white font-bold rounded-full px-8"
+          >
+            Xóa tất cả bộ lọc
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
