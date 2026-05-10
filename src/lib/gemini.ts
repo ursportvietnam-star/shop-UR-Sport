@@ -47,52 +47,67 @@ export const setDeepSeekApiKey = (key: string) => {
 export type AIProvider = 'gemini' | 'deepseek';
 
 export async function generateProductSEO(prompt: string, provider: AIProvider = 'gemini'): Promise<AIProductData> {
-  const systemPrompt = `Bạn là một chuyên gia thương mại điện tử và chuyên gia SEO hàng đầu, đặc biệt trong mảng thời trang thể thao nam (UR Sport). 
-Nhiệm vụ của bạn là nhận một yêu cầu ngắn và tạo ra toàn bộ dữ liệu cần thiết để đăng một sản phẩm chuẩn SEO và tối ưu chuyển đổi cao. 
-TRẢ VỀ ĐÚNG FORMAT JSON DƯỚI ĐÂY, KHÔNG CÓ MARKDOWN HAY CHỮ NÀO KHÁC BÊN NGOÀI JSON:
+  const systemPrompt = `Bạn là một chuyên gia bán hàng (Copywriter) và chuyên gia SEO hàng đầu cho thương mại điện tử Việt Nam.
+Nhiệm vụ: Tạo nội dung sản phẩm cho shop đồ thể thao nam UR Sport. Văn phong cần mạnh mẽ, chuyên nghiệp, tập trung vào lợi ích người dùng.
+TRẢ VỀ ĐÚNG FORMAT JSON, KHÔNG CÓ MARKDOWN:
 {
-  "name": "Tên sản phẩm bán hàng mạnh mẽ (có độ dài tối ưu cho SEO)",
-  "slug": "slug-seo-khong-dau-va-gach-ngang",
-  "shortDescription": "Mô tả ngắn gọn, thu hút, tập trung vào lợi ích lớn nhất để tăng chuyển đổi",
-  "descriptionHtml": "Mô tả dài định dạng HTML (>500 từ). Bắt buộc dùng các thẻ <h2>, <h3>, <ul>, <li>, <strong>. Nội dung đi sâu vào công năng, chất liệu, cách phối đồ, lợi ích.",
-  "bulletBenefits": ["Lợi ích 1", "Lợi ích 2", "Lợi ích 3"],
-  "metaTitle": "Title chuẩn SEO (dưới 60 ký tự)",
-  "metaDescription": "Meta description hấp dẫn, chứa keyword (dưới 160 ký tự)",
+  "name": "Tên sản phẩm chuẩn SEO, giật tít, thu hút khách bấm vào",
+  "slug": "slug-seo-khong-dau",
+  "shortDescription": "2-3 câu mô tả cực kỳ hấp dẫn, nêu bật ưu điểm lớn nhất",
+  "descriptionHtml": "Mô tả chi tiết (>700 từ) chuẩn HTML. Chia làm các mục <h2>: Đặc điểm nổi bật, Chất liệu cao cấp, Hướng dẫn chọn size, Cam kết từ UR Sport. Dùng <ul>, <li>, <strong>.",
+  "bulletBenefits": ["Lợi ích 1", "Lợi ích 2", "Lợi ích 3", "Lợi ích 4"],
+  "metaTitle": "SEO Title (dưới 60 ký tự, chứa từ khóa chính)",
+  "metaDescription": "Meta desc thu hút (dưới 160 ký tự)",
   "seoKeywords": "keyword 1, keyword 2, keyword 3",
-  "tags": ["tag1", "tag2"],
-  "faqSchema": "<script type=\"application/ld+json\">{...FAQ_SCHEMA...}</script>",
-  "facebookCaption": "Caption Facebook kèm hashtag, emoji",
-  "tiktokCaption": "Caption TikTok ngắn, trending kèm hashtag",
-  "shopeeTitle": "Tên sản phẩm tối ưu cho Shopee (đủ giật tít, chứa đặc tính)",
-  "lazadaTitle": "Tên sản phẩm tối ưu cho Lazada"
+  "tags": ["thời trang nam", "đồ thể thao", "ur sport"],
+  "faqSchema": "Script FAQ Schema chuẩn SEO",
+  "facebookCaption": "Caption FB kèm hashtag & emoji bắt mắt",
+  "tiktokCaption": "Caption TikTok ngắn gọn, viral",
+  "shopeeTitle": "Tên chuẩn Shopee kèm từ khóa hot",
+  "lazadaTitle": "Tên chuẩn Lazada"
 }`;
 
-  if (provider === 'deepseek') {
-    return callDeepSeek(systemPrompt, prompt);
+  try {
+    if (provider === 'deepseek') {
+      return await callDeepSeek(systemPrompt, prompt);
+    }
+    return await callGemini(systemPrompt, prompt);
+  } catch (error: any) {
+    if (error.message.includes('API Key') || error.message.includes('not valid')) {
+      throw new Error('API Key Gemini của bạn chưa đúng hoặc hết hạn. Vui lòng bấm vào bánh răng ⚙️ để cập nhật Key miễn phí.');
+    }
+    throw error;
   }
-  return callGemini(systemPrompt, prompt);
 }
 
 export async function generateBlogSEO(prompt: string, provider: AIProvider = 'gemini'): Promise<AIBlogData> {
-  const systemPrompt = `Bạn là một chuyên gia Content Marketing & SEO thời trang nam.
-Nhận chủ đề bài viết và trả về đúng một object JSON chuẩn, KHÔNG có markdown bên ngoài.
+  const systemPrompt = `Bạn là một Content Creator chuyên nghiệp về thời trang nam.
+Viết bài blog chuyên sâu (>1000 từ) cho UR Sport. Nội dung cần hữu ích, chia sẻ kiến thức phối đồ, chọn vải, hoặc xu hướng.
+TRẢ VỀ JSON CHUẨN:
 {
-  "title": "Tiêu đề CTR cao, giật tít tinh tế",
-  "slug": "slug-bai-viet-chuan-seo",
-  "contentHtml": "Nội dung bài viết HTML (>1000 từ). Dùng <h2>, <h3> cho các ý chính. Khai thác sâu vấn đề, mang lại giá trị thực tế.",
-  "keywordCluster": ["keyword chính", "keyword phụ 1", "keyword phụ 2"],
-  "metaTitle": "Meta title dưới 60 ký tự",
-  "metaDescription": "Meta description hấp dẫn dưới 160 ký tự",
-  "internalLinkMap": ["Gợi ý link nội bộ: Áo polo nam", "Gợi ý link: Phối đồ thể thao"],
-  "cta": "Câu Call To Action bán hàng tự nhiên",
-  "faqSchema": "<script type=\"application/ld+json\">{...FAQ_SCHEMA...}</script>",
-  "socialCaption": "Đoạn giới thiệu chia sẻ lên mạng xã hội"
+  "title": "Tiêu đề Blog cực kỳ thu hút, chuẩn SEO",
+  "slug": "slug-bai-viet-seo",
+  "contentHtml": "Nội dung bài viết HTML đầy đủ, chuyên sâu. Dùng <h2>, <h3> để chia bố cục. Nội dung cần tự nhiên, hữu ích.",
+  "keywordCluster": ["từ khóa 1", "từ khóa 2", "từ khóa 3"],
+  "metaTitle": "Meta title SEO",
+  "metaDescription": "Mô tả bài viết hấp dẫn",
+  "internalLinkMap": ["Link: Áo polo", "Link: Quần short"],
+  "cta": "Lời kêu gọi mua hàng khéo léo",
+  "faqSchema": "FAQ Schema cho bài viết",
+  "socialCaption": "Caption chia sẻ lên mạng xã hội"
 }`;
 
-  if (provider === 'deepseek') {
-    return callDeepSeek(systemPrompt, prompt);
+  try {
+    if (provider === 'deepseek') {
+      return await callDeepSeek(systemPrompt, prompt);
+    }
+    return await callGemini(systemPrompt, prompt);
+  } catch (error: any) {
+    if (error.message.includes('API Key') || error.message.includes('not valid')) {
+      throw new Error('API Key Gemini chưa chính xác. Hãy lấy Key miễn phí từ Google AI Studio.');
+    }
+    throw error;
   }
-  return callGemini(systemPrompt, prompt);
 }
 
 async function callDeepSeek(systemInstruction: string, userPrompt: string) {
@@ -134,7 +149,8 @@ async function callGemini(systemInstruction: string, userPrompt: string) {
   const apiKey = getGeminiApiKey();
   if (!apiKey) throw new Error('Gemini API Key chưa được cấu hình.');
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  // Cập nhật sang v1 cho bản ổn định
+  const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
   
   const payload = {
     contents: [
@@ -154,6 +170,9 @@ async function callGemini(systemInstruction: string, userPrompt: string) {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      if (response.status === 404) {
+        throw new Error('Model Gemini 1.5 Flash không tìm thấy. Vui lòng kiểm tra lại API Key hoặc thử lại sau.');
+      }
       throw new Error(errorData.error?.message || 'Lỗi từ Gemini API');
     }
 
