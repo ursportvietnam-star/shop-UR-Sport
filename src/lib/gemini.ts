@@ -149,16 +149,13 @@ async function callGemini(systemInstruction: string, userPrompt: string) {
   const apiKey = getGeminiApiKey();
   if (!apiKey) throw new Error('Gemini API Key chưa được cấu hình.');
 
-  // Cập nhật sang v1 cho bản ổn định
-  const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  // Sử dụng bản v1beta với model latest để đảm bảo tính tương thích cao nhất
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
   
   const payload = {
     contents: [
       { role: 'user', parts: [{ text: `[SYSTEM INSTRUCTION]\n${systemInstruction}\n\n[USER PROMPT]\n${userPrompt}` }] }
-    ],
-    generationConfig: {
-      responseMimeType: "application/json"
-    }
+    ]
   };
 
   try {
@@ -171,7 +168,7 @@ async function callGemini(systemInstruction: string, userPrompt: string) {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       if (response.status === 404) {
-        throw new Error('Model Gemini 1.5 Flash không tìm thấy. Vui lòng kiểm tra lại API Key hoặc thử lại sau.');
+        throw new Error('Model Gemini 1.5 Flash không tìm thấy. Vui lòng kiểm tra lại API Key.');
       }
       throw new Error(errorData.error?.message || 'Lỗi từ Gemini API');
     }
@@ -181,11 +178,18 @@ async function callGemini(systemInstruction: string, userPrompt: string) {
     
     if (!text) throw new Error('Không nhận được phản hồi từ AI');
     
-    // Clean up any potential markdown formatting
-    const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    // Xử lý làm sạch chuỗi JSON nếu AI trả về kèm markdown
+    const cleanText = text
+      .replace(/```json/g, '')
+      .replace(/```/g, '')
+      .trim();
+    
     return JSON.parse(cleanText);
   } catch (error: any) {
     console.error('Gemini error:', error);
+    if (error.name === 'SyntaxError') {
+      throw new Error('AI trả về định dạng không hợp lệ. Vui lòng thử lại.');
+    }
     throw new Error(error.message || 'Lỗi xử lý Gemini AI');
   }
 }
