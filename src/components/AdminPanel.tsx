@@ -586,7 +586,7 @@ export const AdminPanel: React.FC = () => {
                   <div className="flex items-center justify-between px-6 py-4 border-b border-red-500/10 bg-red-500/5">
                     <div className="flex items-center gap-2">
                       <AlertCircle className="h-4 w-4 text-red-500" />
-                      <h2 className="text-red-500 font-black text-sm uppercase tracking-widest">Sản phẩm sắp hết hàng (< 10)</h2>
+                      <h2 className="text-red-500 font-black text-sm uppercase tracking-widest">Sản phẩm sắp hết hàng (&lt; 10)</h2>
                     </div>
                     <button onClick={() => setActiveTab('products')} className="text-red-500/60 text-xs font-bold hover:text-red-500 transition-colors">Xem kho →</button>
                   </div>
