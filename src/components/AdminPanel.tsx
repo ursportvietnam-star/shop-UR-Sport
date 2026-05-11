@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Package, ShoppingBag, Users, MessageSquare,
   Image as ImageIcon, Settings, Plus, Trash2, Edit2, LogOut,
   TrendingUp, Eye, DollarSign, BarChart2, Menu, X, Bell,
-  Search, ChevronRight, ChevronDown, Megaphone, Upload, Star, AlertCircle, Copy, ExternalLink, Code2, Check as CheckIcon, Bot, Sparkles, Zap, Timer, Clock, Ticket
+  Search, ChevronRight, ChevronDown, Megaphone, Upload, Star, AlertCircle, Copy, ExternalLink, Code2, Check as CheckIcon, Bot, Sparkles, Zap, Timer, Clock, Ticket, Download
 } from 'lucide-react';
 import { collection, onSnapshot, query, orderBy, deleteDoc, doc, setDoc, getDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -370,6 +370,96 @@ export const AdminPanel: React.FC = () => {
       ? product.category.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')
       : 'san-pham';
     window.open(`/apparel/${catSlug}/${product.slug}`, '_blank');
+  };
+
+  const handleGenerateSitemap = () => {
+    const baseUrl = 'https://ursport.vn';
+    const currentDate = new Date().toISOString().split('T')[0];
+    
+    const staticRoutes = [
+      { path: '/', priority: '1.0', changefreq: 'daily' },
+      { path: '/shop', priority: '0.9', changefreq: 'daily' },
+      { path: '/blog', priority: '0.7', changefreq: 'weekly' }
+    ];
+
+    const categoryRoutes = CATEGORY_METADATA.map(cat => ({
+      path: `/${cat.slug}`,
+      priority: '0.8',
+      changefreq: 'weekly'
+    }));
+
+    const productRoutes = products.map(p => {
+      const catSlug = p.category ? p.category.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '') : 'san-pham';
+      return {
+        path: `/apparel/${catSlug}/${p.slug}`,
+        priority: '0.6',
+        changefreq: 'monthly'
+      };
+    });
+
+    const blogRoutes = blogPosts.map(b => ({
+      path: `/blog/${b.slug}`,
+      priority: '0.6',
+      changefreq: 'monthly'
+    }));
+
+    const allRoutes = [...staticRoutes, ...categoryRoutes, ...productRoutes, ...blogRoutes];
+
+    const xmlLines = [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+    ];
+
+    allRoutes.forEach(route => {
+      xmlLines.push('  <url>');
+      xmlLines.push(`    <loc>${baseUrl}${route.path}</loc>`);
+      xmlLines.push(`    <lastmod>${currentDate}</lastmod>`);
+      xmlLines.push(`    <changefreq>${route.changefreq}</changefreq>`);
+      xmlLines.push(`    <priority>${route.priority}</priority>`);
+      xmlLines.push('  </url>');
+    });
+
+    xmlLines.push('</urlset>');
+
+    const xmlContent = xmlLines.join('\n');
+    
+    const blob = new Blob([xmlContent], { type: 'application/xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'sitemap.xml';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast.success('Đã tạo và tải xuống sitemap.xml thành công!');
+  };
+
+  const handleGenerateRobots = () => {
+    const content = `User-agent: *
+Allow: /
+Disallow: /quan-tri
+Disallow: /admin
+Disallow: /checkout
+Disallow: /api/
+Disallow: /*.json$
+
+Crawl-delay: 1
+
+Sitemap: https://ursport.vn/sitemap.xml`;
+
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'robots.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast.success('Đã tải xuống robots.txt!');
   };
 
   const handleApplyAIProduct = (data: AIProductData) => {
@@ -1691,6 +1781,34 @@ export const AdminPanel: React.FC = () => {
                       <p className="text-white/25 text-[10px] font-mono mt-1 truncate">{snippet.css.split('\n')[0]}</p>
                     </button>
                   ))}
+                </div>
+              </div>
+
+              {/* SEO & Sitemap */}
+              <div className="bg-[#13161f] border border-white/5 rounded-2xl p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <Search className="h-5 w-5 text-[#1e4b64]" />
+                  <div>
+                    <h3 className="text-white font-black text-sm uppercase tracking-widest">Cập nhật Sitemap & Robots.txt</h3>
+                    <p className="text-white/30 text-xs mt-1">Tự động tạo sitemap chứa tất cả danh mục, sản phẩm, và bài viết mới nhất để tải xuống.</p>
+                  </div>
+                </div>
+                
+                <div className="flex flex-wrap gap-4">
+                  <button 
+                    onClick={handleGenerateSitemap}
+                    className="px-6 py-3 bg-[#1e4b64] hover:bg-[#153446] text-white text-sm font-bold rounded-xl shadow-lg shadow-[#1e4b64]/20 transition-all flex items-center gap-2 group"
+                  >
+                    <Download className="h-4 w-4 group-hover:-translate-y-1 transition-transform" />
+                    Tải Sitemap.xml Mới Nhất
+                  </button>
+                  <button 
+                    onClick={handleGenerateRobots}
+                    className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white text-sm font-bold rounded-xl border border-white/5 transition-all flex items-center gap-2 group"
+                  >
+                    <Download className="h-4 w-4 group-hover:-translate-y-1 transition-transform" />
+                    Tải Robots.txt
+                  </button>
                 </div>
               </div>
             </div>

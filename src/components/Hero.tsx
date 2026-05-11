@@ -66,7 +66,7 @@ export const Hero: React.FC<{ onShopClick: () => void }> = ({ onShopClick }) => 
   );
 
   return (
-    <div className="relative h-[480px] sm:h-[550px] md:h-[600px] lg:h-[700px] w-full overflow-hidden bg-black group/hero">
+    <div className="relative min-h-[360px] h-[75svh] sm:h-[550px] md:h-[600px] lg:h-[700px] w-full overflow-hidden bg-black group/hero">
       <AnimatePresence mode="popLayout">
         <motion.div 
           key={currentIndex}

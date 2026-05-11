@@ -198,6 +198,7 @@ export function Footer({ onPageChange, onCategorySelect }: FooterProps) {
                 className="h-32 w-full"
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
+                sandbox="allow-scripts allow-same-origin"
                 src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d15992569.001833983!2d80.0375699!3d11.8747132!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752f523f5fc0e3%3A0x6654790e867462ee!2sUr%20Sport%20-%20%C3%81o%20thun%20th%E1%BB%83%20thao!5e0!3m2!1svi!2s!4v1778154966090!5m2!1svi!2s"
                 title="UR SPORT Google Map"
               />
@@ -226,7 +227,7 @@ export function Footer({ onPageChange, onCategorySelect }: FooterProps) {
                     className="grid h-11 w-11 place-items-center rounded-full bg-white/[0.08] text-slate-200 ring-1 ring-white/10 transition duration-300 hover:-translate-y-1 hover:scale-105 hover:bg-[#1e4b64] hover:text-white"
                     href={social.href}
                     key={social.label}
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                     target="_blank"
                   >
                     <Icon className="h-5 w-5" />

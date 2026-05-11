@@ -3,5 +3,10 @@ Allow: /
 Disallow: /quan-tri
 Disallow: /admin
 Disallow: /checkout
+Disallow: /api/
+Disallow: /*.json$
 
-Sitemap: https://shop-ur-sport.vercel.app/sitemap.xml
+# Crawl-delay (optional, for polite crawling)
+Crawl-delay: 1
+
+Sitemap: https://ursport.vn/sitemap.xml
