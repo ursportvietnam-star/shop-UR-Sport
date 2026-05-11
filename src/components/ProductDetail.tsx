@@ -93,7 +93,7 @@ export const ProductDetail: React.FC = () => {
   const [flashSaleSettings, setFlashSaleSettings] = useState<any>(null);
   const [flashSaleCountdown, setFlashSaleCountdown] = useState({ h: '00', m: '00', s: '00', active: false });
   const [showStickyBar, setShowStickyBar] = useState(false);
-  const productSchema = product ? {
+  const productSchema = React.useMemo(() => product ? {
     "@context": "https://schema.org/",
     "@type": "Product",
     "name": product.name,
@@ -117,7 +117,7 @@ export const ProductDetail: React.FC = () => {
       "ratingValue": product.rating || 5,
       "reviewCount": product.reviewsCount || 1
     }
-  } : null;
+  } : null, [product]);
 
   useSEO({
     title: product?.seoTitle || (product ? `${product.name} | UR Sport - Đồ Thể Thao Cao Cấp` : 'UR Sport'),
@@ -249,7 +249,7 @@ export const ProductDetail: React.FC = () => {
   }, [product?.id, user]);
 
   useEffect(() => {
-    if (!flashSaleSettings || !flashSaleSettings.isActive || !product) return;
+    if (!flashSaleSettings || !flashSaleSettings.isActive || !product?.id) return;
 
     const flashSaleProduct = flashSaleSettings.products?.find((p: any) => p.id === product.id);
     if (!flashSaleProduct) {
@@ -279,7 +279,7 @@ export const ProductDetail: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [flashSaleSettings, product]);
+  }, [flashSaleSettings, product?.id]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -403,7 +403,7 @@ export const ProductDetail: React.FC = () => {
       setMainImage(product.images?.[0] || '');
       window.scrollTo(0, 0);
     }
-  }, [product]);
+  }, [product?.id]);
 
   useEffect(() => {
     if (product && selectedColor) {
@@ -412,7 +412,7 @@ export const ProductDetail: React.FC = () => {
         setMainImage(variant.image);
       }
     }
-  }, [selectedColor, product]);
+  }, [selectedColor, product?.id]);
 
   if (loading) {
     return (
