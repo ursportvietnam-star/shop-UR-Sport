@@ -3,6 +3,7 @@ import { CATEGORY_METADATA } from '../data';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { Category } from '../types';
+import { LazyImage } from './LazyImage';
 
 interface FULLCollectionSectionProps {
   onCategorySelect: (c: Category) => void;
@@ -60,10 +61,9 @@ export function FULLCollectionSection({ onCategorySelect }: FULLCollectionSectio
           >
             <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors duration-700 z-10" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10" />
-            <img 
+            <LazyImage 
               src={getCategoryImage(mainCategories[1].slug)} 
               alt={mainCategories[1].name} 
-              loading="lazy"
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
             />
             <div className="absolute bottom-0 left-0 p-8 lg:p-12 z-20 w-full">
@@ -88,10 +88,9 @@ export function FULLCollectionSection({ onCategorySelect }: FULLCollectionSectio
             >
               <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors duration-700 z-10" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10" />
-              <img 
+              <LazyImage 
                 src={getCategoryImage(cat.slug)} 
                 alt={cat.name} 
-                loading="lazy"
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
               />
               <div className="absolute bottom-0 left-0 p-6 z-20">

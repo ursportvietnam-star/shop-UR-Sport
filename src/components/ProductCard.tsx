@@ -6,6 +6,7 @@ import { useCart } from '../CartContext';
 import { toast } from 'sonner';
 import { Star, ShoppingCart, ShoppingBag, Heart, Plus, RefreshCcw, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { LazyImage } from './LazyImage';
 
 interface ProductCardProps {
   product: Product;
@@ -60,7 +61,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
       */}
       <div className="flex flex-col h-full bg-white rounded-[24px] border border-transparent">
         <div className="relative aspect-[3/4] w-full bg-[#f8f8f8] rounded-t-[24px] overflow-hidden">
-          <img src={product.images?.[0] || ''} alt={product.name} loading="lazy" className="w-full h-full object-cover" />
+          <LazyImage src={product.images?.[0] || ''} alt={product.name} className="w-full h-full object-cover" />
         </div>
         <div className="p-3 sm:p-4 flex flex-col flex-grow">
           <div className="h-4 mb-1.5" /> {/* Stars space */}

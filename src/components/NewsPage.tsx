@@ -8,6 +8,7 @@ import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
 import { STATIC_BLOG_POSTS as POSTS } from '../data';
 import { useProducts } from '../ProductsContext';
+import { LazyImage } from './LazyImage';
 
 interface TocHeading {
   id: string;
@@ -342,10 +343,9 @@ export function NewsPage() {
                     className="group cursor-pointer space-y-4"
                   >
                     <div className="relative aspect-[3/4] overflow-hidden rounded-3xl bg-zinc-100 border border-zinc-100 shadow-sm transition-all duration-500 group-hover:shadow-xl group-hover:-translate-y-2">
-                      <img 
+                      <LazyImage 
                         src={product.images[0]} 
                         alt={product.name} 
-                        loading="lazy"
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                       />
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
@@ -419,10 +419,9 @@ export function NewsPage() {
                     onClick={() => navigate(`/news/${post.id}`)}
                   >
                     <div className="w-20 h-20 flex-shrink-0 overflow-hidden rounded-xl">
-                       <img 
+                       <LazyImage 
                         src={post.image} 
                         alt={post.title} 
-                        loading="lazy"
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                        />
                     </div>
@@ -479,10 +478,9 @@ export function NewsPage() {
             onClick={() => navigate(`/news/${post.id}`)}
           >
             <div className="relative aspect-[1024/682] overflow-hidden rounded-3xl mb-6 shadow-sm">
-              <img 
+              <LazyImage 
                 src={post.image} 
                 alt={post.title} 
-                loading="lazy"
                 className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
               />
               <div className="absolute top-4 left-4">

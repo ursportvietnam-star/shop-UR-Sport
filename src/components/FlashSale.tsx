@@ -6,6 +6,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { cn } from '@/lib/utils';
+import { LazyImage } from './LazyImage';
 
 interface FlashSaleProps {
   products: Product[];
@@ -167,10 +168,9 @@ export function FlashSale({ products }: FlashSaleProps) {
                   onClick={() => navigate(`/${product.slug || product.id}`)}
                   className="relative aspect-square cursor-pointer overflow-hidden"
                 >
-                  <img 
+                  <LazyImage 
                     src={product.images[0]} 
                     alt={product.name} 
-                    loading="lazy"
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   />
                   

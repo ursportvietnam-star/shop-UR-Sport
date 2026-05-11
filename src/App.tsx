@@ -30,6 +30,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { LazyImage } from './components/LazyImage';
 
 const getProductUrl = (product: Product) => {
   return `/${product.slug || product.id}`;
@@ -255,10 +256,9 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
               onClick={() => navigate(`/news/${STATIC_BLOG_POSTS[0].id}`)}
             >
               <div className="relative aspect-[4/3] sm:aspect-square lg:aspect-auto lg:h-[500px] overflow-hidden rounded-[32px] mb-6 shadow-2xl">
-                <img 
+                <LazyImage 
                   src={STATIC_BLOG_POSTS[0].image} 
                   alt={STATIC_BLOG_POSTS[0].title} 
-                  loading="lazy"
                   className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
                 <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
@@ -287,10 +287,9 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
                   onClick={() => navigate(`/news/${item.id}`)}
                 >
                   <div className="relative aspect-[1024/682] overflow-hidden rounded-2xl mb-4 shadow-lg">
-                    <img 
+                    <LazyImage 
                       src={item.image} 
                       alt={item.title} 
-                      loading="lazy"
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
                     <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black text-zinc-900 tracking-widest leading-none">
