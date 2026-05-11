@@ -531,7 +531,7 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
               </label>
               {coverImage && (
                 <div className="relative aspect-[1024/682] overflow-hidden rounded-3xl border border-zinc-200 bg-white">
-                  <img src={coverImage} alt="Cover" className="h-full w-full object-cover" />
+                  <img src={coverImage} alt="Cover Preview" loading="lazy" className="h-full w-full object-cover" />
                   <button
                     type="button"
                     onClick={() => setCoverImage('')}
@@ -580,7 +580,7 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
                   {imageUrls.map((url, index) => (
                     <div key={index} className="relative overflow-hidden rounded-3xl border border-white/70 bg-slate-50">
-                      <img src={url} alt={`blog-image-${index}`} className="h-28 w-full object-cover" />
+                      <img src={url} alt={`blog-image-${index}`} loading="lazy" className="h-28 w-full object-cover" />
                       <button
                         type="button"
                         onClick={() => removeMediaItem(index, 'image')}

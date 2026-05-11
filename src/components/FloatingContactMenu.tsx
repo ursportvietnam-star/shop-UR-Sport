@@ -68,7 +68,8 @@ export function FloatingContactMenu() {
           <div className="h-12 w-12 rounded-[18px] bg-white p-0.5 shadow-xl group-hover:scale-110 group-active:scale-95 transition-all duration-300 border border-white/50 overflow-hidden">
             <img 
               src={settings.zaloIcon} 
-              alt="Zalo" 
+              alt="Chat Zalo hỗ trợ khách hàng" 
+              loading="lazy"
               className="h-full w-full object-cover rounded-[16px]" 
             />
           </div>
@@ -120,7 +121,8 @@ export function FloatingContactMenu() {
           <div className="relative z-10 h-14 w-14 rounded-[20px] overflow-hidden">
             <img 
               src={settings.callIcon} 
-              alt="Contact" 
+              alt="Liên hệ hỗ trợ UR Sport" 
+              loading="lazy"
               className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700" 
             />
           </div>

@@ -3,6 +3,7 @@ import { ChevronRight, ChevronDown, Calendar, User, ArrowLeft, ArrowRight, Share
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useSEO } from '../hooks/useSEO';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
 import { STATIC_BLOG_POSTS as POSTS } from '../data';
@@ -180,6 +181,28 @@ export function NewsPage() {
     };
   }, [selectedPost, contentHtml]);
 
+  const blogSchema = selectedPost ? {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": selectedPost.title,
+    "image": [selectedPost.image],
+    "datePublished": selectedPost.createdAt && typeof selectedPost.createdAt.toDate === 'function' 
+      ? selectedPost.createdAt.toDate().toISOString() 
+      : (selectedPost.createdAt?.seconds ? new Date(selectedPost.createdAt.seconds * 1000).toISOString() : new Date().toISOString()),
+    "author": {
+      "@type": "Person",
+      "name": selectedPost.author || "UR Sport"
+    }
+  } : null;
+
+  useSEO({
+    title: selectedPost ? `${selectedPost.title} | Blog UR Sport` : "Tin tức & Bài viết | UR Sport",
+    description: selectedPost ? (selectedPost.excerpt || selectedPost.title) : "Cập nhật những xu hướng thời trang mới nhất, kinh nghiệm phối đồ và các sự kiện sôi nổi từ cộng đồng UrSport.",
+    image: selectedPost?.image,
+    type: selectedPost ? "article" : "website",
+    schema: blogSchema
+  });
+
   const filteredPosts = activeCategory === 'Tất cả' 
     ? posts 
     : posts.filter(p => p.category === activeCategory);
@@ -236,6 +259,7 @@ export function NewsPage() {
               <img 
                 src={selectedPost.image} 
                 alt={selectedPost.title} 
+                loading="lazy"
                 className="h-full w-full object-cover"
               />
             </div>
@@ -273,7 +297,7 @@ export function NewsPage() {
               <div className="grid gap-4 mt-10 sm:grid-cols-2 w-full">
                 {selectedPost.images.map((img: string, index: number) => (
                   <div key={index} className="overflow-hidden rounded-[28px] bg-zinc-100 shadow-sm w-full">
-                    <img src={img} alt={`${selectedPost.title}-${index}`} className="h-full w-full object-cover" />
+                    <img src={img} alt={`${selectedPost.title} - Ảnh ${index + 1}`} loading="lazy" className="h-full w-full object-cover" />
                   </div>
                 ))}
               </div>
@@ -321,6 +345,7 @@ export function NewsPage() {
                       <img 
                         src={product.images[0]} 
                         alt={product.name} 
+                        loading="lazy"
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                       />
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
@@ -397,6 +422,7 @@ export function NewsPage() {
                        <img 
                         src={post.image} 
                         alt={post.title} 
+                        loading="lazy"
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                        />
                     </div>
@@ -415,6 +441,7 @@ export function NewsPage() {
       </div>
     );
   }
+
 
   return (
     <div className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-8">
@@ -455,6 +482,7 @@ export function NewsPage() {
               <img 
                 src={post.image} 
                 alt={post.title} 
+                loading="lazy"
                 className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
               />
               <div className="absolute top-4 left-4">

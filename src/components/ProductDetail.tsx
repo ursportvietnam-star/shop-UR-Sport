@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { CATEGORY_METADATA } from '../data';
+import { useSEO } from '../hooks/useSEO';
 import { useCart } from '../CartContext';
 import { useAuth } from '../AuthContext';
 import { useProducts } from '../ProductsContext';
@@ -92,6 +93,40 @@ export const ProductDetail: React.FC = () => {
   const [flashSaleSettings, setFlashSaleSettings] = useState<any>(null);
   const [flashSaleCountdown, setFlashSaleCountdown] = useState({ h: '00', m: '00', s: '00', active: false });
   const [showStickyBar, setShowStickyBar] = useState(false);
+  const productSchema = product ? {
+    "@context": "https://schema.org/",
+    "@type": "Product",
+    "name": product.name,
+    "image": product.images,
+    "description": product.description,
+    "sku": product.id,
+    "brand": {
+      "@type": "Brand",
+      "name": product.brand || "UR Sport"
+    },
+    "offers": {
+      "@type": "Offer",
+      "url": typeof window !== 'undefined' ? window.location.href : '',
+      "priceCurrency": "VND",
+      "price": product.discountPrice || product.price,
+      "availability": product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      "itemCondition": "https://schema.org/NewCondition"
+    },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": product.rating || 5,
+      "reviewCount": product.reviewsCount || 1
+    }
+  } : null;
+
+  useSEO({
+    title: product?.seoTitle || (product ? `${product.name} | UR Sport - Đồ Thể Thao Cao Cấp` : 'UR Sport'),
+    description: product?.metaDescription || product?.description,
+    keywords: product?.keywords || (product ? `${product.name}, ${product.category}, ur sport, đồ thể thao nam` : ''),
+    image: product?.images?.[0],
+    type: "product",
+    schema: productSchema
+  });
 
   useEffect(() => {
     const handleScroll = () => {
@@ -367,29 +402,6 @@ export const ProductDetail: React.FC = () => {
       setSelectedSize(product.sizes?.[0] || '');
       setMainImage(product.images?.[0] || '');
       window.scrollTo(0, 0);
-
-      document.title = product.seoTitle || `${product.name} | UR Sport - Phong cách thể thao`;
-
-      const metaDescription = document.querySelector('meta[name="description"]');
-      const descContent = product.metaDescription || product.description.replace(/<[^>]*>?/gm, '').slice(0, 160);
-      if (metaDescription) {
-        metaDescription.setAttribute('content', descContent);
-      } else {
-        const meta = document.createElement('meta');
-        meta.name = 'description';
-        meta.content = descContent;
-        document.head.appendChild(meta);
-      }
-
-      const metaKeywords = document.querySelector('meta[name="keywords"]');
-      if (metaKeywords) {
-        metaKeywords.setAttribute('content', product.keywords || '');
-      } else if (product.keywords) {
-        const meta = document.createElement('meta');
-        meta.name = 'keywords';
-        meta.content = product.keywords;
-        document.head.appendChild(meta);
-      }
     }
   }, [product]);
 
@@ -451,6 +463,8 @@ export const ProductDetail: React.FC = () => {
     addToCart(cartProduct, selectedColor, selectedSize, quantity);
     navigate('/checkout');
   };
+
+
 
   return (
     <motion.div
@@ -521,7 +535,7 @@ export const ProductDetail: React.FC = () => {
             <div className="flex gap-3 overflow-x-auto pb-2">
               {(product.images || []).map((img, i) => (
                 <button key={i} onClick={() => setMainImage(img)} className="w-20 h-20 rounded-xl border-2 border-zinc-100 overflow-hidden shrink-0">
-                  <img src={img} alt="" className="w-full h-full object-cover" />
+                  <img src={img} alt={`${product.name} - Ảnh ${i + 1}`} loading="lazy" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>
@@ -733,7 +747,7 @@ export const ProductDetail: React.FC = () => {
             >
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-lg bg-zinc-100 overflow-hidden shrink-0">
-                  <img src={mainImage} alt="" className="w-full h-full object-cover" />
+                  <img src={mainImage} alt={product.name} loading="lazy" className="w-full h-full object-cover" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-bold text-zinc-900 truncate">{product.name}</p>
@@ -1115,7 +1129,7 @@ export const ProductDetail: React.FC = () => {
                         {reviewPreviews.map((preview, idx) => (
                           <div key={idx} className="relative w-24 h-24 rounded-xl overflow-hidden border-2 border-zinc-100 group shadow-sm">
                             {preview.type === 'image' ? (
-                              <img src={preview.url} className="w-full h-full object-cover" />
+                              <img src={preview.url} alt={`Đánh giá sản phẩm ${product.name}`} loading="lazy" className="w-full h-full object-cover" />
                             ) : (
                               <div className="w-full h-full bg-zinc-900 flex items-center justify-center">
                                 <Video className="h-8 w-8 text-white/50" />
@@ -1212,7 +1226,7 @@ export const ProductDetail: React.FC = () => {
                             <div className="flex flex-wrap gap-4 pt-2">
                               {review.images?.map((img: string, i: number) => (
                                 <div key={i} className="w-32 h-32 rounded-xl overflow-hidden border border-zinc-100 cursor-pointer hover:scale-105 transition-all shadow-sm">
-                                  <img src={img} className="w-full h-full object-cover" />
+                                  <img src={img} alt={`Đánh giá ${product.name} - Ảnh ${i + 1}`} loading="lazy" className="w-full h-full object-cover" />
                                 </div>
                               ))}
                               {review.videos?.map((vid: string, i: number) => (
@@ -1333,7 +1347,7 @@ export const ProductDetail: React.FC = () => {
               <X className="h-5 w-5" />
             </button>
             <div className="max-h-[85vh] overflow-auto">
-              <img src={product.sizeGuideUrl} alt="Size Guide" className="w-full h-auto" />
+              <img src={product.sizeGuideUrl} alt={`Bảng size ${product.name}`} loading="lazy" className="w-full h-auto" />
             </div>
           </motion.div>
         </div>

@@ -187,7 +187,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
                   title={`${user.displayName || user.email} — Nhấn để đăng xuất`}
                 >
                   {user.photoURL ? (
-                    <img src={user.photoURL} alt="" className="h-full w-full object-cover rounded-full" referrerPolicy="no-referrer" />
+                    <img src={user.photoURL} alt={user.displayName || 'User profile'} loading="lazy" className="h-full w-full object-cover rounded-full" referrerPolicy="no-referrer" />
                   ) : (
                     <span className="text-[13px] font-black">
                       {(user.displayName || user.email || 'U').charAt(0).toUpperCase()}

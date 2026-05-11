@@ -106,7 +106,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, isOpe
                         <div className="flex items-center gap-3">
                           <div className="h-12 w-12 rounded-lg overflow-hidden bg-white/5 shrink-0 border border-white/5">
                             {item.images?.[0] ? (
-                              <img src={item.images[0]} alt="" className="h-full w-full object-cover" />
+                              <img src={item.images[0]} alt={item.name} loading="lazy" className="h-full w-full object-cover" />
                             ) : (
                               <div className="h-full w-full flex items-center justify-center text-white/10">
                                 <Package className="h-6 w-6" />

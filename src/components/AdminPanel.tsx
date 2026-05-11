@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Package, ShoppingBag, Users, MessageSquare,
   Image as ImageIcon, Settings, Plus, Trash2, Edit2, LogOut,
   TrendingUp, Eye, DollarSign, BarChart2, Menu, X, Bell,
-  Search, ChevronRight, Upload, Star, AlertCircle, Copy, ExternalLink, Code2, Check as CheckIcon, Bot, Sparkles, Zap, Timer, Clock, Ticket
+  Search, ChevronRight, ChevronDown, Megaphone, Upload, Star, AlertCircle, Copy, ExternalLink, Code2, Check as CheckIcon, Bot, Sparkles, Zap, Timer, Clock, Ticket
 } from 'lucide-react';
 import { collection, onSnapshot, query, orderBy, deleteDoc, doc, setDoc, getDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -15,6 +15,7 @@ import { AddVoucherModal } from './AddVoucherModal';
 import { OrderDetailModal } from './OrderDetailModal';
 import { AIProductAssistant } from './AIProductAssistant';
 import { AIBlogAssistant } from './AIBlogAssistant';
+import { CategorySeoManager } from './CategorySeoManager';
 import { AIProductData, AIBlogData } from '../lib/gemini';
 import { useAuth } from '../AuthContext';
 import { Product, BlogPost, Order, Voucher } from '../types';
@@ -27,9 +28,17 @@ interface MediaItem {
   createdAt: any;
 }
 
-type AdminTab = 'dashboard' | 'products' | 'orders' | 'customers' | 'vouchers' | 'blog' | 'media' | 'settings' | 'ai-product' | 'ai-blog' | 'flash-sale';
+type AdminTab = 'dashboard' | 'products' | 'orders' | 'customers' | 'vouchers' | 'blog' | 'media' | 'settings' | 'ai-product' | 'ai-blog' | 'flash-sale' | 'category-seo';
 
-const NAV_ITEMS: { id: AdminTab; label: string; icon: React.FC<any> }[] = [
+type NavItem = {
+  id: string;
+  label: string;
+  icon: React.FC<any>;
+  isGroup?: boolean;
+  children?: { id: AdminTab; label: string; icon: React.FC<any> }[];
+};
+
+const NAV_ITEMS: NavItem[] = [
   { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },
   { id: 'products', label: 'Sản phẩm', icon: Package },
   { id: 'ai-product', label: 'AI Sản Phẩm', icon: Bot },
@@ -37,15 +46,25 @@ const NAV_ITEMS: { id: AdminTab; label: string; icon: React.FC<any> }[] = [
   { id: 'ai-blog', label: 'AI Blog', icon: Sparkles },
   { id: 'orders', label: 'Đơn hàng', icon: ShoppingBag },
   { id: 'customers', label: 'Khách hàng', icon: Users },
-  { id: 'vouchers', label: 'Mã giảm giá', icon: Ticket },
+  {
+    id: 'marketing-group',
+    label: 'Kênh Marketing',
+    icon: Megaphone,
+    isGroup: true,
+    children: [
+      { id: 'flash-sale', label: 'Flash Sale', icon: Zap },
+      { id: 'vouchers', label: 'Mã giảm giá', icon: Ticket },
+      { id: 'category-seo', label: 'SEO Danh mục', icon: Search }
+    ]
+  },
   { id: 'media', label: 'Thư viện ảnh', icon: ImageIcon },
-  { id: 'flash-sale', label: 'Flash Sale', icon: Zap },
   { id: 'settings', label: 'Cài đặt', icon: Settings },
 ];
 
 export const AdminPanel: React.FC = () => {
   const { user, isAdmin, loading: authLoading, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
+  const [expandedGroups, setExpandedGroups] = useState<string[]>(['marketing-group']);
   const [products, setProducts] = useState<Product[]>([]);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -162,7 +181,7 @@ export const AdminPanel: React.FC = () => {
           ...CATEGORY_METADATA.map((cat, i) => ({
             id: 100 + i,
             label: cat.name,
-            link: `/shop?category=${cat.name}`,
+            link: `/apparel/${cat.slug}`,
             icon: cat.icon,
             group: 'category'
           }))
@@ -462,27 +481,77 @@ export const AdminPanel: React.FC = () => {
 
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {NAV_ITEMS.map(item => (
-            <button
-              key={item.id}
-              onClick={() => { setActiveTab(item.id); setSidebarOpen(false); }}
-              className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-200 relative",
-                activeTab === item.id
-                  ? "bg-[#1e4b64] text-white shadow-lg shadow-[#1e4b64]/20"
-                  : "text-white/40 hover:text-white hover:bg-white/5"
-              )}
-            >
-              <item.icon className="h-4 w-4 shrink-0" />
-              {item.label}
-              {item.id === 'products' && lowStockProducts.length > 0 && (
-                <span className="absolute right-10 top-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] text-white animate-pulse">
-                  {lowStockProducts.length}
-                </span>
-              )}
-              {activeTab === item.id && <ChevronRight className="h-3 w-3 ml-auto" />}
-            </button>
-          ))}
+          {NAV_ITEMS.map(item => {
+            if (item.isGroup && item.children) {
+              const isExpanded = expandedGroups.includes(item.id);
+              const hasActiveChild = item.children.some(child => child.id === activeTab);
+              
+              return (
+                <div key={item.id} className="space-y-1">
+                  <button
+                    onClick={() => {
+                      setExpandedGroups(prev => 
+                        prev.includes(item.id) 
+                          ? prev.filter(id => id !== item.id)
+                          : [...prev, item.id]
+                      );
+                    }}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-200 relative",
+                      hasActiveChild ? "text-white" : "text-white/60 hover:text-white hover:bg-white/5"
+                    )}
+                  >
+                    <item.icon className="h-4 w-4 shrink-0" />
+                    {item.label}
+                    <ChevronDown className={cn("h-3 w-3 ml-auto transition-transform duration-200", isExpanded && "rotate-180")} />
+                  </button>
+                  
+                  {isExpanded && (
+                    <div className="pl-4 space-y-1 mt-1">
+                      {item.children.map(child => (
+                        <button
+                          key={child.id}
+                          onClick={() => { setActiveTab(child.id as AdminTab); setSidebarOpen(false); }}
+                          className={cn(
+                            "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 relative",
+                            activeTab === child.id
+                              ? "bg-[#1e4b64] text-white shadow-lg shadow-[#1e4b64]/20"
+                              : "text-white/40 hover:text-white hover:bg-white/5"
+                          )}
+                        >
+                          <div className="w-1.5 h-1.5 rounded-full bg-current opacity-50 shrink-0" />
+                          {child.label}
+                          {activeTab === child.id && <ChevronRight className="h-3 w-3 ml-auto" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            return (
+              <button
+                key={item.id}
+                onClick={() => { setActiveTab(item.id as AdminTab); setSidebarOpen(false); }}
+                className={cn(
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-200 relative",
+                  activeTab === item.id
+                    ? "bg-[#1e4b64] text-white shadow-lg shadow-[#1e4b64]/20"
+                    : "text-white/40 hover:text-white hover:bg-white/5"
+                )}
+              >
+                <item.icon className="h-4 w-4 shrink-0" />
+                {item.label}
+                {item.id === 'products' && lowStockProducts.length > 0 && (
+                  <span className="absolute right-10 top-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] text-white animate-pulse">
+                    {lowStockProducts.length}
+                  </span>
+                )}
+                {activeTab === item.id && <ChevronRight className="h-3 w-3 ml-auto" />}
+              </button>
+            );
+          })}
         </nav>
 
         {/* User info */}
@@ -607,7 +676,7 @@ export const AdminPanel: React.FC = () => {
                   {products.slice(0, 5).map(p => (
                     <div key={p.id} className="flex items-center gap-4 px-6 py-4 hover:bg-white/[0.02] transition-all">
                       <div className="h-10 w-10 rounded-xl overflow-hidden bg-white/5 shrink-0">
-                        {p.images?.[0] ? <img src={p.images[0]} alt="" className="h-full w-full object-cover" /> : <ImageIcon className="h-full w-full p-2.5 text-white/20" />}
+                        {p.images?.[0] ? <img src={p.images[0]} alt={p.name} loading="lazy" className="h-full w-full object-cover" /> : <ImageIcon className="h-full w-full p-2.5 text-white/20" />}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-white text-sm font-bold truncate">{p.name}</p>
@@ -633,7 +702,7 @@ export const AdminPanel: React.FC = () => {
                     {lowStockProducts.slice(0, 5).map(p => (
                       <div key={p.id} className="flex items-center gap-4 px-6 py-4">
                         <div className="h-10 w-10 rounded-xl overflow-hidden bg-white/5 shrink-0">
-                          {p.images?.[0] && <img src={p.images[0]} alt="" className="h-full w-full object-cover" />}
+                          {p.images?.[0] && <img src={p.images[0]} alt={p.name} loading="lazy" className="h-full w-full object-cover" />}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-white text-sm font-bold truncate">{p.name}</p>
@@ -708,7 +777,7 @@ export const AdminPanel: React.FC = () => {
                               <div className="flex items-center gap-3">
                                 <div className="h-11 w-11 rounded-xl overflow-hidden bg-white/5 border border-white/5 shrink-0">
                                   {product.images?.[0] ? (
-                                    <img src={product.images[0]} alt="" className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                                    <img src={product.images[0]} alt={product.name} loading="lazy" className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-300" />
                                   ) : (
                                     <ImageIcon className="h-full w-full p-3 text-white/20" />
                                   )}
@@ -1780,7 +1849,7 @@ export const AdminPanel: React.FC = () => {
                             }}
                             className="aspect-square rounded-lg overflow-hidden mb-3 bg-white/5 relative cursor-pointer"
                           >
-                            <img src={product.images[0]} alt="" className="w-full h-full object-cover" />
+                            <img src={product.images[0]} alt={product.name} loading="lazy" className="w-full h-full object-cover" />
                             {isSelected && (
                               <div className="absolute inset-0 bg-[#1e4b64]/20 flex items-center justify-center">
                                 <div className="h-8 w-8 bg-[#1e4b64] rounded-full flex items-center justify-center shadow-xl">
@@ -1854,6 +1923,10 @@ export const AdminPanel: React.FC = () => {
                 </div>
               </div>
             </div>
+          )}
+          
+          {activeTab === 'category-seo' && (
+            <CategorySeoManager />
           )}
         </main>
       </div>

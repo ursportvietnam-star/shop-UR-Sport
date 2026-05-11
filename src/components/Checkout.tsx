@@ -283,7 +283,8 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                                   ? `https://img.vietqr.io/image/970436-0917722425-compact2.jpg?amount=${finalTotal}&addInfo=UR%20ZALO`
                                   : `https://img.vietqr.io/image/970422-0917722425-compact2.jpg?amount=${finalTotal}&addInfo=UR%20SHOPEE`
                             } 
-                            alt="Wallet QR" 
+                            alt="Mã QR thanh toán ví điện tử" 
+                            loading="lazy"
                             className="w-44 h-44 object-contain"
                           />
                           <div className={cn(
@@ -336,7 +337,8 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                       <div className="bg-white p-4 rounded-3xl shadow-2xl shadow-blue-200/20 ring-1 ring-blue-100 shrink-0">
                         <img 
                           src={`https://img.vietqr.io/image/MB-0917722425-compact2.jpg?amount=${finalTotal}&addInfo=UR%20ORDER`} 
-                          alt="VietQR" 
+                          alt="Mã QR chuyển khoản ngân hàng" 
+                          loading="lazy"
                           className="w-44 h-44 object-contain"
                         />
                       </div>
@@ -405,7 +407,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                         <div key={`${item.id}-${item.selectedColor}-${item.selectedSize}`} className="flex gap-4 mb-6 last:mb-0 group relative">
                            <div className="relative h-20 w-20 rounded-2xl overflow-hidden bg-zinc-50 shrink-0 border border-zinc-100">
                               {item.images && item.images[0] && (
-                                 <img src={item.images[0]} alt="" className="h-full w-full object-cover transition-transform group-hover:scale-110" referrerPolicy="no-referrer" />
+                                 <img src={item.images[0]} alt={item.name} loading="lazy" className="h-full w-full object-cover transition-transform group-hover:scale-110" referrerPolicy="no-referrer" />
                               )}
                               <div className="absolute top-1 right-1 h-5 w-5 bg-[#1e4b64] text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-lg">
                                  {item.quantity}

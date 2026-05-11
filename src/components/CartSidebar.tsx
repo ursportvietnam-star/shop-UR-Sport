@@ -64,7 +64,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose, onChe
                       >
                         <div className="h-24 w-20 flex-shrink-0 overflow-hidden bg-zinc-100 rounded-xl">
                           {item.images && item.images[0] ? (
-                            <img src={item.images[0]} alt={item.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                            <img src={item.images[0]} alt={item.name} loading="lazy" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                           ) : (
                             <div className="h-full w-full bg-zinc-200" />
                           )}

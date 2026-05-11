@@ -60,7 +60,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
       */}
       <div className="flex flex-col h-full bg-white rounded-[24px] border border-transparent">
         <div className="relative aspect-[3/4] w-full bg-[#f8f8f8] rounded-t-[24px] overflow-hidden">
-          <img src={product.images?.[0] || ''} className="w-full h-full object-cover" />
+          <img src={product.images?.[0] || ''} alt={product.name} loading="lazy" className="w-full h-full object-cover" />
         </div>
         <div className="p-3 sm:p-4 flex flex-col flex-grow">
           <div className="h-4 mb-1.5" /> {/* Stars space */}
@@ -85,6 +85,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
               key={isHovered && product.images?.[1] ? product.images[1] : product.images?.[0]}
               initial={{ opacity: 0.9 }} animate={{ opacity: 1 }} exit={{ opacity: 0.9 }}
               src={(isHovered && product.images?.[1]) ? product.images[1] : (product.images?.[0] || '')}
+              alt={product.name}
+              loading="lazy"
               className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
             />
           </AnimatePresence>
@@ -180,7 +182,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
                     {typeof ci === 'string' ? (
                       <div className="w-full h-full rounded-full" style={{ backgroundColor: ci.toLowerCase() }} />
                     ) : (
-                      <img src={ci.image} alt={ci.name} className="w-full h-full rounded-full object-cover" />
+                      <img src={ci.image} alt={ci.name} loading="lazy" className="w-full h-full rounded-full object-cover" />
                     )}
                   </button>
                 ))}

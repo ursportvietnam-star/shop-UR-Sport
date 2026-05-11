@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useParams, useSearchParams, useLocation } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { ProductCard } from './components/ProductCard';
@@ -11,6 +11,7 @@ import { AdminPanel } from './components/AdminPanel';
 import { NewsPage } from './components/NewsPage';
 import { Footer } from './components/Footer';
 import { FloatingContactMenu } from './components/FloatingContactMenu';
+import { useSEO } from './hooks/useSEO';
 import { FlashSale } from './components/FlashSale';
 import { BestSeller } from './components/BestSeller';
 import { FULLCollectionSection } from './components/FULLCollectionSection';
@@ -24,9 +25,7 @@ import { ProductsProvider, useProducts } from './ProductsContext';
 import { Toaster } from 'sonner';
 import { getDoc, doc } from 'firebase/firestore';
 import { db } from './firebase';
-import { Filter, SlidersHorizontal, ArrowRight, Check, Star, ShieldCheck, Truck, RefreshCcw, 
-  ChevronRight, ChevronDown, Phone, MessageCircle, Instagram, Facebook 
-} from 'lucide-react';
+import { Filter, SlidersHorizontal, ArrowRight, Check, Star, ShieldCheck, Truck, RefreshCcw, ChevronRight, ChevronDown, Phone, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -40,6 +39,12 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
   const navigate = useNavigate();
   const [featuredFilter, setFeaturedFilter] = useState('Most Popular');
   const { products } = useProducts();
+
+  useSEO({
+    title: "UR Sport - Phong Cách Thể Thao Đẳng Cấp | Áo Thun, Áo Polo Nam",
+    description: "Khám phá bộ sưu tập thời trang thể thao nam cao cấp tại UR Sport. Chuyên cung cấp áo thun, áo polo nam chất lượng, phong cách và bền bỉ. Miễn phí vận chuyển toàn quốc.",
+    keywords: "ur sport, thời trang thể thao nam, áo thun nam, áo polo nam, đồ tập gym"
+  });
 
   return (
     <>
@@ -253,6 +258,7 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
                 <img 
                   src={STATIC_BLOG_POSTS[0].image} 
                   alt={STATIC_BLOG_POSTS[0].title} 
+                  loading="lazy"
                   className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
                 <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
@@ -284,6 +290,7 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
                     <img 
                       src={item.image} 
                       alt={item.title} 
+                      loading="lazy"
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
                     <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black text-zinc-900 tracking-widest leading-none">
@@ -304,17 +311,31 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
 
 
 
-function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelect }: { activeCategory: string, setActiveCategory: (c: string) => void, isLoading: boolean, onProductSelect: (p: Product) => void }) {
+function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelect, categoryName }: { activeCategory: any, setActiveCategory: (c: any) => void, isLoading: boolean, onProductSelect: (p: Product) => void, categoryName?: string }) {
   const navigate = useNavigate();
-  const { categorySlug } = useParams<{ categorySlug?: string }>();
+  const { categorySlug, productSlug } = useParams<{ categorySlug?: string, productSlug?: string }>();
+  const currentSlug = categorySlug || productSlug;
   const { products } = useProducts();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [seoContent, setSeoContent] = React.useState<string>('');
+  const [seoMeta, setSeoMeta] = React.useState<{title:string,description:string,keywords:string,canonical:string,robots:string}>({title:'',description:'',keywords:'',canonical:'',robots:''});
+  const [isSeoExpanded, setIsSeoExpanded] = React.useState(false);
   
+  const categoryFilter = searchParams.get('category');
   const brandFilter = searchParams.get('brand');
   const priceFilter = searchParams.get('price');
   const colorFilter = searchParams.get('color');
   const sizeFilter = searchParams.get('size');
   const sortFilter = searchParams.get('sort') || 'newest';
+
+  // Derive current category from URL params, prop or state instantly during render
+  const currentCategory = React.useMemo(() => {
+    if (categoryName) return categoryName;
+    if (currentSlug) {
+      return CATEGORY_METADATA.find(c => c.slug === currentSlug)?.name || 'All';
+    }
+    return categoryFilter || activeCategory;
+  }, [categoryName, currentSlug, categoryFilter, activeCategory]);
 
   // Extract unique values for filters and normalize them
   const brands = Array.from(new Set(
@@ -353,19 +374,64 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
   };
 
   React.useEffect(() => {
-    if (categorySlug) {
-      const catMetadata = CATEGORY_METADATA.find(c => c.slug === categorySlug);
+    if (currentSlug) {
+      const catMetadata = CATEGORY_METADATA.find(c => c.slug === currentSlug);
       if (catMetadata && catMetadata.name !== activeCategory) {
         setActiveCategory(catMetadata.name);
+      }
+    } else if (categoryFilter) {
+      if (categoryFilter !== activeCategory) {
+        setActiveCategory(categoryFilter);
       }
     } else if (!brandFilter && !priceFilter && !colorFilter && !sizeFilter && activeCategory !== 'All') {
       setActiveCategory('All');
     }
-  }, [categorySlug, setActiveCategory, activeCategory, brandFilter, priceFilter, colorFilter, sizeFilter]);
+    window.scrollTo(0, 0);
+  }, [currentSlug, categoryFilter, setActiveCategory, activeCategory, brandFilter, priceFilter, colorFilter, sizeFilter]);
 
-  let filteredProducts = activeCategory === 'All' 
+  React.useEffect(() => {
+    const fetchSeo = async () => {
+      if (currentCategory === 'All') {
+        setSeoContent('');
+        setSeoMeta({title:'UR Sport - Shop Đồ Thể Thao Nam Cao Cấp',description:'Khám phá tất cả sản phẩm đồ thể thao nam tại UR Sport. Áo thun, áo polo, quần thể thao chất lượng cao.',keywords:'ur sport shop, đồ thể thao nam, quần áo gym',canonical:'',robots:''});
+        return;
+      }
+      const catMetadata = CATEGORY_METADATA.find(c => c.name === currentCategory);
+      if (catMetadata) {
+        try {
+          const docRef = doc(db, 'categorySeo', catMetadata.slug);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setSeoContent(data.content || '');
+            setSeoMeta({
+              title: data.seoTitle || `${currentCategory} - UR Sport`,
+              description: data.seoDescription || `Mua sắm ${currentCategory} chất lượng cao tại UR Sport.`,
+              keywords: data.seoKeywords || `${currentCategory}, đồ thể thao ur sport`,
+              canonical: data.seoCanonical || '',
+              robots: data.seoRobots || 'index, follow',
+            });
+          } else {
+            setSeoContent('');
+            setSeoMeta({
+              title: `${currentCategory} - UR Sport`,
+              description: `Mua sắm ${currentCategory} chất lượng cao tại UR Sport.`,
+              keywords: `${currentCategory}, đồ thể thao ur sport`,
+              canonical: '',
+              robots: 'index, follow'
+            });
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    };
+    fetchSeo();
+  }, [currentCategory]);
+
+  let filteredProducts = currentCategory === 'All' 
     ? [...products]
-    : products.filter(p => p.category === activeCategory);
+    : products.filter(p => p.category === currentCategory);
 
   if (brandFilter) {
     filteredProducts = filteredProducts.filter(p => p.brand?.trim().toLowerCase() === brandFilter.trim().toLowerCase());
@@ -407,6 +473,15 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
     });
   }
 
+  useSEO({
+    title: seoMeta.title,
+    description: seoMeta.description,
+    keywords: seoMeta.keywords,
+    canonical: seoMeta.canonical,
+    robots: seoMeta.robots,
+    type: "website"
+  });
+
   return (
     <div className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-8">
       {/* Breadcrumbs */}
@@ -434,10 +509,10 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
             <span className="text-zinc-500 font-medium">Thương hiệu: {brandFilter}</span>
           </>
         )}
-        {activeCategory !== 'All' && !brandFilter && (
+        {currentCategory !== 'All' && !brandFilter && (
           <>
             <span>/</span>
-            <span className="text-zinc-500 font-medium">{activeCategory}</span>
+            <span className="text-zinc-500 font-medium">{currentCategory}</span>
           </>
         )}
       </nav>
@@ -445,7 +520,7 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
       <header className="mb-10">
         <div className="flex flex-col gap-4 mb-8">
           <h1 className="text-[32px] sm:text-[40px] font-black text-black leading-tight tracking-tight">
-            {brandFilter ? `Sản phẩm thương hiệu ${brandFilter}` : (activeCategory === 'All' ? 'Tất cả sản phẩm' : activeCategory)}
+            {brandFilter ? `Sản phẩm thương hiệu ${brandFilter}` : (currentCategory === 'All' ? 'Tất cả sản phẩm' : currentCategory)}
           </h1>
           
           <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-zinc-100">
@@ -574,7 +649,7 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
                    onClick={() => setActiveCategory('All')}
                    className={cn(
                      "w-full text-left px-4 py-2 text-sm font-bold transition-colors hover:bg-zinc-50",
-                     activeCategory === 'All' ? "text-[#1e4b64] bg-blue-50/50" : "text-zinc-600"
+                     currentCategory === 'All' ? "text-[#1e4b64] bg-blue-50/50" : "text-zinc-600"
                    )}
                 >
                   All Products
@@ -585,7 +660,7 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
                     onClick={() => setActiveCategory(cat)}
                     className={cn(
                       "w-full text-left px-4 py-2 text-sm font-bold transition-colors hover:bg-zinc-50",
-                      activeCategory === cat ? "text-[#1e4b64] bg-blue-50/50" : "text-zinc-600"
+                      currentCategory === cat ? "text-[#1e4b64] bg-blue-50/50" : "text-zinc-600"
                     )}
                   >
                     {cat}
@@ -669,6 +744,40 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
           </Button>
         </div>
       )}
+
+      {seoContent && (
+        <div className="mt-16 pt-12 border-t border-zinc-100 max-w-4xl mx-auto">
+          <div className="relative w-full overflow-x-hidden">
+            <div 
+              className={cn(
+                "product-description-container notranslate prose prose-lg max-w-none w-full text-zinc-600 transition-[max-height] duration-700 ease-in-out overflow-x-hidden",
+                !isSeoExpanded ? "max-h-[400px] overflow-y-hidden" : "max-h-none overflow-y-visible"
+              )}
+            >
+              <div dangerouslySetInnerHTML={{ 
+                __html: seoContent
+                  .replace(/&nbsp;/g, ' ')
+                  .replace(/\u00a0/g, ' ')
+              }} />
+            </div>
+            
+            {!isSeoExpanded && (
+              <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none z-10" />
+            )}
+          </div>
+
+          <div className="flex justify-center pt-8 mb-12">
+            <Button
+              variant="outline"
+              onClick={() => setIsSeoExpanded(!isSeoExpanded)}
+              className="rounded-full border-zinc-200 bg-white text-zinc-900 text-sm font-bold hover:text-[#1e4b64] hover:border-[#1e4b64] transition-all flex items-center gap-2 group shadow-sm px-8"
+            >
+              {isSeoExpanded ? 'Thu gọn' : 'Xem thêm'}
+              <ChevronDown className={cn("h-4 w-4 transition-all duration-300", isSeoExpanded && "rotate-180")} />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -683,7 +792,12 @@ export default function App() {
 
 function AppContent() {
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [activeCategory, setActiveCategory] = useState('All');
+  const location = useLocation();
+  const [activeCategory, setActiveCategory] = useState(() => {
+    const path = window.location.pathname.substring(1);
+    const cat = CATEGORY_METADATA.find(c => c.slug === path);
+    return cat ? cat.name : 'All';
+  });
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -704,19 +818,18 @@ function AppContent() {
   }, []);
 
   const handleCategorySelect = (category: Category) => {
-    setIsLoading(true);
     setActiveCategory(category);
     const catMetadata = CATEGORY_METADATA.find(c => c.name === category);
     if (catMetadata) {
-      navigate(`/apparel/${catMetadata.slug}`);
+      navigate(`/${catMetadata.slug}`);
     } else {
       navigate('/shop');
     }
-    setTimeout(() => setIsLoading(false), 500);
   };
 
   const onPageChange = (page: string) => {
     navigate(page === 'home' ? '/' : `/${page}`);
+    window.scrollTo(0, 0);
   };
 
   const handleCheckout = () => {
@@ -724,7 +837,14 @@ function AppContent() {
     navigate('/checkout');
   };
 
-  const isAdminRoute = window.location.pathname === '/quan-tri';
+  const isAdminRoute = location.pathname === '/quan-tri';
+
+  const commonShopProps = {
+    activeCategory,
+    setActiveCategory,
+    isLoading,
+    onProductSelect: () => {}
+  };
 
   return (
     <AuthProvider>
@@ -778,8 +898,8 @@ function AppContent() {
                   </section>
                 </>
               } />
-              <Route path="/shop" element={<ShopPage activeCategory={activeCategory} setActiveCategory={setActiveCategory} isLoading={isLoading} onProductSelect={() => {}} />} />
-              <Route path="/apparel/:categorySlug" element={<ShopPage activeCategory={activeCategory} setActiveCategory={setActiveCategory} isLoading={isLoading} onProductSelect={() => {}} />} />
+              <Route path="/shop" element={<ShopPage {...commonShopProps} />} />
+              <Route path="/apparel/:categorySlug" element={<ShopPage {...commonShopProps} />} />
               <Route path="/apparel/:categorySlug/:productSlug" element={<ProductDetail />} />
               <Route path="/checkout" element={<Checkout onComplete={() => {}} />} />
               <Route path="/news" element={<NewsPage />} />
@@ -787,6 +907,10 @@ function AppContent() {
               <Route path="/blog" element={<NewsPage />} />
               <Route path="/blog/:slug" element={<NewsPage />} />
               <Route path="/quan-tri" element={<AdminPanel />} />
+              {/* Clean Category URLs at root */}
+              {CATEGORY_METADATA.map(cat => (
+                <Route key={cat.slug} path={`/${cat.slug}`} element={<ShopPage {...commonShopProps} categoryName={cat.name} />} />
+              ))}
               {/* Shopee-style clean URLs for products at root */}
               <Route path="/:productSlug" element={<ProductDetail />} />
               <Route path="*" element={<div className="py-20 text-center font-black text-4xl">404 - PAGE NOT FOUND</div>} />

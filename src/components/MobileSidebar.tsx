@@ -10,6 +10,7 @@ import { Category } from '../types';
 
 import { getDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { useNavigate } from 'react-router-dom';
 
 interface MobileSidebarProps {
   isOpen: boolean;
@@ -30,6 +31,7 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
   activeCategory,
   user 
 }) => {
+  const navigate = useNavigate();
   const [navItems, setNavItems] = React.useState<any[]>([]);
 
   useEffect(() => {
@@ -49,7 +51,7 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
 
   const categoryLinks = navItems.length > 0
     ? navItems.filter(item => item.group === 'category')
-    : CATEGORY_METADATA.map(cat => ({ label: cat.name, link: `/shop?category=${cat.name}`, icon: cat.icon, isStatic: true }));
+    : CATEGORY_METADATA.map(cat => ({ label: cat.name, link: `/apparel/${cat.slug}`, icon: cat.icon, isStatic: true }));
 
   useEffect(() => {
     if (isOpen) {
@@ -113,7 +115,7 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
                 >
                     <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center flex-shrink-0 shadow-md">
                         {user?.photoURL ? (
-                            <img src={user.photoURL} alt="" className="h-full w-full object-cover rounded-full" referrerPolicy="no-referrer" />
+                            <img src={user.photoURL} alt={user.displayName || 'User profile'} loading="lazy" className="h-full w-full object-cover rounded-full" referrerPolicy="no-referrer" />
                         ) : (
                             <div className="h-full w-full rounded-full flex items-center justify-center">
                                 <User className="h-5 w-5 text-[#1e4b64]" />
@@ -174,7 +176,7 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
                                             if (cat.link.startsWith('http')) {
                                               window.open(cat.link, '_blank');
                                             } else {
-                                              window.location.href = cat.link;
+                                              navigate(cat.link);
                                             }
                                         }
                                         onClose();
@@ -187,7 +189,7 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
                                 >
                                     <div className="h-12 w-12 rounded-full overflow-hidden border border-zinc-100 group-hover:scale-105 transition-transform bg-zinc-50 flex-shrink-0 relative shadow-sm">
                                         {cat.icon ? (
-                                          <img src={cat.icon} alt={cat.label} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                                          <img src={cat.icon} alt={cat.label} loading="lazy" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                                         ) : (
                                           <div className="h-full w-full bg-zinc-50 flex items-center justify-center">
                                             <Sparkles className="h-5 w-5 text-[#1e4b64]/20" />

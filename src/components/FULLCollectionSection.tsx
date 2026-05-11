@@ -31,7 +31,7 @@ export function FULLCollectionSection({ onCategorySelect }: FULLCollectionSectio
 
   const handleCategoryClick = (categoryName: Category) => {
     onCategorySelect(categoryName);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo(0, 0);
   };
 
   // Lấy 4 danh mục chính để hiển thị dạng Bento Box
@@ -63,6 +63,7 @@ export function FULLCollectionSection({ onCategorySelect }: FULLCollectionSectio
             <img 
               src={getCategoryImage(mainCategories[1].slug)} 
               alt={mainCategories[1].name} 
+              loading="lazy"
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
             />
             <div className="absolute bottom-0 left-0 p-8 lg:p-12 z-20 w-full">
@@ -90,6 +91,7 @@ export function FULLCollectionSection({ onCategorySelect }: FULLCollectionSectio
               <img 
                 src={getCategoryImage(cat.slug)} 
                 alt={cat.name} 
+                loading="lazy"
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
               />
               <div className="absolute bottom-0 left-0 p-6 z-20">
@@ -112,6 +114,7 @@ export function FULLCollectionSection({ onCategorySelect }: FULLCollectionSectio
               <img 
                 src={getCategoryImage(CATEGORY_METADATA[4].slug)} 
                 alt={CATEGORY_METADATA[4].name} 
+                loading="lazy"
                 className="w-full h-full object-cover"
               />
             </div>

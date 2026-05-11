@@ -1129,7 +1129,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                         >
                           {variant.image ? (
                             <>
-                              <img src={variant.image} alt="" className="w-full h-full object-cover" />
+                              <img src={variant.image} alt={variant.name || 'Color variant'} loading="lazy" className="w-full h-full object-cover" />
                               {formData.coverImage === variant.image && (
                                 <div className="absolute top-1 left-1 bg-blue-500 rounded-full p-0.5 z-10 shadow-sm">
                                   <Check className="w-2.5 h-2.5 text-white stroke-[3px]" />
@@ -1248,7 +1248,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                           )}
                           onClick={() => setFormData({...formData, coverImage: url})}
                         >
-                          <img src={url} alt="" className="w-full h-full object-cover" />
+                          <img src={url} alt={`Extra image ${i + 1}`} loading="lazy" className="w-full h-full object-cover" />
                           {formData.coverImage === url && (
                             <div className="absolute top-1 left-1 bg-blue-500 rounded-full p-0.5 z-10 shadow-sm">
                               <Check className="w-2.5 h-2.5 text-white stroke-[3px]" />
@@ -1292,7 +1292,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                   </div>
                   {formData.sizeGuideUrl && (
                     <div className="relative w-full h-32 rounded-md overflow-hidden border border-zinc-200 group shadow-sm bg-white mt-3">
-                      <img src={formData.sizeGuideUrl} alt="Size Guide" className="w-full h-full object-cover" />
+                      <img src={formData.sizeGuideUrl} alt="Size Guide Preview" loading="lazy" className="w-full h-full object-cover" />
                       <button 
                         type="button"
                         onClick={() => setFormData({...formData, sizeGuideUrl: ''})}
