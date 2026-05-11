@@ -96,8 +96,8 @@ export const AdminPanel: React.FC = () => {
     products: [] as { id: string; flashSalePrice: number; sold: number }[],
     startTime: '',
     endTime: '',
-    isActive: true
   });
+  const [showSitemapPreview, setShowSitemapPreview] = useState(false);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -372,7 +372,7 @@ export const AdminPanel: React.FC = () => {
     window.open(`/apparel/${catSlug}/${product.slug}`, '_blank');
   };
 
-  const handleGenerateSitemap = () => {
+  const generateSitemapString = () => {
     const baseUrl = 'https://ursport.vn';
     const currentDate = new Date().toISOString().split('T')[0];
     
@@ -421,7 +421,11 @@ export const AdminPanel: React.FC = () => {
 
     xmlLines.push('</urlset>');
 
-    const xmlContent = xmlLines.join('\n');
+    return xmlLines.join('\n');
+  };
+
+  const handleGenerateSitemap = () => {
+    const xmlContent = generateSitemapString();
     
     const blob = new Blob([xmlContent], { type: 'application/xml' });
     const url = URL.createObjectURL(blob);
@@ -1794,7 +1798,14 @@ Sitemap: https://ursport.vn/sitemap.xml`;
                   </div>
                 </div>
                 
-                <div className="flex flex-wrap gap-4">
+                <div className="flex flex-wrap gap-4 mb-6">
+                  <button 
+                    onClick={() => setShowSitemapPreview(!showSitemapPreview)}
+                    className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white text-sm font-bold rounded-xl border border-white/5 transition-all flex items-center gap-2 group"
+                  >
+                    <Eye className="h-4 w-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+                    {showSitemapPreview ? 'Đóng Xem Trước' : 'Xem trước Sitemap & Cập nhật'}
+                  </button>
                   <button 
                     onClick={handleGenerateSitemap}
                     className="px-6 py-3 bg-[#1e4b64] hover:bg-[#153446] text-white text-sm font-bold rounded-xl shadow-lg shadow-[#1e4b64]/20 transition-all flex items-center gap-2 group"
@@ -1810,6 +1821,62 @@ Sitemap: https://ursport.vn/sitemap.xml`;
                     Tải Robots.txt
                   </button>
                 </div>
+                
+                {showSitemapPreview && (
+                  <div className="mt-6 border-t border-white/5 pt-6 grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-top-4">
+                    <div className="lg:col-span-1 space-y-4">
+                      <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
+                        <h4 className="text-emerald-400 font-bold text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
+                          <CheckIcon className="h-3.5 w-3.5" />
+                          Tổng quan sitemap
+                        </h4>
+                        <div className="space-y-2 text-sm text-white/70">
+                          <div className="flex justify-between"><span>Sản phẩm:</span> <span className="text-white font-bold">{products.length} mục</span></div>
+                          <div className="flex justify-between"><span>Bài viết:</span> <span className="text-white font-bold">{blogPosts.length} mục</span></div>
+                          <div className="flex justify-between"><span>Danh mục:</span> <span className="text-white font-bold">{CATEGORY_METADATA.length} mục</span></div>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-white/5 border border-white/5 rounded-xl p-4">
+                        <h4 className="text-white font-bold text-xs uppercase tracking-widest mb-3">Vừa cập nhật gần đây</h4>
+                        <ul className="space-y-3">
+                          {products.slice(0, 3).map(p => (
+                            <li key={p.id} className="flex gap-3 text-sm">
+                              <span className="text-[#1e4b64] mt-0.5">•</span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-white truncate">{p.name}</p>
+                                <p className="text-white/30 text-[10px]">{p.category}</p>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                    
+                    <div className="lg:col-span-2">
+                      <div className="bg-[#0f1117] rounded-xl border border-white/10 overflow-hidden flex flex-col h-[400px]">
+                        <div className="bg-white/5 px-4 py-2 border-b border-white/5 flex justify-between items-center">
+                          <span className="text-white/50 text-xs font-mono">sitemap.xml</span>
+                          <button 
+                            onClick={() => {
+                              navigator.clipboard.writeText(generateSitemapString());
+                              toast.success('Đã copy sitemap!');
+                            }}
+                            className="p-1.5 hover:bg-white/10 rounded-md text-white/50 hover:text-white transition-colors"
+                            title="Copy toàn bộ"
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                        <div className="p-4 overflow-auto flex-1 custom-scrollbar">
+                          <pre className="text-emerald-400/80 text-[11px] sm:text-xs font-mono whitespace-pre-wrap leading-relaxed">
+                            {generateSitemapString()}
+                          </pre>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
