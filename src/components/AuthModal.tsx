@@ -18,7 +18,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
   const [displayName, setDisplayName] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
-  const { loginWithGoogle } = useAuth();
+  const { loginWithGoogle, devLogin } = useAuth();
+  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
   React.useEffect(() => {
     if (isOpen) {
@@ -79,6 +80,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
                   {mode === 'login' ? 'Đăng nhập để tiếp tục trải nghiệm cùng UrSport' : 'Tham gia cộng đồng UrSport ngay hôm nay'}
                 </p>
               </div>
+
+              {/* ── DEV BYPASS BUTTON (localhost only) ── */}
+              {isLocalhost && (
+                <button
+                  type="button"
+                  onClick={() => { devLogin(); onClose(); }}
+                  className="w-full h-12 mb-2 rounded-2xl bg-amber-400 hover:bg-amber-300 text-amber-900 font-black text-sm flex items-center justify-center gap-2 border-2 border-amber-500 transition-all"
+                >
+                  ⚡ Dev Admin Login (localhost only)
+                </button>
+              )}
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 {mode === 'register' && (

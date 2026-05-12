@@ -90,7 +90,7 @@
   box-sizing: border-box !important;
 }
 
-.product-description-container * {
+.product-description-container *:not(iframe):not(.video-container):not(.video-container *) {
   max-width: 100% !important;
   /* Chống bẻ đôi từ tuyệt đối */
   word-break: normal !important; 
@@ -110,14 +110,22 @@
   overflow-wrap: break-word !important;
 }
 
-/* Block elements */
+/* Block elements (excluding video containers) */
 .product-description-container p,
 .product-description-container li,
 .product-description-container h1,
 .product-description-container h2,
 .product-description-container h3,
-.product-description-container h4,
-.product-description-container div {
+.product-description-container h4 {
+  display: block !important;
+  width: 100% !important;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+  margin-bottom: 0.8em !important;
+}
+
+/* Div block: exclude video-container to avoid breaking the 16:9 padding trick */
+.product-description-container div:not(.video-container) {
   display: block !important;
   width: 100% !important;
   word-break: normal !important;
@@ -126,8 +134,17 @@
 }
 
 .product-description-container img,
-.product-description-container video,
 .product-description-container table {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  display: block !important;
+  margin-top: 1.5em !important;
+  margin-bottom: 1.5em !important;
+}
+
+/* Standalone <video> tag (not inside .video-container) */
+.product-description-container video {
   width: 100% !important;
   max-width: 100% !important;
   height: auto !important;

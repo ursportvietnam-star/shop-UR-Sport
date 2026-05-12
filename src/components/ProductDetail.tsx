@@ -49,6 +49,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { showAddToCartToast } from './AddToCartToast';
 
 export const ProductDetail: React.FC = () => {
   const { categorySlug, productSlug } = useParams<{ categorySlug?: string, productSlug: string }>();
@@ -59,6 +60,8 @@ export const ProductDetail: React.FC = () => {
   const product = products.find(p => p.slug === productSlug);
 
   const catMetadata = CATEGORY_METADATA.find(c => c.slug === categorySlug);
+  const productCategoryMeta = catMetadata || CATEGORY_METADATA.find(c => c.name === product?.category);
+  const productCategorySlug = productCategoryMeta?.slug || categorySlug || 'shop';
   const categoryName = catMetadata ? catMetadata.name : product?.category;
   const categoryProducts = products.filter(p => p.category === categoryName);
   const currentIndex = categoryProducts.findIndex(p => p.slug === productSlug);
@@ -466,15 +469,11 @@ export const ProductDetail: React.FC = () => {
     const cartProduct = { ...product, discountPrice: finalPrice };
     
     addToCart(cartProduct, selectedColor, selectedSize, quantity);
-    toast.success(`Đã thêm ${product.name} vào giỏ hàng`, {
-      description: `${selectedColor} / Size ${selectedSize} (qty: ${quantity})`,
-      position: 'top-center',
-      className: 'font-sans font-medium',
-      action: {
-        label: 'Thanh toán ngay',
-        onClick: () => navigate('/checkout')
-      },
-      duration: 5000
+    showAddToCartToast({
+      productName: product.name,
+      image: product.images?.[0],
+      meta: `${selectedColor} / Size ${selectedSize} / SL: ${quantity}`,
+      onCheckout: () => navigate('/checkout'),
     });
   };
 
@@ -507,14 +506,14 @@ export const ProductDetail: React.FC = () => {
         <nav className="flex items-center gap-2 text-xs font-medium text-zinc-400 overflow-hidden">
           <Link to="/" className="hover:text-black transition-colors shrink-0">Home</Link>
           <ChevronRight className="h-3 w-3 text-zinc-300 shrink-0" />
-          <Link to={`/apparel/${categorySlug}`} className="hover:text-black transition-colors shrink-0">{categoryName}</Link>
+          <Link to={productCategorySlug === 'shop' ? '/shop' : `/${productCategorySlug}`} className="hover:text-black transition-colors shrink-0">{categoryName}</Link>
           <ChevronRight className="h-3 w-3 text-zinc-300 shrink-0" />
           <span className="text-zinc-500 truncate">{product.name}</span>
         </nav>
 
         <div className="flex items-center gap-2 h-full shrink-0 ml-4">
           <button
-            onClick={() => prevProduct && navigate(`/apparel/${categorySlug}/${prevProduct.slug}`)}
+            onClick={() => prevProduct && navigate(`/${prevProduct.slug}`)}
             disabled={!prevProduct}
             className="w-8 h-8 rounded-full border border-zinc-100 flex items-center justify-center hover:bg-zinc-50 disabled:opacity-20 transition-all group"
           >
@@ -526,7 +525,7 @@ export const ProductDetail: React.FC = () => {
           </span>
 
           <button
-            onClick={() => nextProduct && navigate(`/apparel/${categorySlug}/${nextProduct.slug}`)}
+            onClick={() => nextProduct && navigate(`/${nextProduct.slug}`)}
             disabled={!nextProduct}
             className="w-8 h-8 rounded-full border border-zinc-100 flex items-center justify-center hover:bg-zinc-50 disabled:opacity-20 transition-all group"
           >
@@ -1341,16 +1340,16 @@ export const ProductDetail: React.FC = () => {
       </div>
 
       {/* Mobile Sticky Action Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-md border-t border-zinc-200 p-3 pb-safe flex gap-2 shadow-[0_-8px_20px_-10px_rgba(0,0,0,0.1)]">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-zinc-200 p-2.5 pb-safe flex gap-2 shadow-[0_-8px_20px_-10px_rgba(0,0,0,0.1)]">
         <button
           onClick={handleAddToCart}
-          className="flex-1 h-12 bg-[#f0f9ff] border-2 border-[#1e4b64] text-[#1e4b64] font-bold rounded-xl text-[13px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-transform"
+          className="flex-1 h-12 bg-[#f0f9ff] border-2 border-[#1e4b64] text-[#1e4b64] font-black rounded-xl text-[12px] uppercase tracking-wide flex items-center justify-center gap-2 active:scale-95 transition-transform whitespace-nowrap"
         >
           <ShoppingCart className="h-4 w-4" /> Thêm
         </button>
         <button
           onClick={handleBuyNow}
-          className="flex-[1.2] h-12 bg-[#1e4b64] text-white font-bold rounded-xl text-[13px] uppercase tracking-widest active:scale-95 transition-transform shadow-lg shadow-blue-500/20"
+          className="flex-[1.15] h-12 bg-[#1e4b64] text-white font-black rounded-xl text-[12px] uppercase tracking-wide active:scale-95 transition-transform shadow-lg shadow-blue-500/20 whitespace-nowrap"
         >
           Mua Ngay
         </button>

@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Star, ShoppingCart, ShoppingBag, Heart, Plus, RefreshCcw, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { LazyImage } from './LazyImage';
+import { showAddToCartToast } from './AddToCartToast';
 
 interface ProductCardProps {
   product: Product;
@@ -30,15 +31,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
     }
     
     addToCart(product, selectedColor, selectedSize || 'Free Size', 1);
-    toast.success(`Đã thêm ${product.name} vào giỏ hàng`, {
-      description: `Màu: ${selectedColor} / Size: ${selectedSize || 'Free Size'}`,
-      position: 'top-center',
-      className: 'font-sans font-medium',
-      action: {
-        label: 'Thanh toán ngay',
-        onClick: () => navigate('/checkout')
-      },
-      duration: 5000
+    showAddToCartToast({
+      productName: product.name,
+      image: product.images?.[0],
+      meta: `Màu: ${selectedColor} / Size: ${selectedSize || 'Free Size'}`,
+      onCheckout: () => navigate('/checkout'),
     });
   };
 
@@ -59,8 +56,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
         This is the Base Card that stays in the flow to reserve space in the grid.
         It must look exactly like the non-hovered card but with visibility hidden on absolute expansion.
       */}
-      <div className="flex flex-col h-full bg-white rounded-[24px] border border-transparent">
-        <div className="relative aspect-[3/4] w-full bg-[#f8f8f8] rounded-t-[24px] overflow-hidden">
+      <div className="flex flex-col h-full bg-white rounded-2xl border border-transparent">
+        <div className="relative aspect-[4/5] w-full bg-[#f8f8f8] rounded-t-2xl overflow-hidden">
           <LazyImage src={product.images?.[0] || ''} alt={product.name} className="w-full h-full object-cover" />
         </div>
         <div className="p-3 sm:p-4 flex flex-col flex-grow">
@@ -73,14 +70,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
 
       {/* Interactive Overlay Card */}
       <div className={cn(
-        "absolute top-0 left-0 right-0 bg-white rounded-[24px] transition-all duration-300 ease-out border border-transparent overflow-hidden",
+        "absolute top-0 left-0 right-0 bg-white rounded-2xl transition-all duration-300 ease-out border border-zinc-100 overflow-hidden",
         isHovered 
-          ? "shadow-[0_30px_60px_rgba(0,0,0,0.15)] z-50 border-zinc-100 -translate-y-1 h-auto" 
+          ? "shadow-[0_24px_48px_rgba(0,0,0,0.12)] z-50 -translate-y-1 h-auto" 
           : "h-full z-10"
       )}>
         
         {/* Image Section */}
-        <div className="relative aspect-[3/4] w-full overflow-hidden rounded-t-[24px] bg-[#f8f8f8]">
+        <div className="relative aspect-[4/5] w-full overflow-hidden rounded-t-2xl bg-[#f8f8f8]">
           <AnimatePresence mode="wait">
             <motion.img
               key={isHovered && product.images?.[1] ? product.images[1] : product.images?.[0]}
@@ -93,16 +90,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
           </AnimatePresence>
 
           {/* Badges */}
-          <div className="absolute top-2.5 left-2.5 flex flex-col gap-1.5 z-10">
+          <div className="absolute top-2 left-2 flex flex-col gap-1.5 z-10 sm:top-2.5 sm:left-2.5">
             {product.isNew && (
-              <div className="bg-[#00a651] text-white px-2 py-0.5 rounded-full text-[9px] font-bold shadow-sm uppercase tracking-wider">New</div>
+              <div className="bg-[#00a651] text-white px-2 py-0.5 rounded-full text-[9px] font-bold shadow-sm uppercase tracking-wider">Mới</div>
             )}
             {discountPercent > 0 && (
               <div className="bg-[#ff3b30] text-white px-2 py-0.5 rounded-full text-[9px] font-bold shadow-sm">-{discountPercent}%</div>
             )}
           </div>
 
-          <button className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center text-zinc-400 hover:text-red-500 shadow-sm transition-all">
+          <button className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/85 backdrop-blur-md flex items-center justify-center text-zinc-400 hover:text-red-500 shadow-sm transition-all sm:top-2.5 sm:right-2.5">
             <Heart className="h-4 w-4" />
           </button>
         </div>
@@ -114,7 +111,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
             <span className="text-[11px] font-bold text-zinc-500">{product.rating || '5.0'}</span>
           </div>
 
-          <h3 className="text-[13px] sm:text-[14px] font-bold text-zinc-800 leading-[1.3] mb-2 line-clamp-2 h-[2.6em] overflow-hidden group-hover:text-[#1e4b64] transition-colors">
+          <h3 className="text-[12px] sm:text-[14px] font-bold text-zinc-800 leading-[1.35] mb-2 line-clamp-2 h-[2.7em] overflow-hidden group-hover:text-[#1e4b64] transition-colors">
             {product.name}
           </h3>
 
@@ -127,7 +124,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
           {/* Price Area and Quick Add */}
           <div className="flex items-end justify-between mt-auto mb-1">
             <div className="flex flex-col gap-0.5">
-              <span className="text-[17px] sm:text-[18px] font-black text-black leading-tight whitespace-nowrap">
+              <span className="text-[15px] sm:text-[18px] font-black text-black leading-tight whitespace-nowrap">
                 {(product.discountPrice || product.price).toLocaleString('vi-VN')}đ
               </span>
               {product.discountPrice && (
@@ -145,7 +142,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
             {/* Compact Circle Add Button */}
             <button 
               onClick={handleQuickAdd}
-              className="relative w-9 h-9 rounded-full bg-[#00a651] text-white flex items-center justify-center shadow-lg hover:bg-[#00c05d] transition-all active:scale-90 group/btn"
+              className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#1e4b64] text-white flex items-center justify-center shadow-lg hover:bg-[#153a4d] transition-all active:scale-90 group/btn"
               title="Thêm vào giỏ"
             >
               <div className="relative">

@@ -51,7 +51,20 @@ export const Hero: React.FC<{ onShopClick: () => void }> = ({ onShopClick }) => 
     }
   };
 
-  if (isLoading) return <div className="h-[500px] w-full bg-zinc-950 flex items-center justify-center text-white/10 font-black tracking-[0.5em] text-2xl animate-pulse uppercase">UR SPORT</div>;
+  if (isLoading) return (
+    <div className="relative h-[560px] w-full overflow-hidden bg-[#dceefa] sm:h-[clamp(360px,36vw,520px)]">
+      <div className="absolute inset-0 bg-linear-to-br from-[#7ebbe5] via-[#dceefa] to-white" />
+      <div className="absolute inset-x-0 bottom-0 h-2/3 bg-linear-to-t from-[#1e4b64]/25 to-transparent" />
+      <div className="relative mx-auto flex h-full max-w-[1440px] flex-col justify-end px-6 pb-20 sm:px-12 sm:pb-16 lg:px-20">
+        <span className="mb-3 block text-[9px] font-black uppercase tracking-[0.42em] text-white/70 drop-shadow-md sm:text-[11px]">
+          UR SPORT PERFORMANCE
+        </span>
+        <div className="h-10 w-56 animate-pulse rounded-full bg-white/40 sm:h-14 sm:w-80" />
+        <div className="mt-4 h-4 w-48 animate-pulse rounded-full bg-white/35 sm:w-64" />
+        <div className="mt-7 h-12 w-56 animate-pulse rounded-full bg-white/80" />
+      </div>
+    </div>
+  );
   
   if (activeBanners.length === 0) return (
     <div className="relative h-[500px] w-full flex items-center justify-center bg-zinc-950 text-center px-4">
@@ -66,7 +79,7 @@ export const Hero: React.FC<{ onShopClick: () => void }> = ({ onShopClick }) => 
   );
 
   return (
-    <div className="relative min-h-[360px] h-[75svh] sm:h-[550px] md:h-[600px] lg:h-[700px] w-full overflow-hidden bg-black group/hero">
+    <div className="relative h-[560px] sm:h-[clamp(360px,36vw,520px)] w-full overflow-hidden bg-[#dceefa] group/hero">
       <AnimatePresence mode="popLayout">
         <motion.div 
           key={currentIndex}
@@ -79,13 +92,13 @@ export const Hero: React.FC<{ onShopClick: () => void }> = ({ onShopClick }) => 
           <img
             src={activeBanners[currentIndex]?.image}
             alt={activeBanners[currentIndex]?.title}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-cover object-center sm:object-contain"
             loading={currentIndex === 0 ? 'eager' : 'lazy'}
             decoding="async"
             fetchPriority={currentIndex === 0 ? 'high' : 'auto'}
             referrerPolicy="no-referrer"
           />
-          <div className="absolute inset-0 bg-linear-to-r from-black/60 via-black/20 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-r from-black/35 via-black/5 to-transparent" />
         </motion.div>
       </AnimatePresence>
 
@@ -107,18 +120,18 @@ export const Hero: React.FC<{ onShopClick: () => void }> = ({ onShopClick }) => 
         </div>
       )}
 
-      <div className="relative mx-auto flex h-full max-w-[1440px] flex-col justify-center px-6 sm:px-12 lg:px-20">
-        <div className="max-w-3xl relative z-10">
+      <div className="relative mx-auto flex h-full max-w-[1440px] flex-col justify-end px-6 pb-20 sm:px-12 sm:pb-16 lg:px-20">
+        <div className="relative z-10 max-w-[560px]">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <span className="text-[#1e4b64] font-black uppercase tracking-[0.5em] text-[9px] sm:text-[11px] mb-4 block drop-shadow-md">
+            <span className="mb-3 block text-[9px] font-black uppercase tracking-[0.42em] text-white/70 drop-shadow-md sm:text-[11px]">
               UR SPORT PERFORMANCE
             </span>
             
-            <div className="min-h-[140px] sm:min-h-[180px] mb-6">
+            <div className="mb-4">
               <AnimatePresence mode="wait">
                 <motion.h1 
                   key={currentIndex}
@@ -126,12 +139,12 @@ export const Hero: React.FC<{ onShopClick: () => void }> = ({ onShopClick }) => 
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 30 }}
                   transition={{ duration: 0.6, ease: "easeOut" }}
-                  className="text-[34px] xs:text-[40px] sm:text-[56px] md:text-[68px] lg:text-[84px] font-black tracking-tighter text-white uppercase leading-[0.9] italic"
+                  className="max-w-[13ch] text-[30px] font-black uppercase leading-[0.92] tracking-tight text-white drop-shadow-xl sm:text-[42px] lg:text-[50px]"
                 >
-                  {(activeBanners[currentIndex]?.title || "").split('\n').map((line: string, i: number) => (
+                  {(activeBanners[currentIndex]?.title || "UR Sport").split('\n').slice(0, 2).map((line: string, i: number) => (
                     <React.Fragment key={i}>
-                      {i === 1 ? <span className="text-[#1e4b64]">{line}</span> : line}
-                      <br />
+                      {i === 1 ? <span className="text-white/80">{line}</span> : line}
+                      {i === 0 && <br />}
                     </React.Fragment>
                   ))}
                 </motion.h1>
@@ -142,7 +155,7 @@ export const Hero: React.FC<{ onShopClick: () => void }> = ({ onShopClick }) => 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.8, duration: 0.8 }}
-              className="text-white/80 text-[13px] sm:text-[17px] font-medium mb-10 max-w-lg leading-relaxed drop-shadow-sm"
+              className="mb-6 max-w-sm text-[13px] font-semibold leading-relaxed text-white/85 drop-shadow-sm sm:text-[16px]"
             >
               {activeBanners[currentIndex]?.subtitle || 'Hiệu suất tối đa, phong cách vượt trội cho mọi hành trình.'}
             </motion.p>
@@ -150,7 +163,7 @@ export const Hero: React.FC<{ onShopClick: () => void }> = ({ onShopClick }) => 
             <div className="flex flex-wrap gap-4">
               <button 
                 onClick={handleButtonClick}
-                className="group relative bg-white text-black hover:bg-[#1e4b64] hover:text-white font-black px-10 py-4 rounded-full text-[12px] uppercase tracking-widest transition-all flex items-center gap-3 shadow-2xl active:scale-95 overflow-hidden"
+                className="group relative flex items-center gap-3 overflow-hidden rounded-full bg-white px-8 py-4 text-[12px] font-black uppercase tracking-widest text-black shadow-2xl transition-all hover:bg-[#1e4b64] hover:text-white active:scale-95 sm:px-10"
               >
                 <span className="relative z-10">Khám phá ngay</span>
                 <ArrowRight className="h-4 w-4 relative z-10 group-hover:translate-x-1 transition-transform" />
@@ -160,7 +173,7 @@ export const Hero: React.FC<{ onShopClick: () => void }> = ({ onShopClick }) => 
         </div>
         
         {/* Banner indicators */}
-        <div className="absolute bottom-10 left-6 sm:left-12 lg:left-20 flex items-center gap-4 z-20">
+        <div className="absolute bottom-8 left-6 z-20 flex items-center gap-4 sm:left-12 lg:left-20">
           <div className="flex gap-2">
             {activeBanners.map((_, i) => (
               <button

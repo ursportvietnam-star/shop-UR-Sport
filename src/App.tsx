@@ -532,7 +532,7 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
   });
 
   return (
-    <div className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8">
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-2 text-sm text-zinc-400 mb-6">
         <button 
@@ -566,16 +566,16 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
         )}
       </nav>
 
-      <header className="mb-10">
+      <header className="mb-8">
         <div className="flex flex-col gap-4 mb-8">
-          <h1 className="text-[32px] sm:text-[40px] font-black text-black leading-tight tracking-tight">
+          <h1 className="text-[28px] sm:text-[40px] font-black text-black leading-tight tracking-tight">
             {brandFilter ? `Sản phẩm thương hiệu ${brandFilter}` : (currentCategory === 'All' ? 'Tất cả sản phẩm' : currentCategory)}
           </h1>
           
-          <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-zinc-100">
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-col gap-4 pt-4 border-t border-zinc-100 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <div className="relative group">
-                <Button variant="outline" className="h-11 rounded-full border-zinc-200 text-zinc-900 font-bold px-5 gap-2 hover:bg-zinc-50">
+                <Button variant="outline" className="h-10 sm:h-11 rounded-full border-zinc-200 text-zinc-900 font-bold px-4 sm:px-5 gap-2 hover:bg-zinc-50 whitespace-nowrap">
                   <SlidersHorizontal className="h-4 w-4" /> Bộ lọc <ChevronDown className="h-3 w-3 opacity-50" />
                 </Button>
                 <div className="absolute left-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-zinc-100 py-3 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-left group-hover:translate-y-0 translate-y-2">
@@ -592,7 +592,7 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
 
               {/* Price Filter */}
               <div className="relative group">
-                <Button variant="outline" className={cn("h-11 rounded-full border-zinc-200 text-zinc-900 font-bold px-5 gap-2 hover:bg-zinc-50 hidden sm:flex", priceFilter && "border-[#1e4b64] bg-blue-50/50 text-[#1e4b64]")}>
+                <Button variant="outline" className={cn("h-10 sm:h-11 rounded-full border-zinc-200 text-zinc-900 font-bold px-4 sm:px-5 gap-2 hover:bg-zinc-50 flex whitespace-nowrap", priceFilter && "border-[#1e4b64] bg-blue-50/50 text-[#1e4b64]")}>
                   Giá {priceFilter && <span className="h-1.5 w-1.5 rounded-full bg-[#1e4b64]" />} <ChevronDown className="h-3 w-3 opacity-50" />
                 </Button>
                 <div className="absolute left-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-zinc-100 py-2 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-left group-hover:translate-y-0 translate-y-2">
@@ -613,7 +613,7 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
 
               {/* Brand Filter */}
               <div className="relative group">
-                <Button variant="outline" className={cn("h-11 rounded-full border-zinc-200 text-zinc-900 font-bold px-5 gap-2 hover:bg-zinc-50 hidden sm:flex", brandFilter && "border-[#1e4b64] bg-blue-50/50 text-[#1e4b64]")}>
+                <Button variant="outline" className={cn("h-10 sm:h-11 rounded-full border-zinc-200 text-zinc-900 font-bold px-4 sm:px-5 gap-2 hover:bg-zinc-50 flex whitespace-nowrap", brandFilter && "border-[#1e4b64] bg-blue-50/50 text-[#1e4b64]")}>
                   Thương hiệu {brandFilter && <span className="h-1.5 w-1.5 rounded-full bg-[#1e4b64]" />} <ChevronDown className="h-3 w-3 opacity-50" />
                 </Button>
                 <div className="absolute left-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-zinc-100 py-2 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-left group-hover:translate-y-0 translate-y-2 max-h-80 overflow-y-auto">
@@ -635,7 +635,7 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
 
               {/* Color Filter */}
               <div className="relative group">
-                <Button variant="outline" className={cn("h-11 rounded-full border-zinc-200 text-zinc-900 font-bold px-5 gap-2 hover:bg-zinc-50 hidden md:flex", colorFilter && "border-[#1e4b64] bg-blue-50/50 text-[#1e4b64]")}>
+                <Button variant="outline" className={cn("h-10 sm:h-11 rounded-full border-zinc-200 text-zinc-900 font-bold px-4 sm:px-5 gap-2 hover:bg-zinc-50 flex whitespace-nowrap", colorFilter && "border-[#1e4b64] bg-blue-50/50 text-[#1e4b64]")}>
                   Màu sắc {colorFilter && <span className="h-1.5 w-1.5 rounded-full bg-[#1e4b64]" />} <ChevronDown className="h-3 w-3 opacity-50" />
                 </Button>
                 <div className="absolute left-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-zinc-100 py-2 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-left group-hover:translate-y-0 translate-y-2 max-h-80 overflow-y-auto">
@@ -657,7 +657,7 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
 
               {/* Size Filter */}
               <div className="relative group">
-                <Button variant="outline" className={cn("h-11 rounded-full border-zinc-200 text-zinc-900 font-bold px-5 gap-2 hover:bg-zinc-50 hidden md:flex", sizeFilter && "border-[#1e4b64] bg-blue-50/50 text-[#1e4b64]")}>
+                <Button variant="outline" className={cn("h-10 sm:h-11 rounded-full border-zinc-200 text-zinc-900 font-bold px-4 sm:px-5 gap-2 hover:bg-zinc-50 flex whitespace-nowrap", sizeFilter && "border-[#1e4b64] bg-blue-50/50 text-[#1e4b64]")}>
                   Kích cỡ {sizeFilter && <span className="h-1.5 w-1.5 rounded-full bg-[#1e4b64]" />} <ChevronDown className="h-3 w-3 opacity-50" />
                 </Button>
                 <div className="absolute left-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-zinc-100 py-2 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-left group-hover:translate-y-0 translate-y-2 max-h-80 overflow-y-auto">
@@ -679,7 +679,7 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
             </div>
 
             <div className="relative group">
-              <Button variant="outline" className="h-11 rounded-full border-zinc-200 text-zinc-900 font-bold px-5 gap-2 hover:bg-zinc-50">
+              <Button variant="outline" className="h-10 rounded-full border-zinc-200 text-zinc-900 font-bold px-4 gap-2 hover:bg-zinc-50 whitespace-nowrap sm:h-11 sm:px-5">
                 <div className="flex items-center gap-2">
                   <div className="flex flex-col gap-0.5">
                     <div className="w-4 h-0.5 bg-zinc-900 rounded-full" />
@@ -692,7 +692,7 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
               
               <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-zinc-100 py-3 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right group-hover:translate-y-0 translate-y-2">
                 <div className="px-4 pb-2 mb-2 border-b border-zinc-50">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Select Category</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Danh mục</span>
                 </div>
                 <button 
                    onClick={() => setActiveCategory('All')}
@@ -701,7 +701,7 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
                      currentCategory === 'All' ? "text-[#1e4b64] bg-blue-50/50" : "text-zinc-600"
                    )}
                 >
-                  All Products
+                  Tất cả sản phẩm
                 </button>
                 {CATEGORIES.map(cat => (
                   <button 
@@ -719,26 +719,26 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
             </div>
           </div>
 
-          <div className="flex items-center justify-between gap-4 py-4 border-t border-zinc-100 mt-2">
-            <div className="flex items-center gap-6 text-[13px] font-medium text-zinc-500">
+          <div className="flex flex-col gap-3 py-4 border-t border-zinc-100 mt-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-4 text-[13px] font-medium text-zinc-500">
               <div className="relative group">
                 <div className="flex items-center gap-1.5 cursor-pointer">
-                  Sort by: <span className="text-[#1e4b64] hover:underline">
-                    {sortFilter === 'newest' ? 'Newest Items First' : 
-                     sortFilter === 'price-asc' ? 'Price: Low to High' :
-                     sortFilter === 'price-desc' ? 'Price: High to Low' :
-                     sortFilter === 'rating' ? 'Top Rated' : 'Featured'}
+                  Sắp xếp: <span className="text-[#1e4b64] hover:underline">
+                    {sortFilter === 'newest' ? 'Mới nhất' : 
+                     sortFilter === 'price-asc' ? 'Giá thấp đến cao' :
+                     sortFilter === 'price-desc' ? 'Giá cao đến thấp' :
+                     sortFilter === 'rating' ? 'Đánh giá cao' : 'Nổi bật'}
                   </span> <ChevronDown className="h-3 w-3" />
                 </div>
                 <div className="absolute left-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-zinc-100 py-2 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                  <button onClick={() => updateFilter('sort', 'newest')} className="w-full text-left px-4 py-2 text-sm font-bold hover:bg-zinc-50">Newest Items First</button>
-                  <button onClick={() => updateFilter('sort', 'price-asc')} className="w-full text-left px-4 py-2 text-sm font-bold hover:bg-zinc-50">Price: Low to High</button>
-                  <button onClick={() => updateFilter('sort', 'price-desc')} className="w-full text-left px-4 py-2 text-sm font-bold hover:bg-zinc-50">Price: High to Low</button>
-                  <button onClick={() => updateFilter('sort', 'rating')} className="w-full text-left px-4 py-2 text-sm font-bold hover:bg-zinc-50">Top Rated</button>
+                  <button onClick={() => updateFilter('sort', 'newest')} className="w-full text-left px-4 py-2 text-sm font-bold hover:bg-zinc-50">Mới nhất</button>
+                  <button onClick={() => updateFilter('sort', 'price-asc')} className="w-full text-left px-4 py-2 text-sm font-bold hover:bg-zinc-50">Giá thấp đến cao</button>
+                  <button onClick={() => updateFilter('sort', 'price-desc')} className="w-full text-left px-4 py-2 text-sm font-bold hover:bg-zinc-50">Giá cao đến thấp</button>
+                  <button onClick={() => updateFilter('sort', 'rating')} className="w-full text-left px-4 py-2 text-sm font-bold hover:bg-zinc-50">Đánh giá cao</button>
                 </div>
               </div>
               <div className="hidden sm:flex items-center gap-1.5">
-                Show: <span className="text-[#1e4b64] cursor-pointer hover:underline">30</span> <ChevronDown className="h-3 w-3" />
+                Hiển thị: <span className="text-[#1e4b64] cursor-pointer hover:underline">30</span> <ChevronDown className="h-3 w-3" />
               </div>
             </div>
 
@@ -755,7 +755,7 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
       </header>
 
       {filteredProducts.length > 0 ? (
-        <div className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3 lg:grid-cols-4 xl:gap-x-8">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-7 sm:grid-cols-3 sm:gap-x-5 lg:grid-cols-4 xl:gap-x-7">
           {isLoading ? (
             Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="space-y-4">
