@@ -412,13 +412,53 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
 
   React.useEffect(() => {
     const fetchSeo = async () => {
+      // === Tier-1 SEO fallbacks (optimized per category) ===
+      const CATEGORY_DEFAULT_SEO: Record<string, { title: string; description: string; keywords: string }> = {
+        'ao-thun-nam': {
+          title: 'Áo Thun Nam Đẹp, Oversize, Cotton Cao Cấp 2026 | UR Sport',
+          description: 'Mua áo thun nam đẹp tại UR Sport. Đa dạng mẫu áo thun oversize, slim-fit, cotton 100%, form chuẩn. Miễn phí vận chuyển toàn quốc.',
+          keywords: 'áo thun nam, áo thun nam đẹp, áo thun oversize nam, áo thun cotton nam, áo phông nam',
+        },
+        'ao-thun-the-thao-nam': {
+          title: 'Áo Thun Thể Thao Nam Thoáng Mát, Tập Gym & Chạy Bộ | UR Sport',
+          description: 'Áo thun thể thao nam cao cấp tại UR Sport. Co giãn 4 chiều, thấm hút mồ hôi, kháng khuẩn. Phù hợp tập gym, chạy bộ, cầu lông. Chính hãng, giá tốt.',
+          keywords: 'áo thun thể thao nam, áo thể thao nam, áo tập gym nam, áo chạy bộ nam, áo thể thao nam cao cấp',
+        },
+        'ao-polo-nam': {
+          title: 'Áo Polo Nam Cao Cấp, Thể Thao & Lịch Sự 2026 | UR Sport',
+          description: 'Khám phá bộ sưu tập áo polo nam cao cấp tại UR Sport. Vải cá sấu Pique Cotton, chống nhăn, form chuẩn. Phù hợp đi làm, chơi golf và dạo phố.',
+          keywords: 'áo polo nam, áo polo nam cao cấp, áo thun có cổ nam, áo polo thể thao nam, áo polo nam đẹp',
+        },
+        'quan-the-thao-nam': {
+          title: 'Quần Thể Thao Nam Jogger & Short Gym Chất Lượng Cao | UR Sport',
+          description: 'Mua quần thể thao nam chất lượng cao tại UR Sport. Đủ loại quần jogger, quần short chạy bộ, quần gym co giãn 4 chiều. Giao hàng nhanh toàn quốc.',
+          keywords: 'quần thể thao nam, quần short thể thao nam, quần jogger nam, quần tập gym nam, quần chạy bộ nam',
+        },
+        'phu-kien-the-thao': {
+          title: 'Phụ Kiện Thể Thao Chính Hãng: Bình Nước, Găng Tay, Túi Gym | UR Sport',
+          description: 'Mua phụ kiện thể thao chính hãng tại UR Sport. Bình nước, găng tay gym, túi duffel, thảm yoga, dây nhảy và nhiều hơn nữa. Giá tốt nhất.',
+          keywords: 'phụ kiện thể thao, bình nước thể thao, găng tay tập gym, túi thể thao, phụ kiện gym nam',
+        },
+      };
+
       if (currentCategory === 'All') {
         setSeoContent('');
-        setSeoMeta({title:'UR Sport - Shop Đồ Thể Thao Nam Cao Cấp',description:'Khám phá tất cả sản phẩm đồ thể thao nam tại UR Sport. Áo thun, áo polo, quần thể thao chất lượng cao.',keywords:'ur sport shop, đồ thể thao nam, quần áo gym',canonical:'',robots:''});
+        setSeoMeta({
+          title: 'Shop Đồ Thể Thao Nam Cao Cấp | Áo Thun, Áo Polo, Quần Gym | UR Sport',
+          description: 'Khám phá toàn bộ bộ sưu tập thời trang thể thao nam tại UR Sport. Áo thun thể thao, áo polo, quần jogger, phụ kiện gym chính hãng. Giao hàng nhanh.',
+          keywords: 'ur sport shop, đồ thể thao nam, quần áo gym nam, thời trang thể thao nam, áo thun thể thao, áo polo nam',
+          canonical: '',
+          robots: ''
+        });
         return;
       }
       const catMetadata = CATEGORY_METADATA.find(c => c.name === currentCategory);
       if (catMetadata) {
+        const fallback = CATEGORY_DEFAULT_SEO[catMetadata.slug] || {
+          title: `${currentCategory} Chính Hãng, Giá Tốt | UR Sport`,
+          description: `Mua ${currentCategory} chính hãng, chất lượng cao tại UR Sport. Đa dạng mẫu mã, giao hàng toàn quốc, đổi trả dễ dàng.`,
+          keywords: `${currentCategory}, đồ thể thao nam, ur sport`,
+        };
         try {
           const docRef = doc(db, 'categorySeo', catMetadata.slug);
           const docSnap = await getDoc(docRef);
@@ -426,18 +466,18 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
             const data = docSnap.data();
             setSeoContent(data.content || '');
             setSeoMeta({
-              title: data.seoTitle || `${currentCategory} - UR Sport`,
-              description: data.seoDescription || `Mua sắm ${currentCategory} chất lượng cao tại UR Sport.`,
-              keywords: data.seoKeywords || `${currentCategory}, đồ thể thao ur sport`,
+              title: data.seoTitle || fallback.title,
+              description: data.seoDescription || fallback.description,
+              keywords: data.seoKeywords || fallback.keywords,
               canonical: data.seoCanonical || '',
               robots: data.seoRobots || 'index, follow',
             });
           } else {
             setSeoContent('');
             setSeoMeta({
-              title: `${currentCategory} - UR Sport`,
-              description: `Mua sắm ${currentCategory} chất lượng cao tại UR Sport.`,
-              keywords: `${currentCategory}, đồ thể thao ur sport`,
+              title: fallback.title,
+              description: fallback.description,
+              keywords: fallback.keywords,
               canonical: '',
               robots: 'index, follow'
             });
