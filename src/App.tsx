@@ -275,7 +275,7 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               className="lg:col-span-5 group cursor-pointer" 
-              onClick={() => navigate(`/news/${STATIC_BLOG_POSTS[0].id}`)}
+              onClick={() => navigate(`/blog/${STATIC_BLOG_POSTS[0].id}`)}
             >
               <div className="relative aspect-[4/3] sm:aspect-square lg:aspect-auto lg:h-[500px] overflow-hidden rounded-[32px] mb-6 shadow-2xl">
                 <LazyImage 
@@ -306,7 +306,7 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
                   className="group cursor-pointer" 
-                  onClick={() => navigate(`/news/${item.id}`)}
+                  onClick={() => navigate(`/blog/${item.id}`)}
                 >
                   <div className="relative aspect-[1024/682] overflow-hidden rounded-2xl mb-4 shadow-lg">
                     <LazyImage 
@@ -992,8 +992,6 @@ function AppContent() {
               <Route path="/apparel/:categorySlug" element={<ShopPage {...commonShopProps} />} />
               <Route path="/apparel/:categorySlug/:productSlug" element={<ProductDetail />} />
               <Route path="/checkout" element={<Checkout onComplete={() => {}} />} />
-              <Route path="/news" element={<NewsPage />} />
-              <Route path="/news/:slug" element={<NewsPage />} />
               <Route path="/blog" element={<NewsPage />} />
               <Route path="/blog/:slug" element={<NewsPage />} />
               <Route path="/quan-tri" element={<AdminPanel />} />

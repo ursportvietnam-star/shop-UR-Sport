@@ -1049,6 +1049,13 @@ Sitemap: https://ursport.vn/sitemap.xml`;
                             <td className="px-6 py-4">
                               <div className="flex items-center justify-end gap-1">
                                 <button
+                                  onClick={() => window.open(`/blog/${post.slug || post.id}`, '_blank')}
+                                  title="Xem trên web"
+                                  className="h-8 w-8 flex items-center justify-center rounded-lg text-white/30 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all"
+                                >
+                                  <Eye className="h-3.5 w-3.5" />
+                                </button>
+                                <button
                                   onClick={() => {
                                     setEditingBlogPost(post);
                                     setIsBlogModalOpen(true);

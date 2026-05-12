@@ -442,7 +442,7 @@ export function NewsPage() {
                   <div 
                     key={post.id} 
                     className="flex gap-4 group cursor-pointer"
-                    onClick={() => navigate(`/news/${post.id}`)}
+                    onClick={() => navigate(`/blog/${post.id}`)}
                   >
                     <div className="w-20 h-20 flex-shrink-0 overflow-hidden rounded-xl">
                        <LazyImage 
@@ -501,7 +501,7 @@ export function NewsPage() {
           <article 
             key={post.id} 
             className="group cursor-pointer"
-            onClick={() => navigate(`/news/${post.id}`)}
+            onClick={() => navigate(`/blog/${post.id}`)}
           >
             <div className="relative aspect-[1024/682] overflow-hidden rounded-3xl mb-6 shadow-sm">
               <LazyImage 
