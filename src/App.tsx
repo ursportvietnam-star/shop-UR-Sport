@@ -4,11 +4,7 @@ import { BrowserRouter as Router, Routes, Route, useNavigate, useParams, useSear
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { ProductCard } from './components/ProductCard';
-import { ProductDetail } from './components/ProductDetail';
 import { CartSidebar } from './components/CartSidebar';
-import { Checkout } from './components/Checkout';
-import { AdminPanel } from './components/AdminPanel';
-import { NewsPage } from './components/NewsPage';
 import { Footer } from './components/Footer';
 import { FloatingContactMenu } from './components/FloatingContactMenu';
 import { useSEO } from './hooks/useSEO';
@@ -31,6 +27,12 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LazyImage } from './components/LazyImage';
+import { SITE_URL, absoluteUrl, buildBreadcrumbSchema, buildSeoGraph } from './lib/seo';
+
+const ProductDetail = React.lazy(() => import('./components/ProductDetail').then(module => ({ default: module.ProductDetail })));
+const Checkout = React.lazy(() => import('./components/Checkout').then(module => ({ default: module.Checkout })));
+const AdminPanel = React.lazy(() => import('./components/AdminPanel').then(module => ({ default: module.AdminPanel })));
+const NewsPage = React.lazy(() => import('./components/NewsPage').then(module => ({ default: module.NewsPage })));
 
 const getProductUrl = (product: Product) => {
   return `/${product.slug || product.id}`;
@@ -40,11 +42,31 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
   const navigate = useNavigate();
   const [featuredFilter, setFeaturedFilter] = useState('Most Popular');
   const { products } = useProducts();
+  const homeSchema = React.useMemo(() => buildSeoGraph({
+    '@type': 'CollectionPage',
+    '@id': `${SITE_URL}/#homepage`,
+    url: SITE_URL,
+    name: 'UR Sport - Thời trang thể thao nam',
+    isPartOf: { '@id': `${SITE_URL}/#website` },
+    about: { '@id': `${SITE_URL}/#organization` },
+    inLanguage: 'vi-VN',
+    mainEntity: {
+      '@type': 'ItemList',
+      itemListElement: products.slice(0, 12).map((product, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        url: absoluteUrl(`/${product.slug || product.id}`),
+        name: product.name
+      }))
+    }
+  }), [products]);
 
   useSEO({
     title: "UR Sport - Phong Cách Thể Thao Đẳng Cấp | Áo Thun, Áo Polo Nam",
     description: "Khám phá bộ sưu tập thời trang thể thao nam cao cấp tại UR Sport. Chuyên cung cấp áo thun, áo polo nam chất lượng, phong cách và bền bỉ. Miễn phí vận chuyển toàn quốc.",
-    keywords: "ur sport, thời trang thể thao nam, áo thun nam, áo polo nam, đồ tập gym"
+    keywords: "ur sport, thời trang thể thao nam, áo thun nam, áo polo nam, đồ tập gym",
+    canonical: '/',
+    schema: homeSchema
   });
 
   return (
@@ -472,13 +494,41 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
     });
   }
 
+  const shopCanonical = currentSlug ? `/${currentSlug}` : '/shop';
+  const shopSchema = React.useMemo(() => buildSeoGraph(
+    {
+      '@type': 'CollectionPage',
+      '@id': `${absoluteUrl(shopCanonical)}#collection`,
+      url: absoluteUrl(shopCanonical),
+      name: seoMeta.title || 'UR Sport Shop',
+      description: seoMeta.description,
+      isPartOf: { '@id': `${SITE_URL}/#website` },
+      inLanguage: 'vi-VN',
+      mainEntity: {
+        '@type': 'ItemList',
+        numberOfItems: filteredProducts.length,
+        itemListElement: filteredProducts.slice(0, 24).map((product, index) => ({
+          '@type': 'ListItem',
+          position: index + 1,
+          url: absoluteUrl(`/${product.slug || product.id}`),
+          name: product.name
+        }))
+      }
+    },
+    buildBreadcrumbSchema([
+      { name: 'Trang chủ', url: '/' },
+      { name: currentCategory === 'All' ? 'Shop' : String(currentCategory), url: shopCanonical }
+    ])
+  ), [filteredProducts, seoMeta.title, seoMeta.description, shopCanonical, currentCategory]);
+
   useSEO({
     title: seoMeta.title,
     description: seoMeta.description,
     keywords: seoMeta.keywords,
-    canonical: seoMeta.canonical,
+    canonical: seoMeta.canonical || shopCanonical,
     robots: seoMeta.robots,
-    type: "website"
+    type: "website",
+    schema: shopSchema
   });
 
   return (
@@ -836,7 +886,7 @@ function AppContent() {
     navigate('/checkout');
   };
 
-  const isAdminRoute = location.pathname === '/quan-tri';
+  const isAdminRoute = location.pathname === '/quan-tri' || location.pathname === '/quantri';
 
   const commonShopProps = {
     activeCategory,
@@ -860,6 +910,7 @@ function AppContent() {
           )}
           
           <main className={!isAdminRoute ? "pt-16" : ""}>
+            <React.Suspense fallback={<div className="min-h-[50vh] flex items-center justify-center"><div className="h-10 w-10 rounded-full border-4 border-[#1e4b64] border-t-transparent animate-spin" /></div>}>
             <Routes>
               <Route path="/" element={
                 <>
@@ -906,6 +957,7 @@ function AppContent() {
               <Route path="/blog" element={<NewsPage />} />
               <Route path="/blog/:slug" element={<NewsPage />} />
               <Route path="/quan-tri" element={<AdminPanel />} />
+              <Route path="/quantri" element={<AdminPanel />} />
               {/* Clean Category URLs at root */}
               {CATEGORY_METADATA.map(cat => (
                 <Route key={cat.slug} path={`/${cat.slug}`} element={<ShopPage {...commonShopProps} categoryName={cat.name} />} />
@@ -914,6 +966,7 @@ function AppContent() {
               <Route path="/:productSlug" element={<ProductDetail />} />
               <Route path="*" element={<div className="py-20 text-center font-black text-4xl">404 - PAGE NOT FOUND</div>} />
             </Routes>
+            </React.Suspense>
           </main>
 
           {!isAdminRoute && (

@@ -1,6 +1,11 @@
 import React from 'react';
-import { useLocation } from 'react-router-dom';
-import { stripHtml } from '../lib/utils';
+import {
+  SITE_NAME,
+  buildSeoGraph,
+  canonicalUrl,
+  cleanSeoText,
+  normalizeImageUrl
+} from '../lib/seo';
 
 interface SEOProps {
   title?: string;
@@ -23,19 +28,18 @@ export const SEO: React.FC<SEOProps> = ({
   type = 'website',
   schema
 }) => {
-  const baseUrl = 'https://shop-ur-sport.vercel.app'; // Update with your real domain
-  const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
-  const finalCanonical = canonical || currentUrl;
+  const finalCanonical = canonicalUrl(canonical);
 
   React.useEffect(() => {
     try {
       // 1. Update Title
-      const cleanTitle = stripHtml(Array.isArray(title) ? title.join('') : String(title || ''));
+      const cleanTitle = cleanSeoText(Array.isArray(title) ? title.join('') : String(title || ''), 70);
       if (cleanTitle) {
         document.title = cleanTitle;
       }
 
-      const cleanDescription = stripHtml(description || '').slice(0, 160);
+      const cleanDescription = cleanSeoText(description, 160);
+      const finalImage = normalizeImageUrl(image);
 
       const injectedElements: HTMLElement[] = [];
 
@@ -68,13 +72,14 @@ export const SEO: React.FC<SEOProps> = ({
       // Helper to inject Schema JSON-LD
       const injectSchema = (data: any) => {
         if (!data) return;
-        let el = document.head.querySelector('script[type="application/ld+json"]') as HTMLScriptElement;
+        let el = document.head.querySelector('script[type="application/ld+json"][data-seo-schema="primary"]') as HTMLScriptElement;
         if (!el) {
           el = document.createElement('script');
           el.setAttribute('type', 'application/ld+json');
+          el.setAttribute('data-seo-schema', 'primary');
           document.head.appendChild(el);
         }
-        el.textContent = JSON.stringify(data);
+        el.textContent = JSON.stringify(data).replace(/</g, '\\u003c');
         injectedElements.push(el);
       };
 
@@ -82,6 +87,7 @@ export const SEO: React.FC<SEOProps> = ({
       injectMeta('name', 'description', cleanDescription);
       injectMeta('name', 'keywords', keywords || '');
       injectMeta('name', 'robots', robots);
+      injectMeta('name', 'author', 'UR Sport Team');
       injectLink('canonical', finalCanonical);
 
       // --- Open Graph / Facebook ---
@@ -89,36 +95,26 @@ export const SEO: React.FC<SEOProps> = ({
       injectMeta('property', 'og:url', finalCanonical);
       injectMeta('property', 'og:title', cleanTitle);
       injectMeta('property', 'og:description', cleanDescription);
-      injectMeta('property', 'og:image', image.startsWith('http') ? image : `${baseUrl}${image}`);
+      injectMeta('property', 'og:image', finalImage);
+      injectMeta('property', 'og:image:secure_url', finalImage);
+      injectMeta('property', 'og:image:alt', cleanTitle || SITE_NAME);
+      injectMeta('property', 'og:site_name', SITE_NAME);
+      injectMeta('property', 'og:locale', 'vi_VN');
 
       // --- Twitter Card ---
       injectMeta('name', 'twitter:card', 'summary_large_image');
       injectMeta('name', 'twitter:url', finalCanonical);
       injectMeta('name', 'twitter:title', cleanTitle);
       injectMeta('name', 'twitter:description', cleanDescription);
-      injectMeta('name', 'twitter:image', image.startsWith('http') ? image : `${baseUrl}${image}`);
+      injectMeta('name', 'twitter:image', finalImage);
+      injectMeta('name', 'twitter:image:alt', cleanTitle || SITE_NAME);
 
       // --- Schema / JSON-LD ---
-      if (schema) {
-        injectSchema(schema);
-      } else {
-        // Default WebSite Schema
-        injectSchema({
-          "@context": "https://schema.org",
-          "@type": "WebSite",
-          "name": "UR Sport",
-          "url": baseUrl,
-          "potentialAction": {
-            "@type": "SearchAction",
-            "target": `${baseUrl}/shop?search={search_term_string}`,
-            "query-input": "required name=search_term_string"
-          }
-        });
-      }
+      injectSchema(schema || buildSeoGraph());
     } catch (error) {
       console.error("SEO Error:", error);
     }
-  }, [title, description, keywords, finalCanonical, robots, image, type, schema, baseUrl]);
+  }, [title, description, keywords, finalCanonical, robots, image, type, schema]);
 
   return null; // This component doesn't render anything to DOM
 };

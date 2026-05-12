@@ -1,5 +1,12 @@
 import { useEffect } from 'react';
-import { stripHtml } from '../lib/utils';
+import {
+  SITE_NAME,
+  absoluteUrl,
+  buildSeoGraph,
+  canonicalUrl,
+  cleanSeoText,
+  normalizeImageUrl
+} from '../lib/seo';
 
 
 interface SEOProps {
@@ -25,17 +32,16 @@ export function useSEO({
 }: SEOProps) {
   useEffect(() => {
     try {
-      const baseUrl = 'https://shop-ur-sport.vercel.app';
-      const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
-      const finalCanonical = canonical || currentUrl;
+      const finalCanonical = canonicalUrl(canonical);
+      const finalImage = normalizeImageUrl(image);
 
       // 1. Update Title
-      const cleanTitle = stripHtml(Array.isArray(title) ? title.join('') : String(title || ''));
+      const cleanTitle = cleanSeoText(Array.isArray(title) ? title.join('') : String(title || ''), 70);
       if (cleanTitle) {
         document.title = cleanTitle;
       }
 
-      const cleanDescription = stripHtml(description || '').slice(0, 160);
+      const cleanDescription = cleanSeoText(description, 160);
 
       // Helper to inject/update meta tags
       const injectMeta = (attr: string, attrValue: string, content: string) => {
@@ -47,6 +53,10 @@ export function useSEO({
           document.head.appendChild(el);
         }
         el.setAttribute('content', content);
+      };
+
+      const removeMeta = (attr: string, attrValue: string) => {
+        document.head.querySelectorAll(`meta[${attr}="${attrValue}"]`).forEach(el => el.remove());
       };
 
       // Helper to inject/update link tags
@@ -64,19 +74,22 @@ export function useSEO({
       // Helper to inject Schema JSON-LD
       const injectSchema = (data: any) => {
         if (!data) return;
-        let el = document.head.querySelector('script[type="application/ld+json"]') as HTMLScriptElement;
+        let el = document.head.querySelector('script[type="application/ld+json"][data-seo-schema="primary"]') as HTMLScriptElement;
         if (!el) {
           el = document.createElement('script');
           el.setAttribute('type', 'application/ld+json');
+          el.setAttribute('data-seo-schema', 'primary');
           document.head.appendChild(el);
         }
-        el.textContent = JSON.stringify(data);
+        el.textContent = JSON.stringify(data).replace(/</g, '\\u003c');
       };
 
       // --- Standard Meta Tags ---
       injectMeta('name', 'description', cleanDescription);
       injectMeta('name', 'keywords', keywords || '');
       injectMeta('name', 'robots', robots);
+      injectMeta('name', 'author', 'UR Sport Team');
+      injectMeta('name', 'theme-color', '#1e4b64');
       injectLink('canonical', finalCanonical);
 
       // --- Open Graph / Facebook ---
@@ -84,31 +97,33 @@ export function useSEO({
       injectMeta('property', 'og:url', finalCanonical);
       injectMeta('property', 'og:title', cleanTitle);
       injectMeta('property', 'og:description', cleanDescription);
-      injectMeta('property', 'og:image', image.startsWith('http') ? image : `${baseUrl}${image}`);
+      injectMeta('property', 'og:image', finalImage);
+      injectMeta('property', 'og:image:secure_url', finalImage);
+      injectMeta('property', 'og:image:alt', cleanTitle || SITE_NAME);
+      injectMeta('property', 'og:site_name', SITE_NAME);
+      injectMeta('property', 'og:locale', 'vi_VN');
 
       // --- Twitter Card ---
       injectMeta('name', 'twitter:card', 'summary_large_image');
       injectMeta('name', 'twitter:url', finalCanonical);
       injectMeta('name', 'twitter:title', cleanTitle);
       injectMeta('name', 'twitter:description', cleanDescription);
-      injectMeta('name', 'twitter:image', image.startsWith('http') ? image : `${baseUrl}${image}`);
+      injectMeta('name', 'twitter:image', finalImage);
+      injectMeta('name', 'twitter:image:alt', cleanTitle || SITE_NAME);
+
+      // --- Language alternates ---
+      injectLink('alternate', absoluteUrl('/'));
+      const alternate = document.head.querySelector('link[rel="alternate"]') as HTMLLinkElement | null;
+      if (alternate) alternate.setAttribute('hreflang', 'vi');
+
+      // Product/article-only tags should not leak between route changes.
+      if (type !== 'article') {
+        removeMeta('property', 'article:author');
+        removeMeta('property', 'article:published_time');
+      }
 
       // --- Schema / JSON-LD ---
-      if (schema) {
-        injectSchema(schema);
-      } else {
-        injectSchema({
-          "@context": "https://schema.org",
-          "@type": "WebSite",
-          "name": "UR Sport",
-          "url": baseUrl,
-          "potentialAction": {
-            "@type": "SearchAction",
-            "target": `${baseUrl}/shop?search={search_term_string}`,
-            "query-input": "required name=search_term_string"
-          }
-        });
-      }
+      injectSchema(schema || buildSeoGraph());
     } catch (error) {
       console.error("SEO Error:", error);
     }

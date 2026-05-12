@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { CATEGORY_METADATA } from '../data';
 import { useSEO } from '../hooks/useSEO';
+import { SITE_URL, absoluteUrl, buildBreadcrumbSchema, buildSeoGraph, cleanSeoText } from '../lib/seo';
 import { useCart } from '../CartContext';
 import { useAuth } from '../AuthContext';
 import { useProducts } from '../ProductsContext';
@@ -93,36 +94,61 @@ export const ProductDetail: React.FC = () => {
   const [flashSaleSettings, setFlashSaleSettings] = useState<any>(null);
   const [flashSaleCountdown, setFlashSaleCountdown] = useState({ h: '00', m: '00', s: '00', active: false });
   const [showStickyBar, setShowStickyBar] = useState(false);
-  const productSchema = React.useMemo(() => product ? {
-    "@context": "https://schema.org/",
-    "@type": "Product",
-    "name": product.name,
-    "image": product.images,
-    "description": product.description,
-    "sku": product.id,
-    "brand": {
-      "@type": "Brand",
-      "name": product.brand || "UR Sport"
-    },
-    "offers": {
-      "@type": "Offer",
-      "url": typeof window !== 'undefined' ? window.location.href : '',
-      "priceCurrency": "VND",
-      "price": product.discountPrice || product.price,
-      "availability": product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-      "itemCondition": "https://schema.org/NewCondition"
-    },
-    "aggregateRating": {
-      "@type": "AggregateRating",
-      "ratingValue": product.rating || 5,
-      "reviewCount": product.reviewsCount || 1
+  const productCanonical = product ? `/${product.slug || product.id}` : '/shop';
+  const productSchema = React.useMemo(() => {
+    if (!product) return null;
+
+    const productUrl = absoluteUrl(productCanonical);
+    const ratingCount = product.reviewsCount || 0;
+    const productNode: any = {
+      '@type': 'Product',
+      '@id': `${productUrl}#product`,
+      name: product.name,
+      image: (product.images || []).map(absoluteUrl),
+      description: cleanSeoText(product.metaDescription || product.description, 500),
+      sku: product.id,
+      category: product.category,
+      color: product.colors,
+      size: product.sizes,
+      material: product.material,
+      brand: {
+        '@type': 'Brand',
+        name: product.brand || 'UR Sport'
+      },
+      offers: {
+        '@type': 'Offer',
+        url: productUrl,
+        priceCurrency: 'VND',
+        price: product.discountPrice || product.price,
+        availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+        itemCondition: 'https://schema.org/NewCondition',
+        seller: { '@id': `${SITE_URL}/#organization` }
+      }
+    };
+
+    if (ratingCount > 0) {
+      productNode.aggregateRating = {
+        '@type': 'AggregateRating',
+        ratingValue: product.rating || 5,
+        reviewCount: ratingCount
+      };
     }
-  } : null, [product]);
+
+    return buildSeoGraph(
+      productNode,
+      buildBreadcrumbSchema([
+        { name: 'Trang chủ', url: '/' },
+        { name: String(categoryName || product.category), url: categorySlug ? `/apparel/${categorySlug}` : '/shop' },
+        { name: product.name, url: productCanonical }
+      ])
+    );
+  }, [product, productCanonical, categoryName, categorySlug]);
 
   useSEO({
     title: product?.seoTitle || (product ? `${product.name} | UR Sport - Đồ Thể Thao Cao Cấp` : 'UR Sport'),
     description: product?.metaDescription || product?.description,
     keywords: product?.keywords || (product ? `${product.name}, ${product.category}, ur sport, đồ thể thao nam` : ''),
+    canonical: productCanonical,
     image: product?.images?.[0],
     type: "product",
     schema: productSchema
@@ -528,6 +554,9 @@ export const ProductDetail: React.FC = () => {
                   src={mainImage}
                   alt={product.name}
                   className="w-full h-full object-cover"
+                  loading="eager"
+                  decoding="async"
+                  fetchPriority="high"
                   referrerPolicy="no-referrer"
                 />
               )}

@@ -391,14 +391,11 @@ export const AdminPanel: React.FC = () => {
       changefreq: 'weekly'
     }));
 
-    const productRoutes = products.map(p => {
-      const catSlug = p.category ? p.category.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '') : 'san-pham';
-      return {
-        path: `/apparel/${catSlug}/${p.slug}`,
-        priority: '0.6',
-        changefreq: 'monthly'
-      };
-    });
+    const productRoutes = products.map(p => ({
+      path: `/${p.slug}`,
+      priority: '0.7',
+      changefreq: 'weekly'
+    }));
 
     const blogRoutes = blogPosts.map(b => ({
       path: `/blog/${b.slug}`,
@@ -451,6 +448,24 @@ Disallow: /admin
 Disallow: /checkout
 Disallow: /api/
 Disallow: /*.json$
+
+User-agent: GPTBot
+Allow: /
+Disallow: /quan-tri
+Disallow: /checkout
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /quan-tri
+Disallow: /checkout
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /quan-tri
+Disallow: /checkout
 
 Crawl-delay: 1
 

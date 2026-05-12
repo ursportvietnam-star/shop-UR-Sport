@@ -80,6 +80,9 @@ export const Hero: React.FC<{ onShopClick: () => void }> = ({ onShopClick }) => 
             src={activeBanners[currentIndex]?.image}
             alt={activeBanners[currentIndex]?.title}
             className="h-full w-full object-cover"
+            loading={currentIndex === 0 ? 'eager' : 'lazy'}
+            decoding="async"
+            fetchPriority={currentIndex === 0 ? 'high' : 'auto'}
             referrerPolicy="no-referrer"
           />
           <div className="absolute inset-0 bg-linear-to-r from-black/60 via-black/20 to-transparent" />

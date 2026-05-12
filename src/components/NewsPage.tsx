@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSEO } from '../hooks/useSEO';
+import { SITE_URL, absoluteUrl, buildBreadcrumbSchema, buildSeoGraph, cleanSeoText } from '../lib/seo';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
 import { STATIC_BLOG_POSTS as POSTS } from '../data';
@@ -39,7 +40,10 @@ export function NewsPage() {
     const q = query(collection(db, 'blogPosts'), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const loaded = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
-      setPosts(loaded.length > 0 ? loaded : POSTS);
+      const fallbackPosts = POSTS.filter(staticPost =>
+        !loaded.some(post => post.slug === staticPost.slug || post.id === staticPost.id)
+      );
+      setPosts(loaded.length > 0 ? [...loaded, ...fallbackPosts] : POSTS);
     }, () => {
       setPosts(POSTS);
     });
@@ -182,23 +186,45 @@ export function NewsPage() {
     };
   }, [selectedPost, contentHtml]);
 
-  const blogSchema = selectedPost ? {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    "headline": selectedPost.title,
-    "image": [selectedPost.image],
-    "datePublished": selectedPost.createdAt && typeof selectedPost.createdAt.toDate === 'function' 
-      ? selectedPost.createdAt.toDate().toISOString() 
-      : (selectedPost.createdAt?.seconds ? new Date(selectedPost.createdAt.seconds * 1000).toISOString() : new Date().toISOString()),
-    "author": {
-      "@type": "Person",
-      "name": selectedPost.author || "UR Sport"
-    }
-  } : null;
+  const postCanonical = selectedPost ? `/blog/${selectedPost.slug}` : '/blog';
+  const blogSchema = selectedPost ? buildSeoGraph(
+    {
+      '@type': 'Article',
+      '@id': `${absoluteUrl(postCanonical)}#article`,
+      headline: selectedPost.title,
+      description: cleanSeoText(selectedPost.excerpt || selectedPost.content, 220),
+      image: [absoluteUrl(selectedPost.image)],
+      url: absoluteUrl(postCanonical),
+      mainEntityOfPage: absoluteUrl(postCanonical),
+      datePublished: selectedPost.createdAt && typeof selectedPost.createdAt.toDate === 'function' 
+        ? selectedPost.createdAt.toDate().toISOString() 
+        : (selectedPost.createdAt?.seconds ? new Date(selectedPost.createdAt.seconds * 1000).toISOString() : new Date().toISOString()),
+      author: {
+        '@type': 'Organization',
+        name: selectedPost.author || 'UR Sport',
+        url: SITE_URL
+      },
+      publisher: { '@id': `${SITE_URL}/#organization` },
+      inLanguage: 'vi-VN'
+    },
+    buildBreadcrumbSchema([
+      { name: 'Trang chủ', url: '/' },
+      { name: 'Blog', url: '/blog' },
+      { name: selectedPost.title, url: postCanonical }
+    ])
+  ) : buildSeoGraph({
+    '@type': 'Blog',
+    '@id': `${SITE_URL}/blog#blog`,
+    url: absoluteUrl('/blog'),
+    name: 'Blog UR Sport',
+    inLanguage: 'vi-VN',
+    publisher: { '@id': `${SITE_URL}/#organization` }
+  });
 
   useSEO({
     title: selectedPost ? `${selectedPost.title} | Blog UR Sport` : "Tin tức & Bài viết | UR Sport",
     description: selectedPost ? (selectedPost.excerpt || selectedPost.title) : "Cập nhật những xu hướng thời trang mới nhất, kinh nghiệm phối đồ và các sự kiện sôi nổi từ cộng đồng UrSport.",
+    canonical: postCanonical,
     image: selectedPost?.image,
     type: selectedPost ? "article" : "website",
     schema: blogSchema

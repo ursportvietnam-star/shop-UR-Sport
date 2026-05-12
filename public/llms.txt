@@ -1,0 +1,27 @@
+# UR Sport
+
+UR Sport is a Vietnamese men's sportswear ecommerce store focused on t-shirts, polo shirts, training apparel, shorts, and sports accessories.
+
+## Primary URLs
+
+- Homepage: https://ursport.vn/
+- Shop: https://ursport.vn/shop
+- Blog: https://ursport.vn/blog
+- Sitemap: https://ursport.vn/sitemap.xml
+
+## Key Topics
+
+- Áo thun nam
+- Áo thun thể thao nam
+- Áo polo nam
+- Quần thể thao nam
+- Phụ kiện thể thao
+- Cách chọn size và chất liệu đồ thể thao nam
+
+## Brand Facts
+
+- Brand name: UR Sport
+- Market: Vietnam
+- Language: Vietnamese
+- Customer support phone: +84 917 722 425
+- Product focus: comfortable, practical men's sportswear for training and daily athleisure outfits

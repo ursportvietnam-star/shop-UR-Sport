@@ -6,6 +6,24 @@ Disallow: /checkout
 Disallow: /api/
 Disallow: /*.json$
 
+User-agent: GPTBot
+Allow: /
+Disallow: /quan-tri
+Disallow: /checkout
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /quan-tri
+Disallow: /checkout
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /quan-tri
+Disallow: /checkout
+
 # Crawl-delay (optional, for polite crawling)
 Crawl-delay: 1
 
