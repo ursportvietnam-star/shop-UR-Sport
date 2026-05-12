@@ -954,18 +954,17 @@ export const ProductDetail: React.FC = () => {
 
                 {/* Wrapper: clip chiều cao khi chưa expand, luôn clip overflow ngang */}
                 <div className="relative w-full overflow-x-hidden">
-                  <div
+                  <ProductDescriptionHtml
                     className={cn(
                       "product-description-container notranslate w-full text-zinc-600 leading-loose transition-[max-height] duration-700 ease-in-out overflow-x-hidden",
                       !isDescriptionExpanded
                         ? "max-h-[1200px] overflow-y-hidden"
                         : "max-h-none overflow-y-visible"
                     )}
-                    dangerouslySetInnerHTML={{ 
-                      __html: product.description
-                        .replace(/&nbsp;/g, ' ')
-                        .replace(/\u00a0/g, ' ')
-                    }}
+                    html={product.description
+                      .replace(/&nbsp;/g, ' ')
+                      .replace(/\u00a0/g, ' ')
+                    }
                   />
 
                   {/* Gradient fade khi thu gọn */}
@@ -1363,3 +1362,17 @@ const FeatureLine = ({ label, value, opacity = "" }: { label: string; value: str
     <span className="text-sm font-bold text-zinc-900 uppercase">{value}</span>
   </div>
 );
+
+const ProductDescriptionHtml = React.memo(({ html, className }: { html: string; className?: string }) => {
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (containerRef.current && containerRef.current.innerHTML !== html) {
+      containerRef.current.innerHTML = html;
+    }
+  }, [html]);
+
+  return <div ref={containerRef} className={className} />;
+});
+
+ProductDescriptionHtml.displayName = 'ProductDescriptionHtml';

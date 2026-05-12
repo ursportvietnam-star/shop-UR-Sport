@@ -62,7 +62,9 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 export const AdminPanel: React.FC = () => {
-  const { user, isAdmin, loading: authLoading, logout } = useAuth();
+  const { user, isAdmin, loading: authLoading, logout, devLogin } = useAuth();
+  const isLocalhost = typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['marketing-group']);
   const [products, setProducts] = useState<Product[]>([]);
@@ -93,6 +95,7 @@ export const AdminPanel: React.FC = () => {
     callIcon: 'https://res.cloudinary.com/dcj4qhcfh/image/upload/v1778166005/media/ximp16qsaxdt7noebddh.jpg'
   });
   const [flashSaleSettings, setFlashSaleSettings] = useState({
+    isActive: false,
     products: [] as { id: string; flashSalePrice: number; sold: number }[],
     startTime: '',
     endTime: '',
@@ -530,6 +533,14 @@ Sitemap: https://ursport.vn/sitemap.xml`;
           >
             Về trang chủ
           </button>
+          {isLocalhost && (
+            <button
+              onClick={devLogin}
+              className="ml-0 mt-3 sm:ml-3 sm:mt-0 px-8 py-3 bg-amber-400 hover:bg-amber-300 text-amber-950 font-bold rounded-xl transition-all"
+            >
+              Đăng nhập admin nội bộ
+            </button>
+          )}
         </div>
       </div>
     );
