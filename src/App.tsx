@@ -835,7 +835,7 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
       )}
 
       {seoContent && (
-        <div className="mt-16 pt-12 border-t border-zinc-100 max-w-4xl mx-auto">
+        <div className="mt-16 pt-12 border-t border-zinc-100 w-full">
           <div className="relative w-full overflow-x-hidden">
             <div 
               className={cn(
