@@ -339,7 +339,7 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
   const { products } = useProducts();
   const [searchParams, setSearchParams] = useSearchParams();
   const [seoContent, setSeoContent] = React.useState<string>('');
-  const [seoMeta, setSeoMeta] = React.useState<{title:string,description:string,keywords:string,canonical:string,robots:string}>({title:'',description:'',keywords:'',canonical:'',robots:''});
+  const [seoMeta, setSeoMeta] = React.useState<{title:string,description:string,keywords:string,canonical:string,robots:string,heading:string}>({title:'',description:'',keywords:'',canonical:'',robots:'',heading:''});
   const [isSeoExpanded, setIsSeoExpanded] = React.useState(false);
   
   const categoryFilter = searchParams.get('category');
@@ -448,7 +448,8 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
           description: 'Khám phá toàn bộ bộ sưu tập thời trang thể thao nam tại UR Sport. Áo thun thể thao, áo polo, quần jogger, phụ kiện gym chính hãng. Giao hàng nhanh.',
           keywords: 'ur sport shop, đồ thể thao nam, quần áo gym nam, thời trang thể thao nam, áo thun thể thao, áo polo nam',
           canonical: '',
-          robots: ''
+          robots: '',
+          heading: ''
         });
         return;
       }
@@ -471,6 +472,7 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
               keywords: data.seoKeywords || fallback.keywords,
               canonical: data.seoCanonical || '',
               robots: data.seoRobots || 'index, follow',
+              heading: data.heading || '',
             });
           } else {
             setSeoContent('');
@@ -479,7 +481,8 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
               description: fallback.description,
               keywords: fallback.keywords,
               canonical: '',
-              robots: 'index, follow'
+              robots: 'index, follow',
+              heading: ''
             });
           }
         } catch (e) {
@@ -609,7 +612,7 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
       <header className="mb-8">
         <div className="flex flex-col gap-4 mb-8">
           <h1 className="text-[28px] sm:text-[40px] font-black text-black leading-tight tracking-tight">
-            {brandFilter ? `Sản phẩm thương hiệu ${brandFilter}` : (currentCategory === 'All' ? 'Tất cả sản phẩm' : currentCategory)}
+            {brandFilter ? `Sản phẩm thương hiệu ${brandFilter}` : (seoMeta.heading ? seoMeta.heading : (currentCategory === 'All' ? 'Tất cả sản phẩm' : currentCategory))}
           </h1>
           
           <div className="flex flex-col gap-4 pt-4 border-t border-zinc-100 lg:flex-row lg:items-center lg:justify-between">

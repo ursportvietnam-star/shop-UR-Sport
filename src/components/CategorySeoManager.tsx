@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import beautify from 'js-beautify';
 
 interface SeoData {
+  heading: string;
   seoTitle: string;
   seoDescription: string;
   seoKeywords: string;
@@ -20,6 +21,7 @@ interface SeoData {
 }
 
 const defaultSeoData: SeoData = {
+  heading: '',
   seoTitle: '',
   seoDescription: '',
   seoKeywords: '',
@@ -46,6 +48,7 @@ export function CategorySeoManager() {
         if (docSnap.exists()) {
           const data = docSnap.data();
           setSeoData({
+            heading: data.heading || '',
             seoTitle: data.seoTitle || '',
             seoDescription: data.seoDescription || '',
             seoKeywords: data.seoKeywords || '',
@@ -180,6 +183,22 @@ export function CategorySeoManager() {
               </div>
             ) : (
               <div className="space-y-4">
+                {/* Custom H1 Heading */}
+                <div>
+                  <label className="flex items-center gap-2 text-white/70 text-sm font-bold mb-2">
+                    <FileText className="h-3.5 w-3.5" />
+                    Thẻ H1 (Tiêu đề hiển thị trên trang)
+                  </label>
+                  <input
+                    type="text"
+                    value={seoData.heading}
+                    onChange={e => updateField('heading', e.target.value)}
+                    placeholder="VD: Áo Thun Nam Đẹp, Cao Cấp | UR Sport"
+                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm outline-none focus:border-[#1e4b64] transition-colors placeholder:text-white/20 font-bold"
+                  />
+                  <p className="text-[10px] text-white/20 mt-1 italic">Mặc định sẽ lấy tên danh mục nếu để trống.</p>
+                </div>
+
                 {/* Title */}
                 <div>
                   <label className="flex items-center gap-2 text-white/70 text-sm font-bold mb-2">
