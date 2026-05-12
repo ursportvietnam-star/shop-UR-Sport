@@ -808,7 +808,7 @@ export const ProductDetail: React.FC = () => {
                 <h4 className="text-[18px] font-bold text-zinc-900 italic mb-4 pb-3 border-b-2 border-zinc-900 inline-block pr-8">
                   CHI TIẾT SẢN PHẨM
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-0 w-full max-w-[1000px]">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-0 w-full">
                   {[
                     { label: 'Thương hiệu', value: product.brand || 'UR SPORT' },
                     { label: 'Xuất xứ', value: product.origin || 'Việt Nam' },
@@ -840,7 +840,7 @@ export const ProductDetail: React.FC = () => {
                   HƯỚNG DẪN CHỌN SIZE
                 </h4>
                 
-                <div className="w-full max-w-[800px]">
+                <div className="w-full">
                   <h5 className="text-[15px] font-medium text-zinc-800 mb-4">Số đo sản phẩm</h5>
                   
                   {/* Banner Đề xuất Size */}
