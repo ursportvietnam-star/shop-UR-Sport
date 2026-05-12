@@ -294,7 +294,7 @@ export function NewsPage() {
             <div className="relative w-full overflow-x-hidden">
               <div 
                 className={cn(
-                  "blog-content product-description-container notranslate prose prose-lg max-w-none w-full text-zinc-600 transition-[max-height] duration-700 ease-in-out overflow-x-hidden",
+                  "blog-content product-description-container notranslate w-full text-zinc-600 transition-[max-height] duration-700 ease-in-out overflow-x-hidden",
                   !isExpanded ? "max-h-[1000px] overflow-y-hidden" : "max-h-none overflow-y-visible"
                 )}
               >
