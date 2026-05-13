@@ -136,7 +136,7 @@ const getSlugFromCategoryPath = (path: string) => {
 
 const normalizeBlogCategoryItem = (item: Partial<BlogCategoryItem>, index = 0): BlogCategoryItem => {
   const label = item.label?.trim() || 'Blog';
-  const link = item.link || (index === 0 ? '/blog' : `/blog/category/${slugifyCategory(label)}`);
+  const link = item.link || (index === 0 ? '/blog' : `/blog/${slugifyCategory(label)}`);
   const group = item.group === 'category' || item.group === 'subcategory' ? item.group : 'main';
   const defaults = BLOG_CATEGORY_SEO_DEFAULTS[getSlugFromCategoryPath(link)] || BLOG_CATEGORY_SEO_DEFAULTS[slugifyCategory(label)] || BLOG_CATEGORY_SEO_DEFAULTS.blog;
   const savedH1 = item.h1?.trim();
@@ -201,6 +201,7 @@ export function NewsPage() {
   const [posts, setPosts] = useState<any[]>(POSTS);
   const [blogCategories, setBlogCategories] = useState<BlogCategoryItem[]>(() => loadCachedBlogCategories() || DEFAULT_BLOG_CATEGORY_ITEMS);
   const [blogCategoriesLoaded, setBlogCategoriesLoaded] = useState(false);
+  const [postsLoaded, setPostsLoaded] = useState(false);
   const [contentHtml, setContentHtml] = useState('');
   const [contentSchema, setContentSchema] = useState('');
   const [tocHeadings, setTocHeadings] = useState<TocHeading[]>([]);
@@ -219,12 +220,13 @@ export function NewsPage() {
     const q = query(collection(db, 'blogPosts'), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const loaded = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
-      const fallbackPosts = POSTS.filter(staticPost =>
-        !loaded.some(post => post.slug === staticPost.slug || post.id === staticPost.id)
-      );
-      setPosts(loaded.length > 0 ? [...loaded, ...fallbackPosts] : POSTS);
-    }, () => {
+      const allPosts = [...loaded, ...POSTS];
+      setPosts(allPosts);
+      setPostsLoaded(true);
+    }, (error) => {
+      console.error("Error fetching blog posts:", error);
       setPosts(POSTS);
+      setPostsLoaded(true);
     });
     return () => unsubscribe();
   }, []);
@@ -283,13 +285,14 @@ export function NewsPage() {
       if (post) {
         setSelectedPost(post);
         window.scrollTo(0, 0);
-      } else if (blogCategoriesLoaded) {
+      } else if (postsLoaded && blogCategoriesLoaded) {
+        // Only navigate away if we are sure the post doesn't exist after loading everything
         navigate('/blog');
       }
     } else {
       setSelectedPost(null);
     }
-  }, [blogCategories, blogCategoriesLoaded, slug, posts, navigate]);
+  }, [blogCategories, blogCategoriesLoaded, postsLoaded, slug, posts, navigate]);
 
   useEffect(() => {
     if (!selectedPost) {
