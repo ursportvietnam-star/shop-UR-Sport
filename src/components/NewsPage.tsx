@@ -210,7 +210,7 @@ export function NewsPage() {
   const [showToc, setShowToc] = useState(false);
   const [activeHeadingId, setActiveHeadingId] = useState<string>('');
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isStaticTocOpen, setIsStaticTocOpen] = useState(true);
+  const [isStaticTocOpen, setIsStaticTocOpen] = useState(false);
   const [inlineTocOpenId, setInlineTocOpenId] = useState<string | null>(null);
   const [isTocOpen, setIsTocOpen] = useState(false);
   const blogContentRef = useRef<HTMLDivElement>(null);
@@ -218,6 +218,8 @@ export function NewsPage() {
 
   useEffect(() => {
     setIsExpanded(false);
+    setIsStaticTocOpen(false);
+    setInlineTocOpenId(null);
   }, [slug]);
 
   useEffect(() => {
@@ -704,6 +706,19 @@ export function NewsPage() {
     ? posts
     : posts.filter(p => slugifyCategory(p.category || '') === slugifyCategory(activeCategory));
 
+  const scrollToTocHeading = (headingId: string, offset = 100) => {
+    setIsExpanded(true);
+    setInlineTocOpenId(null);
+
+    window.setTimeout(() => {
+      const element = document.getElementById(headingId);
+      if (!element) return;
+
+      const targetPosition = element.getBoundingClientRect().top + window.scrollY - offset;
+      window.scrollTo({ top: targetPosition, behavior: 'smooth' });
+    }, isExpanded ? 0 : 120);
+  };
+
   if (selectedPost) {
     const relatedPosts = posts.filter(p => p.id !== selectedPost.id).slice(0, 5);
 
@@ -752,13 +767,7 @@ export function NewsPage() {
                           <button
                             key={`sticky-item-${item.id}`}
                             onClick={() => {
-                              const element = document.getElementById(item.id);
-                              if (element) {
-                                const offset = 160; 
-                                const targetPosition = element.getBoundingClientRect().top + window.scrollY - offset;
-                                window.scrollTo({ top: targetPosition, behavior: 'smooth' });
-                                setInlineTocOpenId(null);
-                              }
+                              scrollToTocHeading(item.id, 160);
                             }}
                             className={cn(
                               "text-left text-[14px] text-[#0066cc] hover:underline leading-snug flex gap-2",
@@ -856,12 +865,7 @@ export function NewsPage() {
                         <button
                           key={`static-${item.id}`}
                           onClick={() => {
-                            const element = document.getElementById(item.id);
-                            if (element) {
-                              const offset = 100;
-                              const targetPosition = element.getBoundingClientRect().top + window.scrollY - offset;
-                              window.scrollTo({ top: targetPosition, behavior: 'smooth' });
-                            }
+                            scrollToTocHeading(item.id, 100);
                           }}
                           className={cn(
                             "block w-full text-left text-[15px] text-[#0066cc] hover:underline transition-colors leading-snug",
@@ -933,13 +937,7 @@ export function NewsPage() {
                             <button
                               key={item.id}
                               onClick={() => {
-                                const element = document.getElementById(item.id);
-                                if (element) {
-                                  const offset = 100;
-                                  const targetPosition = element.getBoundingClientRect().top + window.scrollY - offset;
-                                  window.scrollTo({ top: targetPosition, behavior: 'smooth' });
-                                  setInlineTocOpenId(null);
-                                }
+                                scrollToTocHeading(item.id, 100);
                               }}
                               className={cn(
                                 "block w-full text-left text-[15px] text-[#0066cc] hover:underline transition-colors leading-snug",

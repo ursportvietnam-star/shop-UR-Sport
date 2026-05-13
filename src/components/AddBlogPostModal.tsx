@@ -8,6 +8,7 @@ import ReactQuill from 'react-quill-new';
 import { toast } from 'sonner';
 import 'react-quill-new/dist/quill.snow.css';
 import { BlogPost } from '../types';
+import beautify from 'js-beautify';
 
 const CLOUDINARY_CLOUD_NAME = 'dcj4qhcfh';
 const CLOUDINARY_UPLOAD_PRESET = 'ursport_uploads';
@@ -231,6 +232,33 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
     }
   };
 
+  const normalizeHtmlText = (html: string) => {
+    const parser = new DOMParser();
+    const document = parser.parseFromString(`<div>${html}</div>`, 'text/html');
+    const wrapper = document.body.firstElementChild as HTMLElement | null;
+
+    if (!wrapper) return html.replace(/&nbsp;/g, ' ');
+
+    const walker = document.createTreeWalker(wrapper, NodeFilter.SHOW_TEXT);
+    while (walker.nextNode()) {
+      const node = walker.currentNode as Text;
+      node.nodeValue = (node.nodeValue || '')
+        .replace(/\u00a0/g, ' ')
+        .replace(/[ \t]{2,}/g, ' ');
+    }
+
+    return wrapper.innerHTML;
+  };
+
+  const beautifyHtml = (html: string) =>
+    beautify.html(normalizeHtmlText(html), {
+      indent_size: 2,
+      wrap_line_length: 0,
+      preserve_newlines: true,
+      max_preserve_newlines: 1,
+      unformatted: ['a', 'span', 'strong', 'b', 'em', 'i', 'u', 's', 'code', 'small'],
+    });
+
   const handleImageInsert = async () => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -325,7 +353,10 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
 
   const toggleHtmlMode = () => {
     if (!isHtmlMode) {
-      setHtmlSource(content);
+      const current = quillRef.current?.getEditor()?.root?.innerHTML || content;
+      const pretty = beautifyHtml(current);
+      setContent(current);
+      setHtmlSource(pretty);
     } else {
       setContent(htmlSource);
     }
