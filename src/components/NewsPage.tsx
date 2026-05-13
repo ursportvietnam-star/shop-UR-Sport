@@ -126,8 +126,6 @@ const normalizeTextForMatch = (text: string) =>
     seoTitle: 'Hướng dẫn chọn và phối đồ thể thao nam | UR Sport',
     metaDescription: 'Xem hướng dẫn chọn size, phối đồ và bảo quản áo quần thể thao nam để luôn mặc đẹp và thoải mái.'
   }
-};\u1ea3i m\u00e1i.'
-  }
 };
 
 const getSlugFromCategoryPath = (path: string) => {
