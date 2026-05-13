@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronRight, ChevronDown, Calendar, User, ArrowLeft, ArrowRight, Share2, MessageCircle, ShoppingBag, ChevronRight as ChevronRightIcon } from 'lucide-react';
+import { ChevronRight, ChevronDown, Calendar, User, ArrowLeft, ArrowRight, Share2, MessageCircle, ShoppingBag, List, ChevronRight as ChevronRightIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -207,6 +207,7 @@ export function NewsPage() {
   const [showToc, setShowToc] = useState(false);
   const [activeHeadingId, setActiveHeadingId] = useState<string>('');
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isTocOpen, setIsTocOpen] = useState(false);
   const blogContentRef = useRef<HTMLDivElement>(null);
   const { products } = useProducts();
 
@@ -838,41 +839,78 @@ export function NewsPage() {
             </div>
           </div>
 
-          <aside className="space-y-12 w-full lg:w-[320px]">
-            {showToc && tocHeadings.length > 0 && (
-              <div className="rounded-[24px] border border-zinc-200 bg-white p-6 shadow-sm lg:sticky top-28 transition-all duration-300 animate-in fade-in overflow-hidden">
-                <div className="relative z-10">
-                  <h3 className="text-[11px] font-black text-zinc-900 uppercase tracking-[0.3em] mb-5 border-b border-zinc-200 pb-3 flex items-center gap-2">
-                    📋 MỤC LỤC BÀI VIẾT
-                  </h3>
-                  <div className="space-y-2">
-                    {tocHeadings.map((heading, idx) => (
-                      <button
-                        key={heading.id}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          const element = document.getElementById(heading.id);
-                          if (element) {
-                            const offset = 120;
-                            const targetPosition = element.getBoundingClientRect().top + window.scrollY - offset;
-                            window.scrollTo({ top: targetPosition, behavior: 'smooth' });
-                          }
-                        }}
-                        className={cn(
-                          'block w-full text-left text-sm font-medium transition-all duration-300 py-2 px-3 rounded relative overflow-hidden group',
-                          heading.level === 3 && 'ml-4 text-xs',
-                          heading.level === 4 && 'ml-8 text-[11px]',
-                          activeHeadingId === heading.id 
-                            ? 'bg-zinc-100 text-zinc-900 font-bold' 
-                            : 'text-zinc-600 hover:bg-zinc-50'
-                        )}
-                        title={heading.text}
-                      >
-                        <span className="truncate">{heading.text}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+          <aside className="relative w-full lg:w-[320px]">
+            {/* Table of Contents - Floating Version */}
+            {tocHeadings.length > 0 && (
+              <div className="fixed bottom-24 right-6 z-50 lg:bottom-auto lg:top-1/2 lg:-translate-y-1/2">
+                <AnimatePresence>
+                  {isTocOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, x: 20, scale: 0.95 }}
+                      animate={{ opacity: 1, x: 0, scale: 1 }}
+                      exit={{ opacity: 0, x: 20, scale: 0.95 }}
+                      className="absolute bottom-16 right-0 lg:bottom-auto lg:right-16 w-[280px] sm:w-[320px] rounded-[24px] bg-white shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-zinc-100 p-6 overflow-hidden backdrop-blur-xl"
+                    >
+                      <div className="flex items-center gap-3 mb-6 border-b border-zinc-50 pb-4">
+                        <div className="h-2 w-2 rounded-full bg-[#16a34a] animate-pulse" />
+                        <h3 className="text-[11px] font-black text-zinc-900 uppercase tracking-[0.2em]">
+                          MỤC LỤC BÀI VIẾT
+                        </h3>
+                      </div>
+                      
+                      <div className="space-y-1 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                        {tocHeadings.map((heading) => (
+                          <button
+                            key={heading.id}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              const element = document.getElementById(heading.id);
+                              if (element) {
+                                const offset = 100;
+                                const targetPosition = element.getBoundingClientRect().top + window.scrollY - offset;
+                                window.scrollTo({ top: targetPosition, behavior: 'smooth' });
+                                if (window.innerWidth < 1024) setIsTocOpen(false);
+                              }
+                            }}
+                            className={cn(
+                              'group block w-full text-left transition-all duration-300 py-2.5 px-3 rounded-xl relative',
+                              heading.level === 2 ? 'text-sm font-black' : 'text-[13px] font-medium ml-4 border-l border-zinc-100 pl-4',
+                              activeHeadingId === heading.id 
+                                ? 'text-[#16a34a] bg-green-50/50' 
+                                : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50'
+                            )}
+                          >
+                            <span className="line-clamp-2">{heading.text}</span>
+                            {activeHeadingId === heading.id && (
+                              <motion.div 
+                                layoutId="activeToc"
+                                className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-4 bg-[#16a34a] rounded-full"
+                              />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <button
+                  onClick={() => setIsTocOpen(!isTocOpen)}
+                  className={cn(
+                    "flex items-center justify-center h-14 w-14 rounded-2xl shadow-2xl transition-all duration-500 group relative overflow-hidden",
+                    isTocOpen 
+                      ? "bg-zinc-900 text-white rotate-90" 
+                      : "bg-white text-zinc-900 hover:scale-110 border border-zinc-100"
+                  )}
+                >
+                  <List className={cn("h-6 w-6 transition-transform duration-500", isTocOpen && "scale-90")} />
+                  {!isTocOpen && (
+                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#16a34a] opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-[#16a34a]"></span>
+                    </span>
+                  )}
+                </button>
               </div>
             )}
 
