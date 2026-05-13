@@ -845,7 +845,7 @@ export function NewsPage() {
 
           <aside className="relative w-full lg:w-[320px]">
             {/* Table of Contents - Floating Version */}
-            {tocHeadings.length > 0 && (
+            {tocHeadings.length > 0 && showToc && (
               <div className="fixed bottom-24 right-6 z-50 lg:bottom-auto lg:top-1/2 lg:-translate-y-1/2">
                 <AnimatePresence>
                   {isTocOpen && (
