@@ -709,6 +709,74 @@ export function NewsPage() {
 
     return (
       <div className="mx-auto max-w-[1400px] px-4 py-8 sm:px-6 lg:px-8 xl:px-10">
+        {/* Sticky Section Header TOC */}
+        <AnimatePresence>
+          {showToc && activeHeadingId && (
+            <motion.div 
+              initial={{ y: -100 }}
+              animate={{ y: 0 }}
+              exit={{ y: -100 }}
+              className="fixed top-0 left-0 right-0 z-[60] bg-white border-b border-zinc-100 shadow-sm lg:top-[80px]"
+            >
+              <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
+                <div className="flex-grow min-w-0">
+                  <h3 className="text-[14px] font-bold text-[#0066cc] truncate">
+                    {tocHeadings.find(h => h.id === activeHeadingId)?.text || selectedPost?.title}
+                  </h3>
+                </div>
+                <button 
+                  onClick={() => setInlineTocOpenId(inlineTocOpenId === activeHeadingId ? null : activeHeadingId)}
+                  className="flex-shrink-0 text-[12px] font-medium px-3 py-1.5 rounded-lg bg-[#f0f7ff] text-[#0066cc] hover:bg-[#e0efff] transition-all flex items-center gap-1.5 border border-[#d0e6ff]"
+                >
+                  {inlineTocOpenId === activeHeadingId ? 'Thu gọn' : 'Xem thêm'}
+                  <ChevronDown className={cn("h-3.5 w-3.5 transition-transform duration-300", inlineTocOpenId === activeHeadingId && "rotate-180")} />
+                </button>
+              </div>
+
+              {/* Inline TOC portal inside the sticky bar */}
+              <AnimatePresence>
+                {inlineTocOpenId === activeHeadingId && (
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="bg-[#f8f9fa] border-b border-zinc-200 overflow-hidden"
+                  >
+                    <div className="max-w-7xl mx-auto p-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-[15px] font-bold text-zinc-900">Mục lục</h4>
+                        <button onClick={() => setInlineTocOpenId(null)} className="text-[13px] text-[#0066cc]">Ẩn</button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-2.5">
+                        {tocHeadings.map((item, idx) => (
+                          <button
+                            key={`sticky-item-${item.id}`}
+                            onClick={() => {
+                              const element = document.getElementById(item.id);
+                              if (element) {
+                                const offset = 160; 
+                                const targetPosition = element.getBoundingClientRect().top + window.scrollY - offset;
+                                window.scrollTo({ top: targetPosition, behavior: 'smooth' });
+                                setInlineTocOpenId(null);
+                              }
+                            }}
+                            className={cn(
+                              "text-left text-[14px] text-[#0066cc] hover:underline leading-snug flex gap-2",
+                              item.level !== 2 && "pl-5"
+                            )}
+                          >
+                            <span className="flex-shrink-0">{idx + 1}.</span>
+                            <span className="line-clamp-1">{item.text}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <nav className="flex items-center gap-2 text-xs font-medium text-zinc-400 mb-8 pb-4 border-b border-zinc-100">
           <button onClick={() => navigate("/")} className="hover:text-black transition-colors">Home</button>
           <ChevronRight className="h-3 w-3" />
