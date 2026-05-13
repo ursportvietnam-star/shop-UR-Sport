@@ -859,16 +859,16 @@ export function NewsPage() {
                       initial={{ opacity: 0, x: 20, scale: 0.95 }}
                       animate={{ opacity: 1, x: 0, scale: 1 }}
                       exit={{ opacity: 0, x: 20, scale: 0.95 }}
-                      className="absolute bottom-16 right-0 lg:bottom-auto lg:right-16 w-[280px] sm:w-[320px] rounded-[24px] bg-white shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-zinc-100 p-6 overflow-hidden backdrop-blur-xl"
+                      className="absolute bottom-16 right-0 lg:bottom-auto lg:right-16 w-[290px] sm:w-[340px] rounded-[24px] bg-white shadow-[0_20px_60px_rgba(0,0,0,0.12)] border border-zinc-100 p-6 overflow-hidden backdrop-blur-xl"
                     >
-                      <div className="flex items-center gap-3 mb-6 border-b border-zinc-50 pb-4">
-                        <div className="h-2 w-2 rounded-full bg-[#16a34a] animate-pulse" />
-                        <h3 className="text-[11px] font-black text-zinc-900 uppercase tracking-[0.2em]">
+                      <div className="flex items-center gap-2 mb-6 border-b border-zinc-50 pb-4">
+                        <div className="h-2 w-2 rounded-full bg-[#16a34a]" />
+                        <h3 className="text-[12px] font-black text-zinc-900 uppercase tracking-wider">
                           MỤC LỤC BÀI VIẾT
                         </h3>
                       </div>
                       
-                      <div className="space-y-2 max-h-[85vh] lg:max-h-[calc(100vh-250px)] overflow-y-auto pr-2 custom-scrollbar pb-4">
+                      <div className="space-y-1 max-h-[80vh] lg:max-h-[calc(100vh-280px)] overflow-y-auto pr-1 custom-scrollbar pb-4">
                         {tocHeadings.map((heading) => (
                           <button
                             key={heading.id}
@@ -883,16 +883,23 @@ export function NewsPage() {
                               }
                             }}
                             className={cn(
-                              'group block w-full text-left transition-all duration-300 py-3 px-4 rounded-2xl relative',
-                              heading.level === 2 ? 'text-[14px] font-black' : 'text-[13px] font-medium ml-4',
-                              activeHeadingId === heading.id 
-                                ? 'text-[#16a34a] bg-green-50/80 border-l-4 border-[#16a34a]' 
-                                : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50 border-l-4 border-transparent'
+                              'group block w-full text-left transition-all duration-200 py-2.5 px-3 rounded-xl relative',
+                              heading.level === 2 ? 'text-[15px] font-bold text-zinc-900' : 'text-[14px] font-medium text-zinc-500 ml-5 border-l border-zinc-100 pl-5',
+                              activeHeadingId === heading.id && 'text-[#16a34a]'
                             )}
                           >
-                            <span className="block whitespace-normal leading-tight [word-break:keep-all] [overflow-wrap:normal]">
+                            <span className="block whitespace-normal leading-snug [word-break:keep-all] [overflow-wrap:normal]">
                               {heading.text}
                             </span>
+                            {activeHeadingId === heading.id && heading.level === 2 && (
+                              <motion.div 
+                                layoutId="activeIndicator"
+                                className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-[#16a34a] rounded-full"
+                              />
+                            )}
+                            {activeHeadingId === heading.id && heading.level !== 2 && (
+                               <div className="absolute left-0 top-0 bottom-0 w-px bg-[#16a34a] -ml-[1px]" />
+                            )}
                           </button>
                         ))}
                       </div>
