@@ -789,10 +789,10 @@ export function NewsPage() {
                     {createPortal(
                       <button 
                         onClick={() => setInlineTocOpenId(isThisOpen ? null : heading.id)}
-                        className="text-[11px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg bg-zinc-50 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 transition-all flex items-center gap-1.5"
+                        className="text-[12px] font-medium px-3 py-1.5 rounded-lg bg-[#f0f7ff] text-[#0066cc] hover:bg-[#e0efff] transition-all flex items-center gap-1.5 border border-[#d0e6ff]"
                       >
                         {isThisOpen ? 'Thu gọn' : 'Xem thêm'}
-                        <ChevronDown className={cn("h-3 w-3 transition-transform duration-300", isThisOpen && "rotate-180")} />
+                        <ChevronDown className={cn("h-3.5 w-3.5 transition-transform duration-300", isThisOpen && "rotate-180")} />
                       </button>,
                       actionAnchor
                     )}
@@ -800,13 +800,20 @@ export function NewsPage() {
                       <motion.div 
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="mt-4 mb-8 p-8 rounded-3xl bg-zinc-50/50 border border-zinc-100"
+                        className="mt-4 mb-8 p-6 rounded-2xl bg-[#f8f9fa] border border-zinc-200 shadow-sm"
                       >
-                        <h4 className="text-[12px] font-black text-zinc-900 uppercase tracking-widest mb-6 flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 rounded-full bg-[#16a34a]" />
-                          Mục lục
-                        </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-3">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="text-[16px] font-bold text-zinc-900">
+                            Mục lục
+                          </h4>
+                          <button 
+                            onClick={() => setInlineTocOpenId(null)}
+                            className="text-[13px] text-[#0066cc] flex items-center gap-1 hover:underline"
+                          >
+                            Ẩn <ChevronDown className="h-4 w-4 rotate-180" />
+                          </button>
+                        </div>
+                        <div className="space-y-2.5">
                           {tocHeadings.map((item, idx) => (
                             <button
                               key={item.id}
@@ -820,12 +827,11 @@ export function NewsPage() {
                                 }
                               }}
                               className={cn(
-                                "text-left text-[14px] hover:text-[#16a34a] transition-colors leading-snug flex gap-2",
-                                item.level === 2 ? "font-bold text-zinc-900" : "font-medium text-zinc-500 pl-4"
+                                "block w-full text-left text-[15px] text-[#0066cc] hover:underline transition-colors leading-snug",
+                                item.level !== 2 && "pl-6"
                               )}
                             >
-                              <span className="text-zinc-300 flex-shrink-0">{idx + 1}.</span>
-                              <span className="line-clamp-1">{item.text}</span>
+                              <span className="font-medium">{idx + 1}. {item.text}</span>
                             </button>
                           ))}
                         </div>
