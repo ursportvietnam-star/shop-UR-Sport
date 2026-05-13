@@ -633,7 +633,7 @@ export function NewsPage() {
     {
       '@type': 'Article',
       '@id': `${absoluteUrl(postCanonical)}#article`,
-      headline: selectedPost.title,
+      headline: selectedPost.title || 'Bài viết',
       description: cleanSeoText(selectedPost.metaDescription || selectedPost.excerpt || selectedPost.content, 220),
       image: [absoluteUrl(selectedPost.image)],
       url: absoluteUrl(postCanonical),
@@ -709,10 +709,10 @@ export function NewsPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-12 border-b border-zinc-100 pb-10">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-zinc-900 text-white flex items-center justify-center font-black text-lg">
-                  {selectedPost.author.charAt(0)}
+                  {(selectedPost.author || 'U').charAt(0)}
                 </div>
                 <div>
-                  <div className="font-black text-zinc-900 leading-none mb-1">{selectedPost.author}</div>
+                  <div className="font-black text-zinc-900 leading-none mb-1">{selectedPost.author || 'UR Sport'}</div>
                   <div className="text-xs font-medium text-zinc-400 uppercase tracking-widest">UrSport Specialist</div>
                 </div>
               </div>
