@@ -868,7 +868,7 @@ export function NewsPage() {
                         </h3>
                       </div>
                       
-                      <div className="space-y-1 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                      <div className="space-y-2 max-h-[75vh] overflow-y-auto pr-2 custom-scrollbar pb-4">
                         {tocHeadings.map((heading) => (
                           <button
                             key={heading.id}
@@ -883,20 +883,14 @@ export function NewsPage() {
                               }
                             }}
                             className={cn(
-                              'group block w-full text-left transition-all duration-300 py-2.5 px-3 rounded-xl relative',
-                              heading.level === 2 ? 'text-sm font-black' : 'text-[13px] font-medium ml-4 border-l border-zinc-100 pl-4',
+                              'group block w-full text-left transition-all duration-300 py-3 px-4 rounded-2xl relative',
+                              heading.level === 2 ? 'text-[14px] font-black' : 'text-[13px] font-medium ml-4',
                               activeHeadingId === heading.id 
-                                ? 'text-[#16a34a] bg-green-50/50' 
-                                : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50'
+                                ? 'text-[#16a34a] bg-green-50/80 border-l-4 border-[#16a34a]' 
+                                : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50 border-l-4 border-transparent'
                             )}
                           >
                             <span className="line-clamp-2">{heading.text}</span>
-                            {activeHeadingId === heading.id && (
-                              <motion.div 
-                                layoutId="activeToc"
-                                className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-4 bg-[#16a34a] rounded-full"
-                              />
-                            )}
                           </button>
                         ))}
                       </div>
