@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronRight, ChevronDown, Calendar, User, ArrowLeft, ArrowRight, Share2, MessageCircle, ShoppingBag, List, ChevronRight as ChevronRightIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -209,6 +210,7 @@ export function NewsPage() {
   const [showToc, setShowToc] = useState(false);
   const [activeHeadingId, setActiveHeadingId] = useState<string>('');
   const [isExpanded, setIsExpanded] = useState(false);
+  const [inlineTocOpenId, setInlineTocOpenId] = useState<string | null>(null);
   const [isTocOpen, setIsTocOpen] = useState(false);
   const blogContentRef = useRef<HTMLDivElement>(null);
   const { products } = useProducts();
@@ -487,7 +489,21 @@ export function NewsPage() {
 
     setTocHeadings(headings);
     setContentSchema(schemas[0] || '');
-    setContentHtml(wrapper.innerHTML);
+    // Inject anchors for inline TOC buttons
+    const processedHtml = wrapper.innerHTML.replace(/<h([23])(.*?)>(.*?)<\/h\1>/g, (match, level, attrs, text) => {
+      // Find the ID if it exists
+      const idMatch = attrs.match(/id="(.*?)"/);
+      const id = idMatch ? idMatch[1] : slugifyHeading(text);
+      return `<div class="heading-with-action flex flex-col mb-4">
+        <div class="flex items-center justify-between gap-4 group/heading">
+          <h${level}${attrs} id="${id}" class="m-0 flex-grow">${text}</h${level}>
+          <div id="action-anchor-${id}" class="flex-shrink-0"></div>
+        </div>
+        <div id="toc-anchor-${id}" class="w-full"></div>
+      </div>`;
+    });
+
+    setContentHtml(processedHtml);
   }, [selectedPost]);
 
   useEffect(() => {
@@ -758,6 +774,67 @@ export function NewsPage() {
                     .replace(/\u00a0/g, ' ')
                 }} />
               </div>
+
+              {/* Portals for Inline TOC Actions */}
+              {tocHeadings.map(heading => {
+                const actionAnchor = document.getElementById(`action-anchor-${heading.id}`);
+                const tocAnchor = document.getElementById(`toc-anchor-${heading.id}`);
+                
+                if (!actionAnchor) return null;
+
+                const isThisOpen = inlineTocOpenId === heading.id;
+
+                return (
+                  <React.Fragment key={heading.id}>
+                    {createPortal(
+                      <button 
+                        onClick={() => setInlineTocOpenId(isThisOpen ? null : heading.id)}
+                        className="text-[11px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg bg-zinc-50 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 transition-all flex items-center gap-1.5"
+                      >
+                        {isThisOpen ? 'Thu gọn' : 'Xem thêm'}
+                        <ChevronDown className={cn("h-3 w-3 transition-transform duration-300", isThisOpen && "rotate-180")} />
+                      </button>,
+                      actionAnchor
+                    )}
+                    {isThisOpen && tocAnchor && createPortal(
+                      <motion.div 
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-4 mb-8 p-8 rounded-3xl bg-zinc-50/50 border border-zinc-100"
+                      >
+                        <h4 className="text-[12px] font-black text-zinc-900 uppercase tracking-widest mb-6 flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-[#16a34a]" />
+                          Mục lục
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-3">
+                          {tocHeadings.map((item, idx) => (
+                            <button
+                              key={item.id}
+                              onClick={() => {
+                                const element = document.getElementById(item.id);
+                                if (element) {
+                                  const offset = 100;
+                                  const targetPosition = element.getBoundingClientRect().top + window.scrollY - offset;
+                                  window.scrollTo({ top: targetPosition, behavior: 'smooth' });
+                                  setInlineTocOpenId(null);
+                                }
+                              }}
+                              className={cn(
+                                "text-left text-[14px] hover:text-[#16a34a] transition-colors leading-snug flex gap-2",
+                                item.level === 2 ? "font-bold text-zinc-900" : "font-medium text-zinc-500 pl-4"
+                              )}
+                            >
+                              <span className="text-zinc-300 flex-shrink-0">{idx + 1}.</span>
+                              <span className="line-clamp-1">{item.text}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </motion.div>,
+                      tocAnchor
+                    )}
+                  </React.Fragment>
+                );
+              })}
               
               {!isExpanded && (
                 <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none z-10" />
