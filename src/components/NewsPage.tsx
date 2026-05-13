@@ -868,7 +868,7 @@ export function NewsPage() {
                         </h3>
                       </div>
                       
-                      <div className="space-y-2 max-h-[75vh] overflow-y-auto pr-2 custom-scrollbar pb-4">
+                      <div className="space-y-2 max-h-[85vh] lg:max-h-[calc(100vh-250px)] overflow-y-auto pr-2 custom-scrollbar pb-4">
                         {tocHeadings.map((heading) => (
                           <button
                             key={heading.id}
