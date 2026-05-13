@@ -210,6 +210,7 @@ export function NewsPage() {
   const [showToc, setShowToc] = useState(false);
   const [activeHeadingId, setActiveHeadingId] = useState<string>('');
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isStaticTocOpen, setIsStaticTocOpen] = useState(true);
   const [inlineTocOpenId, setInlineTocOpenId] = useState<string | null>(null);
   const [isTocOpen, setIsTocOpen] = useState(false);
   const blogContentRef = useRef<HTMLDivElement>(null);
@@ -763,33 +764,47 @@ export function NewsPage() {
             <div className="relative w-full overflow-x-hidden">
               {/* Static TOC at the top of content */}
               {tocHeadings.length > 0 && (
-                <div className="mb-12 p-6 rounded-2xl bg-[#f8f9fa] border border-zinc-200 shadow-sm max-w-2xl">
-                  <div className="flex items-center justify-between mb-4">
+                <div className="mb-12 p-6 rounded-2xl bg-[#f8f9fa] border border-zinc-200 shadow-sm w-full">
+                  <div className="flex items-center justify-between">
                     <h4 className="text-[16px] font-bold text-zinc-900">
                       Mục lục
                     </h4>
+                    <button 
+                      onClick={() => setIsStaticTocOpen(!isStaticTocOpen)}
+                      className="text-[14px] text-[#0066cc] flex items-center gap-1 hover:underline font-medium"
+                    >
+                      {isStaticTocOpen ? 'Ẩn' : 'Hiện'} 
+                      <ChevronDown className={cn("h-4 w-4 transition-transform duration-300", isStaticTocOpen ? "rotate-180" : "rotate-0")} />
+                    </button>
                   </div>
-                  <div className="space-y-2.5">
-                    {tocHeadings.map((item, idx) => (
-                      <button
-                        key={`static-${item.id}`}
-                        onClick={() => {
-                          const element = document.getElementById(item.id);
-                          if (element) {
-                            const offset = 100;
-                            const targetPosition = element.getBoundingClientRect().top + window.scrollY - offset;
-                            window.scrollTo({ top: targetPosition, behavior: 'smooth' });
-                          }
-                        }}
-                        className={cn(
-                          "block w-full text-left text-[15px] text-[#0066cc] hover:underline transition-colors leading-snug",
-                          item.level !== 2 && "pl-6"
-                        )}
-                      >
-                        <span className="font-medium">{idx + 1}. {item.text}</span>
-                      </button>
-                    ))}
-                  </div>
+                  
+                  {isStaticTocOpen && (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="mt-6 space-y-2.5 overflow-hidden"
+                    >
+                      {tocHeadings.map((item, idx) => (
+                        <button
+                          key={`static-${item.id}`}
+                          onClick={() => {
+                            const element = document.getElementById(item.id);
+                            if (element) {
+                              const offset = 100;
+                              const targetPosition = element.getBoundingClientRect().top + window.scrollY - offset;
+                              window.scrollTo({ top: targetPosition, behavior: 'smooth' });
+                            }
+                          }}
+                          className={cn(
+                            "block w-full text-left text-[15px] text-[#0066cc] hover:underline transition-colors leading-snug",
+                            item.level !== 2 && "pl-6"
+                          )}
+                        >
+                          <span className="font-medium">{idx + 1}. {item.text}</span>
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
                 </div>
               )}
 
