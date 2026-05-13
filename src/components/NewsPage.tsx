@@ -761,6 +761,38 @@ export function NewsPage() {
             </div>
 
             <div className="relative w-full overflow-x-hidden">
+              {/* Static TOC at the top of content */}
+              {tocHeadings.length > 0 && (
+                <div className="mb-12 p-6 rounded-2xl bg-[#f8f9fa] border border-zinc-200 shadow-sm max-w-2xl">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-[16px] font-bold text-zinc-900">
+                      Mục lục
+                    </h4>
+                  </div>
+                  <div className="space-y-2.5">
+                    {tocHeadings.map((item, idx) => (
+                      <button
+                        key={`static-${item.id}`}
+                        onClick={() => {
+                          const element = document.getElementById(item.id);
+                          if (element) {
+                            const offset = 100;
+                            const targetPosition = element.getBoundingClientRect().top + window.scrollY - offset;
+                            window.scrollTo({ top: targetPosition, behavior: 'smooth' });
+                          }
+                        }}
+                        className={cn(
+                          "block w-full text-left text-[15px] text-[#0066cc] hover:underline transition-colors leading-snug",
+                          item.level !== 2 && "pl-6"
+                        )}
+                      >
+                        <span className="font-medium">{idx + 1}. {item.text}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div 
                 ref={blogContentRef}
                 className={cn(
@@ -776,7 +808,7 @@ export function NewsPage() {
               </div>
 
               {/* Portals for Inline TOC Actions */}
-              {tocHeadings.map(heading => {
+              {contentHtml && tocHeadings.map(heading => {
                 const actionAnchor = document.getElementById(`action-anchor-${heading.id}`);
                 const tocAnchor = document.getElementById(`toc-anchor-${heading.id}`);
                 
