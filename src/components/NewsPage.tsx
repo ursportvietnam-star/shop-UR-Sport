@@ -571,7 +571,13 @@ export function NewsPage() {
       const scrolledDistance = -imageRect.top;
       const scrollProgress = imageHeight > 0 ? scrolledDistance / imageHeight : 0;
       
-      setShowToc(scrollProgress >= 0.7);
+      const firstH2 = document.querySelector('.blog-content h2');
+      if (firstH2) {
+        const rect = firstH2.getBoundingClientRect();
+        setShowToc(rect.top < 100);
+      } else {
+        setShowToc(scrollProgress >= 0.7);
+      }
 
       const headingElements = Array.from(document.querySelectorAll('h2[id], h3[id], h4[id]')) as HTMLElement[];
       let currentActiveId = '';
