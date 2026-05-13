@@ -890,7 +890,7 @@ export function NewsPage() {
                                 : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50 border-l-4 border-transparent'
                             )}
                           >
-                            <span className="break-words leading-tight">{heading.text}</span>
+                            <span className="block whitespace-normal [word-break:normal] leading-tight">{heading.text}</span>
                           </button>
                         ))}
                       </div>
