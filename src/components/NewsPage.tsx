@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { ChevronRight, ChevronDown, Calendar, User, ArrowLeft, ArrowRight, Share2, MessageCircle, ShoppingBag, List, ChevronRight as ChevronRightIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
