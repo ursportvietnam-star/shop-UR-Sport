@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
 import beautify from 'js-beautify';
+import { getNavigationSubcategories, NavigationItem, slugifyVietnamese } from '../lib/categoryConfig';
 
 interface SeoData {
   heading: string;
@@ -30,12 +31,48 @@ const defaultSeoData: SeoData = {
   content: '',
 };
 
+const buildSeoCategoryOptions = (navigationItems: NavigationItem[] = []) => [
+  ...CATEGORY_METADATA.map(cat => ({
+    ...cat,
+    name: cat.name as string,
+    key: `category-${cat.slug}`,
+    type: 'category' as const,
+    parentName: ''
+  })),
+  ...getNavigationSubcategories(navigationItems).map(item => ({
+    name: item.label,
+    slug: item.link.replace(/^\//, '') || slugifyVietnamese(item.label),
+    key: `subcategory-${slugifyVietnamese(item.label)}`,
+    icon: item.icon || '',
+    type: 'subcategory' as const,
+    parentName: item.parentLabel || ''
+  }))
+];
+
 export function CategorySeoManager() {
-  const [selectedCategory, setSelectedCategory] = useState<string>(CATEGORY_METADATA[0]?.slug || '');
+  const [seoCategoryOptions, setSeoCategoryOptions] = useState(() => buildSeoCategoryOptions());
+  const [selectedOptionKey, setSelectedOptionKey] = useState<string>(seoCategoryOptions[0]?.key || '');
+  const selectedOption = seoCategoryOptions.find(c => c.key === selectedOptionKey) || seoCategoryOptions[0];
+  const selectedCategory = selectedOption?.slug || '';
   const [seoData, setSeoData] = useState<SeoData>(defaultSeoData);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isHtmlMode, setIsHtmlMode] = useState(false);
+
+  useEffect(() => {
+    getDoc(doc(db, 'settings', 'navigation'))
+      .then(snap => {
+        const items = snap.exists() ? (snap.data().items || []) as NavigationItem[] : [];
+        const nextOptions = buildSeoCategoryOptions(items);
+        setSeoCategoryOptions(nextOptions);
+        if (!nextOptions.some(option => option.key === selectedOptionKey)) {
+          setSelectedOptionKey(nextOptions[0]?.key || '');
+        }
+      })
+      .catch(() => {
+        setSeoCategoryOptions(buildSeoCategoryOptions());
+      });
+  }, []);
 
   useEffect(() => {
     if (!selectedCategory) return;
@@ -113,7 +150,7 @@ export function CategorySeoManager() {
     'link', 'image', 'video'
   ];
 
-  const selectedCatName = CATEGORY_METADATA.find(c => c.slug === selectedCategory)?.name;
+  const selectedCatName = selectedOption?.name;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -134,18 +171,23 @@ export function CategorySeoManager() {
         <div className="bg-[#13161f] p-6 rounded-2xl border border-white/5 space-y-4">
           <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-4 border-b border-white/5 pb-2">Chọn Danh Mục</h3>
           <div className="space-y-2">
-            {CATEGORY_METADATA.map(cat => (
+            {seoCategoryOptions.map(cat => (
               <button
-                key={cat.slug}
-                onClick={() => setSelectedCategory(cat.slug)}
+                key={cat.key}
+                onClick={() => setSelectedOptionKey(cat.key)}
                 className={cn(
                   "w-full text-left px-4 py-3 rounded-xl text-sm font-bold transition-all",
-                  selectedCategory === cat.slug
+                  selectedOptionKey === cat.key
                     ? "bg-[#1e4b64] text-white shadow-lg"
                     : "text-white/60 hover:text-white hover:bg-white/5"
                 )}
               >
-                {cat.name}
+                <span className="block">{cat.name}</span>
+                {cat.type === 'subcategory' && (
+                  <span className="mt-1 block text-[10px] font-medium text-white/35">
+                    Trang con của {cat.parentName}
+                  </span>
+                )}
               </button>
             ))}
           </div>

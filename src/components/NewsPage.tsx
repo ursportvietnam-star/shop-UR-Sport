@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ChevronRight, ChevronDown, Calendar, User, ArrowLeft, ArrowRight, Share2, MessageCircle, ShoppingBag, ChevronRight as ChevronRightIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSEO } from '../hooks/useSEO';
 import { SITE_URL, absoluteUrl, buildBreadcrumbSchema, buildSeoGraph, cleanSeoText } from '../lib/seo';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { STATIC_BLOG_POSTS as POSTS } from '../data';
 import { useProducts } from '../ProductsContext';
@@ -17,19 +17,199 @@ interface TocHeading {
   level: number;
 }
 
-const POST_CATEGORIES = ['Tất cả', 'Xu hướng', 'Kinh nghiệm', 'Sự kiện'];
+const POST_CATEGORIES = [
+  { label: 'Tất cả', path: '/blog' },
+  { label: 'Kiến thức', path: '/blog/ao-thun-nam' },
+  { label: 'Chất liệu', path: '/blog/chat-lieu-ao-thun' },
+  { label: 'Dáng người', path: '/blog/chon-ao-theo-dang' },
+  { label: 'Thể thao', path: '/blog/ao-thun-the-thao' },
+  { label: 'Hướng dẫn', path: '/blog/huong-dan-mua-ao' }
+];
+
+const slugifyCategory = (text: string) =>
+  text
+    .toString()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+
+type BlogCategoryItem = {
+  id: number | string;
+  label: string;
+  link: string;
+  icon?: string;
+  group: 'main' | 'category' | 'subcategory';
+  parentLabel?: string;
+  h1?: string;
+  description?: string;
+  seoTitle?: string;
+  metaDescription?: string;
+};
+
+const BLOG_CATEGORIES_STORAGE_KEY = 'ursport_blog_categories_final_v1';
+
+const normalizeTextForMatch = (text: string) =>
+  text
+    .toString()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+  const BLOG_CATEGORY_SEO_DEFAULTS: Record<string, { h1: string; description: string; seoTitle: string; metaDescription: string }> = {
+  blog: {
+    h1: 'Tin tức & Bài viết',
+    description: 'Cập nhật kiến thức chọn áo thun nam, chất liệu, dáng người, áo thun thể thao và hướng dẫn mua áo từ UR Sport.',
+    seoTitle: 'Tin tức áo thun nam & thời trang thể thao | UR Sport',
+    metaDescription: 'Blog UR Sport chia sẻ kiến thức áo thun nam, chất liệu áo thun, cách chọn áo theo dáng người, áo thun thể thao và hướng dẫn mua áo.'
+  },
+  'ao-thun-nam': {
+    h1: 'Kiến thức áo thun nam',
+    description: 'Tổng hợp kiến thức chọn áo thun nam đẹp, dễ mặc, đúng form và phù hợp phong cách hằng ngày.',
+    seoTitle: 'Kiến thức áo thun nam | Blog UR Sport',
+    metaDescription: 'Tìm hiểu cách chọn áo thun nam theo form, phong cách, hoàn cảnh sử dụng và các tiêu chí giúp áo mặc đẹp hơn.'
+  },
+  'chat-lieu-ao-thun': {
+    h1: 'Chất liệu áo thun nam',
+    description: 'Phân tích các chất liệu áo thun phổ biến, độ thoáng mát, co giãn, thấm hút và độ bền khi sử dụng.',
+    seoTitle: 'Chất liệu áo thun nam | Blog UR Sport',
+    metaDescription: 'So sánh cotton, thun lạnh, polyester và các chất liệu áo thun nam để chọn áo thoáng mát, bền đẹp và dễ chăm sóc.'
+  },
+  'chon-ao-theo-dang': {
+    h1: 'Chọn áo thun theo dáng người',
+    description: 'Gợi ý chọn form áo thun nam theo dáng người để mặc vừa vặn, tôn dáng và tự tin hơn.',
+    seoTitle: 'Chọn áo thun theo dáng người | Blog UR Sport',
+    metaDescription: 'Hướng dẫn chọn áo thun nam theo dáng người, từ dáng gầy, đầy đặn đến vai rộng để tối ưu form mặc.'
+  },
+  'ao-thun-the-thao': {
+    h1: 'Áo thun thể thao nam',
+    description: 'Kinh nghiệm chọn áo thun thể thao nam thoáng khí, co giãn tốt và phù hợp tập luyện hoặc mặc thường ngày.',
+    seoTitle: 'Áo thun thể thao nam | Blog UR Sport',
+    metaDescription: 'Cập nhật kiến thức về áo thun thể thao nam, chất liệu thấm hút, form áo tập luyện và cách phối đồ năng động.'
+  },
+  'huong-dan-mua-ao': {
+    h1: 'Hướng dẫn mua áo thun nam',
+    description: 'Các hướng dẫn chọn size, kiểm tra chất liệu, chọn form và mua áo thun nam phù hợp nhu cầu.',
+    seoTitle: 'Hướng dẫn mua áo thun nam | Blog UR Sport',
+    metaDescription: 'Xem hướng dẫn mua áo thun nam: chọn size, chọn chất liệu, chọn form áo và các lưu ý trước khi đặt hàng.'
+  },
+  'kien-thuc': {
+    h1: 'Kiến thức thời trang thể thao nam',
+    description: 'Tổng hợp kiến thức về form dáng, chất liệu và cách chọn đồ thể thao nam phù hợp nhu cầu hằng ngày.',
+    seoTitle: 'Kiến thức thời trang thể thao nam | Blog UR Sport',
+    metaDescription: 'Cập nhật kiến thức về áo thun, áo polo, chất liệu và phong cách thời trang thể thao nam từ UR Sport.'
+  },
+  'chat-lieu': {
+    h1: 'Chất liệu áo quần thể thao nam',
+    description: 'Phân tích các loại vải thể thao phổ biến, khả năng thấm hút, co giãn và độ bền khi sử dụng.',
+    seoTitle: 'Chất liệu áo quần thể thao nam | UR Sport',
+    metaDescription: 'Tìm hiểu cotton, thun lạnh, polyester và các chất liệu áo quần thể thao nam giúp mặc thoáng, bền và đẹp.'
+  },
+  'dang-nguoi': {
+    h1: 'Chọn áo quần thể thao theo dáng người',
+    description: 'Gợi ý chọn form áo, quần và cách phối đồ thể thao nam giúp tôn dáng, thoải mái và tự tin hơn.',
+    seoTitle: 'Chọn áo quần thể thao theo dáng người | UR Sport',
+    metaDescription: 'Hướng dẫn chọn áo thun, áo polo và quần thể thao nam theo dáng người để tôn form và dễ phối đồ.'
+  },
+  'the-thao': {
+    h1: 'Trang phục thể thao nam',
+    description: 'Cập nhật kinh nghiệm chọn trang phục cho tập luyện, chạy bộ, gym và các hoạt động thể thao hằng ngày.',
+    seoTitle: 'Trang phục thể thao nam | Blog UR Sport',
+    metaDescription: 'Bài viết về trang phục thể thao nam, cách chọn đồ tập, đồ chạy bộ và phong cách năng động.'
+  },
+  'huong-dan': {
+    h1: 'Hướng dẫn chọn và phối đồ thể thao nam',
+    description: 'Các hướng dẫn thực tế giúp bạn chọn size, phối đồ, bảo quản áo quần và mua sắm hiệu quả.',
+    seoTitle: 'Hướng dẫn chọn và phối đồ thể thao nam | UR Sport',
+    metaDescription: 'Xem hướng dẫn chọn size, phối đồ và bảo quản áo quần thể thao nam để luôn mặc đẹp và thoải mái.'
+  }
+};\u1ea3i m\u00e1i.'
+  }
+};
+
+const getSlugFromCategoryPath = (path: string) => {
+  if (!path || path === '/blog') return 'blog';
+  const parts = path.split('/').filter(Boolean);
+  return parts[parts.length - 1] || 'blog';
+};
+
+const normalizeBlogCategoryItem = (item: Partial<BlogCategoryItem>, index = 0): BlogCategoryItem => {
+  const label = item.label?.trim() || 'Blog';
+  const link = item.link || (index === 0 ? '/blog' : `/blog/category/${slugifyCategory(label)}`);
+  const group = item.group === 'category' || item.group === 'subcategory' ? item.group : 'main';
+  const defaults = BLOG_CATEGORY_SEO_DEFAULTS[getSlugFromCategoryPath(link)] || BLOG_CATEGORY_SEO_DEFAULTS[slugifyCategory(label)] || BLOG_CATEGORY_SEO_DEFAULTS.blog;
+  const savedH1 = item.h1?.trim();
+  const hasMainBlogH1 = group !== 'main' && savedH1 && slugifyCategory(savedH1) === slugifyCategory(BLOG_CATEGORY_SEO_DEFAULTS.blog.h1);
+  const h1 = savedH1 && !hasMainBlogH1
+    ? savedH1
+    : defaults.h1 || label;
+
+  return {
+    id: item.id || index + 1,
+    label,
+    link,
+    icon: item.icon || '',
+    group,
+    parentLabel: item.parentLabel || '',
+    h1,
+    description: item.description || defaults.description || '',
+    seoTitle: item.seoTitle || defaults.seoTitle || `${label} | Blog UR Sport`,
+    metaDescription: item.metaDescription || defaults.metaDescription || defaults.description || ''
+  };
+};
+
+const DEFAULT_BLOG_CATEGORY_ITEMS = POST_CATEGORIES.map((item, index) => normalizeBlogCategoryItem({
+  id: index + 1,
+  label: item.label,
+  link: item.path,
+  group: index === 0 ? 'main' : 'category'
+}, index));
+
+const findBlogCategoryBySlug = (items: BlogCategoryItem[], routeSlug?: string) => {
+  if (!routeSlug) return undefined;
+  return items.find(item => item.link !== '/blog' && getSlugFromCategoryPath(item.link) === routeSlug)
+    || items.find(item => item.group !== 'main' && slugifyCategory(item.label) === routeSlug)
+    || DEFAULT_BLOG_CATEGORY_ITEMS.find(item => item.link !== '/blog' && getSlugFromCategoryPath(item.link) === routeSlug)
+    || DEFAULT_BLOG_CATEGORY_ITEMS.find(item => item.group !== 'main' && slugifyCategory(item.label) === routeSlug);
+};
+
+const loadCachedBlogCategories = () => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const cached = window.localStorage.getItem(BLOG_CATEGORIES_STORAGE_KEY);
+    if (!cached) return null;
+    const parsed = JSON.parse(cached);
+    return Array.isArray(parsed) && parsed.length > 0
+      ? parsed.map((item: Partial<BlogCategoryItem>, index: number) => normalizeBlogCategoryItem(item, index))
+      : null;
+  } catch {
+    return null;
+  }
+};
+
+const cacheBlogCategories = (items: BlogCategoryItem[]) => {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(BLOG_CATEGORIES_STORAGE_KEY, JSON.stringify(items));
+};
 
 export function NewsPage() {
-  const { slug } = useParams<{ slug?: string }>();
+  const { slug, categorySlug } = useParams<{ slug?: string; categorySlug?: string }>();
   const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState('Tất cả');
   const [selectedPost, setSelectedPost] = useState<any>(null);
   const [posts, setPosts] = useState<any[]>(POSTS);
+  const [blogCategories, setBlogCategories] = useState<BlogCategoryItem[]>(() => loadCachedBlogCategories() || DEFAULT_BLOG_CATEGORY_ITEMS);
+  const [blogCategoriesLoaded, setBlogCategoriesLoaded] = useState(false);
   const [contentHtml, setContentHtml] = useState('');
+  const [contentSchema, setContentSchema] = useState('');
   const [tocHeadings, setTocHeadings] = useState<TocHeading[]>([]);
   const [showToc, setShowToc] = useState(false);
   const [activeHeadingId, setActiveHeadingId] = useState<string>('');
   const [isExpanded, setIsExpanded] = useState(false);
+  const blogContentRef = useRef<HTMLDivElement>(null);
   const { products } = useProducts();
 
   useEffect(() => {
@@ -51,22 +231,71 @@ export function NewsPage() {
   }, []);
 
   useEffect(() => {
+    getDoc(doc(db, 'settings', 'blogCategories')).then(snap => {
+      if (!snap.exists()) {
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        if (isLocalhost) {
+          const cached = loadCachedBlogCategories();
+          cacheBlogCategories(cached || DEFAULT_BLOG_CATEGORY_ITEMS);
+          if (!cached) {
+            setBlogCategories(DEFAULT_BLOG_CATEGORY_ITEMS);
+          }
+        }
+        return;
+      }
+
+      if (!snap.exists()) return;
+      const items = snap.data().items;
+      if (Array.isArray(items) && items.length > 0) {
+        const normalized = items.map((item: Partial<BlogCategoryItem>, index: number) => normalizeBlogCategoryItem(item, index));
+        setBlogCategories(normalized);
+        cacheBlogCategories(normalized);
+      }
+    }).catch(() => {
+      setBlogCategories(loadCachedBlogCategories() || DEFAULT_BLOG_CATEGORY_ITEMS);
+    }).finally(() => {
+      setBlogCategoriesLoaded(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    const effectiveCategorySlug = categorySlug || slug;
+    const categoryFromRoute = findBlogCategoryBySlug(blogCategories, effectiveCategorySlug);
+
+    if (categoryFromRoute) {
+      setActiveCategory(categoryFromRoute.label);
+    } else if (categorySlug) {
+      const category = findBlogCategoryBySlug(blogCategories, categorySlug);
+      setActiveCategory(category?.label || DEFAULT_BLOG_CATEGORY_ITEMS[0].label);
+    } else if (!slug) {
+      setActiveCategory(blogCategories.find(item => item.group === 'main')?.label || DEFAULT_BLOG_CATEGORY_ITEMS[0].label);
+    }
+  }, [blogCategories, categorySlug, slug]);
+
+  useEffect(() => {
     if (slug) {
+      const categoryFromSlug = findBlogCategoryBySlug(blogCategories, slug);
+      if (categoryFromSlug) {
+        setSelectedPost(null);
+        return;
+      }
+
       const post = posts.find(p => p.slug === slug) || posts.find(p => p.id === slug);
       if (post) {
         setSelectedPost(post);
         window.scrollTo(0, 0);
-      } else {
+      } else if (blogCategoriesLoaded) {
         navigate('/blog');
       }
     } else {
       setSelectedPost(null);
     }
-  }, [slug, posts, navigate]);
+  }, [blogCategories, blogCategoriesLoaded, slug, posts, navigate]);
 
   useEffect(() => {
     if (!selectedPost) {
       setContentHtml('');
+      setContentSchema('');
       setTocHeadings([]);
       return;
     }
@@ -93,9 +322,149 @@ export function NewsPage() {
     const wrapper = document.body.firstElementChild as HTMLElement;
     if (!wrapper) {
       setContentHtml(rawHtml);
+      setContentSchema('');
       setTocHeadings([]);
       return;
     }
+
+    const schemas: string[] = [];
+    wrapper.querySelectorAll('script[type="application/ld+json"]').forEach((script) => {
+      const schemaText = script.textContent?.trim();
+      if (schemaText) schemas.push(schemaText);
+      script.remove();
+    });
+
+    const readJsonLdText = (value?: string | null) => {
+      const text = (value || '').trim();
+      const looksLikeJsonLd = text.startsWith('{') && text.includes('"@context"');
+      if (!looksLikeJsonLd) return { text, isJsonLd: false, isValid: false };
+
+      try {
+        JSON.parse(text);
+        return { text, isJsonLd: true, isValid: true };
+      } catch {
+        return { text, isJsonLd: text.includes('FAQPage') || text.includes('schema.org'), isValid: false };
+      }
+    };
+
+    Array.from(wrapper.querySelectorAll('*')).reverse().forEach((element) => {
+      const text = element.textContent?.trim() || '';
+      const jsonLd = readJsonLdText(text);
+      if (!jsonLd.isJsonLd) return;
+      if (jsonLd.isValid) {
+        schemas.push(text);
+      }
+      element.remove();
+    });
+
+    const textWalker = document.createTreeWalker(wrapper, NodeFilter.SHOW_TEXT);
+    const schemaTextNodes: Text[] = [];
+    while (textWalker.nextNode()) {
+      const node = textWalker.currentNode as Text;
+      const text = node.textContent?.trim() || '';
+      const jsonLd = readJsonLdText(text);
+      if (!jsonLd.isJsonLd) continue;
+      if (jsonLd.isValid) {
+        schemas.push(text);
+      }
+      schemaTextNodes.push(node);
+    }
+    schemaTextNodes.forEach(node => {
+      node.textContent = '';
+    });
+
+    wrapper.querySelectorAll('section').forEach((section) => {
+      const heading = section.querySelector('h2');
+      const headingText = normalizeTextForMatch(heading?.textContent || '');
+      const isFaqSection = headingText.includes('cau hoi') || headingText.includes('faq');
+      if (!isFaqSection) return;
+
+      section.classList.add('blog-faq-section');
+      if (heading) {
+        heading.textContent = 'C\u00e2u h\u1ecfi th\u01b0\u1eddng g\u1eb7p';
+        heading.classList.add('blog-faq-title');
+      }
+
+      Array.from(section.querySelectorAll('h3')).forEach((questionHeading) => {
+        const questionText = questionHeading.textContent?.replace(/^\s*\d+[\.\)]\s*/, '').trim() || '';
+        if (!questionText) return;
+
+        const details = document.createElement('details');
+        details.className = 'blog-faq-item';
+
+        const summary = document.createElement('summary');
+        summary.className = 'blog-faq-question';
+        summary.textContent = questionText;
+
+        const answer = document.createElement('div');
+        answer.className = 'blog-faq-answer';
+
+        let sibling = questionHeading.nextSibling;
+        while (sibling) {
+          const nextSibling = sibling.nextSibling;
+          const elementSibling = sibling instanceof HTMLElement ? sibling : null;
+          const tagName = elementSibling?.tagName?.toLowerCase();
+          if (tagName === 'h3' || tagName === 'h2') break;
+
+          answer.appendChild(sibling);
+          sibling = nextSibling;
+        }
+
+        details.appendChild(summary);
+        details.appendChild(answer);
+        questionHeading.replaceWith(details);
+      });
+    });
+
+    wrapper.querySelectorAll('h2').forEach((heading) => {
+      const headingText = normalizeTextForMatch(heading.textContent || '');
+      const isFaqHeading = headingText.includes('cau hoi') || headingText.includes('faq');
+      if (!isFaqHeading || heading.classList.contains('blog-faq-title')) return;
+
+      heading.textContent = 'C\u00e2u h\u1ecfi th\u01b0\u1eddng g\u1eb7p';
+      heading.classList.add('blog-faq-title');
+      heading.parentElement?.classList.add('blog-faq-section');
+
+      let sibling = heading.nextSibling;
+      while (sibling) {
+        const elementSibling = sibling instanceof HTMLElement ? sibling : null;
+        const tagName = elementSibling?.tagName?.toLowerCase();
+        if (tagName === 'h2') break;
+
+        if (tagName !== 'h3' || !elementSibling) {
+          sibling = sibling.nextSibling;
+          continue;
+        }
+
+        const questionHeading = elementSibling;
+        const questionText = questionHeading.textContent?.replace(/^\s*\d+[\.\)]\s*/, '').trim() || '';
+        const details = document.createElement('details');
+        details.className = 'blog-faq-item';
+
+        const summary = document.createElement('summary');
+        summary.className = 'blog-faq-question';
+        summary.textContent = questionText;
+
+        const answer = document.createElement('div');
+        answer.className = 'blog-faq-answer';
+
+        let answerSibling = questionHeading.nextSibling;
+        while (answerSibling) {
+          const nextAnswerSibling = answerSibling.nextSibling;
+          const answerElement = answerSibling instanceof HTMLElement ? answerSibling : null;
+          const answerTag = answerElement?.tagName?.toLowerCase();
+          if (answerTag === 'h3' || answerTag === 'h2') break;
+
+          answer.appendChild(answerSibling);
+          answerSibling = nextAnswerSibling;
+        }
+
+        questionHeading.replaceWith(details);
+        details.appendChild(summary);
+        details.appendChild(answer);
+        sibling = details.nextSibling;
+      }
+    });
 
     const seenIds = new Set<string>();
     const headings = Array.from(wrapper.querySelectorAll('h2, h3, h4')).map((heading) => {
@@ -114,8 +483,75 @@ export function NewsPage() {
     });
 
     setTocHeadings(headings);
+    setContentSchema(schemas[0] || '');
     setContentHtml(wrapper.innerHTML);
   }, [selectedPost]);
+
+  useEffect(() => {
+    const root = blogContentRef.current;
+    if (!selectedPost || !root) return;
+    let didBuildFaq = false;
+
+    const buildFaqFromHeading = (heading: HTMLHeadingElement) => {
+      if (heading.classList.contains('blog-faq-title')) return;
+
+      let sibling = heading.nextElementSibling as HTMLElement | null;
+      const questionHeadings: HTMLHeadingElement[] = [];
+      while (sibling && sibling.tagName.toLowerCase() !== 'h2') {
+        if (sibling.tagName.toLowerCase() === 'h3') {
+          questionHeadings.push(sibling as HTMLHeadingElement);
+        }
+        sibling = sibling.nextElementSibling as HTMLElement | null;
+      }
+
+      if (questionHeadings.length === 0) return;
+      didBuildFaq = true;
+
+      heading.textContent = 'C\u00e2u h\u1ecfi th\u01b0\u1eddng g\u1eb7p';
+      heading.classList.add('blog-faq-title');
+      heading.parentElement?.classList.add('blog-faq-section');
+
+      questionHeadings.forEach((questionHeading) => {
+        const questionText = questionHeading.textContent?.replace(/^\s*\d+[\.\)]\s*/, '').trim() || '';
+        if (!questionText) return;
+
+        const details = document.createElement('details');
+        details.className = 'blog-faq-item';
+
+        const summary = document.createElement('summary');
+        summary.className = 'blog-faq-question';
+        summary.textContent = questionText;
+
+        const answer = document.createElement('div');
+        answer.className = 'blog-faq-answer';
+
+        let answerSibling = questionHeading.nextSibling;
+        while (answerSibling) {
+          const nextAnswerSibling = answerSibling.nextSibling;
+          const answerElement = answerSibling instanceof HTMLElement ? answerSibling : null;
+          const answerTag = answerElement?.tagName?.toLowerCase();
+          if (answerTag === 'h2' || answerTag === 'h3') break;
+          answer.appendChild(answerSibling);
+          answerSibling = nextAnswerSibling;
+        }
+
+        details.appendChild(summary);
+        details.appendChild(answer);
+        questionHeading.replaceWith(details);
+      });
+    };
+
+    root.querySelectorAll('h2').forEach((heading) => {
+      const headingText = normalizeTextForMatch(heading.textContent || '');
+      if (headingText.includes('cau hoi') || headingText.includes('faq')) {
+        buildFaqFromHeading(heading as HTMLHeadingElement);
+      }
+    });
+
+    if (didBuildFaq) {
+      setContentHtml(root.innerHTML);
+    }
+  }, [selectedPost, contentHtml]);
 
   useEffect(() => {
     if (!selectedPost) return;
@@ -186,13 +622,20 @@ export function NewsPage() {
     };
   }, [selectedPost, contentHtml]);
 
-  const postCanonical = selectedPost ? `/blog/${selectedPost.slug}` : '/blog';
+  const mainBlogCategory = blogCategories.find(item => item.group === 'main') || blogCategories[0] || DEFAULT_BLOG_CATEGORY_ITEMS[0];
+  const effectiveCategorySlug = categorySlug || (!selectedPost ? slug : undefined);
+  const activeBlogCategory = effectiveCategorySlug
+    ? findBlogCategoryBySlug(blogCategories, effectiveCategorySlug)
+    : mainBlogCategory;
+  const currentBlogMeta = activeBlogCategory || mainBlogCategory;
+  const blogCanonical = currentBlogMeta?.link || '/blog';
+  const postCanonical = selectedPost ? `/blog/${selectedPost.slug}` : blogCanonical;
   const blogSchema = selectedPost ? buildSeoGraph(
     {
       '@type': 'Article',
       '@id': `${absoluteUrl(postCanonical)}#article`,
       headline: selectedPost.title,
-      description: cleanSeoText(selectedPost.excerpt || selectedPost.content, 220),
+      description: cleanSeoText(selectedPost.metaDescription || selectedPost.excerpt || selectedPost.content, 220),
       image: [absoluteUrl(selectedPost.image)],
       url: absoluteUrl(postCanonical),
       mainEntityOfPage: absoluteUrl(postCanonical),
@@ -214,25 +657,26 @@ export function NewsPage() {
     ])
   ) : buildSeoGraph({
     '@type': 'Blog',
-    '@id': `${SITE_URL}/blog#blog`,
-    url: absoluteUrl('/blog'),
-    name: 'Blog UR Sport',
+    '@id': `${absoluteUrl(blogCanonical)}#blog`,
+    url: absoluteUrl(blogCanonical),
+    name: currentBlogMeta?.h1 || 'Blog UR Sport',
     inLanguage: 'vi-VN',
     publisher: { '@id': `${SITE_URL}/#organization` }
   });
 
   useSEO({
-    title: selectedPost ? `${selectedPost.title} | Blog UR Sport` : "Tin tức & Bài viết | UR Sport",
-    description: selectedPost ? (selectedPost.excerpt || selectedPost.title) : "Cập nhật những xu hướng thời trang mới nhất, kinh nghiệm phối đồ và các sự kiện sôi nổi từ cộng đồng UrSport.",
+    title: selectedPost ? (selectedPost.seoTitle || `${selectedPost.title} | Blog UR Sport`) : (currentBlogMeta?.seoTitle || `${currentBlogMeta?.h1 || 'Blog'} | UR Sport`),
+    description: selectedPost ? (selectedPost.metaDescription || selectedPost.excerpt || selectedPost.title) : (currentBlogMeta?.metaDescription || currentBlogMeta?.description || ''),
     canonical: postCanonical,
     image: selectedPost?.image,
     type: selectedPost ? "article" : "website",
-    schema: blogSchema
+    schema: blogSchema,
+    customSchema: selectedPost?.customSchema || contentSchema
   });
 
-  const filteredPosts = activeCategory === 'Tất cả' 
-    ? posts 
-    : posts.filter(p => p.category === activeCategory);
+  const filteredPosts = activeCategory === mainBlogCategory.label
+    ? posts
+    : posts.filter(p => slugifyCategory(p.category || '') === slugifyCategory(activeCategory));
 
   if (selectedPost) {
     const relatedPosts = posts.filter(p => p.id !== selectedPost.id).slice(0, 5);
@@ -293,6 +737,7 @@ export function NewsPage() {
 
             <div className="relative w-full overflow-x-hidden">
               <div 
+                ref={blogContentRef}
                 className={cn(
                   "blog-content product-description-container notranslate w-full text-zinc-600 transition-[max-height] duration-700 ease-in-out overflow-x-hidden",
                   !isExpanded ? "max-h-[1000px] overflow-y-hidden" : "max-h-none overflow-y-visible"
@@ -472,26 +917,29 @@ export function NewsPage() {
     <div className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-12">
         <h1 className="text-[32px] sm:text-[40px] font-black text-black leading-tight tracking-tight mb-4">
-          Tin tức & <span className="text-[#16a34a]">Bài viết</span>
+          {currentBlogMeta?.h1 || mainBlogCategory.label}
         </h1>
         <p className="text-zinc-500 max-w-2xl font-medium text-sm sm:text-base">
-          Cập nhật những xu hướng thời trang mới nhất, kinh nghiệm phối đồ và các sự kiện sôi nổi từ cộng đồng UrSport.
+          {currentBlogMeta?.description}
         </p>
       </div>
 
       <div className="flex items-center gap-2 mb-10 overflow-x-auto pb-2 scrollbar-hide">
-        {POST_CATEGORIES.map(cat => (
+        {blogCategories.filter(cat => cat.group !== 'subcategory').map(cat => (
           <button
-            key={cat}
-            onClick={() => setActiveCategory(cat)}
+            key={cat.label}
+            onClick={() => {
+              setActiveCategory(cat.label);
+              navigate(cat.link);
+            }}
             className={cn(
               "px-6 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap",
-              activeCategory === cat 
+              activeCategory === cat.label
                 ? "bg-[#16a34a] text-white shadow-lg" 
                 : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
             )}
           >
-            {cat}
+            {cat.label}
           </button>
         ))}
       </div>

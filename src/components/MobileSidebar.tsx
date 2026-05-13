@@ -11,6 +11,7 @@ import { Category } from '../types';
 import { getDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useNavigate } from 'react-router-dom';
+import { getNavigationSubcategories, normalizeMenuLabel } from '../lib/categoryConfig';
 
 interface MobileSidebarProps {
   isOpen: boolean;
@@ -33,6 +34,7 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
 }) => {
   const navigate = useNavigate();
   const [navItems, setNavItems] = React.useState<any[]>([]);
+  const [expandedCategory, setExpandedCategory] = React.useState<string | null>(null);
 
   useEffect(() => {
     getDoc(doc(db, 'settings', 'navigation')).then(snap => {
@@ -51,11 +53,14 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
 
   const categoryLinks = navItems.length > 0
     ? navItems.filter(item => item.group === 'category')
-    : CATEGORY_METADATA.map(cat => ({ label: cat.name, link: `/apparel/${cat.slug}`, icon: cat.icon, isStatic: true }));
+    : CATEGORY_METADATA.map(cat => ({ label: cat.name, link: `/${cat.slug}`, icon: cat.icon, isStatic: true }));
+
+  const subcategoryLinks = getNavigationSubcategories(navItems);
 
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      setExpandedCategory(null);
     } else {
       document.body.style.overflow = 'unset';
     }
@@ -163,13 +168,25 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
                     
                     <div className="px-0">
                         <div className="flex flex-col">
-                            {categoryLinks.map((cat, i) => (
+                            {categoryLinks.map((cat, i) => {
+                                const childLinks = subcategoryLinks.filter(
+                                    item => normalizeMenuLabel(item.parentLabel) === normalizeMenuLabel(cat.label)
+                                );
+
+                                const categoryKey = normalizeMenuLabel(cat.label);
+                                const isExpanded = expandedCategory === categoryKey;
+
+                                return (
+                                <React.Fragment key={cat.id || cat.label || i}>
                                 <motion.button
-                                    key={i}
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: i * 0.05 }}
                                     onClick={() => {
+                                        if (childLinks.length > 0) {
+                                            setExpandedCategory(isExpanded ? null : categoryKey);
+                                            return;
+                                        }
                                         if (cat.isStatic) {
                                             onCategorySelect(cat.label as any);
                                         } else {
@@ -199,9 +216,34 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
                                     <span className={`text-[15px] font-bold tracking-tight text-left flex-1 text-zinc-900 group-hover:text-[#1e4b64] transition-colors`}>
                                         {cat.label}
                                     </span>
-                                    <ChevronRight className="h-4 w-4 text-zinc-300 group-hover:text-[#1e4b64] transition-colors" />
+                                    <ChevronRight className={`h-4 w-4 text-zinc-300 group-hover:text-[#1e4b64] transition-all ${isExpanded ? 'rotate-90 text-[#1e4b64]' : ''}`} />
                                 </motion.button>
-                            ))}
+                                {isExpanded && childLinks.map((child, childIndex) => (
+                                    <motion.button
+                                        key={child.id || `${cat.label}-${child.label}`}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: (i + childIndex + 1) * 0.05 }}
+                                        onClick={() => {
+                                            if (child.link?.startsWith('http')) {
+                                                window.open(child.link, '_blank');
+                                            } else {
+                                                navigate(child.link || '/shop');
+                                            }
+                                            onClose();
+                                        }}
+                                        className="w-full flex items-center gap-3 py-2.5 pl-20 pr-6 transition-all group relative border-b border-zinc-50 hover:bg-zinc-50 bg-white"
+                                    >
+                                        <span className="h-1.5 w-1.5 rounded-full bg-[#1e4b64]/40 shrink-0" />
+                                        <span className="text-[13px] font-bold tracking-tight text-left flex-1 text-zinc-600 group-hover:text-[#1e4b64] transition-colors">
+                                            {child.label}
+                                        </span>
+                                        <ChevronRight className="h-3.5 w-3.5 text-zinc-300 group-hover:text-[#1e4b64] transition-colors" />
+                                    </motion.button>
+                                ))}
+                                </React.Fragment>
+                                );
+                            })}
                         </div>
                     </div>
 

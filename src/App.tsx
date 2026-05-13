@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, useParams, useSearchParams, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useParams, useSearchParams, useLocation } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { ProductCard } from './components/ProductCard';
@@ -28,6 +28,11 @@ import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LazyImage } from './components/LazyImage';
 import { SITE_URL, absoluteUrl, buildBreadcrumbSchema, buildSeoGraph } from './lib/seo';
+import {
+  CATEGORY_PRODUCT_MATCH_TERMS,
+  belongsToCategory as categoryBelongsTo,
+  DEFAULT_SEO_SUBCATEGORIES
+} from './lib/categoryConfig';
 
 const ProductDetail = React.lazy(() => import('./components/ProductDetail').then(module => ({ default: module.ProductDetail })));
 const Checkout = React.lazy(() => import('./components/Checkout').then(module => ({ default: module.Checkout })));
@@ -332,10 +337,43 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
 
 
 
-function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelect, categoryName }: { activeCategory: any, setActiveCategory: (c: any) => void, isLoading: boolean, onProductSelect: (p: Product) => void, categoryName?: string }) {
+const SEO_LANDING_PAGES = DEFAULT_SEO_SUBCATEGORIES
+  .filter(page => page.slug !== 'ao-thun-the-thao-nam')
+  .map(page => ({
+    slug: page.slug,
+    label: page.label,
+    parentCategory: page.parentLabel,
+    matchTerms: CATEGORY_PRODUCT_MATCH_TERMS[page.slug] || []
+  }));
+
+type SeoLandingPage = typeof SEO_LANDING_PAGES[number];
+
+const belongsToCategory = (product: Product, category: string) => {
+  return categoryBelongsTo(product.category, category);
+};
+
+const productMatchesTerms = (product: Product, terms: readonly string[]) => {
+  const haystack = [
+    product.name,
+    product.description,
+    product.seoTitle,
+    product.metaDescription,
+    product.keywords,
+    product.specifications,
+    product.material,
+    product.style,
+    product.fashionStyle,
+    ...(product.features || [])
+  ].join(' ').toLowerCase();
+
+  return terms.some(term => haystack.includes(term.toLowerCase()));
+};
+
+function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelect, categoryName, seoLanding }: { activeCategory: any, setActiveCategory: (c: any) => void, isLoading: boolean, onProductSelect: (p: Product) => void, categoryName?: string, seoLanding?: SeoLandingPage }) {
   const navigate = useNavigate();
   const { categorySlug, productSlug } = useParams<{ categorySlug?: string, productSlug?: string }>();
-  const currentSlug = categorySlug || productSlug;
+  const categoryNameSlug = categoryName ? CATEGORY_METADATA.find(c => c.name === categoryName)?.slug : undefined;
+  const currentSlug = seoLanding?.slug || categorySlug || productSlug || categoryNameSlug;
   const { products } = useProducts();
   const [searchParams, setSearchParams] = useSearchParams();
   const [seoContent, setSeoContent] = React.useState<string>('');
@@ -351,12 +389,13 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
 
   // Derive current category from URL params, prop or state instantly during render
   const currentCategory = React.useMemo(() => {
+    if (seoLanding) return seoLanding.parentCategory;
     if (categoryName) return categoryName;
     if (currentSlug) {
       return CATEGORY_METADATA.find(c => c.slug === currentSlug)?.name || 'All';
     }
     return categoryFilter || activeCategory;
-  }, [categoryName, currentSlug, categoryFilter, activeCategory]);
+  }, [seoLanding, categoryName, currentSlug, categoryFilter, activeCategory]);
 
   // Extract unique values for filters and normalize them
   const brands = Array.from(new Set(
@@ -424,6 +463,16 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
           description: 'Áo thun thể thao nam cao cấp tại UR Sport. Co giãn 4 chiều, thấm hút mồ hôi, kháng khuẩn. Phù hợp tập gym, chạy bộ, cầu lông. Chính hãng, giá tốt.',
           keywords: 'áo thun thể thao nam, áo thể thao nam, áo tập gym nam, áo chạy bộ nam, áo thể thao nam cao cấp',
         },
+        'ao-thun-cotton-nam': {
+          title: 'Áo Thun Cotton Nam Mềm Mát, Thoáng Khí | UR Sport',
+          description: 'Khám phá áo thun cotton nam mềm mát tại UR Sport. Chất vải dễ chịu, thoáng khí, dễ phối đồ, phù hợp mặc hằng ngày trong thời tiết nóng.',
+          keywords: 'áo thun cotton nam, áo thun nam cotton, áo cotton nam, áo thun nam thoáng mát',
+        },
+        'ao-thun-nam-form-rong': {
+          title: 'Áo Thun Nam Form Rộng, Oversize Cá Tính | UR Sport',
+          description: 'Mua áo thun nam form rộng tại UR Sport. Kiểu dáng oversize thoải mái, trẻ trung, dễ phối streetwear, phù hợp đi chơi và mặc hằng ngày.',
+          keywords: 'áo thun nam form rộng, áo thun oversize nam, áo form rộng nam, áo thun nam streetwear',
+        },
         'ao-polo-nam': {
           title: 'Áo Polo Nam Cao Cấp, Thể Thao & Lịch Sự 2026 | UR Sport',
           description: 'Khám phá bộ sưu tập áo polo nam cao cấp tại UR Sport. Vải cá sấu Pique Cotton, chống nhăn, form chuẩn. Phù hợp đi làm, chơi golf và dạo phố.',
@@ -454,14 +503,15 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
         return;
       }
       const catMetadata = CATEGORY_METADATA.find(c => c.name === currentCategory);
-      if (catMetadata) {
-        const fallback = CATEGORY_DEFAULT_SEO[catMetadata.slug] || {
-          title: `${currentCategory} Chính Hãng, Giá Tốt | UR Sport`,
-          description: `Mua ${currentCategory} chính hãng, chất lượng cao tại UR Sport. Đa dạng mẫu mã, giao hàng toàn quốc, đổi trả dễ dàng.`,
-          keywords: `${currentCategory}, đồ thể thao nam, ur sport`,
+      const seoDocSlug = seoLanding?.slug || catMetadata?.slug;
+      if (seoDocSlug) {
+        const fallback = CATEGORY_DEFAULT_SEO[seoDocSlug] || CATEGORY_DEFAULT_SEO[catMetadata?.slug || ''] || {
+          title: `${seoLanding?.label || currentCategory} Chính Hãng, Giá Tốt | UR Sport`,
+          description: `Mua ${seoLanding?.label || currentCategory} chính hãng, chất lượng cao tại UR Sport. Đa dạng mẫu mã, giao hàng toàn quốc, đổi trả dễ dàng.`,
+          keywords: `${seoLanding?.label || currentCategory}, đồ thể thao nam, ur sport`,
         };
         try {
-          const docRef = doc(db, 'categorySeo', catMetadata.slug);
+          const docRef = doc(db, 'categorySeo', seoDocSlug);
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
             const data = docSnap.data();
@@ -472,7 +522,7 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
               keywords: data.seoKeywords || fallback.keywords,
               canonical: data.seoCanonical || '',
               robots: data.seoRobots || 'index, follow',
-              heading: data.heading || '',
+              heading: data.heading || seoLanding?.label || '',
             });
           } else {
             setSeoContent('');
@@ -482,7 +532,7 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
               keywords: fallback.keywords,
               canonical: '',
               robots: 'index, follow',
-              heading: ''
+              heading: seoLanding?.label || ''
             });
           }
         } catch (e) {
@@ -491,11 +541,22 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
       }
     };
     fetchSeo();
-  }, [currentCategory]);
+  }, [currentCategory, seoLanding]);
 
   let filteredProducts = currentCategory === 'All' 
     ? [...products]
-    : products.filter(p => p.category === currentCategory);
+    : products.filter(p => belongsToCategory(p, currentCategory));
+
+  const pageMatchTerms = seoLanding?.matchTerms || CATEGORY_PRODUCT_MATCH_TERMS[currentSlug || ''] || [];
+
+  if (seoLanding?.matchTerms?.length) {
+    filteredProducts = filteredProducts.filter(product => productMatchesTerms(product, seoLanding.matchTerms));
+  } else if (pageMatchTerms.length > 0) {
+    const matchedProducts = products.filter(product => productMatchesTerms(product, pageMatchTerms));
+    filteredProducts = Array.from(
+      new Map([...filteredProducts, ...matchedProducts].map(product => [product.id, product])).values()
+    );
+  }
 
   if (brandFilter) {
     filteredProducts = filteredProducts.filter(p => p.brand?.trim().toLowerCase() === brandFilter.trim().toLowerCase());
@@ -534,8 +595,12 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
        const dateA = a.createdAt?.seconds || 0;
        const dateB = b.createdAt?.seconds || 0;
        return dateB - dateA;
-    });
+     });
   }
+
+  const finalRobots = currentSlug && filteredProducts.length === 0
+    ? 'noindex, follow'
+    : seoMeta.robots;
 
   const shopCanonical = currentSlug ? `/${currentSlug}` : '/shop';
   const shopSchema = React.useMemo(() => buildSeoGraph(
@@ -569,7 +634,7 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
     description: seoMeta.description,
     keywords: seoMeta.keywords,
     canonical: seoMeta.canonical || shopCanonical,
-    robots: seoMeta.robots,
+    robots: finalRobots,
     type: "website",
     schema: shopSchema
   });
@@ -996,12 +1061,22 @@ function AppContent() {
               <Route path="/apparel/:categorySlug/:productSlug" element={<ProductDetail />} />
               <Route path="/checkout" element={<Checkout onComplete={() => {}} />} />
               <Route path="/blog" element={<NewsPage />} />
+              <Route path="/blog/category/:categorySlug" element={<NewsPage />} />
               <Route path="/blog/:slug" element={<NewsPage />} />
               <Route path="/quan-tri" element={<AdminPanel />} />
               <Route path="/quantri" element={<AdminPanel />} />
+              <Route path="/ao-thun-nam-the-thao" element={<Navigate to="/ao-thun-the-thao-nam" replace />} />
+              <Route path="/ao-thun-nam-cotton" element={<Navigate to="/ao-thun-cotton-nam" replace />} />
               {/* Clean Category URLs at root */}
               {CATEGORY_METADATA.map(cat => (
                 <Route key={cat.slug} path={`/${cat.slug}`} element={<ShopPage {...commonShopProps} categoryName={cat.name} />} />
+              ))}
+              {SEO_LANDING_PAGES.map(page => (
+                <Route
+                  key={page.slug}
+                  path={`/${page.slug}`}
+                  element={<ShopPage {...commonShopProps} seoLanding={page} />}
+                />
               ))}
               {/* Shopee-style clean URLs for products at root */}
               <Route path="/:productSlug" element={<ProductDetail />} />

@@ -18,6 +18,7 @@ interface SEOProps {
   image?: string;
   type?: 'website' | 'article' | 'product';
   schema?: any;
+  customSchema?: string;
 }
 
 export function useSEO({
@@ -28,7 +29,8 @@ export function useSEO({
   robots = 'index, follow',
   image = '/favicon.svg',
   type = 'website',
-  schema
+  schema,
+  customSchema
 }: SEOProps) {
   useEffect(() => {
     try {
@@ -124,8 +126,32 @@ export function useSEO({
 
       // --- Schema / JSON-LD ---
       injectSchema(schema || buildSeoGraph());
+
+      // --- Custom Schema ---
+      const injectCustomSchema = (schemaStr: string) => {
+        let el = document.head.querySelector('script[type="application/ld+json"][data-seo-schema="custom"]') as HTMLScriptElement;
+        if (schemaStr) {
+          if (!el) {
+            el = document.createElement('script');
+            el.setAttribute('type', 'application/ld+json');
+            el.setAttribute('data-seo-schema', 'custom');
+            document.head.appendChild(el);
+          }
+          let cleanStr = schemaStr;
+          const scriptRegex = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
+          const match = scriptRegex.exec(schemaStr);
+          if (match && match[1]) {
+            cleanStr = match[1];
+          }
+          el.textContent = cleanStr.replace(/</g, '\\u003c');
+        } else if (el) {
+          el.remove();
+        }
+      };
+      
+      injectCustomSchema(customSchema || '');
     } catch (error) {
       console.error("SEO Error:", error);
     }
-  }, [title, description, keywords, canonical, robots, image, type, schema]);
+  }, [title, description, keywords, canonical, robots, image, type, schema, customSchema]);
 }

@@ -1,4 +1,13 @@
-export type Category = 'Áo thun nam' | 'Áo thun thể thao nam' | 'Áo polo nam' | 'Quần thể thao nam' | 'Phụ kiện thể thao' | 'All';
+export type Category =
+  | 'Áo thun nam'
+  | 'Áo thun thể thao nam'
+  | 'Áo thun nam thể thao'
+  | 'Áo thun nam cotton'
+  | 'Áo thun nam form rộng'
+  | 'Áo polo nam'
+  | 'Quần thể thao nam'
+  | 'Phụ kiện thể thao'
+  | 'All';
 
 export interface CategoryInfo {
   name: Category;
@@ -84,6 +93,9 @@ export interface BlogPost {
   image: string;
   excerpt: string;
   content: string;
+  seoTitle?: string;
+  metaDescription?: string;
+  customSchema?: string;
   images?: string[];
   videos?: string[];
   createdAt?: any;

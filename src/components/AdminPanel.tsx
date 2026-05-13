@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   LayoutDashboard, Package, ShoppingBag, Users, MessageSquare,
   Image as ImageIcon, Settings, Plus, Trash2, Edit2, LogOut,
   TrendingUp, Eye, DollarSign, BarChart2, Menu, X, Bell,
-  Search, ChevronRight, ChevronDown, Megaphone, Upload, Star, AlertCircle, Copy, ExternalLink, Code2, Check as CheckIcon, Bot, Sparkles, Zap, Timer, Clock, Ticket, Download
+  Search, ChevronRight, ChevronDown, Megaphone, Upload, Star, AlertCircle, Copy, ExternalLink, Code2, Check as CheckIcon, Bot, Sparkles, Zap, Timer, Clock, Ticket, Download, Filter
 } from 'lucide-react';
 import { collection, onSnapshot, query, orderBy, deleteDoc, doc, setDoc, getDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -21,6 +21,18 @@ import { useAuth } from '../AuthContext';
 import { Product, BlogPost, Order, Voucher } from '../types';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import {
+  DEFAULT_SEO_SUBCATEGORIES,
+  belongsToCategory,
+  defaultNavigationItems,
+  getProductCategoryOptions,
+  linkForCategoryLabel,
+  linkForSubcategoryLabel,
+  normalizeMenuLabel,
+  normalizeNavigationItem,
+  ProductCategoryOption,
+  slugifyVietnamese
+} from '../lib/categoryConfig';
 
 interface MediaItem {
   id: string;
@@ -28,7 +40,7 @@ interface MediaItem {
   createdAt: any;
 }
 
-type AdminTab = 'dashboard' | 'products' | 'orders' | 'customers' | 'vouchers' | 'blog' | 'media' | 'settings' | 'ai-product' | 'ai-blog' | 'flash-sale' | 'category-seo';
+type AdminTab = 'dashboard' | 'products' | 'orders' | 'customers' | 'vouchers' | 'blog' | 'media' | 'settings' | 'blog-categories' | 'ai-product' | 'ai-blog' | 'flash-sale' | 'category-seo';
 
 type NavItem = {
   id: string;
@@ -37,6 +49,21 @@ type NavItem = {
   isGroup?: boolean;
   children?: { id: AdminTab; label: string; icon: React.FC<any> }[];
 };
+
+type BlogCategoryItem = {
+  id: number | string;
+  label: string;
+  link: string;
+  icon: string;
+  group: 'main' | 'category' | 'subcategory';
+  parentLabel?: string;
+  h1?: string;
+  description?: string;
+  seoTitle?: string;
+  metaDescription?: string;
+};
+
+const BLOG_CATEGORIES_STORAGE_KEY = 'ursport_blog_categories_final_v1';
 
 const NAV_ITEMS: NavItem[] = [
   { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },
@@ -58,15 +85,137 @@ const NAV_ITEMS: NavItem[] = [
     ]
   },
   { id: 'media', label: 'Thư viện ảnh', icon: ImageIcon },
-  { id: 'settings', label: 'Cài đặt', icon: Settings },
+  {
+    id: 'settings-group',
+    label: 'Cài đặt',
+    icon: Settings,
+    isGroup: true,
+    children: [
+      { id: 'settings', label: 'Cài đặt chung', icon: Settings },
+      { id: 'blog-categories', label: 'Danh mục Blog', icon: MessageSquare }
+    ]
+  },
 ];
+
+const slugifyBlogCategory = (label: string) =>
+  `/${slugifyVietnamese(label) || 'blog-category'}`;
+
+const normalizeBlogCategoryItem = (item: string | Partial<BlogCategoryItem>, index = 0): BlogCategoryItem => {
+  const source = typeof item === 'string' ? { label: item } : item;
+  const label = source.label?.trim() || 'Danh mục Blog';
+  const group = source.group === 'category' || source.group === 'subcategory' ? source.group : 'main';
+  const savedH1 = source.h1?.trim();
+  const hasMainBlogH1 = group !== 'main' && savedH1 && normalizeMenuLabel(savedH1) === normalizeMenuLabel('Tin tức & Bài viết');
+  const h1 = savedH1 && !hasMainBlogH1 ? savedH1 : label;
+
+  return {
+    id: source.id || Date.now() + index,
+    label,
+    link: source.link || slugifyBlogCategory(label),
+    icon: source.icon || '',
+    group,
+    parentLabel: source.parentLabel || '',
+    h1,
+    description: source.description || '',
+    seoTitle: source.seoTitle || `${label} | Blog UR Sport`,
+    metaDescription: source.metaDescription || source.description || ''
+  };
+};
+
+const DEFAULT_BLOG_CATEGORIES: BlogCategoryItem[] = [
+  {
+    id: 1,
+    label: 'Tất cả',
+    link: '/blog',
+    icon: '',
+    group: 'main',
+    h1: 'Tin tức & Bài viết',
+    description: 'Cập nhật kiến thức chọn áo thun nam, chất liệu, dáng người, áo thun thể thao và hướng dẫn mua áo từ UR Sport.',
+    seoTitle: 'Tin tức áo thun nam & thời trang thể thao | UR Sport',
+    metaDescription: 'Blog UR Sport chia sẻ kiến thức áo thun nam, chất liệu áo thun, cách chọn áo theo dáng người, áo thun thể thao và hướng dẫn mua áo.'
+  },
+  {
+    id: 2,
+    label: 'Áo thun nam',
+    link: '/blog/ao-thun-nam',
+    icon: '',
+    group: 'category',
+    h1: 'Kiến thức áo thun nam',
+    description: 'Tổng hợp kiến thức chọn áo thun nam đẹp, dễ mặc, đúng form và phù hợp phong cách hằng ngày.',
+    seoTitle: 'Kiến thức áo thun nam | Blog UR Sport',
+    metaDescription: 'Tìm hiểu cách chọn áo thun nam theo form, phong cách, hoàn cảnh sử dụng và các tiêu chí giúp áo mặc đẹp hơn.'
+  },
+  {
+    id: 3,
+    label: 'Chất liệu áo thun',
+    link: '/blog/chat-lieu-ao-thun',
+    icon: '',
+    group: 'category',
+    h1: 'Chất liệu áo thun nam',
+    description: 'Phân tích các chất liệu áo thun phổ biến, độ thoáng mát, co giãn, thấm hút và độ bền khi sử dụng.',
+    seoTitle: 'Chất liệu áo thun nam | Blog UR Sport',
+    metaDescription: 'So sánh cotton, thun lạnh, polyester và các chất liệu áo thun nam để chọn áo thoáng mát, bền đẹp và dễ chăm sóc.'
+  },
+  {
+    id: 4,
+    label: 'Chọn áo theo dáng',
+    link: '/blog/chon-ao-theo-dang',
+    icon: '',
+    group: 'category',
+    h1: 'Chọn áo thun theo dáng người',
+    description: 'Gợi ý chọn form áo thun nam theo dáng người để mặc vừa vặn, tôn dáng và tự tin hơn.',
+    seoTitle: 'Chọn áo thun theo dáng người | Blog UR Sport',
+    metaDescription: 'Hướng dẫn chọn áo thun nam theo dáng người, từ dáng gầy, đầy đặn đến vai rộng để tối ưu form mặc.'
+  },
+  {
+    id: 5,
+    label: 'Áo thun thể thao',
+    link: '/blog/ao-thun-the-thao',
+    icon: '',
+    group: 'category',
+    h1: 'Áo thun thể thao nam',
+    description: 'Kinh nghiệm chọn áo thun thể thao nam thoáng khí, co giãn tốt và phù hợp tập luyện hoặc mặc thường ngày.',
+    seoTitle: 'Áo thun thể thao nam | Blog UR Sport',
+    metaDescription: 'Cập nhật kiến thức về áo thun thể thao nam, chất liệu thấm hút, form áo tập luyện và cách phối đồ năng động.'
+  },
+  {
+    id: 6,
+    label: 'Hướng dẫn mua áo',
+    link: '/blog/huong-dan-mua-ao',
+    icon: '',
+    group: 'category',
+    h1: 'Hướng dẫn mua áo thun nam',
+    description: 'Các hướng dẫn chọn size, kiểm tra chất liệu, chọn form và mua áo thun nam phù hợp nhu cầu.',
+    seoTitle: 'Hướng dẫn mua áo thun nam | Blog UR Sport',
+    metaDescription: 'Xem hướng dẫn mua áo thun nam: chọn size, chọn chất liệu, chọn form áo và các lưu ý trước khi đặt hàng.'
+  }
+];
+
+const loadCachedBlogCategories = () => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const cached = window.localStorage.getItem(BLOG_CATEGORIES_STORAGE_KEY);
+    if (!cached) return null;
+    const parsed = JSON.parse(cached);
+    return Array.isArray(parsed) && parsed.length > 0
+      ? parsed.map((item, index) => normalizeBlogCategoryItem(item, index))
+      : null;
+  } catch {
+    return null;
+  }
+};
+
+const cacheBlogCategories = (items: BlogCategoryItem[]) => {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(BLOG_CATEGORIES_STORAGE_KEY, JSON.stringify(items));
+};
 
 export const AdminPanel: React.FC = () => {
   const { user, isAdmin, loading: authLoading, logout, devLogin } = useAuth();
   const isLocalhost = typeof window !== 'undefined' &&
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
-  const [expandedGroups, setExpandedGroups] = useState<string[]>(['marketing-group']);
+  const [expandedGroups, setExpandedGroups] = useState<string[]>(['marketing-group', 'settings-group']);
   const [products, setProducts] = useState<Product[]>([]);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -77,11 +226,16 @@ export const AdminPanel: React.FC = () => {
   const [editingBlogPost, setEditingBlogPost] = useState<BlogPost | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [productCategoryFilter, setProductCategoryFilter] = useState('all');
   const [blogSearchQuery, setBlogSearchQuery] = useState('');
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [isVoucherModalOpen, setIsVoucherModalOpen] = useState(false);
   const [editingVoucher, setEditingVoucher] = useState<Voucher | null>(null);
   const [customCss, setCustomCss] = useState('');
+  const [blogCategories, setBlogCategories] = useState<BlogCategoryItem[]>(() => loadCachedBlogCategories() || DEFAULT_BLOG_CATEGORIES);
+  const blogCategoriesDirtyRef = useRef(false);
+  const [expandedBlogCategoryIds, setExpandedBlogCategoryIds] = useState<Array<string | number>>([]);
+  const [newBlogCategory, setNewBlogCategory] = useState('');
   const [cssSaved, setCssSaved] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isOrderDetailModalOpen, setIsOrderDetailModalOpen] = useState(false);
@@ -170,26 +324,35 @@ export const AdminPanel: React.FC = () => {
     getDoc(doc(db, 'settings', 'customCss')).then(snap => {
       if (snap.exists()) setCustomCss(snap.data().css || '');
     });
+    getDoc(doc(db, 'settings', 'blogCategories')).then(snap => {
+      const cached = loadCachedBlogCategories();
+      if (isLocalhost) {
+        cacheBlogCategories(cached || DEFAULT_BLOG_CATEGORIES);
+        if (!cached && !blogCategoriesDirtyRef.current) {
+          setBlogCategories(DEFAULT_BLOG_CATEGORIES);
+        }
+        return;
+      }
+
+      if (snap.exists()) {
+        const categories = snap.data().items;
+        if (Array.isArray(categories) && categories.length > 0) {
+          const normalized = categories.map((item, index) => normalizeBlogCategoryItem(item, index));
+          cacheBlogCategories(normalized);
+          if (!blogCategoriesDirtyRef.current) {
+            setBlogCategories(normalized);
+          }
+        }
+      }
+    });
     getDoc(doc(db, 'settings', 'banners')).then(snap => {
       if (snap.exists()) setBanners(snap.data().items || []);
     });
     getDoc(doc(db, 'settings', 'navigation')).then(snap => {
       if (snap.exists()) {
-        setNavigation(snap.data().items || []);
+        setNavigation((snap.data().items || []).map(normalizeNavigationItem));
       } else {
-        // Pre-populate with defaults so user can edit them
-        const defaults = [
-          { id: 1, label: 'Cửa hàng', link: '/shop', icon: '', group: 'main' },
-          { id: 2, label: 'Blog', link: '/blog', icon: '', group: 'main' },
-          ...CATEGORY_METADATA.map((cat, i) => ({
-            id: 100 + i,
-            label: cat.name,
-            link: `/apparel/${cat.slug}`,
-            icon: cat.icon,
-            group: 'category'
-          }))
-        ];
-        setNavigation(defaults);
+        setNavigation(defaultNavigationItems());
       }
     });
     getDoc(doc(db, 'settings', 'floatingMenu')).then(snap => {
@@ -225,6 +388,56 @@ export const AdminPanel: React.FC = () => {
     } catch {
       toast.error('Lỗi khi lưu CSS');
     }
+  };
+
+  const handleSaveBlogCategories = async (categories: BlogCategoryItem[]) => {
+    const seenLabels = new Set<string>();
+    const normalized = categories
+      .map((item, index) => normalizeBlogCategoryItem(item, index))
+      .filter(item => {
+        const key = normalizeMenuLabel(item.label);
+        if (!key || seenLabels.has(key)) return false;
+        seenLabels.add(key);
+        return true;
+      });
+
+    if (normalized.length === 0) {
+      toast.error('Cần ít nhất 1 danh mục blog');
+      return;
+    }
+
+    try {
+      cacheBlogCategories(normalized);
+      setBlogCategories(normalized);
+      await setDoc(doc(db, 'settings', 'blogCategories'), { items: normalized });
+      blogCategoriesDirtyRef.current = false;
+      toast.success('Đã lưu danh mục Blog');
+    } catch {
+      blogCategoriesDirtyRef.current = false;
+      toast.warning('Đã lưu danh mục Blog trên trình duyệt local. Firestore chưa cho phép ghi dữ liệu.');
+    }
+  };
+
+  const handleAddBlogCategory = () => {
+    const categoryName = newBlogCategory.trim();
+    if (!categoryName) return;
+    if (blogCategories.some(item => normalizeMenuLabel(item.label) === normalizeMenuLabel(categoryName))) {
+      toast.error('Danh mục này đã tồn tại');
+      return;
+    }
+
+    const nextCategories = [
+      ...blogCategories,
+      normalizeBlogCategoryItem({
+        id: Date.now(),
+        label: categoryName,
+        link: `/blog/category/${slugifyBlogCategory(categoryName).replace(/^\//, '')}`,
+        icon: '',
+        group: 'category'
+      })
+    ];
+    setNewBlogCategory('');
+    handleSaveBlogCategories(nextCategories);
   };
 
   const handleDeleteCss = async () => {
@@ -332,12 +545,39 @@ export const AdminPanel: React.FC = () => {
 
   const handleSaveNavigation = async (newNav: any[]) => {
     try {
-      await setDoc(doc(db, 'settings', 'navigation'), { items: newNav });
-      setNavigation(newNav);
+      const normalized = newNav.map(normalizeNavigationItem);
+      await setDoc(doc(db, 'settings', 'navigation'), { items: normalized });
+      setNavigation(normalized);
       toast.success('Đã lưu Menu Navigation');
     } catch (error) {
       toast.error('Lỗi khi lưu Menu');
     }
+  };
+
+  const updateNavigationItem = (itemId: number | string, updater: (item: any) => any) => {
+    setNavigation(prev => prev.map(item => item.id === itemId ? updater({ ...item }) : item));
+  };
+
+  const removeNavigationItem = (itemId: number | string) => {
+    if (window.confirm('Xóa mục này?')) {
+      handleSaveNavigation(navigation.filter(item => item.id !== itemId));
+    }
+  };
+
+  const addChildNavigationItem = (parent: any) => {
+    const childLabel = `${parent.label} mục con`;
+    const childItem = normalizeNavigationItem({
+      id: Date.now(),
+      label: childLabel,
+      link: linkForSubcategoryLabel(childLabel),
+      icon: '',
+      group: 'subcategory',
+      parentLabel: parent.label
+    });
+    const parentIndex = navigation.findIndex(item => item.id === parent.id);
+    const updated = [...navigation];
+    updated.splice(parentIndex + 1, 0, childItem);
+    setNavigation(updated);
   };
 
   const handleSaveFloatingMenu = async () => {
@@ -391,6 +631,14 @@ export const AdminPanel: React.FC = () => {
       changefreq: 'weekly'
     }));
 
+    const subcategoryRoutes = DEFAULT_SEO_SUBCATEGORIES
+      .filter(item => item.slug !== 'ao-thun-the-thao-nam')
+      .map(item => ({
+        path: item.link,
+        priority: '0.75',
+        changefreq: 'weekly'
+      }));
+
     const productRoutes = products.map(p => ({
       path: `/${p.slug}`,
       priority: '0.7',
@@ -403,7 +651,7 @@ export const AdminPanel: React.FC = () => {
       changefreq: 'monthly'
     }));
 
-    const allRoutes = [...staticRoutes, ...categoryRoutes, ...productRoutes, ...blogRoutes];
+    const allRoutes = [...staticRoutes, ...categoryRoutes, ...subcategoryRoutes, ...productRoutes, ...blogRoutes];
 
     const xmlLines = [
       '<?xml version="1.0" encoding="UTF-8"?>',
@@ -561,15 +809,198 @@ Sitemap: https://ursport.vn/sitemap.xml`;
     );
   }
 
-  const filteredProducts = products.filter(p =>
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.category.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const productFilterOptions = getProductCategoryOptions(navigation);
+  const categoryMatchesProductFilter = (productCategory: string) => {
+    if (productCategoryFilter === 'all') return true;
+    const childLabels = productFilterOptions
+      .filter(option => option.parent && normalizeMenuLabel(option.parent) === normalizeMenuLabel(productCategoryFilter))
+      .map(option => normalizeMenuLabel(option.label));
+
+    return (
+      normalizeMenuLabel(productCategory) === normalizeMenuLabel(productCategoryFilter) ||
+      childLabels.includes(normalizeMenuLabel(productCategory)) ||
+      belongsToCategory(productCategory, productCategoryFilter)
+    );
+  };
+
+  const filteredProducts = products.filter(p => {
+    const matchesSearch =
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.category.toLowerCase().includes(searchQuery.toLowerCase());
+
+    return matchesSearch && categoryMatchesProductFilter(p.category);
+  });
 
   const totalRevenue = products.reduce((sum, p) => sum + p.price, 0);
   const avgRating = products.length > 0 ? (products.reduce((sum, p) => sum + (p.rating || 0), 0) / products.length).toFixed(1) : '0';
 
   const lowStockProducts = products.filter(p => (p.stock || 0) < 10);
+  const activeNavLabel = NAV_ITEMS.reduce<{ id: string; label: string }[]>((items, item) => {
+    if (item.children) {
+      return [...items, ...item.children.map(child => ({ id: child.id, label: child.label }))];
+    }
+    return [...items, { id: item.id, label: item.label }];
+  }, []).find(item => item.id === activeTab)?.label || 'Dashboard';
+  const parentNavigationItems = navigation.filter(nav => nav.group !== 'subcategory');
+  const getChildNavigationItems = (parent: any) => navigation.filter(
+    nav => nav.group === 'subcategory' && normalizeMenuLabel(nav.parentLabel) === normalizeMenuLabel(parent.label)
+  );
+  const parentBlogCategoryItems = blogCategories.filter(item => item.group !== 'subcategory');
+  const getChildBlogCategoryItems = (parent: BlogCategoryItem) => blogCategories.filter(
+    item => item.group === 'subcategory' && normalizeMenuLabel(item.parentLabel || '') === normalizeMenuLabel(parent.label)
+  );
+  const isBlogCategoryExpanded = (itemId: number | string) => expandedBlogCategoryIds.includes(itemId);
+  const toggleBlogCategoryExpanded = (itemId: number | string) => {
+    setExpandedBlogCategoryIds(prev =>
+      prev.includes(itemId) ? prev.filter(id => id !== itemId) : [...prev, itemId]
+    );
+  };
+
+  const updateBlogCategoryItem = (itemId: number | string, updater: (item: BlogCategoryItem) => BlogCategoryItem) => {
+    blogCategoriesDirtyRef.current = true;
+    setBlogCategories(prev => prev.map(item => item.id === itemId ? updater({ ...item }) : item));
+  };
+
+  const removeBlogCategoryItem = (itemId: number | string) => {
+    const target = blogCategories.find(item => item.id === itemId);
+    if (!target) return;
+
+    const usedCount = blogPosts.filter(post => normalizeMenuLabel(post.category) === normalizeMenuLabel(target.label)).length;
+    if (blogCategories.length <= 1) {
+      toast.error('Cần ít nhất 1 danh mục blog');
+      return;
+    }
+    if (usedCount > 0 && !window.confirm('Danh mục này đang có bài viết. Vẫn xóa?')) return;
+
+    handleSaveBlogCategories(blogCategories.filter(item => item.id !== itemId));
+  };
+
+  const addChildBlogCategoryItem = (parent: BlogCategoryItem) => {
+    const childLabel = `${parent.label} mục con`;
+    const childItem = normalizeBlogCategoryItem({
+      id: Date.now(),
+      label: childLabel,
+      link: `/blog/category/${slugifyBlogCategory(childLabel).replace(/^\//, '')}`,
+      icon: '',
+      group: 'subcategory',
+      parentLabel: parent.label
+    });
+    const parentIndex = blogCategories.findIndex(item => item.id === parent.id);
+    const updated = [...blogCategories];
+    updated.splice(parentIndex + 1, 0, childItem);
+    blogCategoriesDirtyRef.current = true;
+    setBlogCategories(updated);
+  };
+
+  const renderNavigationCard = (nav: any, isChild = false) => (
+    <div key={nav.id} className={cn(
+      "bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex gap-4",
+      isChild && "ml-8 border-[#1e4b64]/30 bg-[#1e4b64]/5"
+    )}>
+      <div className={cn("shrink-0", isChild ? "w-16" : "w-20")}>
+        <ImageUpload
+          folder="nav"
+          label=""
+          compact={true}
+          externalPreview={nav.icon}
+          onUploadComplete={(url) => {
+            updateNavigationItem(nav.id, item => ({ ...item, icon: url }));
+          }}
+        />
+      </div>
+      <div className="flex-1 space-y-2">
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Nhãn (Label)</label>
+            <input
+              type="text"
+              value={nav.label}
+              onChange={(e) => {
+                updateNavigationItem(nav.id, item => {
+                  item.label = e.target.value;
+                  if (item.group === 'category') item.link = linkForCategoryLabel(e.target.value);
+                  if (item.group === 'subcategory') item.link = linkForSubcategoryLabel(e.target.value);
+                  return item;
+                });
+              }}
+              className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Nhóm</label>
+            <select
+              value={nav.group}
+              onChange={(e) => {
+                updateNavigationItem(nav.id, item => {
+                  item.group = e.target.value;
+                  if (e.target.value === 'category') {
+                    item.link = linkForCategoryLabel(item.label);
+                    item.parentLabel = '';
+                  }
+                  if (e.target.value === 'subcategory') {
+                    item.link = linkForSubcategoryLabel(item.label);
+                    item.parentLabel = item.parentLabel || 'Áo thun nam';
+                  }
+                  return item;
+                });
+              }}
+              className="w-full bg-[#1c1f26] border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+            >
+              <option value="main">Danh mục chính</option>
+              <option value="category">Danh mục sản phẩm</option>
+              <option value="subcategory">Danh mục con SEO</option>
+            </select>
+          </div>
+        </div>
+        {nav.group === 'subcategory' && (
+          <div>
+            <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Danh mục cha</label>
+            <input
+              type="text"
+              value={nav.parentLabel || ''}
+              list="navigation-parent-categories"
+              placeholder="VD: Áo thun nam"
+              onChange={(e) => {
+                updateNavigationItem(nav.id, item => ({
+                  ...item,
+                  parentLabel: e.target.value,
+                  link: linkForSubcategoryLabel(item.label)
+                }));
+              }}
+              className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+            />
+            <p className="text-[10px] text-white/25 mt-1">
+              Dùng cho menu con và silo SEO. Ví dụ: Áo thun nam → Áo thun nam cotton.
+            </p>
+          </div>
+        )}
+        <div>
+          <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Đường dẫn (Link)</label>
+          <input
+            type="text"
+            value={nav.link}
+            onChange={(e) => updateNavigationItem(nav.id, item => ({ ...item, link: e.target.value }))}
+            className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+          />
+        </div>
+        {nav.group === 'category' && (
+          <button
+            type="button"
+            onClick={() => addChildNavigationItem(nav)}
+            className="mt-2 inline-flex items-center gap-2 rounded-lg border border-[#1e4b64]/50 bg-[#1e4b64]/15 px-3 py-2 text-xs font-bold text-white hover:bg-[#1e4b64]/25 transition-all"
+          >
+            <Plus className="h-3.5 w-3.5" /> Tạo mục con
+          </button>
+        )}
+      </div>
+      <button
+        onClick={() => removeNavigationItem(nav.id)}
+        className="h-8 w-8 flex items-center justify-center text-white/20 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-[#0f1117] flex" style={{ paddingTop: 0 }}>
@@ -708,7 +1139,7 @@ Sitemap: https://ursport.vn/sitemap.xml`;
             </button>
             <div>
               <h1 className="text-white font-black text-lg capitalize">
-                {NAV_ITEMS.find(n => n.id === activeTab)?.label || 'Dashboard'}
+                {activeNavLabel}
               </h1>
               <p className="text-white/30 text-xs font-medium hidden sm:block">
                 {new Date().toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
@@ -848,6 +1279,7 @@ Sitemap: https://ursport.vn/sitemap.xml`;
           {activeTab === 'products' && (
             <div className="space-y-4">
               {/* Search */}
+              <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-3">
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
                 <input
@@ -857,6 +1289,30 @@ Sitemap: https://ursport.vn/sitemap.xml`;
                   onChange={e => setSearchQuery(e.target.value)}
                   className="w-full bg-[#13161f] border border-white/5 rounded-xl pl-11 pr-4 py-3 text-white text-sm font-medium placeholder:text-white/25 focus:outline-none focus:border-[#1e4b64]/50 transition-all"
                 />
+              </div>
+                <div className="relative">
+                  <Filter className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
+                  <select
+                    value={productCategoryFilter}
+                    onChange={e => setProductCategoryFilter(e.target.value)}
+                    className="w-full appearance-none bg-[#13161f] border border-white/5 rounded-xl pl-11 pr-10 py-3 text-white text-sm font-bold focus:outline-none focus:border-[#1e4b64]/50 transition-all"
+                  >
+                    <option value="all">Tất cả danh mục</option>
+                    {productFilterOptions.filter(option => !option.parent).map(option => (
+                      <React.Fragment key={option.label}>
+                        <option value={option.label}>{option.label}</option>
+                        {productFilterOptions
+                          .filter(child => child.parent && normalizeMenuLabel(child.parent) === normalizeMenuLabel(option.label))
+                          .map(child => (
+                            <option key={child.label} value={child.label}>
+                              {'-- '}{child.label}
+                            </option>
+                          ))}
+                      </React.Fragment>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
+                </div>
               </div>
 
               {/* Info bar */}
@@ -1631,13 +2087,37 @@ Sitemap: https://ursport.vn/sitemap.xml`;
                     <h3 className="text-white font-black text-sm uppercase tracking-widest">Quản lý Menu Navigation</h3>
                     <p className="text-white/30 text-xs mt-1">Tùy chỉnh các mục menu và danh mục sản phẩm có icon</p>
                   </div>
-                  <button 
-                    onClick={() => setNavigation([...navigation, { id: Date.now(), label: 'Mục mới', link: '/', icon: '', group: 'main' }])}
-                    className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white text-xs font-bold transition-all flex items-center gap-2"
-                  >
-                    <Plus className="h-3.5 w-3.5" /> Thêm Mục Menu
-                  </button>
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <button 
+                      onClick={() => setNavigation([...navigation, { id: Date.now(), label: 'Mục mới', link: '/', icon: '', group: 'main' }])}
+                      className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white text-xs font-bold transition-all flex items-center gap-2"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Thêm Mục Menu
+                    </button>
+                    <button 
+                      onClick={() => setNavigation([
+                        ...navigation,
+                        ...DEFAULT_SEO_SUBCATEGORIES.map((item, i) => ({
+                          id: Date.now() + i,
+                          label: item.label,
+                          link: item.link,
+                          icon: '',
+                          group: 'subcategory',
+                          parentLabel: item.parentLabel
+                        }))
+                      ])}
+                      className="px-4 py-2 bg-[#1e4b64] hover:bg-[#153446] border border-[#1e4b64] rounded-xl text-white text-xs font-bold transition-all flex items-center gap-2"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Thêm 3 Trang Con Áo Thun
+                    </button>
+                  </div>
                 </div>
+
+                <datalist id="navigation-parent-categories">
+                  {CATEGORY_METADATA.map(cat => (
+                    <option key={cat.slug} value={cat.name} />
+                  ))}
+                </datalist>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {navigation.length === 0 ? (
@@ -1645,8 +2125,12 @@ Sitemap: https://ursport.vn/sitemap.xml`;
                       <p className="text-white/20 text-sm font-medium">Chưa có mục menu nào. Hãy thêm mục đầu tiên.</p>
                     </div>
                   ) : (
-                    navigation.map((nav, idx) => (
-                      <div key={nav.id} className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex gap-4">
+                    parentNavigationItems.map(nav => {
+                      const idx = navigation.findIndex(item => item.id === nav.id);
+                      const childItems = getChildNavigationItems(nav);
+                      return (
+                      <div key={nav.id} className="space-y-3">
+                      <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex gap-4">
                         <div className="w-20 shrink-0">
                           <ImageUpload 
                             folder="nav"
@@ -1670,6 +2154,12 @@ Sitemap: https://ursport.vn/sitemap.xml`;
                                 onChange={(e) => {
                                   const updated = [...navigation];
                                   updated[idx].label = e.target.value;
+                                  if (updated[idx].group === 'category') {
+                                    updated[idx].link = linkForCategoryLabel(e.target.value);
+                                  }
+                                  if (updated[idx].group === 'subcategory') {
+                                    updated[idx].link = linkForSubcategoryLabel(e.target.value);
+                                  }
                                   setNavigation(updated);
                                 }}
                                 className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
@@ -1682,28 +2172,67 @@ Sitemap: https://ursport.vn/sitemap.xml`;
                                 onChange={(e) => {
                                   const updated = [...navigation];
                                   updated[idx].group = e.target.value;
+                                  if (e.target.value === 'category') {
+                                    updated[idx].link = linkForCategoryLabel(updated[idx].label);
+                                    updated[idx].parentLabel = '';
+                                  }
+                                  if (e.target.value === 'subcategory') {
+                                    updated[idx].link = linkForSubcategoryLabel(updated[idx].label);
+                                    updated[idx].parentLabel = updated[idx].parentLabel || 'Áo thun nam';
+                                  }
                                   setNavigation(updated);
                                 }}
                                 className="w-full bg-[#1c1f26] border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
                               >
                                 <option value="main">Danh mục chính</option>
                                 <option value="category">Danh mục sản phẩm</option>
+                                <option value="subcategory">Danh mục con SEO</option>
                               </select>
                             </div>
                           </div>
+                          {nav.group === 'subcategory' && (
+                            <div>
+                              <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Danh mục cha</label>
+                              <input
+                                type="text"
+                                value={nav.parentLabel || ''}
+                                list="navigation-parent-categories"
+                                placeholder="VD: Áo thun nam"
+                                onChange={(e) => {
+                                  const updated = [...navigation];
+                                  updated[idx].parentLabel = e.target.value;
+                                  updated[idx].link = linkForSubcategoryLabel(updated[idx].label);
+                                  setNavigation(updated);
+                                }}
+                                className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                              />
+                              <p className="text-[10px] text-white/25 mt-1">
+                                Dùng cho menu con và silo SEO. Ví dụ: Áo thun nam → Áo thun nam cotton.
+                              </p>
+                            </div>
+                          )}
                           <div>
                             <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Đường dẫn (Link)</label>
-                            <input 
-                              type="text"
-                              value={nav.link}
-                              onChange={(e) => {
-                                const updated = [...navigation];
+                              <input 
+                                type="text"
+                                value={nav.link}
+                                onChange={(e) => {
+                                  const updated = [...navigation];
                                 updated[idx].link = e.target.value;
                                 setNavigation(updated);
                               }}
                               className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
                             />
                           </div>
+                          {nav.group === 'category' && (
+                            <button
+                              type="button"
+                              onClick={() => addChildNavigationItem(nav)}
+                              className="mt-2 inline-flex items-center gap-2 rounded-lg border border-[#1e4b64]/50 bg-[#1e4b64]/15 px-3 py-2 text-xs font-bold text-white hover:bg-[#1e4b64]/25 transition-all"
+                            >
+                              <Plus className="h-3.5 w-3.5" /> Tạo mục con
+                            </button>
+                          )}
                         </div>
                         <button 
                           onClick={() => {
@@ -1717,7 +2246,10 @@ Sitemap: https://ursport.vn/sitemap.xml`;
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
-                    ))
+                      {childItems.map(child => renderNavigationCard(child, true))}
+                      </div>
+                      );
+                    })
                   )}
                   {navigation.length > 0 && (
                     <div className="col-span-full flex justify-end pt-2">
@@ -1914,6 +2446,329 @@ Sitemap: https://ursport.vn/sitemap.xml`;
             </div>
           )}
 
+          {activeTab === 'blog-categories' && (
+            <div className="space-y-6">
+              <div className="bg-[#13161f] border border-white/5 rounded-2xl p-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
+                  <div>
+                    <h3 className="text-white font-black text-sm uppercase tracking-widest">Danh mục Blog</h3>
+                    <p className="text-white/30 text-xs mt-1">Quản lý danh mục blog giống danh mục sản phẩm: icon, link SEO và mục con.</p>
+                  </div>
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        blogCategoriesDirtyRef.current = true;
+                        setBlogCategories([...blogCategories, normalizeBlogCategoryItem({
+                          id: Date.now(),
+                          label: 'Danh mục mới',
+                          link: '/blog/category/danh-muc-moi',
+                          icon: '',
+                          group: 'category'
+                        })]);
+                      }}
+                      className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white text-xs font-bold transition-all flex items-center gap-2"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Thêm danh mục
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSaveBlogCategories(blogCategories)}
+                      className="px-5 py-2 bg-[#1e4b64] hover:bg-[#153446] text-white text-xs font-bold rounded-xl shadow-lg transition-all"
+                    >
+                      Lưu danh mục
+                    </button>
+                  </div>
+                </div>
+
+                <datalist id="blog-parent-categories">
+                  {blogCategories.filter(item => item.group !== 'subcategory').map(item => (
+                    <option key={item.id} value={item.label} />
+                  ))}
+                </datalist>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {blogCategories.length === 0 ? (
+                    <div className="col-span-full py-10 text-center border-2 border-dashed border-white/5 rounded-2xl">
+                      <p className="text-white/20 text-sm font-medium">Chưa có danh mục Blog nào. Hãy thêm danh mục đầu tiên.</p>
+                    </div>
+                  ) : (
+                    parentBlogCategoryItems.map(category => {
+                      const childItems = getChildBlogCategoryItems(category);
+                      const usedCount = blogPosts.filter(post => normalizeMenuLabel(post.category) === normalizeMenuLabel(category.label)).length;
+                      const expanded = isBlogCategoryExpanded(category.id);
+                      return (
+                        <div key={category.id} className="space-y-3">
+                          <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex gap-4">
+                            <div className="w-20 shrink-0">
+                              <ImageUpload
+                                folder="blog-categories"
+                                label=""
+                                compact={true}
+                                externalPreview={category.icon}
+                                onUploadComplete={(url) => updateBlogCategoryItem(category.id, item => ({ ...item, icon: url }))}
+                              />
+                            </div>
+                            <div className="flex-1 space-y-2">
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Nhãn (Label)</label>
+                                  <input
+                                    type="text"
+                                    value={category.label}
+                                    onChange={(e) => updateBlogCategoryItem(category.id, item => ({
+                                      ...item,
+                                      label: e.target.value,
+                                      link: item.group === 'main' ? '/blog' : `/blog/category/${slugifyBlogCategory(e.target.value).replace(/^\//, '')}`
+                                    }))}
+                                    className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Nhóm</label>
+                                  <select
+                                    value={category.group}
+                                    onChange={(e) => updateBlogCategoryItem(category.id, item => ({
+                                      ...item,
+                                      group: e.target.value as BlogCategoryItem['group'],
+                                      link: e.target.value === 'main' ? '/blog' : `/blog/category/${slugifyBlogCategory(item.label).replace(/^\//, '')}`,
+                                      parentLabel: e.target.value === 'subcategory' ? item.parentLabel || 'Kiến thức' : ''
+                                    }))}
+                                    className="w-full bg-[#1c1f26] border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                  >
+                                    <option value="main">Danh mục chính</option>
+                                    <option value="category">Danh mục Blog</option>
+                                    <option value="subcategory">Danh mục con Blog</option>
+                                  </select>
+                                </div>
+                              </div>
+                              {category.group === 'subcategory' && (
+                                <div>
+                                  <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Danh mục cha</label>
+                                  <input
+                                    type="text"
+                                    value={category.parentLabel || ''}
+                                    list="blog-parent-categories"
+                                    placeholder="VD: Kiến thức"
+                                    onChange={(e) => updateBlogCategoryItem(category.id, item => ({ ...item, parentLabel: e.target.value }))}
+                                    className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                  />
+                                </div>
+                              )}
+                              <div>
+                                <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Đường dẫn (Link)</label>
+                                <input
+                                  type="text"
+                                  value={category.link}
+                                  onChange={(e) => updateBlogCategoryItem(category.id, item => ({ ...item, link: e.target.value }))}
+                                  className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => toggleBlogCategoryExpanded(category.id)}
+                                className="inline-flex w-fit items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-white/70 hover:bg-white/10 hover:text-white transition-all"
+                              >
+                                <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", expanded && "rotate-180")} />
+                                {expanded ? 'Thu gọn' : 'Mở rộng SEO'}
+                              </button>
+                              {expanded && (
+                              <div className="grid grid-cols-1 gap-2">
+                                <div>
+                                  <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">H1 SEO</label>
+                                  <input
+                                    type="text"
+                                    value={category.h1 || ''}
+                                    placeholder={category.label}
+                                    onChange={(e) => updateBlogCategoryItem(category.id, item => ({ ...item, h1: e.target.value }))}
+                                    className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Mô tả ngắn</label>
+                                  <textarea
+                                    value={category.description || ''}
+                                    rows={2}
+                                    placeholder="Mô tả hiển thị dưới H1 và dùng làm meta description nếu chưa nhập riêng."
+                                    onChange={(e) => updateBlogCategoryItem(category.id, item => ({ ...item, description: e.target.value, metaDescription: item.metaDescription || e.target.value }))}
+                                    className="w-full resize-none bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                  />
+                                </div>
+                                <div>
+                                  <div className="mb-1 flex items-center justify-between gap-3">
+                                    <label className="text-[10px] font-black uppercase text-white/30 block">Title (Tiêu đề trang)</label>
+                                    <span className="text-[10px] font-bold text-white/25">{(category.seoTitle || '').length}/60</span>
+                                  </div>
+                                  <input
+                                    type="text"
+                                    value={category.seoTitle || ''}
+                                    placeholder={`${category.label} | Blog UR Sport`}
+                                    maxLength={80}
+                                    onChange={(e) => updateBlogCategoryItem(category.id, item => ({ ...item, seoTitle: e.target.value }))}
+                                    className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                  />
+                                </div>
+                                <div>
+                                  <div className="mb-1 flex items-center justify-between gap-3">
+                                    <label className="text-[10px] font-black uppercase text-white/30 block">Meta Description (Mô tả)</label>
+                                    <span className="text-[10px] font-bold text-white/25">{(category.metaDescription || '').length}/160</span>
+                                  </div>
+                                  <textarea
+                                    value={category.metaDescription || ''}
+                                    rows={2}
+                                    placeholder="Mô tả dùng cho thẻ meta description trên Google."
+                                    maxLength={220}
+                                    onChange={(e) => updateBlogCategoryItem(category.id, item => ({ ...item, metaDescription: e.target.value }))}
+                                    className="w-full resize-none bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                  />
+                                </div>
+                              </div>
+                              )}
+                              {category.group === 'category' && (
+                                <button
+                                  type="button"
+                                  onClick={() => addChildBlogCategoryItem(category)}
+                                  className="mt-2 inline-flex items-center gap-2 rounded-lg border border-[#1e4b64]/50 bg-[#1e4b64]/15 px-3 py-2 text-xs font-bold text-white hover:bg-[#1e4b64]/25 transition-all"
+                                >
+                                  <Plus className="h-3.5 w-3.5" /> Tạo mục con
+                                </button>
+                              )}
+                              <p className="text-[10px] text-white/30">{usedCount} bài viết</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeBlogCategoryItem(category.id)}
+                              className="h-8 w-8 flex items-center justify-center text-white/20 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                          {childItems.map(child => {
+                            const childUsedCount = blogPosts.filter(post => normalizeMenuLabel(post.category) === normalizeMenuLabel(child.label)).length;
+                            const childExpanded = isBlogCategoryExpanded(child.id);
+                            return (
+                              <div key={child.id} className="ml-8 bg-[#1e4b64]/5 border border-[#1e4b64]/30 rounded-2xl p-4 flex gap-4">
+                                <div className="w-16 shrink-0">
+                                  <ImageUpload
+                                    folder="blog-categories"
+                                    label=""
+                                    compact={true}
+                                    externalPreview={child.icon}
+                                    onUploadComplete={(url) => updateBlogCategoryItem(child.id, item => ({ ...item, icon: url }))}
+                                  />
+                                </div>
+                                <div className="flex-1 space-y-2">
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <input
+                                      type="text"
+                                      value={child.label}
+                                      onChange={(e) => updateBlogCategoryItem(child.id, item => ({
+                                        ...item,
+                                        label: e.target.value,
+                                        link: `/blog/category/${slugifyBlogCategory(e.target.value).replace(/^\//, '')}`
+                                      }))}
+                                      className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                    />
+                                    <input
+                                      type="text"
+                                      value={child.parentLabel || ''}
+                                      list="blog-parent-categories"
+                                      onChange={(e) => updateBlogCategoryItem(child.id, item => ({ ...item, parentLabel: e.target.value }))}
+                                      className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                    />
+                                  </div>
+                                  <input
+                                    type="text"
+                                    value={child.link}
+                                    onChange={(e) => updateBlogCategoryItem(child.id, item => ({ ...item, link: e.target.value }))}
+                                    className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleBlogCategoryExpanded(child.id)}
+                                    className="inline-flex w-fit items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-white/70 hover:bg-white/10 hover:text-white transition-all"
+                                  >
+                                    <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", childExpanded && "rotate-180")} />
+                                    {childExpanded ? 'Thu gọn' : 'Mở rộng SEO'}
+                                  </button>
+                                  {childExpanded && (
+                                  <>
+                                  <input
+                                    type="text"
+                                    value={child.h1 || ''}
+                                    placeholder="H1 SEO"
+                                    onChange={(e) => updateBlogCategoryItem(child.id, item => ({ ...item, h1: e.target.value }))}
+                                    className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                  />
+                                  <textarea
+                                    value={child.description || ''}
+                                    rows={2}
+                                    placeholder="Mô tả ngắn"
+                                    onChange={(e) => updateBlogCategoryItem(child.id, item => ({ ...item, description: e.target.value, metaDescription: item.metaDescription || e.target.value }))}
+                                    className="w-full resize-none bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                  />
+                                  <div>
+                                    <div className="mb-1 flex items-center justify-between gap-3">
+                                      <label className="text-[10px] font-black uppercase text-white/30 block">Title (Tiêu đề trang)</label>
+                                      <span className="text-[10px] font-bold text-white/25">{(child.seoTitle || '').length}/60</span>
+                                    </div>
+                                    <input
+                                      type="text"
+                                      value={child.seoTitle || ''}
+                                      placeholder={`${child.label} | Blog UR Sport`}
+                                      maxLength={80}
+                                      onChange={(e) => updateBlogCategoryItem(child.id, item => ({ ...item, seoTitle: e.target.value }))}
+                                      className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                    />
+                                  </div>
+                                  <div>
+                                    <div className="mb-1 flex items-center justify-between gap-3">
+                                      <label className="text-[10px] font-black uppercase text-white/30 block">Meta Description (Mô tả)</label>
+                                      <span className="text-[10px] font-bold text-white/25">{(child.metaDescription || '').length}/160</span>
+                                    </div>
+                                    <textarea
+                                      value={child.metaDescription || ''}
+                                      rows={2}
+                                      placeholder="Mô tả dùng cho thẻ meta description trên Google."
+                                      maxLength={220}
+                                      onChange={(e) => updateBlogCategoryItem(child.id, item => ({ ...item, metaDescription: e.target.value }))}
+                                      className="w-full resize-none bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                    />
+                                  </div>
+                                  </>
+                                  )}
+                                  <p className="text-[10px] text-white/30">{childUsedCount} bài viết</p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => removeBlogCategoryItem(child.id)}
+                                  className="h-8 w-8 flex items-center justify-center text-white/20 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })
+                  )}
+                  {blogCategories.length > 0 && (
+                    <div className="col-span-full flex justify-end pt-2">
+                      <button
+                        type="button"
+                        onClick={() => handleSaveBlogCategories(blogCategories)}
+                        className="px-6 py-2 bg-[#1e4b64] hover:bg-[#153446] text-white text-sm font-bold rounded-xl shadow-lg transition-all"
+                      >
+                        Lưu danh mục Blog
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          
           {activeTab === 'flash-sale' && (
             <div className="space-y-6">
               <div className="bg-[#13161f] border border-white/5 rounded-2xl p-6">
@@ -2172,6 +3027,7 @@ Sitemap: https://ursport.vn/sitemap.xml`;
           setEditingBlogPost(null);
         }}
         post={editingBlogPost}
+        blogCategories={blogCategories.filter(item => item.group !== 'main').map(item => item.label)}
       />
 
       <OrderDetailModal

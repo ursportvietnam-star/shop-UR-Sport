@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Save, Eye, Settings, Star, Check, AlignLeft, AlignCenter, AlignRight, Type, Code, TrendingUp, Trash2, Upload, Link as LinkIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { collection, addDoc, serverTimestamp, updateDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, updateDoc, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { ImageUpload } from './ImageUpload';
 import { toast } from 'sonner';
@@ -98,6 +98,7 @@ Quill.register(CaptionBlot as any, true);
 // ───────────────────────────────────────────────────────────────────────
 import { Category, Product } from '../types';
 import { cn } from '@/lib/utils';
+import { getProductCategoryOptions, NavigationItem, normalizeMenuLabel, ProductCategoryOption } from '../lib/categoryConfig';
 
 interface AddProductModalProps {
   isOpen: boolean;
@@ -126,6 +127,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
   const selectedImgRef = useRef<HTMLImageElement | null>(null);
   const [isHtmlMode, setIsHtmlMode] = useState(false);
   const [htmlSource, setHtmlSource] = useState('');
+  const [productCategoryOptions, setProductCategoryOptions] = useState(() => getProductCategoryOptions());
 
   const escapeHtmlAttr = (value: string) =>
     value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -248,6 +250,19 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
     fashionStyle: '',
     collarType: ''
   });
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    getDoc(doc(db, 'settings', 'navigation'))
+      .then(snap => {
+        const items = snap.exists() ? (snap.data().items || []) as NavigationItem[] : [];
+        setProductCategoryOptions(getProductCategoryOptions(items));
+      })
+      .catch(() => {
+        setProductCategoryOptions(getProductCategoryOptions());
+      });
+  }, [isOpen]);
 
   const lastLoadedProductId = useRef<string | null>(null);
 
@@ -695,6 +710,48 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
     toast.success('Đã áp dụng ghi chú ảnh');
   };
 
+  const parentCategoryOptions = productCategoryOptions.filter(option => !option.parent);
+  const getChildCategoryOptions = (parentLabel: string) => productCategoryOptions.filter(
+    option => option.parent && normalizeMenuLabel(option.parent) === normalizeMenuLabel(parentLabel)
+  );
+  const orphanCategoryOptions = productCategoryOptions.filter(option =>
+    option.parent && !parentCategoryOptions.some(parent => normalizeMenuLabel(parent.label) === normalizeMenuLabel(option.parent))
+  );
+
+  const renderCategoryOption = (option: ProductCategoryOption, isChild = false) => {
+    const cat = option.label;
+
+    return (
+      <label key={cat} className={cn(
+        "flex items-center gap-3 cursor-pointer group py-1",
+        isChild && "ml-8 pl-4 border-l border-zinc-200"
+      )}>
+        <div className="relative flex items-center justify-center">
+          <input
+            type="radio"
+            name="category"
+            value={cat}
+            checked={formData.category === cat}
+            onChange={(e) => setFormData({ ...formData, category: e.target.value as Category })}
+            className="peer appearance-none w-[18px] h-[18px] border-[1.5px] border-zinc-300 rounded-full checked:border-[#10b981] transition-colors cursor-pointer"
+          />
+          <div className="absolute w-2.5 h-2.5 rounded-full bg-[#10b981] scale-0 peer-checked:scale-100 transition-transform pointer-events-none" />
+        </div>
+        <span className={cn(
+          "text-[14px] transition-colors",
+          formData.category === cat ? "text-[#10b981] font-bold" : "text-zinc-600 font-medium group-hover:text-zinc-900"
+        )}>
+          {cat}
+          {option.parent && (
+            <span className="ml-2 text-[11px] font-medium text-zinc-400">
+              con của {option.parent}
+            </span>
+          )}
+        </span>
+      </label>
+    );
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -1032,27 +1089,13 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                 <div className="space-y-4">
                   <h3 className="text-[11px] font-black uppercase tracking-widest text-zinc-500">Danh mục</h3>
                   <div className="space-y-2">
-                    {CATEGORIES.map(cat => (
-                      <label key={cat} className="flex items-center gap-3 cursor-pointer group py-1">
-                        <div className="relative flex items-center justify-center">
-                          <input 
-                            type="radio" 
-                            name="category"
-                            value={cat}
-                            checked={formData.category === cat}
-                            onChange={(e) => setFormData({...formData, category: e.target.value as Category})}
-                            className="peer appearance-none w-[18px] h-[18px] border-[1.5px] border-zinc-300 rounded-full checked:border-[#10b981] transition-colors cursor-pointer"
-                          />
-                          <div className="absolute w-2.5 h-2.5 rounded-full bg-[#10b981] scale-0 peer-checked:scale-100 transition-transform pointer-events-none" />
-                        </div>
-                        <span className={cn(
-                          "text-[14px] transition-colors",
-                          formData.category === cat ? "text-[#10b981] font-bold" : "text-zinc-600 font-medium group-hover:text-zinc-900"
-                        )}>
-                          {cat}
-                        </span>
-                      </label>
+                    {parentCategoryOptions.map(option => (
+                      <div key={option.label} className="space-y-1">
+                        {renderCategoryOption(option)}
+                        {getChildCategoryOptions(option.label).map(child => renderCategoryOption(child, true))}
+                      </div>
                     ))}
+                    {orphanCategoryOptions.map(option => renderCategoryOption(option, true))}
                   </div>
                 </div>
 

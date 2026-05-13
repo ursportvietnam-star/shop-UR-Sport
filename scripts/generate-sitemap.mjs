@@ -5,7 +5,8 @@ const rootDir = process.cwd();
 const dataPath = path.join(rootDir, 'src', 'data.ts');
 const sitemapPath = path.join(rootDir, 'public', 'sitemap.xml');
 const baseUrl = 'https://ursport.vn';
-const today = new Date().toISOString().slice(0, 10);
+const vietnamTimezoneOffset = 7 * 60 * 60 * 1000;
+const today = new Date(Date.now() + vietnamTimezoneOffset).toISOString().slice(0, 10);
 
 const dataSource = fs.readFileSync(dataPath, 'utf8');
 
@@ -22,6 +23,11 @@ const blogSlugs = [...blogSection.matchAll(/slug:\s*['"]([^'"]+)['"]/g)].map(mat
 
 const unique = values => [...new Set(values.filter(Boolean))];
 
+const seoSubcategoryRoutes = [
+  '/ao-thun-cotton-nam',
+  '/ao-thun-nam-form-rong'
+];
+
 const routes = [
   { path: '/', priority: '1.0', changefreq: 'daily' },
   { path: '/shop', priority: '0.9', changefreq: 'daily' },
@@ -29,6 +35,11 @@ const routes = [
   ...unique(categorySlugs).map(slug => ({
     path: `/${slug}`,
     priority: slug === 'phu-kien-the-thao' ? '0.7' : '0.8',
+    changefreq: 'weekly'
+  })),
+  ...seoSubcategoryRoutes.map(path => ({
+    path,
+    priority: '0.75',
     changefreq: 'weekly'
   })),
   ...unique(productSlugs).map(slug => ({

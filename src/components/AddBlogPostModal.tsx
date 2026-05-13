@@ -26,15 +26,17 @@ interface AddBlogPostModalProps {
   onClose: () => void;
   onSuccess: () => void;
   post?: BlogPost | null;
+  blogCategories?: string[];
 }
 
-export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onClose, onSuccess, post }) => {
+const DEFAULT_BLOG_CATEGORIES = ['Kiến thức', 'Chất liệu', 'Dáng người', 'Thể thao', 'Hướng dẫn'];
+
+export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onClose, onSuccess, post, blogCategories = DEFAULT_BLOG_CATEGORIES }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
   const [category, setCategory] = useState('Tin tức');
   const [author, setAuthor] = useState('UrSport Team');
-  const [excerpt, setExcerpt] = useState('');
   const [content, setContent] = useState('');
   const [coverImage, setCoverImage] = useState('');
   const [imageUrls, setImageUrls] = useState<string[]>([]);
@@ -44,6 +46,9 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
   const quillRef = useRef<any>(null);
   const [isHtmlMode, setIsHtmlMode] = useState(false);
   const [htmlSource, setHtmlSource] = useState('');
+  const [seoTitle, setSeoTitle] = useState('');
+  const [metaDescription, setMetaDescription] = useState('');
+  const categoryOptions = blogCategories.length > 0 ? blogCategories : DEFAULT_BLOG_CATEGORIES;
 
   useEffect(() => {
     if (!isOpen) {
@@ -51,13 +56,14 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
       setSlug('');
       setCategory('Tin tức');
       setAuthor('UrSport Team');
-      setExcerpt('');
       setContent('');
       setCoverImage('');
       setImageUrls([]);
       setVideoUrls([]);
       setUploadProgress(0);
       setUploading(false);
+      setSeoTitle('');
+      setMetaDescription('');
       return;
     }
 
@@ -66,12 +72,13 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
       setSlug(post.slug || slugify(post.title || ''));
       setCategory(post.category || 'Tin tức');
       setAuthor(post.author || 'UrSport Team');
-      setExcerpt(post.excerpt || '');
       setContent(post.content || '');
       setHtmlSource(post.content || '');
       setCoverImage(post.image || '');
       setImageUrls(post.images || []);
       setVideoUrls(post.videos || []);
+      setSeoTitle(post.seoTitle || '');
+      setMetaDescription(post.metaDescription || '');
     }
   }, [isOpen, post]);
 
@@ -155,6 +162,67 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
 
   const escapeHtmlAttr = (value: string) =>
     value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  const extractJsonLdFromHtml = (html: string) => {
+    const parser = new DOMParser();
+    const document = parser.parseFromString(`<div>${html}</div>`, 'text/html');
+    const wrapper = document.body.firstElementChild as HTMLElement | null;
+    const schemas: string[] = [];
+
+    if (!wrapper) return { html, schema: '' };
+
+    wrapper.querySelectorAll('script[type="application/ld+json"]').forEach((script) => {
+      const schemaText = script.textContent?.trim();
+      if (schemaText) {
+        schemas.push(schemaText);
+      }
+      script.remove();
+    });
+
+    const readJsonLdText = (value?: string | null) => {
+      const text = (value || '').trim();
+      const looksLikeJsonLd = text.startsWith('{') && text.includes('"@context"');
+      if (!looksLikeJsonLd) return { text, isJsonLd: false, isValid: false };
+
+      try {
+        JSON.parse(text);
+        return { text, isJsonLd: true, isValid: true };
+      } catch {
+        return { text, isJsonLd: text.includes('FAQPage') || text.includes('schema.org'), isValid: false };
+      }
+    };
+
+    Array.from(wrapper.querySelectorAll('*')).reverse().forEach((element) => {
+      const text = element.textContent?.trim() || '';
+      const jsonLd = readJsonLdText(text);
+      if (!jsonLd.isJsonLd) return;
+      if (jsonLd.isValid) {
+        schemas.push(text);
+      }
+      element.remove();
+    });
+
+    const textWalker = document.createTreeWalker(wrapper, NodeFilter.SHOW_TEXT);
+    const schemaTextNodes: Text[] = [];
+    while (textWalker.nextNode()) {
+      const node = textWalker.currentNode as Text;
+      const text = node.textContent?.trim() || '';
+      const jsonLd = readJsonLdText(text);
+      if (!jsonLd.isJsonLd) continue;
+      if (jsonLd.isValid) {
+        schemas.push(text);
+      }
+      schemaTextNodes.push(node);
+    }
+    schemaTextNodes.forEach(node => {
+      node.textContent = '';
+    });
+
+    return {
+      html: wrapper.innerHTML,
+      schema: schemas[0] || ''
+    };
+  };
 
   const syncEditorHtml = () => {
     const html = quillRef.current?.getEditor()?.root?.innerHTML;
@@ -276,14 +344,17 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
 
   const handleSubmit = async (event?: React.FormEvent) => {
     event?.preventDefault();
-    if (!title.trim() || !excerpt.trim() || !content.trim()) {
-      toast.error('Vui lòng điền đủ tiêu đề, mô tả ngắn và nội dung.');
+    const finalContent = isHtmlMode ? htmlSource : content;
+
+    if (!title.trim() || !finalContent.trim()) {
+      toast.error('Vui lòng điền đủ tiêu đề và nội dung.');
       return;
     }
 
     setIsSubmitting(true);
     try {
       const finalSlug = slug.trim() ? slugify(slug) : slugify(title);
+      const { html: cleanedContent, schema: extractedSchema } = extractJsonLdFromHtml(finalContent);
       const postData: Omit<BlogPost, 'id'> = {
         title: title.trim(),
         slug: finalSlug,
@@ -291,8 +362,11 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
         author,
         date: new Date().toLocaleDateString('vi-VN'),
         image: coverImage,
-        excerpt: excerpt.trim(),
-        content,
+        excerpt: metaDescription.trim() || title.trim(),
+        content: cleanedContent,
+        seoTitle: seoTitle.trim(),
+        metaDescription: metaDescription.trim(),
+        customSchema: extractedSchema || post?.customSchema || '',
         images: imageUrls,
         videos: videoUrls,
         createdAt: serverTimestamp(),
@@ -331,9 +405,9 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 p-4">
-      <div className="mx-auto max-h-[calc(100vh-2rem)] w-full max-w-[calc(100vw-2rem)] overflow-hidden rounded-[32px] bg-white shadow-2xl">
-        <div className="flex items-center justify-between gap-4 border-b border-zinc-200 px-6 py-5">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-white">
+      <div className="flex h-full w-full flex-col overflow-hidden bg-white">
+        <div className="flex-none flex items-center justify-between gap-4 border-b border-zinc-200 px-6 py-4 lg:px-8">
           <div>
             <h2 className="text-2xl font-black inline">{post ? 'Chỉnh sửa bài viết' : 'Thêm bài viết mới'}</h2>
             <p className="text-sm text-zinc-500 mt-1">Tạo bài viết Blog với ảnh và video lưu trữ.</p>
@@ -357,8 +431,8 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
           </div>
         </div>
 
-        <form className="grid min-h-[calc(100vh-7rem)] grid-cols-1 gap-6 px-6 py-6 lg:grid-cols-[1fr_360px] lg:px-8 lg:py-8" onSubmit={handleSubmit}>
-          <div className="space-y-6 overflow-y-auto pr-2">
+        <form className="flex-1 overflow-hidden grid grid-cols-1 gap-6 px-6 py-6 lg:grid-cols-[1fr_400px] lg:px-8 lg:py-8" onSubmit={handleSubmit}>
+          <div className="h-full space-y-6 overflow-y-auto pr-2 pb-10">
             <div className="grid gap-4 md:grid-cols-2">
               <label className="space-y-2 text-sm font-semibold text-zinc-700">
                 Tiêu đề bài viết
@@ -481,7 +555,7 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
             </div>
           </div>
 
-          <div className="space-y-6 overflow-y-auto rounded-[32px] border border-zinc-200 bg-zinc-50 p-6 shadow-sm">
+          <div className="h-full space-y-6 overflow-y-auto rounded-[32px] border border-zinc-200 bg-zinc-50 p-6 shadow-sm pb-10">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.25em] text-zinc-500">Cài đặt bài viết</p>
             </div>
@@ -493,11 +567,12 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
                 onChange={(e) => setCategory(e.target.value)}
                 className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#1e4b64]"
               >
-                <option>Tin tức</option>
-                <option>Xem nhiều</option>
-                <option>Kinh nghiệm</option>
-                <option>Sự kiện</option>
-                <option>Khuyến mại</option>
+                {categoryOptions.map(option => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+                {category && !categoryOptions.includes(category) && (
+                  <option value={category}>{category}</option>
+                )}
               </select>
             </label>
 
@@ -510,14 +585,29 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
               />
             </label>
 
-            <label className="space-y-2 text-sm font-semibold text-zinc-700">
-              Mô tả ngắn
-              <textarea
-                value={excerpt}
-                onChange={(e) => setExcerpt(e.target.value)}
-                className="h-24 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#1e4b64] resize-none"
-              />
-            </label>
+            <div className="rounded-3xl border border-zinc-200 bg-white p-5 space-y-4 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-zinc-500">Tối ưu SEO</p>
+              
+              <label className="block space-y-2 text-sm font-semibold text-zinc-700">
+                SEO Title
+                <input
+                  value={seoTitle}
+                  onChange={(e) => setSeoTitle(e.target.value)}
+                  className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-normal outline-none focus:border-[#1e4b64]"
+                  placeholder="Ví dụ: Áo Thun Nam Mặc Không Nóng..."
+                />
+              </label>
+
+              <label className="block space-y-2 text-sm font-semibold text-zinc-700">
+                SEO Description
+                <textarea
+                  value={metaDescription}
+                  onChange={(e) => setMetaDescription(e.target.value)}
+                  className="h-24 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-normal outline-none focus:border-[#1e4b64] resize-none"
+                  placeholder="Cách chọn áo thun nam mặc không nóng..."
+                />
+              </label>
+            </div>
 
             <div className="space-y-4">
               <label className="space-y-2 text-sm font-semibold text-zinc-700">
