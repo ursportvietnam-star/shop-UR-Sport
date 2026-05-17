@@ -1,0 +1,21 @@
+{
+  "name": "UR Sport",
+  "short_name": "UR Sport",
+  "description": "Thời trang thể thao nam cao cấp, mua nhanh và nhận ưu đãi tại UR Sport.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#1e4b64",
+  "lang": "vi-VN",
+  "categories": ["shopping", "sports", "fashion"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

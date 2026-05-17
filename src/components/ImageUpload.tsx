@@ -9,6 +9,7 @@ interface ImageUploadProps {
   label?: string;
   externalPreview?: string;
   compact?: boolean;
+  storage?: 'cloudinary' | 'blog-local';
 }
 
 // ─── Cloudinary config ───────────────────────────────────────────────────────
@@ -22,7 +23,8 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   folder = 'products',
   label = 'Tải ảnh lên',
   externalPreview,
-  compact = false
+  compact = false,
+  storage = 'cloudinary'
 }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -54,7 +56,45 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     const objectUrl = URL.createObjectURL(file);
     setPreviewUrl(objectUrl);
 
-    uploadToCloudinary(file);
+    if (storage === 'blog-local') {
+      uploadToBlogFolder(file);
+    } else {
+      uploadToCloudinary(file);
+    }
+  };
+
+  const uploadToBlogFolder = async (file: File) => {
+    setIsUploading(true);
+    setProgress(10);
+    setUploadError(null);
+    setIsDone(false);
+
+    try {
+      const response = await fetch('/api/upload-blog-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': file.type,
+          'X-File-Name': encodeURIComponent(file.name),
+        },
+        body: file,
+      });
+
+      if (!response.ok) throw new Error('Upload failed');
+
+      const data = await response.json();
+      onUploadComplete(data.url);
+      setPreviewUrl(data.url);
+      setProgress(100);
+      setIsDone(true);
+      toast.success('Đã lưu ảnh vào /images/blog/');
+    } catch {
+      const errMsg = 'Không thể lưu ảnh vào /images/blog. Kiểm tra server upload.';
+      setUploadError(errMsg);
+      toast.error(errMsg);
+      setProgress(0);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const uploadToCloudinary = (file: File) => {

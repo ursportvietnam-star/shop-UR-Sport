@@ -50,6 +50,7 @@ const buildSeoCategoryOptions = (navigationItems: NavigationItem[] = []) => [
 ];
 
 export function CategorySeoManager() {
+  const quillRef = React.useRef<ReactQuill | null>(null);
   const [seoCategoryOptions, setSeoCategoryOptions] = useState(() => buildSeoCategoryOptions());
   const [selectedOptionKey, setSelectedOptionKey] = useState<string>(seoCategoryOptions[0]?.key || '');
   const selectedOption = seoCategoryOptions.find(c => c.key === selectedOptionKey) || seoCategoryOptions[0];
@@ -129,16 +130,62 @@ export function CategorySeoManager() {
     setSeoData(prev => ({ ...prev, [field]: value }));
   };
 
+  const buildFaqTemplate = () => `
+<h2>Câu hỏi thường gặp</h2>
+<h3>Câu hỏi 1?</h3>
+<p>Nhập câu trả lời 1 tại đây.</p>
+<h3>Câu hỏi 2?</h3>
+<p>Nhập câu trả lời 2 tại đây.</p>
+<h3>Câu hỏi 3?</h3>
+<p>Nhập câu trả lời 3 tại đây.</p>`;
+
+  const insertFaqTemplate = React.useCallback(() => {
+    const faqTemplate = buildFaqTemplate();
+
+    if (isHtmlMode) {
+      setSeoData(prev => ({
+        ...prev,
+        content: `${prev.content || ''}\n${faqTemplate}`.trim()
+      }));
+      toast.success('Đã chèn mẫu FAQ vào nội dung SEO.');
+      return;
+    }
+
+    const editor = quillRef.current?.getEditor();
+    if (!editor) {
+      setSeoData(prev => ({
+        ...prev,
+        content: `${prev.content || ''}${faqTemplate}`.trim()
+      }));
+      return;
+    }
+
+    const selection = editor.getSelection(true);
+    const insertIndex = selection?.index ?? editor.getLength();
+    editor.clipboard.dangerouslyPasteHTML(insertIndex, faqTemplate, 'user');
+    editor.setSelection(insertIndex + 1, 0);
+    toast.success('Đã chèn 3 câu hỏi FAQ.');
+  }, [isHtmlMode]);
+
+  const toggleHtmlMode = React.useCallback(() => {
+    if (!isHtmlMode) {
+      const editorHtml = quillRef.current?.getEditor()?.root?.innerHTML;
+      setSeoData(prev => ({
+        ...prev,
+        content: beautify.html((editorHtml || prev.content).replace(/&nbsp;/g, ' '), {
+          indent_size: 2,
+          wrap_line_length: 0,
+          preserve_newlines: true
+        })
+      }));
+    }
+    setIsHtmlMode(prev => !prev);
+  }, [isHtmlMode]);
+
   const quillModules = useMemo(() => ({
-    toolbar: [
-      [{ 'header': [1, 2, 3, 4, false] }],
-      ['bold', 'italic', 'underline', 'strike'],
-      [{ 'color': [] }, { 'background': [] }],
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      [{ 'align': [] }],
-      ['link', 'image', 'video'],
-      ['clean']
-    ]
+    toolbar: {
+      container: '#category-seo-quill-toolbar'
+    }
   }), []);
 
   const quillFormats = [
@@ -263,7 +310,7 @@ export function CategorySeoManager() {
                 <div>
                   <label className="flex items-center gap-2 text-white/70 text-sm font-bold mb-2">
                     <FileText className="h-3.5 w-3.5" />
-                    Meta Description (Mô tả)
+                    Mô tả danh mục SEO
                     <span className={cn("text-xs font-normal ml-auto", seoData.seoDescription.length > 160 ? "text-red-400" : "text-white/30")}>
                       {seoData.seoDescription.length}/160
                     </span>
@@ -271,10 +318,18 @@ export function CategorySeoManager() {
                   <textarea
                     value={seoData.seoDescription}
                     onChange={e => updateField('seoDescription', e.target.value)}
-                    placeholder="VD: Khám phá bộ sưu tập áo thun nam đẹp, form rộng, oversize, cotton cao cấp mới nhất 2026..."
+                    placeholder="VD: Mua áo thun nam đẹp, thoáng mát, dễ phối đồ tại UR Sport. Nhiều mẫu cotton, oversize, áo thể thao nam, giao hàng toàn quốc."
                     rows={3}
                     className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm outline-none focus:border-[#1e4b64] transition-colors resize-none placeholder:text-white/20"
                   />
+                  <div className="mt-2 grid gap-2 text-[11px] font-medium text-white/35 sm:grid-cols-3">
+                    <span className="rounded-lg bg-white/[0.04] px-3 py-2">Nên dài 140-160 ký tự.</span>
+                    <span className="rounded-lg bg-white/[0.04] px-3 py-2">Có từ khóa chính của danh mục.</span>
+                    <span className="rounded-lg bg-white/[0.04] px-3 py-2">Nêu lợi ích mua hàng rõ ràng.</span>
+                  </div>
+                  <p className="mt-2 text-[11px] text-white/30">
+                    Mô tả này dùng cho Google, social preview và đoạn giới thiệu ngắn dưới H1 khi trang danh mục chưa lọc.
+                  </p>
                 </div>
 
                 {/* Meta Keywords */}
@@ -332,52 +387,82 @@ export function CategorySeoManager() {
                 <FileText className="h-4 w-4 text-[#1e4b64]" />
                 Nội dung bài viết SEO
               </h3>
-              <Button
-                onClick={() => {
-                  if (!isHtmlMode) {
-                    setSeoData(prev => ({
-                      ...prev,
-                      content: beautify.html(prev.content.replace(/&nbsp;/g, ' '), { 
-                        indent_size: 2,
-                        wrap_line_length: 0,
-                        preserve_newlines: true
-                      })
-                    }));
-                  }
-                  setIsHtmlMode(!isHtmlMode);
-                }}
-                variant="outline"
-                className="bg-transparent border-white/10 text-white hover:bg-white/5 gap-2 rounded-full px-4"
-              >
-                <Code className="h-4 w-4" />
-                {isHtmlMode ? 'Chế Độ Trực Quan' : 'Chế Độ HTML'}
-              </Button>
             </div>
 
             {loading ? (
               <div className="h-[400px] flex items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1e4b64]" />
               </div>
-            ) : isHtmlMode ? (
-              <div className="bg-[#0f1117] rounded-xl overflow-hidden border border-white/10 h-[400px]">
-                <textarea
-                  value={seoData.content}
-                  onChange={(e) => updateField('content', e.target.value)}
-                  className="w-full h-full p-4 bg-transparent text-emerald-400 font-mono text-sm outline-none resize-none"
-                  placeholder="Nhập mã HTML vào đây..."
-                  spellCheck={false}
-                />
-              </div>
             ) : (
               <div className="bg-white rounded-xl overflow-hidden border border-zinc-200">
-                <ReactQuill 
-                  theme="snow"
-                  value={seoData.content}
-                  onChange={(val) => updateField('content', val)}
-                  modules={quillModules}
-                  formats={quillFormats}
-                  className="h-[400px] text-zinc-900 pb-10"
-                />
+                <div id="category-seo-quill-toolbar" className="ql-toolbar flex flex-wrap items-center gap-2 border-b border-zinc-200 px-4 py-3">
+                  {!isHtmlMode && (
+                    <>
+                      <span className="ql-formats">
+                        <select className="ql-header" defaultValue="">
+                          <option value="1">H1</option>
+                          <option value="2">H2</option>
+                          <option value="3">H3</option>
+                          <option value="4">H4</option>
+                          <option value="">Normal</option>
+                        </select>
+                      </span>
+                      <span className="ql-formats">
+                        <button className="ql-bold" />
+                        <button className="ql-italic" />
+                        <button className="ql-underline" />
+                        <button className="ql-strike" />
+                      </span>
+                      <span className="ql-formats">
+                        <select className="ql-color" />
+                        <select className="ql-background" />
+                      </span>
+                      <span className="ql-formats">
+                        <button className="ql-list" value="ordered" />
+                        <button className="ql-list" value="bullet" />
+                      </span>
+                      <span className="ql-formats">
+                        <select className="ql-align" />
+                      </span>
+                      <span className="ql-formats">
+                        <button className="ql-link" />
+                        <button className="ql-image" />
+                        <button className="ql-video" />
+                      </span>
+                    </>
+                  )}
+                  <span className="ql-formats">
+                    <button type="button" className="faq-toolbar-button" onClick={insertFaqTemplate} title="Chèn 3 câu hỏi FAQ" />
+                    <button type="button" className="html-toolbar-button" onClick={toggleHtmlMode} title={isHtmlMode ? 'Chế độ trực quan' : 'Chế độ HTML'}>
+                      <Code className="h-4 w-4" />
+                      <span>{isHtmlMode ? 'Visual' : 'HTML'}</span>
+                    </button>
+                  </span>
+                  {!isHtmlMode && (
+                    <span className="ql-formats">
+                      <button className="ql-clean" />
+                    </span>
+                  )}
+                </div>
+                {isHtmlMode ? (
+                  <textarea
+                    value={seoData.content}
+                    onChange={(e) => updateField('content', e.target.value)}
+                    className="h-[400px] w-full resize-none bg-[#0f1117] p-4 font-mono text-sm text-emerald-400 outline-none"
+                    placeholder="Nhập mã HTML vào đây..."
+                    spellCheck={false}
+                  />
+                ) : (
+                  <ReactQuill
+                    ref={quillRef}
+                    theme="snow"
+                    value={seoData.content}
+                    onChange={(val) => updateField('content', val)}
+                    modules={quillModules}
+                    formats={quillFormats}
+                    className="h-[400px] text-zinc-900 pb-10"
+                  />
+                )}
               </div>
             )}
           </div>

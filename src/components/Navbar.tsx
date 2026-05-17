@@ -1,13 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Search, Menu, LogOut, Phone, LogIn, UserPlus, X } from 'lucide-react';
+import { ShoppingCart, Search, Menu, LogOut, Phone, LogIn, UserPlus, X, UserRound, Heart, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../AuthContext';
 import { useCart } from '../CartContext';
-import { Badge } from '@/components/ui/badge';
+import { useWishlist } from '../WishlistContext';
+import { useRecentlyViewed } from '../RecentlyViewedContext';
+import { useProducts } from '../ProductsContext';
 import { MobileSidebar } from './MobileSidebar';
 import { AuthModal } from './AuthModal';
-import { Category } from '../types';
+import { Category, Product } from '../types';
 
 interface NavbarProps {
   onCartClick: () => void;
@@ -19,6 +21,9 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCategorySelect, activeCategory }) => {
   const { user, loading, logout } = useAuth();
   const { cart } = useCart();
+  const { wishlistCount } = useWishlist();
+  const { recentCount } = useRecentlyViewed();
+  const { products } = useProducts();
   const navigate = useNavigate();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -27,6 +32,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const mobileSearchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -50,6 +56,44 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
   }, []);
 
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const trimmedSearchQuery = searchQuery.trim();
+
+  const normalizeSearchText = (value: string) =>
+    value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
+  const searchSuggestions = React.useMemo(() => {
+    if (trimmedSearchQuery.length < 2) return [];
+
+    const terms = normalizeSearchText(trimmedSearchQuery)
+      .split(/\s+/)
+      .filter(Boolean);
+
+    return products
+      .filter((product) => {
+        const haystack = normalizeSearchText([
+          product.name,
+          product.category,
+          product.brand,
+          product.material,
+          product.keywords,
+          ...(product.colors || []),
+          ...(product.sizes || []),
+        ].filter(Boolean).join(' '));
+
+        return terms.every((term) => haystack.includes(term));
+      })
+      .slice(0, 6);
+  }, [products, trimmedSearchQuery]);
+
+  const goToProduct = (product: Product) => {
+    navigate(`/${product.slug || product.id}`);
+    setSearchQuery('');
+    setIsSearchFocused(false);
+    setIsMobileSearchOpen(false);
+  };
 
   const openAuthModal = (mode: 'login' | 'register') => {
     setAuthMode(mode);
@@ -61,12 +105,78 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
     if (searchQuery.trim()) {
       navigate(`/shop?q=${encodeURIComponent(searchQuery.trim())}`);
       setIsMobileSearchOpen(false);
+      setIsSearchFocused(false);
       setSearchQuery('');
     }
   };
 
   // Shared icon button style — consistent across all
   const iconBtn = "flex items-center justify-center h-10 w-10 rounded-full transition-all active:scale-90 shrink-0";
+  const shouldShowSuggestions = trimmedSearchQuery.length >= 2 && searchSuggestions.length > 0;
+
+  const renderSearchSuggestions = (isMobile = false) => (
+    <AnimatePresence>
+      {shouldShowSuggestions && (isMobile || isSearchFocused) && (
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.16 }}
+          className={isMobile
+            ? "mx-4 mb-4 overflow-hidden rounded-2xl border border-white/10 bg-white shadow-2xl"
+            : "absolute left-0 right-0 top-[calc(100%+8px)] z-[80] overflow-hidden rounded-2xl border border-zinc-100 bg-white shadow-2xl"
+          }
+        >
+          <div className="border-b border-zinc-100 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-zinc-400">
+            Gợi ý sản phẩm
+          </div>
+          <div className="max-h-[360px] overflow-y-auto py-1">
+            {searchSuggestions.map((product) => (
+              <button
+                key={product.id}
+                type="button"
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  goToProduct(product);
+                }}
+                className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-zinc-50"
+              >
+                <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-zinc-100">
+                  <img src={product.images?.[0] || ''} alt={product.name} loading="lazy" className="h-full w-full object-cover" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="line-clamp-1 text-[13px] font-black leading-5 text-zinc-900">{product.name}</p>
+                  <p className="line-clamp-1 text-[11px] font-bold text-zinc-400">{product.category}</p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="text-[13px] font-black text-[#1e4b64]">
+                    {(product.discountPrice || product.price).toLocaleString('vi-VN')}đ
+                  </p>
+                  {product.discountPrice && (
+                    <p className="text-[10px] font-bold text-zinc-300 line-through">{product.price.toLocaleString('vi-VN')}đ</p>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onMouseDown={(event) => {
+              event.preventDefault();
+              navigate(`/shop?q=${encodeURIComponent(trimmedSearchQuery)}`);
+              setSearchQuery('');
+              setIsSearchFocused(false);
+              setIsMobileSearchOpen(false);
+            }}
+            className="flex w-full items-center justify-center gap-2 border-t border-zinc-100 px-4 py-3 text-[11px] font-black uppercase tracking-widest text-[#1e4b64] transition-colors hover:bg-blue-50"
+          >
+            <Search className="h-3.5 w-3.5" />
+            Xem tất cả kết quả
+          </button>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
 
   return (
     <>
@@ -112,6 +222,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setIsSearchFocused(false)}
                 placeholder="Tìm kiếm sản phẩm..."
                 className="w-full bg-zinc-50 border border-zinc-200 rounded-full py-2.5 px-5 pr-12 text-sm focus:bg-white focus:ring-2 focus:ring-[#1e4b64]/15 focus:border-[#1e4b64] placeholder:text-zinc-400 font-medium outline-none transition-all"
               />
@@ -121,6 +233,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
               >
                 <Search className="h-3.5 w-3.5" />
               </button>
+              {renderSearchSuggestions()}
             </form>
           </div>
 
@@ -180,11 +293,18 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
               </>
             ) : (
               <>
-                {/* Avatar — mobile: tròn nhỏ gọn */}
                 <button
-                  onClick={() => logout()}
+                  onClick={() => navigate('/tai-khoan')}
+                  className="hidden h-10 items-center gap-2 rounded-full border border-zinc-100 bg-white px-3 text-sm font-bold text-zinc-700 transition-all hover:border-[#1e4b64]/30 hover:bg-blue-50/50 hover:text-[#1e4b64] md:flex"
+                  title="Tài khoản và đơn hàng"
+                >
+                  <UserRound className="h-4 w-4" />
+                  Tài khoản
+                </button>
+                <button
+                  onClick={() => navigate('/tai-khoan')}
                   className={`${iconBtn} bg-zinc-900 hover:bg-zinc-700 text-white text-sm font-bold`}
-                  title={`${user.displayName || user.email} — Nhấn để đăng xuất`}
+                  title={user.displayName || user.email || 'Tài khoản'}
                 >
                   {user.photoURL ? (
                     <img src={user.photoURL} alt={user.displayName || 'User profile'} loading="lazy" className="h-full w-full object-cover rounded-full" referrerPolicy="no-referrer" />
@@ -194,8 +314,62 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
                     </span>
                   )}
                 </button>
+                <button
+                  onClick={() => logout()}
+                  className={`${iconBtn} hidden text-zinc-500 hover:bg-zinc-100 hover:text-red-500 md:flex`}
+                  aria-label="Đăng xuất"
+                  title="Đăng xuất"
+                >
+                  <LogOut className="h-4 w-4" />
+                </button>
               </>
             )}
+
+            {/* Wishlist */}
+            <button
+              type="button"
+              onClick={() => navigate('/yeu-thich')}
+              className={`${iconBtn} relative hidden text-zinc-600 hover:bg-red-50 hover:text-red-500 sm:flex`}
+              aria-label="Sản phẩm yêu thích"
+              title="Sản phẩm yêu thích"
+            >
+              <Heart className="h-5 w-5" />
+              <AnimatePresence>
+                {wishlistCount > 0 && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    exit={{ scale: 0 }}
+                    className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-red-500 text-[10px] font-black text-white"
+                  >
+                    {wishlistCount}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </button>
+
+            {/* Recently viewed */}
+            <button
+              type="button"
+              onClick={() => navigate('/da-xem')}
+              className={`${iconBtn} relative hidden text-zinc-600 hover:bg-blue-50 hover:text-[#1e4b64] lg:flex`}
+              aria-label="Sản phẩm đã xem"
+              title="Sản phẩm đã xem"
+            >
+              <Clock className="h-5 w-5" />
+              <AnimatePresence>
+                {recentCount > 0 && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    exit={{ scale: 0 }}
+                    className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-[#1e4b64] text-[10px] font-black text-white"
+                  >
+                    {recentCount}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </button>
 
             {/* Cart */}
             <button
@@ -251,6 +425,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
                   <X className="h-4 w-4" />
                 </button>
               </form>
+              {renderSearchSuggestions(true)}
             </motion.div>
           )}
         </AnimatePresence>

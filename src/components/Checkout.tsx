@@ -14,6 +14,9 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Voucher } from '../types';
 import { VoucherSelectionModal } from './VoucherSelectionModal';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { db } from '../firebase';
+import { STATIC_VOUCHERS } from '../data';
 
 const checkoutSchema = z.object({
   fullName: z.string().min(2, 'Vui lòng nhập họ tên'),
@@ -27,8 +30,30 @@ const checkoutSchema = z.object({
 type CheckoutFormValues = z.infer<typeof checkoutSchema>;
 
 interface CheckoutProps {
-  onComplete: () => void;
+  onComplete: (orderId?: string) => void;
 }
+
+const getVoucherDiscount = (voucher: Voucher, orderTotal: number) => {
+  if (orderTotal < voucher.minOrderValue) return 0;
+  if (voucher.maxUsage > 0 && voucher.usedCount >= voucher.maxUsage) return 0;
+
+  if (voucher.discountType === 'percent') {
+    const calculatedDiscount = (orderTotal * voucher.discountValue) / 100;
+    return voucher.maxDiscountValue
+      ? Math.min(calculatedDiscount, voucher.maxDiscountValue)
+      : calculatedDiscount;
+  }
+
+  return voucher.discountValue;
+};
+
+const isVoucherCurrentlyUsable = (voucher: Voucher) => {
+  if (!voucher.isActive) return false;
+  const now = Date.now();
+  const startTime = voucher.startTime ? new Date(voucher.startTime).getTime() : 0;
+  const endTime = voucher.endTime ? new Date(voucher.endTime).getTime() : Number.POSITIVE_INFINITY;
+  return now >= startTime && now <= endTime;
+};
 
 export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
   const { cart, total, clearCart, removeFromCart } = useCart();
@@ -38,21 +63,65 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
   const [activeWallet, setActiveWallet] = React.useState<'momo' | 'zalopay' | 'shopeepay'>('momo');
   const [isVoucherModalOpen, setIsVoucherModalOpen] = React.useState(false);
   const [appliedVoucher, setAppliedVoucher] = React.useState<Voucher | null>(null);
+  const [availableVouchers, setAvailableVouchers] = React.useState<Voucher[]>([]);
+  const [autoVoucherCode, setAutoVoucherCode] = React.useState<string | null>(null);
 
   const discountAmount = React.useMemo(() => {
     if (!appliedVoucher) return 0;
-    if (total < appliedVoucher.minOrderValue) return 0;
-    if (appliedVoucher.discountType === 'percent') {
-      const calculatedDiscount = (total * appliedVoucher.discountValue) / 100;
-      if (appliedVoucher.maxDiscountValue && calculatedDiscount > appliedVoucher.maxDiscountValue) {
-        return appliedVoucher.maxDiscountValue;
-      }
-      return calculatedDiscount;
-    }
-    return appliedVoucher.discountValue;
+    return getVoucherDiscount(appliedVoucher, total);
   }, [appliedVoucher, total]);
 
   const finalTotal = total - discountAmount;
+
+  const nextVoucherOpportunity = React.useMemo(() => {
+    if (appliedVoucher && discountAmount > 0) return null;
+    return availableVouchers
+      .filter(voucher => total < voucher.minOrderValue)
+      .sort((a, b) => a.minOrderValue - b.minOrderValue)[0] || null;
+  }, [appliedVoucher, availableVouchers, discountAmount, total]);
+
+  React.useEffect(() => {
+    const vouchersQuery = query(collection(db, 'vouchers'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(vouchersQuery, (snapshot) => {
+      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Voucher[];
+      setAvailableVouchers((data.length > 0 ? data : STATIC_VOUCHERS).filter(isVoucherCurrentlyUsable));
+    }, () => {
+      setAvailableVouchers(STATIC_VOUCHERS.filter(isVoucherCurrentlyUsable));
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  React.useEffect(() => {
+    if (total <= 0 || availableVouchers.length === 0) return;
+
+    const bestVoucher = availableVouchers
+      .map(voucher => ({ voucher, discount: getVoucherDiscount(voucher, total) }))
+      .filter(item => item.discount > 0)
+      .sort((a, b) => b.discount - a.discount)[0]?.voucher || null;
+
+    if (!bestVoucher) {
+      if (autoVoucherCode && appliedVoucher?.code === autoVoucherCode) {
+        setAppliedVoucher(null);
+        setAutoVoucherCode(null);
+      }
+      return;
+    }
+
+    const currentDiscount = appliedVoucher ? getVoucherDiscount(appliedVoucher, total) : 0;
+    const bestDiscount = getVoucherDiscount(bestVoucher, total);
+    const canImproveCurrent = !appliedVoucher || appliedVoucher.code === autoVoucherCode || bestDiscount > currentDiscount;
+
+    if (canImproveCurrent && appliedVoucher?.code !== bestVoucher.code) {
+      setAppliedVoucher(bestVoucher);
+      setAutoVoucherCode(bestVoucher.code);
+    }
+  }, [availableVouchers, total, appliedVoucher, autoVoucherCode]);
+
+  const handleVoucherApply = (voucher: Voucher | null) => {
+    setAppliedVoucher(voucher);
+    setAutoVoucherCode(null);
+  };
 
   const { register, handleSubmit, formState: { errors } } = useForm<CheckoutFormValues>({
     resolver: zodResolver(checkoutSchema),
@@ -92,7 +161,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
         createdAt: serverTimestamp()
       };
 
-      await addDoc(collection(db, 'orders'), orderData);
+      const orderRef = await addDoc(collection(db, 'orders'), orderData);
       
       toast.success('ĐẶT HÀNG THÀNH CÔNG!', {
         description: 'Đơn hàng của bạn đang được xử lý.',
@@ -101,7 +170,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
       
       clearCart();
       setIsProcessing(false);
-      onComplete();
+      onComplete(orderRef.id);
     } catch (error) {
       console.error('Lỗi khi đặt hàng:', error);
       toast.error('Đã xảy ra lỗi khi đặt hàng. Vui lòng thử lại.');
@@ -116,7 +185,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                <Truck className="h-12 w-12 text-[#1e4b64]" />
             </div>
             <h2 className="text-3xl font-black mb-6 uppercase tracking-tight text-zinc-900">GIỎ HÀNG CỦA BẠN ĐANG TRỐNG</h2>
-            <Button onClick={onComplete} className="bg-[#1e4b64] hover:bg-[#153446] text-white px-10 py-7 rounded-2xl font-bold text-lg shadow-xl shadow-[#1e4b64]/20 transition-all active:scale-95">
+            <Button onClick={() => onComplete()} className="bg-[#1e4b64] hover:bg-[#153446] text-white px-10 py-7 rounded-2xl font-bold text-lg shadow-xl shadow-[#1e4b64]/20 transition-all active:scale-95">
                QUAY LẠI CỬA HÀNG
             </Button>
         </div>
@@ -444,15 +513,37 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                     </div>
                     <div className="flex items-center gap-2">
                       {appliedVoucher ? (
-                        <span className="text-[13px] font-black text-[#ee4d2d] border border-[#ee4d2d] border-dashed px-2 py-0.5 rounded bg-red-50">
-                          -{discountAmount.toLocaleString('vi-VN')}₫
-                        </span>
+                        <div className="flex flex-col items-end leading-none">
+                          <span className="text-[13px] font-black text-[#ee4d2d] border border-[#ee4d2d] border-dashed px-2 py-1 rounded bg-red-50">
+                            {appliedVoucher.code} -{discountAmount.toLocaleString('vi-VN')}₫
+                          </span>
+                          {autoVoucherCode === appliedVoucher.code && (
+                            <span className="mt-1 text-[9px] font-black uppercase tracking-widest text-emerald-600">
+                              Tự động chọn tốt nhất
+                            </span>
+                          )}
+                        </div>
                       ) : (
                         <span className="text-[12px] font-bold text-zinc-400 group-hover:text-[#ee4d2d] transition-colors">Chọn Voucher</span>
                       )}
                       <ChevronRight className="h-4 w-4 text-zinc-400 group-hover:text-[#ee4d2d] transition-colors" />
                     </div>
                   </div>
+
+                  {nextVoucherOpportunity && (
+                    <button
+                      type="button"
+                      onClick={() => setIsVoucherModalOpen(true)}
+                      className="w-full rounded-2xl border border-dashed border-[#ee4d2d]/30 bg-red-50/60 px-4 py-3 text-left transition-colors hover:bg-red-50"
+                    >
+                      <p className="text-[11px] font-black uppercase tracking-widest text-[#ee4d2d]">
+                        Gợi ý tối ưu đơn hàng
+                      </p>
+                      <p className="mt-1 text-xs font-bold leading-5 text-zinc-600">
+                        Mua thêm {(nextVoucherOpportunity.minOrderValue - total).toLocaleString('vi-VN')}₫ để dùng mã {nextVoucherOpportunity.code}
+                      </p>
+                    </button>
+                  )}
                   
                   <Separator className="bg-zinc-50" />
                   
@@ -490,7 +581,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
              <VoucherSelectionModal 
                isOpen={isVoucherModalOpen}
                onClose={() => setIsVoucherModalOpen(false)}
-               onApply={setAppliedVoucher}
+               onApply={handleVoucherApply}
                currentTotal={total}
                selectedVoucher={appliedVoucher}
              />

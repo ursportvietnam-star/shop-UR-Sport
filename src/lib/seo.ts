@@ -2,7 +2,7 @@ import { stripHtml } from './utils';
 
 export const SITE_URL = 'https://ursport.vn';
 export const SITE_NAME = 'UR Sport';
-export const DEFAULT_OG_IMAGE = `${SITE_URL}/favicon.svg`;
+export const DEFAULT_OG_IMAGE = `${SITE_URL}/images/og-ursport.svg`;
 export const BRAND_PHONE = '+84917722425';
 
 export const cleanSeoText = (value?: string, maxLength = 160) => {
@@ -39,12 +39,50 @@ export const canonicalUrl = (canonical?: string) => {
 
 export const normalizeImageUrl = (image?: string) => absoluteUrl(image || DEFAULT_OG_IMAGE);
 
+export const merchantReturnPolicySchema = {
+  '@type': 'MerchantReturnPolicy',
+  applicableCountry: 'VN',
+  returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+  merchantReturnDays: 7,
+  returnMethod: 'https://schema.org/ReturnByMail',
+  returnFees: 'https://schema.org/FreeReturn'
+};
+
+export const offerShippingDetailsSchema = {
+  '@type': 'OfferShippingDetails',
+  shippingDestination: {
+    '@type': 'DefinedRegion',
+    addressCountry: 'VN'
+  },
+  shippingRate: {
+    '@type': 'MonetaryAmount',
+    value: 0,
+    currency: 'VND'
+  },
+  deliveryTime: {
+    '@type': 'ShippingDeliveryTime',
+    handlingTime: {
+      '@type': 'QuantitativeValue',
+      minValue: 0,
+      maxValue: 2,
+      unitCode: 'DAY'
+    },
+    transitTime: {
+      '@type': 'QuantitativeValue',
+      minValue: 1,
+      maxValue: 5,
+      unitCode: 'DAY'
+    }
+  }
+};
+
 export const organizationSchema = {
   '@type': 'Organization',
   '@id': `${SITE_URL}/#organization`,
   name: SITE_NAME,
   url: SITE_URL,
   logo: DEFAULT_OG_IMAGE,
+  hasMerchantReturnPolicy: merchantReturnPolicySchema,
   contactPoint: {
     '@type': 'ContactPoint',
     telephone: BRAND_PHONE,

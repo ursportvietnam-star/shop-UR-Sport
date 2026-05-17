@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Save, Eye, Settings, Star, Check, AlignLeft, AlignCenter, AlignRight, Type, Code, TrendingUp, Trash2, Upload, Link as LinkIcon } from 'lucide-react';
+import { X, Save, Eye, Settings, Star, Check, AlignLeft, AlignCenter, AlignRight, Type, Tag, Code, TrendingUp, Trash2, Upload, Link as LinkIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { collection, addDoc, serverTimestamp, updateDoc, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -64,11 +64,24 @@ class StyledImage extends Image {
     if (domNode.hasAttribute('style')) {
       formats.style = domNode.getAttribute('style');
     }
+    if (domNode.hasAttribute('data-align')) {
+      formats['data-align'] = domNode.getAttribute('data-align');
+    }
+    if (domNode.hasAttribute('alt')) {
+      formats.alt = domNode.getAttribute('alt');
+    }
+    if (domNode.hasAttribute('title')) {
+      formats.title = domNode.getAttribute('title');
+    }
     return formats;
   }
   format(name, value) {
-    if (name === 'style') {
-      (this as any).domNode.setAttribute('style', value);
+    if (['style', 'data-align', 'alt', 'title'].includes(name)) {
+      if (value) {
+        (this as any).domNode.setAttribute(name, value);
+      } else {
+        (this as any).domNode.removeAttribute(name);
+      }
     } else {
       super.format(name, value);
     }
@@ -87,7 +100,7 @@ class CaptionBlot extends Block {
     const node = super.create(value);
     node.setAttribute('data-caption', '1');
     node.setAttribute('class', 'image-caption');
-    node.setAttribute('style', 'text-align:center;font-style:italic;font-size:0.75rem;color:#a1a1aa;margin-top:-1.25rem;margin-bottom:1.5rem;line-height:1.4;');
+    node.setAttribute('style', 'display:block;text-align:center;font-style:italic;font-size:0.75rem;color:#a1a1aa;margin:-1.25rem auto 1.5rem;line-height:1.4;opacity:0.85;width:100%;');
     return node;
   }
   static formats(domNode: HTMLElement) {
@@ -121,16 +134,117 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
   const [imageToolbar, setImageToolbar] = useState<ImageToolbarState | null>(null);
   const [captionDraft, setCaptionDraft] = useState('');
   const [showCaption, setShowCaption] = useState(false);
+  const [altDraft, setAltDraft] = useState('');
+  const [showAltInput, setShowAltInput] = useState(false);
   const [videoModal, setVideoModal] = useState<{ isOpen: boolean; type: 'url' | 'file' | null }>({ isOpen: false, type: null });
   const [videoInput, setVideoInput] = useState('');
   const [isUploadingVideo, setIsUploadingVideo] = useState(false);
   const selectedImgRef = useRef<HTMLImageElement | null>(null);
+  const imageAltBySrcRef = useRef<Record<string, string>>({});
+  const imageCaptionBySrcRef = useRef<Record<string, string>>({});
   const [isHtmlMode, setIsHtmlMode] = useState(false);
   const [htmlSource, setHtmlSource] = useState('');
   const [productCategoryOptions, setProductCategoryOptions] = useState(() => getProductCategoryOptions());
 
   const escapeHtmlAttr = (value: string) =>
     value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  const normalizeImageAltTitles = (html: string) => {
+    if (!html || typeof window === 'undefined' || !window.DOMParser) return html;
+    const doc = new DOMParser().parseFromString(`<div>${html}</div>`, 'text/html');
+    const isDuplicateCaptionParagraph = (element: Element | null, caption: string) => {
+      if (!element || element.tagName !== 'P' || !caption) return false;
+      const text = (element.textContent || '').trim();
+      if (text !== caption) return false;
+      if (element.getAttribute('data-caption') === '1') return true;
+      if (element.classList.contains('image-caption')) return true;
+      const em = element.querySelector('em');
+      return Boolean(
+        element.classList.contains('ql-align-center') &&
+        em &&
+        (em.textContent || '').trim() === caption
+      );
+    };
+
+    doc.body.querySelectorAll('img').forEach(originalImg => {
+      const img = originalImg as HTMLImageElement;
+      const src = img.getAttribute('src') || '';
+      const alt = (imageAltBySrcRef.current[src] || img.getAttribute('alt') || img.getAttribute('title') || '').trim();
+      if (alt) {
+        img.setAttribute('alt', alt);
+        img.setAttribute('title', alt);
+      } else {
+        img.removeAttribute('alt');
+        img.removeAttribute('title');
+      }
+
+      const existingFigure = img.closest('figure');
+      const legacyParagraph = img.closest('p');
+      const legacyNext = legacyParagraph?.nextElementSibling as HTMLElement | null;
+      const existingFigcaption = existingFigure?.querySelector('figcaption') as HTMLElement | null;
+      const legacyCaption = legacyNext?.getAttribute('data-caption') === '1' ? (legacyNext.textContent || '').trim() : '';
+      const figureCaption = existingFigcaption ? (existingFigcaption.textContent || '').trim() : '';
+      const caption = (imageCaptionBySrcRef.current[src] || figureCaption || legacyCaption).trim();
+
+      if (isDuplicateCaptionParagraph(legacyNext, caption)) {
+        legacyNext.remove();
+      }
+      if (existingFigcaption) existingFigcaption.remove();
+
+      let figure = existingFigure as HTMLElement | null;
+      if (!figure) {
+        figure = doc.createElement('figure');
+        figure.setAttribute('class', 'image-figure');
+        figure.setAttribute('style', 'display:block;margin:2rem auto;text-align:center;max-width:100%;');
+        const wrapper = legacyParagraph || img.parentElement;
+        if (wrapper?.parentNode) {
+          wrapper.parentNode.insertBefore(figure, wrapper);
+          figure.appendChild(img);
+          if (legacyParagraph && legacyParagraph.textContent?.trim() === '') {
+            legacyParagraph.remove();
+          }
+        }
+      } else {
+        figure.setAttribute('class', 'image-figure');
+        figure.setAttribute('style', 'display:block;margin:2rem auto;text-align:center;max-width:100%;');
+      }
+
+      img.setAttribute('style', 'display:block;margin:2rem auto;max-width:100%;');
+      const dataAlign = img.getAttribute('data-align');
+      img.getAttributeNames().forEach(name => {
+        if (!['src', 'alt', 'title', 'style', 'data-align'].includes(name)) {
+          img.removeAttribute(name);
+        }
+      });
+      if (!dataAlign) img.removeAttribute('data-align');
+      if (caption && figure) {
+        const captionEl = doc.createElement('figcaption');
+        captionEl.setAttribute('class', 'image-caption');
+        captionEl.setAttribute('style', 'display:block;text-align:center;font-style:italic;font-size:0.75rem;color:#a1a1aa;margin:0.5rem auto 1.5rem;line-height:1.4;opacity:0.85;width:100%;');
+        captionEl.textContent = caption;
+        figure.appendChild(captionEl);
+      }
+
+      let sibling = figure?.nextElementSibling;
+      while (isDuplicateCaptionParagraph(sibling, caption)) {
+        const nextSibling = sibling?.nextElementSibling || null;
+        sibling?.remove();
+        sibling = nextSibling;
+      }
+    });
+    return doc.body.firstElementChild?.innerHTML || html;
+  };
+
+  const getCurrentEditorHtml = () => {
+    const html = quillRef.current?.getEditor()?.root?.innerHTML;
+    return normalizeImageAltTitles(typeof html === 'string' ? html : formData.description);
+  };
+
+  const commitEditorHtml = () => {
+    const html = getCurrentEditorHtml();
+    setFormData(prev => ({ ...prev, description: html }));
+    return html;
+  };
 
   const getImageAlignStyle = (align: 'left' | 'center' | 'right') => {
     if (align === 'left') return 'display:block;margin:2rem auto 2rem 0;max-width:100%;';
@@ -139,10 +253,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
   };
 
   const syncEditorHtml = () => {
-    const html = quillRef.current?.getEditor()?.root?.innerHTML;
-    if (typeof html === 'string') {
-      setFormData(prev => ({ ...prev, description: html }));
-    }
+    commitEditorHtml();
   };
 
   const insertHtmlIntoEditor = (html: string) => {
@@ -205,7 +316,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
   const toggleHtmlMode = () => {
     if (!isHtmlMode) {
       // Visual → HTML: snapshot current Quill HTML and beautify
-      const current = quillRef.current?.getEditor()?.root?.innerHTML || formData.description;
+      const current = getCurrentEditorHtml();
       const pretty = beautifyHtml(current);
       setHtmlSource(pretty);
     } else {
@@ -311,8 +422,29 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         fashionStyle: product.fashionStyle || 'Thể thao, Cơ bản',
         collarType: product.collarType || 'Cổ tròn',
       });
+      imageAltBySrcRef.current = {};
+      imageCaptionBySrcRef.current = {};
+      if (product.description && typeof window !== 'undefined' && window.DOMParser) {
+        const doc = new DOMParser().parseFromString(`<div>${product.description}</div>`, 'text/html');
+        doc.body.querySelectorAll('img').forEach(img => {
+          const src = img.getAttribute('src') || '';
+          if (!src) return;
+          const alt = (img.getAttribute('alt') || img.getAttribute('title') || '').trim();
+          if (alt) imageAltBySrcRef.current[src] = alt;
+          const figcaption = img.closest('figure')?.querySelector('figcaption');
+          const next = img.closest('p')?.nextElementSibling as HTMLElement | null;
+          const caption = (
+            figcaption?.textContent ||
+            (next?.getAttribute('data-caption') === '1' ? next.textContent : '') ||
+            ''
+          ).trim();
+          if (caption) imageCaptionBySrcRef.current[src] = caption;
+        });
+      }
       setHtmlSource(product.description || '');
     } else {
+      imageAltBySrcRef.current = {};
+      imageCaptionBySrcRef.current = {};
       setFormData({
         name: '',
         price: '',
@@ -374,7 +506,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                 const range = quill.getSelection(true);
                 quill.clipboard.dangerouslyPasteHTML(
                   range.index,
-                  `<p><img src="${escapeHtmlAttr(data.secure_url)}" data-align="center" style="${getImageAlignStyle('center')}" /></p><p><br></p>`,
+                  `<p><img src="${escapeHtmlAttr(data.secure_url)}" alt="" title="" data-align="center" style="${getImageAlignStyle('center')}" /></p><p><br></p>`,
                   'user'
                 );
                 quill.setSelection(range.index + 1);
@@ -504,7 +636,12 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
       // Make unique
       allImages = Array.from(new Set(allImages));
       
-      const finalDescription = isHtmlMode ? htmlSource : formData.description;
+      const finalDescription = normalizeImageAltTitles(isHtmlMode ? htmlSource : getCurrentEditorHtml());
+      if (isHtmlMode) {
+        setHtmlSource(finalDescription);
+      } else {
+        setFormData(prev => ({ ...prev, description: finalDescription }));
+      }
 
       const payload = {
         name: formData.name,
@@ -546,10 +683,10 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
       }
 
       onSuccess();
-      onClose();
       
       // Reset form ONLY for new product additions
       if (!product) {
+        onClose();
         setFormData({
           name: '',
           price: '',
@@ -587,44 +724,47 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
   // ── Image click handler ─────────────────────────────────────────────────────
   useEffect(() => {
     if (!isOpen) return;
-    const timer = setTimeout(() => {
-      const quill = quillRef.current?.getEditor();
-      if (!quill) return;
-      const editorEl = quill.root as HTMLElement;
+    const editorWrap = editorWrapRef.current;
+    if (!editorWrap) return;
 
-      const handleClick = (e: MouseEvent) => {
-        const target = e.target as HTMLElement;
-        if (target.tagName === 'IMG') {
-          const img = target as HTMLImageElement;
-          selectedImgRef.current = img;
-          const wrapRect = editorWrapRef.current?.getBoundingClientRect();
-          const imgRect = img.getBoundingClientRect();
-          if (!wrapRect) return;
-          setImageToolbar({
-            el: img,
-            top: imgRect.top - wrapRect.top - 44,
-            left: imgRect.left - wrapRect.left,
-            width: imgRect.width,
-          });
-          // Check existing caption sibling
-          const next = img.closest('p')?.nextElementSibling;
-          if (next?.getAttribute('data-caption') === '1') {
-            setCaptionDraft(next.textContent || '');
-            setShowCaption(true);
-          } else {
-            setCaptionDraft('');
-            setShowCaption(false);
-          }
-        } else if (!(target as HTMLElement).closest('.img-float-toolbar')) {
-          setImageToolbar(null);
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('.img-float-toolbar')) return;
+
+      const img = target.closest('.ql-editor img') as HTMLImageElement | null;
+      if (img) {
+        selectedImgRef.current = img;
+        const src = img.getAttribute('src') || '';
+        setAltDraft(imageAltBySrcRef.current[src] || img.getAttribute('alt') || img.getAttribute('title') || '');
+        setShowAltInput(false);
+
+        const wrapRect = editorWrap.getBoundingClientRect();
+        const imgRect = img.getBoundingClientRect();
+        setImageToolbar({
+          el: img,
+          top: Math.max(0, imgRect.top - wrapRect.top - 44),
+          left: Math.max(0, imgRect.left - wrapRect.left),
+          width: imgRect.width,
+        });
+
+        const figcaption = img.closest('figure')?.querySelector('figcaption');
+        const next = img.closest('p')?.nextElementSibling;
+        if (figcaption || next?.getAttribute('data-caption') === '1') {
+          setCaptionDraft(imageCaptionBySrcRef.current[src] || figcaption?.textContent || next?.textContent || '');
+          setShowCaption(true);
+        } else {
+          setCaptionDraft(imageCaptionBySrcRef.current[src] || '');
           setShowCaption(false);
         }
-      };
+      } else {
+        setImageToolbar(null);
+        setShowCaption(false);
+        setShowAltInput(false);
+      }
+    };
 
-      editorEl.addEventListener('click', handleClick);
-      return () => editorEl.removeEventListener('click', handleClick);
-    }, 400);
-    return () => clearTimeout(timer);
+    editorWrap.addEventListener('click', handleClick);
+    return () => editorWrap.removeEventListener('click', handleClick);
   }, [isOpen]);
 
   const applyImageAlign = (align: 'left' | 'center' | 'right') => {
@@ -633,13 +773,18 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
     const quill = quillRef.current?.getEditor();
     if (!quill) return;
 
+    const blot = Quill.find(img);
+    if (blot) {
+      (blot as any).format('data-align', align);
+      (blot as any).format('style', getImageAlignStyle(align));
+    }
     img.setAttribute('data-align', align);
     img.setAttribute('style', getImageAlignStyle(align));
     const caption = img.closest('p')?.nextElementSibling as HTMLElement | null;
     if (caption?.getAttribute('data-caption') === '1') {
       caption.style.textAlign = 'center';
     }
-    quill.update('user');
+    quill.update('silent');
     syncEditorHtml();
     // Update toolbar position as centering might move the image
     setTimeout(() => {
@@ -690,24 +835,58 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
     if (!img) return;
     const quill = quillRef.current?.getEditor();
     if (!quill) return;
-    const pEl = img.closest('p');
-    if (!pEl) return;
-    // Remove existing caption sibling
-    const next = pEl.nextElementSibling;
-    if (next?.getAttribute('data-caption') === '1') next.remove();
-    if (captionDraft.trim()) {
-      const caption = document.createElement('p');
-      caption.setAttribute('data-caption', '1');
-      caption.setAttribute('class', 'image-caption');
-      caption.style.cssText = 'text-align:center;font-style:italic;font-size:0.75rem;color:#a1a1aa;margin-top:-1.25rem;margin-bottom:1.5rem;line-height:1.4;';
-      caption.textContent = captionDraft.trim();
-      pEl.insertAdjacentElement('afterend', caption);
+    const src = img.getAttribute('src') || '';
+    if (!src) {
+      toast.error('Khong tim thay anh de them ghi chu');
+      return;
     }
-    quill.update('user');
-    syncEditorHtml();
+
+    const captionText = captionDraft.trim();
+    if (captionText) {
+      imageCaptionBySrcRef.current[src] = captionText;
+    } else {
+      delete imageCaptionBySrcRef.current[src];
+    }
+
+    const html = normalizeImageAltTitles(quill.root.innerHTML);
+    setFormData(prev => ({ ...prev, description: html }));
     setShowCaption(false);
     setImageToolbar(null);
     toast.success('Đã áp dụng ghi chú ảnh');
+  };
+
+  const applyImageAlt = () => {
+    const img = selectedImgRef.current;
+    if (!img) return;
+    const quill = quillRef.current?.getEditor();
+    if (!quill) return;
+
+    const alt = altDraft.trim();
+    const src = img.getAttribute('src') || '';
+    if (src) {
+      if (alt) {
+        imageAltBySrcRef.current[src] = alt;
+      } else {
+        delete imageAltBySrcRef.current[src];
+      }
+    }
+    const blot = Quill.find(img);
+    if (blot) {
+      (blot as any).format('alt', alt);
+      (blot as any).format('title', alt);
+    }
+    if (alt) {
+      img.setAttribute('alt', alt);
+      img.setAttribute('title', alt);
+    } else {
+      img.removeAttribute('alt');
+      img.removeAttribute('title');
+    }
+
+    quill.update('silent');
+    syncEditorHtml();
+    setShowAltInput(false);
+    toast.success(alt ? 'Đã thêm thẻ alt cho ảnh' : 'Đã xóa thẻ alt khỏi ảnh');
   };
 
   const parentCategoryOptions = productCategoryOptions.filter(option => !option.parent);
@@ -791,14 +970,14 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
           <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
             {/* Left Editor Column */}
             <div className="flex-1 overflow-y-auto bg-white border-r border-zinc-200">
-              <div className="max-w-[800px] mx-auto p-6 md:p-10 space-y-8">
+              <div className="mx-auto w-full max-w-[1040px] p-6 md:p-10 space-y-8">
                 {/* Product Name Input */}
-                <input
-                  type="text"
+                <textarea
                   value={formData.name}
                   onChange={e => setFormData({...formData, name: e.target.value})}
                   placeholder="Thêm tiêu đề..."
-                  className="w-full text-4xl font-black text-zinc-900 bg-transparent border-none outline-none placeholder:text-zinc-300 placeholder:font-black"
+                  rows={2}
+                  className="min-h-[92px] w-full resize-none overflow-hidden bg-transparent text-3xl font-black leading-tight text-zinc-900 outline-none placeholder:text-zinc-300 placeholder:font-black sm:text-4xl"
                 />
                 
                 {/* Rich Text Editor */}
@@ -829,19 +1008,30 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                     .product-quill-editor .ql-editor img[data-align="center"] { margin-left: auto !important; margin-right: auto !important; }
                     .product-quill-editor .ql-editor img[data-align="right"] { margin-left: auto !important; margin-right: 0 !important; }
                     .product-quill-editor .ql-editor img:hover { outline: 2px solid #3b82f6; outline-offset: 2px; }
+                    .product-quill-editor .ql-editor figure,
+                    .product-quill-editor .ql-editor figure.image-figure {
+                      display: block !important;
+                      margin: 2rem auto !important;
+                      max-width: 100% !important;
+                      text-align: center !important;
+                    }
+                    .product-quill-editor .ql-editor figure img {
+                      margin: 0 auto !important;
+                    }
+                    .product-quill-editor .ql-editor figcaption,
                     .product-quill-editor .ql-editor p[data-caption="1"],
                     .product-quill-editor .ql-editor p.image-caption,
-                    .product-quill-editor .ql-editor p:has(img) + p,
                     .product-quill-editor .ql-editor p[style*="font-style:italic"][style*="font-size:0.8em"],
                     .product-quill-editor .ql-editor p[style*="font-style: italic"][style*="font-size: 0.8em"] {
                       color: #a1a1aa !important;
                       font-size: 0.75rem !important;
                       font-style: italic !important;
+                      display: block !important;
                       text-align: center !important;
-                      margin-top: -1.25rem !important;
-                      margin-bottom: 1.5rem !important;
+                      margin: 0.5rem auto 1.5rem !important;
                       line-height: 1.4 !important;
                       width: 100% !important;
+                      opacity: 0.85 !important;
                     }
                     .product-quill-editor .ql-editor iframe { border-radius: 8px; margin: 2rem 0; width: 100%; aspect-ratio: 16/9; }
                     .product-quill-editor .ql-editor video { border-radius: 12px; margin: 2rem 0 2rem auto; max-width: 100%; width: min(100%, 720px); display: block; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
@@ -1025,12 +1215,25 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                             <AlignRight className="h-3.5 w-3.5" />
                           </button>
                           <div className="w-px h-4 bg-white/20 mx-1" />
-                          <button type="button" onClick={() => setShowCaption(v => !v)}
+                          <button type="button" onClick={() => {
+                              setShowCaption(v => !v);
+                              setShowAltInput(false);
+                            }}
                             className={cn("p-1.5 rounded transition-colors text-[11px] font-bold flex items-center gap-1",
                               showCaption ? "bg-blue-500" : "hover:bg-white/10")}
                             title="Ghi chú ảnh">
                             <Type className="h-3.5 w-3.5" />
                             <span>Caption</span>
+                          </button>
+                          <button type="button" onClick={() => {
+                              setShowAltInput(v => !v);
+                              setShowCaption(false);
+                            }}
+                            className={cn("p-1.5 rounded transition-colors text-[11px] font-bold flex items-center gap-1",
+                              showAltInput ? "bg-emerald-500" : altDraft ? "bg-emerald-500/30 hover:bg-emerald-500/40" : "hover:bg-white/10")}
+                            title={altDraft ? `Alt: ${altDraft}` : 'Thêm thẻ alt cho ảnh'}>
+                            <Tag className="h-3.5 w-3.5" />
+                            <span>Alt</span>
                           </button>
                           <div className="w-px h-4 bg-white/20 mx-1" />
                           <button type="button" onClick={handleDeleteImage}
@@ -1050,6 +1253,23 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                               />
                               <button type="button" onClick={applyCaption}
                                 className="px-2 py-1 bg-blue-500 hover:bg-blue-400 rounded text-[11px] font-bold transition-colors ml-0.5">
+                                Áp dụng
+                              </button>
+                            </>
+                          )}
+                          {showAltInput && (
+                            <>
+                              <input
+                                autoFocus
+                                type="text"
+                                value={altDraft}
+                                onChange={e => setAltDraft(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && applyImageAlt()}
+                                placeholder="Nhập thẻ alt..."
+                                className="bg-white/10 rounded px-2 py-1 text-[12px] font-medium placeholder:text-white/40 outline-none border border-white/20 focus:border-emerald-400 w-48 ml-1"
+                              />
+                              <button type="button" onClick={applyImageAlt}
+                                className="px-2 py-1 bg-emerald-500 hover:bg-emerald-400 rounded text-[11px] font-bold transition-colors ml-0.5">
                                 Áp dụng
                               </button>
                             </>

@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Package, ShoppingBag, Users, MessageSquare,
   Image as ImageIcon, Settings, Plus, Trash2, Edit2, LogOut,
   TrendingUp, Eye, DollarSign, BarChart2, Menu, X, Bell,
-  Search, ChevronRight, ChevronDown, Megaphone, Upload, Star, AlertCircle, Copy, ExternalLink, Code2, Check as CheckIcon, Bot, Sparkles, Zap, Timer, Clock, Ticket, Download, Filter
+  Search, ChevronRight, ChevronDown, Megaphone, Upload, Star, AlertCircle, Copy, ExternalLink, Code2, Check as CheckIcon, Bot, Sparkles, Zap, Timer, Clock, Ticket, Download, Filter, MailCheck, Send, UserPlus
 } from 'lucide-react';
 import { collection, onSnapshot, query, orderBy, deleteDoc, doc, setDoc, getDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -16,7 +16,8 @@ import { OrderDetailModal } from './OrderDetailModal';
 import { AIProductAssistant } from './AIProductAssistant';
 import { AIBlogAssistant } from './AIBlogAssistant';
 import { CategorySeoManager } from './CategorySeoManager';
-import { AIProductData, AIBlogData } from '../lib/gemini';
+import { ProductSeoAutomationPanel, ProductSeoScoreBadge } from './ProductSeoAutomationPanel';
+import { AIProductData, AIBlogData, AIProductSeoFix } from '../lib/gemini';
 import { useAuth } from '../AuthContext';
 import { Product, BlogPost, Order, Voucher } from '../types';
 import { toast } from 'sonner';
@@ -40,7 +41,16 @@ interface MediaItem {
   createdAt: any;
 }
 
-type AdminTab = 'dashboard' | 'products' | 'orders' | 'customers' | 'vouchers' | 'blog' | 'media' | 'settings' | 'blog-categories' | 'ai-product' | 'ai-blog' | 'flash-sale' | 'category-seo';
+interface NewsletterSubscriber {
+  id: string;
+  email: string;
+  status?: 'active' | 'unsubscribed';
+  source?: string;
+  createdAt?: any;
+  updatedAt?: any;
+}
+
+type AdminTab = 'dashboard' | 'strategy' | 'products' | 'orders' | 'customers' | 'newsletter' | 'vouchers' | 'blog' | 'media' | 'settings' | 'blog-categories' | 'ai-product' | 'ai-blog' | 'flash-sale' | 'category-seo';
 
 type NavItem = {
   id: string;
@@ -66,6 +76,7 @@ type BlogCategoryItem = {
 const BLOG_CATEGORIES_STORAGE_KEY = 'ursport_blog_categories_final_v1';
 
 const NAV_ITEMS: NavItem[] = [
+  { id: 'strategy', label: 'Chiến lược', icon: BarChart2 },
   { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },
   { id: 'products', label: 'Sản phẩm', icon: Package },
   { id: 'ai-product', label: 'AI Sản Phẩm', icon: Bot },
@@ -73,6 +84,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'ai-blog', label: 'AI Blog', icon: Sparkles },
   { id: 'orders', label: 'Đơn hàng', icon: ShoppingBag },
   { id: 'customers', label: 'Khách hàng', icon: Users },
+  { id: 'newsletter', label: 'Email đăng ký', icon: MailCheck },
   {
     id: 'marketing-group',
     label: 'Kênh Marketing',
@@ -219,6 +231,7 @@ export const AdminPanel: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [newsletterSubscribers, setNewsletterSubscribers] = useState<NewsletterSubscriber[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -228,6 +241,13 @@ export const AdminPanel: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [productCategoryFilter, setProductCategoryFilter] = useState('all');
   const [blogSearchQuery, setBlogSearchQuery] = useState('');
+  const [manualNewsletterEmail, setManualNewsletterEmail] = useState('');
+  const [selectedNewsletterIds, setSelectedNewsletterIds] = useState<string[]>([]);
+  const [newsletterSubject, setNewsletterSubject] = useState('Ưu đãi mới từ UR Sport');
+  const [newsletterMessage, setNewsletterMessage] = useState('Cám ơn quý khách đã đăng ký nhận tin từ UR Sport. Chúng tôi gửi đến quý khách chương trình ưu đãi mới nhất.');
+  const [selectedNewsletterVoucherId, setSelectedNewsletterVoucherId] = useState('');
+  const [newsletterSendToken, setNewsletterSendToken] = useState('');
+  const [isSendingNewsletter, setIsSendingNewsletter] = useState(false);
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [isVoucherModalOpen, setIsVoucherModalOpen] = useState(false);
   const [editingVoucher, setEditingVoucher] = useState<Voucher | null>(null);
@@ -302,6 +322,18 @@ export const AdminPanel: React.FC = () => {
       setMediaItems(data);
     }, () => {
       setMediaItems([]);
+    });
+    return () => unsubscribe();
+  }, [isAdmin]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    const q = query(collection(db, 'newsletterSubscribers'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as NewsletterSubscriber[];
+      setNewsletterSubscribers(data);
+    }, () => {
+      setNewsletterSubscribers([]);
     });
     return () => unsubscribe();
   }, [isAdmin]);
@@ -608,6 +640,109 @@ export const AdminPanel: React.FC = () => {
     }
   };
 
+  const handleNewsletterStatus = async (subscriber: NewsletterSubscriber, status: 'active' | 'unsubscribed') => {
+    try {
+      await setDoc(doc(db, 'newsletterSubscribers', subscriber.id), {
+        ...subscriber,
+        status,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+      toast.success(status === 'active' ? 'Đã bật nhận tin' : 'Đã hủy nhận tin');
+    } catch {
+      toast.error('Lỗi khi cập nhật email đăng ký');
+    }
+  };
+
+  const handleDeleteNewsletterSubscriber = async (subscriber: NewsletterSubscriber) => {
+    if (!window.confirm(`Xóa email ${subscriber.email} khỏi danh sách đăng ký?`)) return;
+    try {
+      await deleteDoc(doc(db, 'newsletterSubscribers', subscriber.id));
+      setSelectedNewsletterIds(prev => prev.filter(id => id !== subscriber.id));
+      toast.success('Đã xóa email đăng ký');
+    } catch {
+      toast.error('Lỗi khi xóa email đăng ký');
+    }
+  };
+
+  const handleAddNewsletterSubscriber = async () => {
+    const email = manualNewsletterEmail.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error('Email không hợp lệ');
+      return;
+    }
+
+    try {
+      await setDoc(doc(db, 'newsletterSubscribers', encodeURIComponent(email)), {
+        email,
+        status: 'active',
+        source: 'admin',
+        updatedAt: serverTimestamp(),
+        createdAt: serverTimestamp()
+      }, { merge: true });
+      setManualNewsletterEmail('');
+      toast.success('Đã thêm email vào danh sách');
+    } catch {
+      toast.error('Lỗi khi thêm email');
+    }
+  };
+
+  const handleSendNewsletter = async () => {
+    const selectedSubscribers = newsletterSubscribers.filter(item =>
+      selectedNewsletterIds.includes(item.id) && item.status !== 'unsubscribed'
+    );
+    const recipients = selectedSubscribers.map(item => item.email);
+    const selectedVoucher = vouchers.find(item => item.id === selectedNewsletterVoucherId);
+
+    if (recipients.length === 0) {
+      toast.error('Vui lòng chọn ít nhất 1 email đang nhận tin');
+      return;
+    }
+
+    if (!newsletterSubject.trim() || !newsletterMessage.trim()) {
+      toast.error('Vui lòng nhập tiêu đề và nội dung email');
+      return;
+    }
+
+    if (!newsletterSendToken.trim()) {
+      toast.error('Vui lòng nhập mã gửi email');
+      return;
+    }
+
+    setIsSendingNewsletter(true);
+    try {
+      const response = await fetch('/api/send-newsletter', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Newsletter-Token': newsletterSendToken.trim()
+        },
+        body: JSON.stringify({
+          recipients,
+          subject: newsletterSubject.trim(),
+          message: newsletterMessage.trim(),
+          voucher: selectedVoucher ? {
+            name: selectedVoucher.name,
+            code: selectedVoucher.code,
+            description: selectedVoucher.discountType === 'percent'
+              ? `Giảm ${selectedVoucher.discountValue}%${selectedVoucher.maxDiscountValue ? `, tối đa ${selectedVoucher.maxDiscountValue.toLocaleString('vi-VN')}₫` : ''}`
+              : `Giảm ${selectedVoucher.discountValue.toLocaleString('vi-VN')}₫`
+          } : null
+        })
+      });
+
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(result.error || 'Gửi email thất bại');
+      }
+
+      toast.success(`Đã gửi ${result.sent || 0} email${result.failed ? `, lỗi ${result.failed}` : ''}`);
+    } catch (error: any) {
+      toast.error(error.message || 'Lỗi khi gửi email');
+    } finally {
+      setIsSendingNewsletter(false);
+    }
+  };
+
   const handleView = (product: Product) => {
     const catSlug = product.category
       ? product.category.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')
@@ -830,11 +965,98 @@ Sitemap: https://ursport.vn/sitemap.xml`;
 
     return matchesSearch && categoryMatchesProductFilter(p.category);
   });
+  const openProductEditor = (product: Product) => {
+    setEditingProduct(product);
+    setIsAddModalOpen(true);
+  };
+  const applyProductSeoFix = async (product: Product, fix: AIProductSeoFix) => {
+    const intro = fix.shortDescription?.trim() ? `<p>${fix.shortDescription.trim()}</p>` : '';
+    const body = fix.descriptionHtml?.trim() || product.description;
+    const descriptionHtml = intro && !body.includes(fix.shortDescription.trim())
+      ? `${intro}${body}`
+      : body;
+    await setDoc(doc(db, 'products', product.id), {
+      seoTitle: fix.seoTitle,
+      metaDescription: fix.metaDescription,
+      keywords: fix.keywords,
+      description: descriptionHtml,
+      specifications: descriptionHtml,
+      features: fix.features,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+  };
 
   const totalRevenue = products.reduce((sum, p) => sum + p.price, 0);
   const avgRating = products.length > 0 ? (products.reduce((sum, p) => sum + (p.rating || 0), 0) / products.length).toFixed(1) : '0';
 
   const lowStockProducts = products.filter(p => (p.stock || 0) < 10);
+  const activeNewsletterSubscribers = newsletterSubscribers.filter(item => item.status !== 'unsubscribed');
+  const selectedActiveNewsletterCount = newsletterSubscribers.filter(item =>
+    selectedNewsletterIds.includes(item.id) && item.status !== 'unsubscribed'
+  ).length;
+  const allActiveNewsletterSelected = activeNewsletterSubscribers.length > 0 &&
+    activeNewsletterSubscribers.every(item => selectedNewsletterIds.includes(item.id));
+  const selectableNewsletterVouchers = vouchers.filter(voucher => voucher.isActive !== false);
+  const completedOrders = orders.filter(order => order.status !== 'cancelled');
+  const cancelledOrders = orders.filter(order => order.status === 'cancelled');
+  const orderRevenue = completedOrders.reduce((sum, order) => sum + (order.finalTotal || order.total || 0), 0);
+  const averageOrderValue = completedOrders.length > 0 ? orderRevenue / completedOrders.length : 0;
+  const cancellationRate = orders.length > 0 ? Math.round((cancelledOrders.length / orders.length) * 100) : 0;
+  const productSales = completedOrders.reduce<Record<string, { product: Product; quantity: number; revenue: number }>>((acc, order) => {
+    order.items.forEach(item => {
+      const current = acc[item.id] || { product: item, quantity: 0, revenue: 0 };
+      current.quantity += item.quantity;
+      current.revenue += (item.discountPrice || item.price) * item.quantity;
+      acc[item.id] = current;
+    });
+    return acc;
+  }, {});
+  const topSellingProducts = Object.values(productSales)
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 5);
+  const slowMovingProducts = products
+    .filter(product => !productSales[product.id] && (product.stock || 0) > 0)
+    .slice(0, 5);
+  const expiringVouchers = vouchers
+    .filter(voucher => voucher.isActive !== false)
+    .map(voucher => ({ voucher, daysLeft: Math.ceil((new Date(voucher.endTime).getTime() - Date.now()) / 86400000) }))
+    .filter(item => item.daysLeft >= 0 && item.daysLeft <= 7)
+    .sort((a, b) => a.daysLeft - b.daysLeft)
+    .slice(0, 4);
+  const strategyActions = [
+    ...(lowStockProducts.length > 0 ? [{
+      title: 'Bổ sung tồn kho sản phẩm sắp hết',
+      description: `${lowStockProducts.length} sản phẩm còn dưới 10 item. Ưu tiên nhập thêm các mẫu đang có đơn hoặc rating tốt.`,
+      action: 'Xem kho',
+      onClick: () => setActiveTab('products'),
+      tone: 'red' as const,
+    }] : []),
+    ...(cancellationRate >= 20 ? [{
+      title: 'Giảm tỉ lệ hủy đơn',
+      description: `Tỉ lệ hủy hiện khoảng ${cancellationRate}%. Nên gọi xác nhận đơn COD và nhắc phí/ưu đãi trước khi giao.`,
+      action: 'Xem đơn',
+      onClick: () => setActiveTab('orders'),
+      tone: 'amber' as const,
+    }] : []),
+    ...(slowMovingProducts.length > 0 ? [{
+      title: 'Đẩy hàng bán chậm bằng voucher hoặc flash sale',
+      description: `${slowMovingProducts.length} sản phẩm còn tồn nhưng chưa xuất hiện trong đơn. Có thể đưa vào flash sale hoặc gắn voucher theo danh mục.`,
+      action: 'Tạo chiến dịch',
+      onClick: () => setActiveTab('flash-sale'),
+      tone: 'blue' as const,
+    }] : []),
+    ...(expiringVouchers.length > 0 ? [{
+      title: 'Kích hoạt lại voucher sắp hết hạn',
+      description: `${expiringVouchers.length} voucher sẽ hết hạn trong 7 ngày. Nên gửi email nhắc khách dùng mã trước khi hết hạn.`,
+      action: 'Gửi email',
+      onClick: () => setActiveTab('newsletter'),
+      tone: 'emerald' as const,
+    }] : []),
+  ];
+  const formatNewsletterDate = (value: any) => {
+    const date = value?.toDate?.() || (value?.seconds ? new Date(value.seconds * 1000) : null);
+    return date ? date.toLocaleDateString('vi-VN') : 'Chưa rõ';
+  };
   const activeNavLabel = NAV_ITEMS.reduce<{ id: string; label: string }[]>((items, item) => {
     if (item.children) {
       return [...items, ...item.children.map(child => ({ id: child.id, label: child.label }))];
@@ -1276,8 +1498,147 @@ Sitemap: https://ursport.vn/sitemap.xml`;
           )}
 
           {/* ─── PRODUCTS ─── */}
+          {activeTab === 'strategy' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+                {[
+                  { label: 'Doanh thu đơn hàng', value: orderRevenue.toLocaleString('vi-VN') + '₫', icon: DollarSign, text: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+                  { label: 'Giá trị đơn TB', value: averageOrderValue.toLocaleString('vi-VN', { maximumFractionDigits: 0 }) + '₫', icon: BarChart2, text: 'text-blue-400', bg: 'bg-blue-500/10' },
+                  { label: 'Tỉ lệ hủy đơn', value: cancellationRate + '%', icon: AlertCircle, text: cancellationRate >= 20 ? 'text-red-400' : 'text-amber-400', bg: cancellationRate >= 20 ? 'bg-red-500/10' : 'bg-amber-500/10' },
+                  { label: 'Sản phẩm đã bán', value: topSellingProducts.length.toString(), icon: TrendingUp, text: 'text-purple-400', bg: 'bg-purple-500/10' },
+                ].map((stat) => (
+                  <div key={stat.label} className="bg-[#13161f] border border-white/5 rounded-2xl p-5">
+                    <div className={cn("mb-4 h-10 w-10 rounded-xl flex items-center justify-center", stat.bg)}>
+                      <stat.icon className={cn("h-5 w-5", stat.text)} />
+                    </div>
+                    <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-1">{stat.label}</p>
+                    <p className="text-white font-black text-xl leading-none">{stat.value}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <div className="bg-[#13161f] border border-white/5 rounded-2xl overflow-hidden">
+                  <div className="px-6 py-4 border-b border-white/5">
+                    <h2 className="text-white font-black text-sm uppercase tracking-widest">Sản phẩm tạo doanh thu</h2>
+                  </div>
+                  <div className="divide-y divide-white/5">
+                    {topSellingProducts.length === 0 ? (
+                      <div className="px-6 py-12 text-center text-white/30 text-sm font-bold">Chưa đủ dữ liệu đơn hàng</div>
+                    ) : topSellingProducts.map((item, index) => (
+                      <div key={item.product.id} className="flex items-center gap-4 px-6 py-4">
+                        <div className="h-9 w-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xs font-black">#{index + 1}</div>
+                        <div className="h-12 w-12 rounded-xl overflow-hidden bg-white/5 shrink-0">
+                          {item.product.images?.[0] && <img src={item.product.images[0]} alt={item.product.name} loading="lazy" className="h-full w-full object-cover" />}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-white text-sm font-bold truncate">{item.product.name}</p>
+                          <p className="text-white/35 text-xs font-bold">Đã bán {item.quantity} item</p>
+                        </div>
+                        <p className="text-emerald-400 font-black text-sm">{item.revenue.toLocaleString('vi-VN')}₫</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-[#13161f] border border-white/5 rounded-2xl overflow-hidden">
+                  <div className="px-6 py-4 border-b border-white/5">
+                    <h2 className="text-white font-black text-sm uppercase tracking-widest">Hàng cần đẩy</h2>
+                  </div>
+                  <div className="divide-y divide-white/5">
+                    {slowMovingProducts.length === 0 ? (
+                      <div className="px-6 py-12 text-center text-white/30 text-sm font-bold">Chưa có sản phẩm bán chậm rõ ràng</div>
+                    ) : slowMovingProducts.map(product => (
+                      <div key={product.id} className="flex items-center gap-4 px-6 py-4">
+                        <div className="h-12 w-12 rounded-xl overflow-hidden bg-white/5 shrink-0">
+                          {product.images?.[0] && <img src={product.images[0]} alt={product.name} loading="lazy" className="h-full w-full object-cover" />}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-white text-sm font-bold truncate">{product.name}</p>
+                          <p className="text-white/35 text-xs font-bold">Tồn kho {product.stock || 0} item</p>
+                        </div>
+                        <button
+                          onClick={() => { setEditingProduct(product); setIsAddModalOpen(true); }}
+                          className="px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-white/60 text-xs font-bold transition-all"
+                        >
+                          Tối ưu
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-6">
+                <div className="bg-[#13161f] border border-white/5 rounded-2xl p-6">
+                  <div className="flex items-center gap-2 mb-5">
+                    <Sparkles className="h-5 w-5 text-[#1e4b64]" />
+                    <h2 className="text-white font-black text-sm uppercase tracking-widest">Đề xuất hành động thông minh</h2>
+                  </div>
+                  <div className="grid gap-3">
+                    {strategyActions.length === 0 ? (
+                      <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+                        <p className="text-emerald-400 font-black text-sm">Hệ thống đang ổn định</p>
+                        <p className="text-white/40 text-xs mt-1">Chưa phát hiện rủi ro lớn từ tồn kho, đơn hủy hoặc voucher.</p>
+                      </div>
+                    ) : strategyActions.map((item) => {
+                      const toneClass = item.tone === 'red'
+                        ? 'border-red-500/20 bg-red-500/5 text-red-400'
+                        : item.tone === 'amber'
+                          ? 'border-amber-500/20 bg-amber-500/5 text-amber-400'
+                          : item.tone === 'emerald'
+                            ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400'
+                            : 'border-blue-500/20 bg-blue-500/5 text-blue-400';
+
+                      return (
+                        <div key={item.title} className={cn("rounded-xl border p-4", toneClass)}>
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <p className="font-black text-sm">{item.title}</p>
+                              <p className="text-white/45 text-xs mt-1 leading-5">{item.description}</p>
+                            </div>
+                            <button onClick={item.onClick} className="shrink-0 rounded-lg bg-white/5 px-3 py-1.5 text-[11px] font-black text-white/70 hover:bg-white/10">
+                              {item.action}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="bg-[#13161f] border border-white/5 rounded-2xl p-6">
+                  <h2 className="text-white font-black text-sm uppercase tracking-widest mb-5">Voucher sắp hết hạn</h2>
+                  <div className="space-y-3">
+                    {expiringVouchers.length === 0 ? (
+                      <p className="text-white/35 text-sm font-bold">Không có voucher hết hạn trong 7 ngày.</p>
+                    ) : expiringVouchers.map(({ voucher, daysLeft }) => (
+                      <div key={voucher.id} className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-[#ee4d2d] text-sm font-black tracking-widest">{voucher.code}</p>
+                            <p className="text-white/50 text-xs mt-1">{voucher.name}</p>
+                          </div>
+                          <span className="rounded-lg bg-amber-500/10 px-2.5 py-1 text-[10px] font-black text-amber-400">
+                            {daysLeft === 0 ? 'Hôm nay' : `${daysLeft} ngày`}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'products' && (
             <div className="space-y-4">
+              <ProductSeoAutomationPanel
+                products={products}
+                onOptimizeProduct={openProductEditor}
+                onApplySeoFix={applyProductSeoFix}
+              />
+
               {/* Search */}
               <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-3">
               <div className="relative">
@@ -1342,6 +1703,7 @@ Sitemap: https://ursport.vn/sitemap.xml`;
                           <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30 hidden md:table-cell">Danh mục</th>
                           <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Giá</th>
                           <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30 hidden lg:table-cell">Kho</th>
+                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30 hidden xl:table-cell">SEO</th>
                           <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30 hidden lg:table-cell">Đánh giá</th>
                           <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30 text-right">Thao tác</th>
                         </tr>
@@ -1387,6 +1749,9 @@ Sitemap: https://ursport.vn/sitemap.xml`;
                                   {product.stock || 0}
                                 </span>
                               </div>
+                            </td>
+                            <td className="px-6 py-4 hidden xl:table-cell">
+                              <ProductSeoScoreBadge product={product} />
                             </td>
                             <td className="px-6 py-4 hidden lg:table-cell">
                               <div className="flex items-center gap-1">
@@ -1797,6 +2162,269 @@ Sitemap: https://ursport.vn/sitemap.xml`;
             </div>
           )}
 
+          {/* ─── NEWSLETTER SUBSCRIBERS ─── */}
+          {activeTab === 'newsletter' && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="bg-[#13161f] border border-white/5 rounded-2xl p-5">
+                  <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-2">Tổng email</p>
+                  <p className="text-white font-black text-2xl">{newsletterSubscribers.length}</p>
+                </div>
+                <div className="bg-[#13161f] border border-white/5 rounded-2xl p-5">
+                  <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-2">Đang nhận tin</p>
+                  <p className="text-emerald-400 font-black text-2xl">{activeNewsletterSubscribers.length}</p>
+                </div>
+                <div className="bg-[#13161f] border border-white/5 rounded-2xl p-5">
+                  <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-2">Dùng cho</p>
+                  <p className="text-white font-black text-sm">Gửi voucher / khuyến mãi</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 xl:grid-cols-[420px_1fr] gap-4">
+                <div className="bg-[#13161f] border border-white/5 rounded-2xl p-5">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="h-10 w-10 bg-emerald-500/10 rounded-xl flex items-center justify-center">
+                      <UserPlus className="h-5 w-5 text-emerald-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-white font-black text-sm uppercase tracking-widest">Thêm email</h3>
+                      <p className="text-white/30 text-xs font-medium">Bổ sung thủ công khách nhận ưu đãi.</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      value={manualNewsletterEmail}
+                      onChange={e => setManualNewsletterEmail(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddNewsletterSubscriber();
+                        }
+                      }}
+                      placeholder="email@example.com"
+                      className="min-w-0 flex-1 bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-white text-sm font-medium placeholder:text-white/25 focus:outline-none focus:border-[#1e4b64]/50 transition-all"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddNewsletterSubscriber}
+                      className="px-4 py-3 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold rounded-xl transition-all"
+                    >
+                      Thêm
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-[#13161f] border border-white/5 rounded-2xl p-5">
+                  <div className="flex items-center justify-between gap-4 mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 bg-[#1e4b64]/20 rounded-xl flex items-center justify-center">
+                        <Send className="h-5 w-5 text-[#5fb3d4]" />
+                      </div>
+                      <div>
+                        <h3 className="text-white font-black text-sm uppercase tracking-widest">Gửi email khuyến mãi</h3>
+                        <p className="text-white/30 text-xs font-medium">Đang chọn {selectedActiveNewsletterCount} email.</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleSendNewsletter}
+                      disabled={isSendingNewsletter}
+                      className="inline-flex items-center gap-2 rounded-xl bg-[#1e4b64] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#153446] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    >
+                      <Send className="h-4 w-4" />
+                      {isSendingNewsletter ? 'Đang gửi...' : 'Gửi email'}
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                    <input
+                      type="text"
+                      value={newsletterSubject}
+                      onChange={e => setNewsletterSubject(e.target.value)}
+                      placeholder="Tiêu đề email"
+                      className="bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-white text-sm font-medium placeholder:text-white/25 focus:outline-none focus:border-[#1e4b64]/50 transition-all"
+                    />
+                    <input
+                      type="password"
+                      value={newsletterSendToken}
+                      onChange={e => setNewsletterSendToken(e.target.value)}
+                      placeholder="Mã gửi email"
+                      className="bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-white text-sm font-medium placeholder:text-white/25 focus:outline-none focus:border-[#1e4b64]/50 transition-all"
+                    />
+                    <select
+                      value={selectedNewsletterVoucherId}
+                      onChange={e => setSelectedNewsletterVoucherId(e.target.value)}
+                      className="bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-white text-sm font-bold focus:outline-none focus:border-[#1e4b64]/50 transition-all"
+                    >
+                      <option value="">Không kèm voucher</option>
+                      {selectableNewsletterVouchers.length === 0 ? (
+                        <option value="" disabled>Chưa có mã giảm giá khả dụng</option>
+                      ) : selectableNewsletterVouchers.map(voucher => {
+                        const isExpired = voucher.endTime ? new Date(voucher.endTime) < new Date() : false;
+                        return (
+                          <option key={voucher.id} value={voucher.id}>
+                            {voucher.code} - {voucher.name}{isExpired ? ' (hết hạn)' : ''}
+                          </option>
+                        );
+                      })}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingVoucher(null);
+                        setIsVoucherModalOpen(true);
+                      }}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/5 px-4 py-3 text-sm font-bold text-white/60 hover:bg-white/10 hover:text-white transition-all"
+                    >
+                      <Ticket className="h-4 w-4" />
+                      Thêm voucher mới
+                    </button>
+                  </div>
+
+                  <textarea
+                    value={newsletterMessage}
+                    onChange={e => setNewsletterMessage(e.target.value)}
+                    rows={4}
+                    placeholder="Nội dung email gửi cho khách..."
+                    className="mt-3 w-full resize-none bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-white text-sm font-medium placeholder:text-white/25 focus:outline-none focus:border-[#1e4b64]/50 transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-[#13161f] border border-white/5 rounded-2xl overflow-hidden">
+                <div className="px-6 py-4 border-b border-white/5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="text-white font-black text-sm uppercase tracking-widest">Email khách đăng ký</h3>
+                    <p className="text-white/30 text-xs font-medium mt-1">Danh sách này lấy từ form đăng ký ở footer website.</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedNewsletterIds(allActiveNewsletterSelected ? [] : activeNewsletterSubscribers.map(item => item.id));
+                      }}
+                      className="inline-flex items-center gap-2 rounded-xl bg-white/5 px-4 py-2 text-xs font-bold text-white/60 hover:bg-white/10 hover:text-white transition-all"
+                    >
+                      <CheckIcon className="h-3.5 w-3.5" />
+                      {allActiveNewsletterSelected ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const emails = activeNewsletterSubscribers.map(item => item.email).join('\n');
+                        navigator.clipboard.writeText(emails);
+                        toast.success('Đã sao chép danh sách email đang nhận tin');
+                      }}
+                      className="inline-flex items-center gap-2 rounded-xl bg-white/5 px-4 py-2 text-xs font-bold text-white/60 hover:bg-white/10 hover:text-white transition-all"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                      Sao chép email
+                    </button>
+                  </div>
+                </div>
+
+                {newsletterSubscribers.length === 0 ? (
+                  <div className="py-20 text-center">
+                    <MailCheck className="h-12 w-12 text-white/10 mx-auto mb-3" />
+                    <p className="text-white/30 font-bold text-sm">Chưa có email đăng ký nhận tin</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                      <thead>
+                        <tr className="border-b border-white/5">
+                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">
+                            <input
+                              type="checkbox"
+                              checked={allActiveNewsletterSelected}
+                              onChange={() => setSelectedNewsletterIds(allActiveNewsletterSelected ? [] : activeNewsletterSubscribers.map(item => item.id))}
+                              className="h-4 w-4 accent-[#1e4b64]"
+                            />
+                          </th>
+                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Email</th>
+                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Nguồn</th>
+                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Ngày đăng ký</th>
+                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Trạng thái</th>
+                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30 text-right">Thao tác</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/[0.04]">
+                        {newsletterSubscribers.map(subscriber => {
+                          const isActive = subscriber.status !== 'unsubscribed';
+                          return (
+                            <tr key={subscriber.id} className="hover:bg-white/[0.02] transition-all">
+                              <td className="px-6 py-4">
+                                <input
+                                  type="checkbox"
+                                  disabled={!isActive}
+                                  checked={selectedNewsletterIds.includes(subscriber.id)}
+                                  onChange={() => {
+                                    setSelectedNewsletterIds(prev =>
+                                      prev.includes(subscriber.id)
+                                        ? prev.filter(id => id !== subscriber.id)
+                                        : [...prev, subscriber.id]
+                                    );
+                                  }}
+                                  className="h-4 w-4 accent-[#1e4b64] disabled:opacity-30"
+                                />
+                              </td>
+                              <td className="px-6 py-4">
+                                <p className="text-white text-sm font-bold">{subscriber.email}</p>
+                                <p className="text-white/30 text-[11px] font-medium">#{subscriber.id.substring(0, 18)}</p>
+                              </td>
+                              <td className="px-6 py-4 text-white/60 text-sm font-medium">{subscriber.source || 'footer'}</td>
+                              <td className="px-6 py-4 text-white/60 text-sm font-medium">{formatNewsletterDate(subscriber.createdAt)}</td>
+                              <td className="px-6 py-4">
+                                <span className={cn(
+                                  "px-3 py-1 text-xs font-black rounded-lg",
+                                  isActive ? "bg-emerald-500/10 text-emerald-400" : "bg-zinc-500/10 text-zinc-400"
+                                )}>
+                                  {isActive ? 'Đang nhận tin' : 'Đã hủy'}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="flex items-center justify-end gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(subscriber.email);
+                                      toast.success('Đã sao chép email');
+                                    }}
+                                    title="Sao chép email"
+                                    className="h-8 w-8 flex items-center justify-center rounded-lg text-white/30 hover:text-blue-400 hover:bg-blue-500/10 transition-all"
+                                  >
+                                    <Copy className="h-3.5 w-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleNewsletterStatus(subscriber, isActive ? 'unsubscribed' : 'active')}
+                                    title={isActive ? 'Hủy nhận tin' : 'Bật nhận tin'}
+                                    className="h-8 px-3 flex items-center justify-center rounded-lg text-white/40 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all text-xs font-bold"
+                                  >
+                                    {isActive ? 'Hủy' : 'Bật'}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteNewsletterSubscriber(subscriber)}
+                                    title="Xóa email"
+                                    className="h-8 w-8 flex items-center justify-center rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* ─── AI PRODUCT ASSISTANT ─── */}
           {activeTab === 'ai-product' && (
             <AIProductAssistant onApply={handleApplyAIProduct} />
@@ -1818,12 +2446,13 @@ Sitemap: https://ursport.vn/sitemap.xml`;
                     </div>
                     <div>
                       <h3 className="text-white font-black text-sm uppercase tracking-widest">Tải ảnh lên</h3>
-                      <p className="text-white/30 text-xs font-medium">Firebase Storage • Miễn phí 5GB</p>
+                      <p className="text-white/30 text-xs font-medium">Lưu tại /images/blog/</p>
                     </div>
                   </div>
                   <ImageUpload
                     onUploadComplete={handleSaveMedia}
-                    folder="media"
+                    folder="images/blog"
+                    storage="blog-local"
                     label="Kéo thả hoặc nhấn để chọn ảnh"
                   />
                 </div>
@@ -1831,9 +2460,9 @@ Sitemap: https://ursport.vn/sitemap.xml`;
                   <h3 className="text-white font-black text-sm uppercase tracking-widest mb-6">Thông tin lưu trữ</h3>
                   <div className="space-y-4">
                     {[
-                      { label: '5GB dung lượng miễn phí', color: 'bg-emerald-500' },
-                      { label: 'Tự động tối ưu CDN', color: 'bg-blue-500' },
-                      { label: 'Bảo mật Firebase Rules', color: 'bg-purple-500' },
+                      { label: 'Lưu trong public/images/blog', color: 'bg-emerald-500' },
+                      { label: 'Link dạng /images/blog/ten-file', color: 'bg-blue-500' },
+                      { label: 'Dễ chèn vào HTML bài viết', color: 'bg-purple-500' },
                       { label: 'Hỗ trợ đa định dạng', color: 'bg-orange-500' },
                     ].map((item, i) => (
                       <div key={i} className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-xl border border-white/5">
@@ -3005,7 +3634,7 @@ Sitemap: https://ursport.vn/sitemap.xml`;
       </div>
 
       <AddProductModal
-        key={isAddModalOpen ? (editingProduct?.id || editingProduct?.slug || 'new') : 'closed'}
+        key={isAddModalOpen ? `product-${editingProduct?.id || editingProduct?.slug || 'new'}` : 'product-closed'}
         isOpen={isAddModalOpen}
         onClose={() => {
           setIsAddModalOpen(false);
@@ -3016,7 +3645,7 @@ Sitemap: https://ursport.vn/sitemap.xml`;
       />
 
       <AddBlogPostModal
-        key={isBlogModalOpen ? (editingBlogPost?.id || editingBlogPost?.slug || 'new') : 'closed'}
+        key={isBlogModalOpen ? `blog-${editingBlogPost?.id || editingBlogPost?.slug || 'new'}` : 'blog-closed'}
         isOpen={isBlogModalOpen}
         onClose={() => {
           setIsBlogModalOpen(false);
@@ -3040,7 +3669,7 @@ Sitemap: https://ursport.vn/sitemap.xml`;
       />
 
       <AddVoucherModal
-        key={isVoucherModalOpen ? (editingVoucher?.id || 'new') : 'closed'}
+        key={isVoucherModalOpen ? `voucher-${editingVoucher?.id || 'new'}` : 'voucher-closed'}
         isOpen={isVoucherModalOpen}
         onClose={() => {
           setIsVoucherModalOpen(false);

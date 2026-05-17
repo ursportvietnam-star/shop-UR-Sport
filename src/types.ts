@@ -72,12 +72,16 @@ export interface Order {
   userId: string;
   items: CartItem[];
   total: number;
+  discountAmount?: number;
+  finalTotal?: number;
+  voucherCode?: string | null;
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   shippingAddress: {
     fullName: string;
     phone: string;
     address: string;
   };
+  email?: string;
   paymentMethod?: 'cod' | 'bank_transfer' | 'momo' | 'zalopay' | 'shopeepay' | string;
   note?: string;
   createdAt: any;

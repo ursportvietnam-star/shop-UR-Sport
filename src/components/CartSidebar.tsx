@@ -1,10 +1,11 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Minus, Plus, Trash2, ShoppingBag, ArrowRight } from 'lucide-react';
+import { X, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Truck, Sparkles } from 'lucide-react';
 import { useCart } from '../CartContext';
+import { useProducts } from '../ProductsContext';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
+import { toast } from 'sonner';
 
 interface CartSidebarProps {
   isOpen: boolean;
@@ -13,7 +14,32 @@ interface CartSidebarProps {
 }
 
 export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose, onCheckout }) => {
-  const { cart, removeFromCart, updateQuantity, total } = useCart();
+  const { cart, addToCart, removeFromCart, updateQuantity, total } = useCart();
+  const { products } = useProducts();
+  const freeShippingThreshold = 500000;
+  const freeShippingRemaining = Math.max(freeShippingThreshold - total, 0);
+  const freeShippingProgress = Math.min((total / freeShippingThreshold) * 100, 100);
+  const cartProductIds = React.useMemo(() => new Set(cart.map(item => item.id)), [cart]);
+
+  const recommendedProducts = React.useMemo(() => {
+    if (cart.length === 0 || freeShippingRemaining <= 0) return [];
+
+    return products
+      .filter(product => !cartProductIds.has(product.id) && product.stock !== 0)
+      .sort((a, b) => {
+        const priceA = a.discountPrice || a.price;
+        const priceB = b.discountPrice || b.price;
+        return Math.abs(priceA - freeShippingRemaining) - Math.abs(priceB - freeShippingRemaining);
+      })
+      .slice(0, 3);
+  }, [cart.length, cartProductIds, freeShippingRemaining, products]);
+
+  const handleAddRecommended = (product: typeof products[number]) => {
+    const color = product.colors?.[0] || 'Default';
+    const size = product.sizes?.[0] || 'Free Size';
+    addToCart(product, color, size, 1);
+    toast.success('Đã thêm sản phẩm gợi ý vào giỏ', { position: 'top-center' });
+  };
 
   return (
     <AnimatePresence>
@@ -54,6 +80,31 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose, onChe
                   </div>
                 ) : (
                   <div className="py-6 space-y-6">
+                    <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-4">
+                      <div className="mb-3 flex items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[#1e4b64] shadow-sm">
+                          <Truck className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[12px] font-black uppercase tracking-widest text-[#1e4b64]">
+                            Miễn phí vận chuyển
+                          </p>
+                          <p className="mt-0.5 text-[12px] font-bold text-zinc-600">
+                            {freeShippingRemaining > 0
+                              ? `Mua thêm ${freeShippingRemaining.toLocaleString('vi-VN')}đ để được freeship`
+                              : 'Đơn hàng đã đạt ưu đãi freeship'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="h-2 overflow-hidden rounded-full bg-white">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${freeShippingProgress}%` }}
+                          className="h-full rounded-full bg-[#1e4b64]"
+                        />
+                      </div>
+                    </div>
+
                     {cart.map((item, idx) => (
                       <motion.div 
                         key={`${item.id}-${item.selectedColor}-${item.selectedSize}`}
@@ -105,6 +156,40 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose, onChe
                         </div>
                       </motion.div>
                     ))}
+
+                    {recommendedProducts.length > 0 && (
+                      <div className="rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm">
+                        <div className="mb-3 flex items-center gap-2">
+                          <Sparkles className="h-4 w-4 text-[#1e4b64]" />
+                          <h3 className="text-[12px] font-black uppercase tracking-widest text-zinc-900">
+                            Gợi ý thêm vào giỏ
+                          </h3>
+                        </div>
+                        <div className="space-y-3">
+                          {recommendedProducts.map(product => (
+                            <div key={product.id} className="flex items-center gap-3">
+                              <div className="h-14 w-12 shrink-0 overflow-hidden rounded-xl bg-zinc-100">
+                                <img src={product.images?.[0] || ''} alt={product.name} loading="lazy" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="line-clamp-1 text-[12px] font-bold text-zinc-900">{product.name}</p>
+                                <p className="mt-0.5 text-[12px] font-black text-[#1e4b64]">
+                                  {(product.discountPrice || product.price).toLocaleString('vi-VN')}đ
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleAddRecommended(product)}
+                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1e4b64] text-white transition-all hover:bg-[#153446] active:scale-90"
+                                aria-label={`Thêm ${product.name} vào giỏ`}
+                              >
+                                <Plus className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </ScrollArea>

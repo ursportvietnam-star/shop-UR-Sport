@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { CATEGORY_METADATA } from '../data';
 import { useSEO } from '../hooks/useSEO';
-import { SITE_URL, absoluteUrl, buildBreadcrumbSchema, buildSeoGraph, cleanSeoText } from '../lib/seo';
+import { SITE_URL, absoluteUrl, buildBreadcrumbSchema, buildSeoGraph, cleanSeoText, merchantReturnPolicySchema, offerShippingDetailsSchema } from '../lib/seo';
 import { useCart } from '../CartContext';
 import { useAuth } from '../AuthContext';
 import { useProducts } from '../ProductsContext';
+import { useRecentlyViewed } from '../RecentlyViewedContext';
 import { Button } from '@/components/ui/button';
 import { db } from '../firebase';
 import {
@@ -49,7 +50,9 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { formatFaqContentHtml } from '../lib/faqHtml';
 import { showAddToCartToast } from './AddToCartToast';
+import { ProductCard } from './ProductCard';
 
 export const ProductDetail: React.FC = () => {
   const { categorySlug, productSlug } = useParams<{ categorySlug?: string, productSlug: string }>();
@@ -62,6 +65,7 @@ export const ProductDetail: React.FC = () => {
   const catMetadata = CATEGORY_METADATA.find(c => c.slug === categorySlug);
   const productCategoryMeta = catMetadata || CATEGORY_METADATA.find(c => c.name === product?.category);
   const productCategorySlug = productCategoryMeta?.slug || categorySlug || 'shop';
+  const productCategoryUrl = productCategorySlug === 'shop' ? '/shop' : `/${productCategorySlug}`;
   const categoryName = catMetadata ? catMetadata.name : product?.category;
   const categoryProducts = products.filter(p => p.category === categoryName);
   const currentIndex = categoryProducts.findIndex(p => p.slug === productSlug);
@@ -94,10 +98,19 @@ export const ProductDetail: React.FC = () => {
   const [suggestedSize, setSuggestedSize] = useState<string | null>(null);
   const [isSizeProfileModalOpen, setIsSizeProfileModalOpen] = useState(false);
   const { user } = useAuth();
+  const { recentProductIds, recordProductView } = useRecentlyViewed();
   const [flashSaleSettings, setFlashSaleSettings] = useState<any>(null);
   const [flashSaleCountdown, setFlashSaleCountdown] = useState({ h: '00', m: '00', s: '00', active: false });
   const [showStickyBar, setShowStickyBar] = useState(false);
   const productCanonical = product ? `/${product.slug || product.id}` : '/shop';
+  const recentlyViewedProducts = React.useMemo(() => {
+    const productMap = new Map(products.map((item) => [item.id, item]));
+    return recentProductIds
+      .filter((id) => id !== product?.id)
+      .map((id) => productMap.get(id))
+      .filter((item): item is Product => Boolean(item))
+      .slice(0, 4);
+  }, [products, recentProductIds, product?.id]);
   const productSchema = React.useMemo(() => {
     if (!product) return null;
 
@@ -125,6 +138,8 @@ export const ProductDetail: React.FC = () => {
         price: product.discountPrice || product.price,
         availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
         itemCondition: 'https://schema.org/NewCondition',
+        shippingDetails: offerShippingDetailsSchema,
+        hasMerchantReturnPolicy: merchantReturnPolicySchema,
         seller: { '@id': `${SITE_URL}/#organization` }
       }
     };
@@ -141,11 +156,11 @@ export const ProductDetail: React.FC = () => {
       productNode,
       buildBreadcrumbSchema([
         { name: 'Trang chủ', url: '/' },
-        { name: String(categoryName || product.category), url: categorySlug ? `/apparel/${categorySlug}` : '/shop' },
+        { name: String(categoryName || product.category), url: productCategoryUrl },
         { name: product.name, url: productCanonical }
       ])
     );
-  }, [product, productCanonical, categoryName, categorySlug]);
+  }, [product, productCanonical, categoryName, productCategoryUrl]);
 
   useSEO({
     title: product?.seoTitle || (product ? `${product.name} | UR Sport - Đồ Thể Thao Cao Cấp` : 'UR Sport'),
@@ -433,6 +448,12 @@ export const ProductDetail: React.FC = () => {
       window.scrollTo(0, 0);
     }
   }, [product?.id]);
+
+  useEffect(() => {
+    if (product?.id) {
+      recordProductView(product.id);
+    }
+  }, [product?.id, recordProductView]);
 
   useEffect(() => {
     if (product && selectedColor) {
@@ -763,6 +784,38 @@ export const ProductDetail: React.FC = () => {
             </div>
           </motion.div>
         </div>
+
+        {recentlyViewedProducts.length > 0 && (
+          <section className="mt-14 border-t border-zinc-100 pt-10">
+            <div className="mb-6 flex items-end justify-between gap-4">
+              <div>
+                <p className="mb-2 text-[11px] font-black uppercase tracking-widest text-[#1e4b64]">
+                  Xem lại nhanh
+                </p>
+                <h2 className="text-2xl font-black tracking-tight text-zinc-950">
+                  Sản phẩm đã xem gần đây
+                </h2>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate('/da-xem')}
+                className="hidden h-10 rounded-full border-zinc-200 px-4 text-[11px] font-black uppercase tracking-widest text-zinc-600 hover:border-[#1e4b64]/30 hover:bg-blue-50 hover:text-[#1e4b64] sm:flex"
+              >
+                Xem tất cả
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4">
+              {recentlyViewedProducts.map((recentProduct) => (
+                <ProductCard
+                  key={recentProduct.id}
+                  product={recentProduct}
+                  onClick={() => navigate(`/${recentProduct.slug || recentProduct.id}`)}
+                />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Mobile Sticky Bar */}
         <AnimatePresence>
@@ -1393,12 +1446,13 @@ const FeatureLine = ({ label, value, opacity = "" }: { label: string; value: str
 
 const ProductDescriptionHtml = React.memo(({ html, className }: { html: string; className?: string }) => {
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const formattedHtml = React.useMemo(() => formatFaqContentHtml(html), [html]);
 
   React.useEffect(() => {
-    if (containerRef.current && containerRef.current.innerHTML !== html) {
-      containerRef.current.innerHTML = html;
+    if (containerRef.current && containerRef.current.innerHTML !== formattedHtml) {
+      containerRef.current.innerHTML = formattedHtml;
     }
-  }, [html]);
+  }, [formattedHtml]);
 
   return <div ref={containerRef} className={className} />;
 });

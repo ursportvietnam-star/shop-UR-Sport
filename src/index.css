@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,200;1,300;1,400;1,500;1,600;1,700;1,800&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -18,8 +19,6 @@
 }
 
 @layer base {
-  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,200;1,300;1,400;1,500;1,600;1,700;1,800&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-
   html, body {
     @apply antialiased text-slate-900 bg-white;
     font-family: var(--font-sans);
@@ -198,6 +197,95 @@
   table-layout: fixed !important;
 }
 
+.product-description-container .seo-faq-section {
+  width: 100% !important;
+  margin: 2.5rem 0 !important;
+  padding: 0 !important;
+}
+
+.product-description-container .seo-faq-title {
+  margin: 0 0 1.5rem !important;
+  color: #020617 !important;
+  font-size: 1.5rem !important;
+  font-weight: 900 !important;
+  line-height: 1.25 !important;
+}
+
+.product-description-container .seo-faq {
+  width: 100% !important;
+  margin: 0 !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.product-description-container .seo-faq:first-of-type {
+  border-top: 1px solid #e5e7eb !important;
+}
+
+.product-description-container .seo-faq + .seo-faq {
+  margin-top: 0 !important;
+}
+
+.product-description-container .seo-faq-question {
+  display: flex !important;
+  width: 100% !important;
+  cursor: pointer !important;
+  list-style: none !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 1rem !important;
+  margin: 0 !important;
+  padding: 1.25rem 0 !important;
+  color: #0f172a !important;
+  font-size: 1rem !important;
+  font-weight: 800 !important;
+  line-height: 1.5 !important;
+}
+
+.product-description-container .seo-faq-question::-webkit-details-marker {
+  display: none !important;
+}
+
+.product-description-container .seo-faq-icon {
+  position: relative !important;
+  display: inline-flex !important;
+  width: 1rem !important;
+  height: 1rem !important;
+  flex: 0 0 1rem !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: transform 180ms ease !important;
+}
+
+.product-description-container .seo-faq-icon::before {
+  content: "" !important;
+  position: absolute !important;
+  width: 0.5rem !important;
+  height: 0.5rem !important;
+  border-right: 2px solid #0f172a !important;
+  border-bottom: 2px solid #0f172a !important;
+  transform: rotate(45deg) !important;
+}
+
+.product-description-container .seo-faq[open] .seo-faq-icon {
+  transform: rotate(180deg) !important;
+}
+
+.product-description-container .seo-faq-answer {
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 2.5rem 1.25rem 0 !important;
+  color: #475569 !important;
+  font-size: 0.95rem !important;
+  font-weight: 500 !important;
+  line-height: 1.75 !important;
+}
+
+.product-description-container .seo-faq-answer p:last-child {
+  margin-bottom: 0 !important;
+}
+
 .blog-content .blog-faq-section {
   margin-top: 2.5rem !important;
   margin-bottom: 2.5rem !important;
@@ -373,5 +461,41 @@ html {
 
 .quill { @apply bg-slate-50 rounded-2xl border-none shadow-inner; }
 .ql-toolbar { @apply border-none bg-white rounded-t-2xl px-4 py-3; }
+
+.ql-toolbar .ql-faq,
+.ql-toolbar .faq-toolbar-button,
+.ql-toolbar .html-toolbar-button {
+  align-items: center !important;
+  border-radius: 999px !important;
+  display: inline-flex !important;
+  gap: 0.25rem !important;
+  height: 28px !important;
+  justify-content: center !important;
+  width: auto !important;
+  padding: 0 0.45rem !important;
+  color: #111827 !important;
+  font-size: 0.72rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0 !important;
+}
+
+.ql-toolbar .ql-faq::before,
+.ql-toolbar .faq-toolbar-button::before {
+  content: "FAQ" !important;
+}
+
+.ql-toolbar .ql-faq:hover,
+.ql-toolbar .ql-faq:focus,
+.ql-toolbar .faq-toolbar-button:hover,
+.ql-toolbar .faq-toolbar-button:focus,
+.ql-toolbar .html-toolbar-button:hover,
+.ql-toolbar .html-toolbar-button:focus {
+  color: #1e4b64 !important;
+}
+
+.ql-toolbar .html-toolbar-button.is-active {
+  background: #1e4b64 !important;
+  color: #fff !important;
+}
 .ql-container { @apply border-none min-h-[400px] px-4 py-2; }
 .ql-editor { @apply min-h-[400px] text-slate-700; }

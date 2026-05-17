@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
-import { X, User, ChevronRight, ShoppingBag, CreditCard, Heart, Settings, LogIn, Sparkles } from 'lucide-react';
+import { X, User, ChevronRight, ShoppingBag, CreditCard, Heart, Settings, LogIn, Sparkles, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -12,6 +12,8 @@ import { getDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import { getNavigationSubcategories, normalizeMenuLabel } from '../lib/categoryConfig';
+import { useWishlist } from '../WishlistContext';
+import { useRecentlyViewed } from '../RecentlyViewedContext';
 
 interface MobileSidebarProps {
   isOpen: boolean;
@@ -33,6 +35,8 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
   user 
 }) => {
   const navigate = useNavigate();
+  const { wishlistCount } = useWishlist();
+  const { recentCount } = useRecentlyViewed();
   const [navItems, setNavItems] = React.useState<any[]>([]);
   const [expandedCategory, setExpandedCategory] = React.useState<string | null>(null);
 
@@ -148,6 +152,36 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
                     </div>
 
                     <div className="px-6 py-2 space-y-1 mb-4">
+                        <Link 
+                            to="/yeu-thich"
+                            onClick={onClose}
+                            className="flex w-full items-center justify-between py-2.5 text-[15px] font-black italic tracking-tight uppercase text-zinc-900 transition-colors hover:text-red-500"
+                        >
+                            <span className="flex items-center gap-2">
+                                <Heart className="h-4 w-4" />
+                                Yêu thích
+                            </span>
+                            {wishlistCount > 0 && (
+                                <span className="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-black text-white">
+                                    {wishlistCount}
+                                </span>
+                            )}
+                        </Link>
+                        <Link 
+                            to="/da-xem"
+                            onClick={onClose}
+                            className="flex w-full items-center justify-between py-2.5 text-[15px] font-black italic tracking-tight uppercase text-zinc-900 transition-colors hover:text-[#1e4b64]"
+                        >
+                            <span className="flex items-center gap-2">
+                                <Clock className="h-4 w-4" />
+                                Đã xem
+                            </span>
+                            {recentCount > 0 && (
+                                <span className="rounded-full bg-[#1e4b64] px-2 py-0.5 text-[10px] font-black text-white">
+                                    {recentCount}
+                                </span>
+                            )}
+                        </Link>
                         {mainLinks.map((link, idx) => (
                           <Link 
                               key={idx}
@@ -178,46 +212,56 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
 
                                 return (
                                 <React.Fragment key={cat.id || cat.label || i}>
-                                <motion.button
+                                <motion.div
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: i * 0.05 }}
-                                    onClick={() => {
-                                        if (childLinks.length > 0) {
-                                            setExpandedCategory(isExpanded ? null : categoryKey);
-                                            return;
-                                        }
-                                        if (cat.isStatic) {
-                                            onCategorySelect(cat.label as any);
-                                        } else {
-                                            if (cat.link.startsWith('http')) {
-                                              window.open(cat.link, '_blank');
-                                            } else {
-                                              navigate(cat.link);
-                                            }
-                                        }
-                                        onClose();
-                                    }}
                                     className={`w-full flex items-center gap-4 py-3 px-6 transition-all group relative border-b border-zinc-50 ${
                                         activeCategory === cat.label 
                                           ? 'bg-[#1e4b64]/5' 
                                           : 'hover:bg-zinc-50 bg-white'
                                     }`}
                                 >
-                                    <div className="h-12 w-12 rounded-full overflow-hidden border border-zinc-100 group-hover:scale-105 transition-transform bg-zinc-50 flex-shrink-0 relative shadow-sm">
-                                        {cat.icon ? (
-                                          <img src={cat.icon} alt={cat.label} loading="lazy" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
-                                        ) : (
-                                          <div className="h-full w-full bg-zinc-50 flex items-center justify-center">
-                                            <Sparkles className="h-5 w-5 text-[#1e4b64]/20" />
-                                          </div>
-                                        )}
-                                    </div>
-                                    <span className={`text-[15px] font-bold tracking-tight text-left flex-1 text-zinc-900 group-hover:text-[#1e4b64] transition-colors`}>
-                                        {cat.label}
-                                    </span>
-                                    <ChevronRight className={`h-4 w-4 text-zinc-300 group-hover:text-[#1e4b64] transition-all ${isExpanded ? 'rotate-90 text-[#1e4b64]' : ''}`} />
-                                </motion.button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (cat.isStatic) {
+                                                onCategorySelect(cat.label as any);
+                                            } else if (cat.link?.startsWith('http')) {
+                                                window.open(cat.link, '_blank');
+                                            } else {
+                                                navigate(cat.link || '/shop');
+                                            }
+                                            onClose();
+                                        }}
+                                        className="flex min-w-0 flex-1 items-center gap-4 text-left"
+                                    >
+                                        <div className="h-12 w-12 rounded-full overflow-hidden border border-zinc-100 group-hover:scale-105 transition-transform bg-zinc-50 flex-shrink-0 relative shadow-sm">
+                                            {cat.icon ? (
+                                              <img src={cat.icon} alt={cat.label} loading="lazy" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                                            ) : (
+                                              <div className="h-full w-full bg-zinc-50 flex items-center justify-center">
+                                                <Sparkles className="h-5 w-5 text-[#1e4b64]/20" />
+                                              </div>
+                                            )}
+                                        </div>
+                                        <span className={`text-[15px] font-bold tracking-tight text-left flex-1 text-zinc-900 group-hover:text-[#1e4b64] transition-colors`}>
+                                            {cat.label}
+                                        </span>
+                                    </button>
+                                    {childLinks.length > 0 ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => setExpandedCategory(isExpanded ? null : categoryKey)}
+                                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-zinc-300 transition-colors hover:bg-zinc-100 hover:text-[#1e4b64]"
+                                        aria-label={isExpanded ? `Thu gọn ${cat.label}` : `Mở danh mục con ${cat.label}`}
+                                      >
+                                        <ChevronRight className={`h-4 w-4 transition-all ${isExpanded ? 'rotate-90 text-[#1e4b64]' : ''}`} />
+                                      </button>
+                                    ) : (
+                                      <ChevronRight className="h-4 w-4 shrink-0 text-zinc-300 group-hover:text-[#1e4b64] transition-colors" />
+                                    )}
+                                </motion.div>
                                 {isExpanded && childLinks.map((child, childIndex) => (
                                     <motion.button
                                         key={child.id || `${cat.label}-${child.label}`}

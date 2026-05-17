@@ -13,6 +13,8 @@ import {
   ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { doc, serverTimestamp, setDoc } from "firebase/firestore";
+import { db } from "../firebase";
 
 type Category = 'Áo thun nam' | 'Áo thun thể thao nam' | 'Áo polo nam' | 'Quần thể thao nam' | 'Phụ kiện thể thao' | 'All';
 
@@ -59,6 +61,8 @@ const Logo = ({ inverse }: { inverse?: boolean }) => (
 
 export function Footer({ onPageChange, onCategorySelect }: FooterProps) {
   const [email, setEmail] = useState("");
+  const [subscribeMessage, setSubscribeMessage] = useState("");
+  const [isSubscribing, setIsSubscribing] = useState(false);
   const [isDark, setIsDark] = useState(true);
   const [visible, setVisible] = useState(false);
   const [openSection, setOpenSection] = useState("Danh mục sản phẩm");
@@ -82,9 +86,31 @@ export function Footer({ onPageChange, onCategorySelect }: FooterProps) {
     return () => observer.disconnect();
   }, []);
 
-  const subscribe = (event: FormEvent<HTMLFormElement>) => {
+  const subscribe = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setEmail("");
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) return;
+
+    setIsSubscribing(true);
+    setSubscribeMessage("");
+
+    try {
+      await setDoc(doc(db, "newsletterSubscribers", encodeURIComponent(normalizedEmail)), {
+        email: normalizedEmail,
+        status: "active",
+        source: "footer",
+        updatedAt: serverTimestamp(),
+        createdAt: serverTimestamp(),
+      }, { merge: true });
+
+      setEmail("");
+      setSubscribeMessage("Cám ơn quý khách đã đăng ký.");
+    } catch (error) {
+      console.error("Newsletter subscribe failed:", error);
+      setSubscribeMessage("Chưa thể lưu email. Vui lòng thử lại sau.");
+    } finally {
+      setIsSubscribing(false);
+    }
   };
 
   return (
@@ -125,12 +151,16 @@ export function Footer({ onPageChange, onCategorySelect }: FooterProps) {
               </div>
               <button
                 className="inline-flex h-11 items-center gap-2 rounded-md bg-[#1e4b64] px-4 text-sm font-black text-white hover:bg-[#153446] transition duration-300 hover:scale-[1.02] active:scale-95"
+                disabled={isSubscribing}
                 type="submit"
               >
                 <Send className="h-4 w-4" />
-                Đăng ký
+                {isSubscribing ? "Đang lưu" : "Đăng ký"}
               </button>
             </form>
+            {subscribeMessage && (
+              <p className="mt-3 text-xs font-semibold text-slate-300">{subscribeMessage}</p>
+            )}
           </div>
 
           <div className="hidden md:block">

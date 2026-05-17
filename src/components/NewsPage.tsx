@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronRight, ChevronDown, Calendar, User, ArrowLeft, ArrowRight, Share2, MessageCircle, ShoppingBag, List, ChevronRight as ChevronRightIcon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { ChevronRight, ChevronDown, Calendar, Share2, MessageCircle, ShoppingBag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSEO } from '../hooks/useSEO';
 import { SITE_URL, absoluteUrl, buildBreadcrumbSchema, buildSeoGraph, cleanSeoText } from '../lib/seo';
+import { formatFaqContentHtml } from '../lib/faqHtml';
 import { collection, onSnapshot, query, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { STATIC_BLOG_POSTS as POSTS } from '../data';
@@ -17,6 +17,7 @@ interface TocHeading {
   id: string;
   text: string;
   level: number;
+  number: string;
 }
 
 const POST_CATEGORIES = [
@@ -61,7 +62,9 @@ const normalizeTextForMatch = (text: string) =>
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-  const BLOG_CATEGORY_SEO_DEFAULTS: Record<string, { h1: string; description: string; seoTitle: string; metaDescription: string }> = {
+    .replace(/đ/g, 'd');
+
+const BLOG_CATEGORY_SEO_DEFAULTS: Record<string, { h1: string; description: string; seoTitle: string; metaDescription: string }> = {
   blog: {
     h1: 'Tin tức & Bài viết',
     description: 'Cập nhật kiến thức chọn áo thun nam, chất liệu, dáng người, áo thun thể thao và hướng dẫn mua áo từ UR Sport.',
@@ -176,6 +179,9 @@ const findBlogCategoryBySlug = (items: BlogCategoryItem[], routeSlug?: string) =
     || DEFAULT_BLOG_CATEGORY_ITEMS.find(item => item.group !== 'main' && slugifyCategory(item.label) === routeSlug);
 };
 
+const getBlogPostSlug = (post: any) => String(post?.slug || post?.id || '').trim();
+const getBlogPostPath = (post: any) => `/blog/${getBlogPostSlug(post)}`;
+
 const loadCachedBlogCategories = () => {
   if (typeof window === 'undefined') return null;
   try {
@@ -287,9 +293,13 @@ export function NewsPage() {
         return;
       }
 
-      const post = posts.find(p => p.slug === slug) || posts.find(p => p.id === slug);
+      const post = posts.find(p => getBlogPostSlug(p) === slug) || posts.find(p => p.id === slug);
       if (post) {
         setSelectedPost(post);
+        const canonicalSlug = getBlogPostSlug(post);
+        if (canonicalSlug && canonicalSlug !== slug) {
+          navigate(`/blog/${canonicalSlug}`, { replace: true });
+        }
         window.scrollTo(0, 0);
       } else if (postsLoaded && blogCategoriesLoaded) {
         // Only navigate away if we are sure the post doesn't exist after loading everything
@@ -324,6 +334,7 @@ export function NewsPage() {
         .map((paragraph: string) => `<p>${paragraph.trim()}</p>`)
         .join('');
     }
+    rawHtml = formatFaqContentHtml(rawHtml);
 
     const parser = new DOMParser();
     const document = parser.parseFromString(`<div>${rawHtml}</div>`, 'text/html');
@@ -381,82 +392,61 @@ export function NewsPage() {
       node.textContent = '';
     });
 
-    wrapper.querySelectorAll('section').forEach((section) => {
-      const heading = section.querySelector('h2');
-      const headingText = normalizeTextForMatch(heading?.textContent || '');
-      const isFaqSection = headingText.includes('cau hoi') || headingText.includes('faq');
-      if (!isFaqSection) return;
-
-      section.classList.add('blog-faq-section');
-      if (heading) {
-        heading.textContent = 'C\u00e2u h\u1ecfi th\u01b0\u1eddng g\u1eb7p';
-        heading.classList.add('blog-faq-title');
-      }
-
-      Array.from(section.querySelectorAll('h3')).forEach((questionHeading) => {
-        const questionText = questionHeading.textContent?.replace(/^\s*\d+[\.\)]\s*/, '').trim() || '';
-        if (!questionText) return;
-
-        const details = document.createElement('details');
-        details.className = 'blog-faq-item';
-
-        const summary = document.createElement('summary');
-        summary.className = 'blog-faq-question';
-        summary.textContent = questionText;
-
-        const answer = document.createElement('div');
-        answer.className = 'blog-faq-answer';
-
-        let sibling = questionHeading.nextSibling;
-        while (sibling) {
-          const nextSibling = sibling.nextSibling;
-          const elementSibling = sibling instanceof HTMLElement ? sibling : null;
-          const tagName = elementSibling?.tagName?.toLowerCase();
-          if (tagName === 'h3' || tagName === 'h2') break;
-
-          answer.appendChild(sibling);
-          sibling = nextSibling;
-        }
-
-        details.appendChild(summary);
-        details.appendChild(answer);
-        questionHeading.replaceWith(details);
-      });
-    });
-
-    wrapper.querySelectorAll('h2').forEach((heading) => {
+    Array.from(wrapper.querySelectorAll('h2, h3')).forEach((heading) => {
       const headingText = normalizeTextForMatch(heading.textContent || '');
       const isFaqHeading = headingText.includes('cau hoi') || headingText.includes('faq');
-      if (!isFaqHeading || heading.classList.contains('blog-faq-title')) return;
+      if (!isFaqHeading || heading.closest('.seo-faq-section')) return;
 
-      heading.textContent = 'C\u00e2u h\u1ecfi th\u01b0\u1eddng g\u1eb7p';
-      heading.classList.add('blog-faq-title');
-      heading.parentElement?.classList.add('blog-faq-section');
+      const faqSection = document.createElement('section');
+      faqSection.className = 'seo-faq-section';
 
-      let sibling = heading.nextSibling;
+      const title = document.createElement('h2');
+      title.className = 'seo-faq-title';
+      title.textContent = 'Câu hỏi thường gặp';
+
+      heading.replaceWith(faqSection);
+      faqSection.appendChild(title);
+
+      let faqIndex = 0;
+      let sibling = faqSection.nextSibling;
       while (sibling) {
-        const elementSibling = sibling instanceof HTMLElement ? sibling : null;
-        const tagName = elementSibling?.tagName?.toLowerCase();
+        const questionHeading = sibling instanceof HTMLElement ? sibling : null;
+        const tagName = questionHeading?.tagName?.toLowerCase();
         if (tagName === 'h2') break;
 
-        if (tagName !== 'h3' || !elementSibling) {
-          sibling = sibling.nextSibling;
+        if (tagName !== 'h3' || !questionHeading) {
+          const nextSibling = sibling.nextSibling;
+          if (faqIndex === 0) {
+            faqSection.appendChild(sibling);
+          }
+          sibling = nextSibling;
           continue;
         }
 
-        const questionHeading = elementSibling;
         const questionText = questionHeading.textContent?.replace(/^\s*\d+[\.\)]\s*/, '').trim() || '';
+        if (!questionText) {
+          sibling = questionHeading.nextSibling;
+          continue;
+        }
+
         const details = document.createElement('details');
-        details.className = 'blog-faq-item';
+        details.className = 'seo-faq';
+        if (faqIndex === 0) details.open = true;
 
         const summary = document.createElement('summary');
-        summary.className = 'blog-faq-question';
-        summary.textContent = questionText;
+        summary.className = 'seo-faq-question';
+        const questionLabel = document.createElement('span');
+        questionLabel.textContent = questionText;
+        const icon = document.createElement('span');
+        icon.className = 'seo-faq-icon';
+        icon.setAttribute('aria-hidden', 'true');
+        summary.append(questionLabel, icon);
 
         const answer = document.createElement('div');
-        answer.className = 'blog-faq-answer';
+        answer.className = 'seo-faq-answer';
 
-        let answerSibling = questionHeading.nextSibling;
+        questionHeading.replaceWith(details);
+        let answerSibling = details.nextSibling;
         while (answerSibling) {
           const nextAnswerSibling = answerSibling.nextSibling;
           const answerElement = answerSibling instanceof HTMLElement ? answerSibling : null;
@@ -467,17 +457,41 @@ export function NewsPage() {
           answerSibling = nextAnswerSibling;
         }
 
-        questionHeading.replaceWith(details);
         details.appendChild(summary);
         details.appendChild(answer);
-        sibling = details.nextSibling;
+        faqSection.appendChild(details);
+        faqIndex += 1;
+        sibling = faqSection.nextSibling;
+      }
+
+      if (faqIndex === 0) {
+        faqSection.replaceWith(heading);
       }
     });
 
     const seenIds = new Set<string>();
+    const headingCounters = { h2: 0, h3: 0, h4: 0 };
     const headings = Array.from(wrapper.querySelectorAll('h2, h3, h4')).map((heading) => {
       const level = Number(heading.tagName.charAt(1));
-      const text = heading.textContent?.trim() || '';
+      const text = heading.textContent?.replace(/^\s*\d+[\.\)]\s*/, '').trim() || '';
+      if (level === 2) {
+        headingCounters.h2 += 1;
+        headingCounters.h3 = 0;
+        headingCounters.h4 = 0;
+      } else if (level === 3) {
+        if (headingCounters.h2 === 0) headingCounters.h2 = 1;
+        headingCounters.h3 += 1;
+        headingCounters.h4 = 0;
+      } else if (level === 4) {
+        if (headingCounters.h2 === 0) headingCounters.h2 = 1;
+        if (headingCounters.h3 === 0) headingCounters.h3 = 1;
+        headingCounters.h4 += 1;
+      }
+      const number = level === 2
+        ? `${headingCounters.h2}`
+        : level === 3
+          ? `${headingCounters.h2}.${headingCounters.h3}`
+          : `${headingCounters.h2}.${headingCounters.h3}.${headingCounters.h4}`;
       let id = heading.id || slugifyHeading(text || 'heading');
       let uniqueId = id;
       let counter = 1;
@@ -487,7 +501,7 @@ export function NewsPage() {
       }
       seenIds.add(uniqueId);
       heading.id = uniqueId;
-      return { id: uniqueId, text, level };
+      return { id: uniqueId, text, level, number };
     });
 
     setTocHeadings(headings);
@@ -515,7 +529,7 @@ export function NewsPage() {
     let didBuildFaq = false;
 
     const buildFaqFromHeading = (heading: HTMLHeadingElement) => {
-      if (heading.classList.contains('blog-faq-title')) return;
+      if (heading.classList.contains('seo-faq-title') || heading.closest('.seo-faq-section')) return;
 
       let sibling = heading.nextElementSibling as HTMLElement | null;
       const questionHeadings: HTMLHeadingElement[] = [];
@@ -530,22 +544,27 @@ export function NewsPage() {
       didBuildFaq = true;
 
       heading.textContent = 'C\u00e2u h\u1ecfi th\u01b0\u1eddng g\u1eb7p';
-      heading.classList.add('blog-faq-title');
-      heading.parentElement?.classList.add('blog-faq-section');
+      heading.classList.add('seo-faq-title');
+      heading.parentElement?.classList.add('seo-faq-section');
 
       questionHeadings.forEach((questionHeading) => {
         const questionText = questionHeading.textContent?.replace(/^\s*\d+[\.\)]\s*/, '').trim() || '';
         if (!questionText) return;
 
         const details = document.createElement('details');
-        details.className = 'blog-faq-item';
+        details.className = 'seo-faq';
 
         const summary = document.createElement('summary');
-        summary.className = 'blog-faq-question';
-        summary.textContent = questionText;
+        summary.className = 'seo-faq-question';
+        const questionLabel = document.createElement('span');
+        questionLabel.textContent = questionText;
+        const icon = document.createElement('span');
+        icon.className = 'seo-faq-icon';
+        icon.setAttribute('aria-hidden', 'true');
+        summary.append(questionLabel, icon);
 
         const answer = document.createElement('div');
-        answer.className = 'blog-faq-answer';
+        answer.className = 'seo-faq-answer';
 
         let answerSibling = questionHeading.nextSibling;
         while (answerSibling) {
@@ -563,7 +582,7 @@ export function NewsPage() {
       });
     };
 
-    root.querySelectorAll('h2').forEach((heading) => {
+    root.querySelectorAll('h2, h3').forEach((heading) => {
       const headingText = normalizeTextForMatch(heading.textContent || '');
       if (headingText.includes('cau hoi') || headingText.includes('faq')) {
         buildFaqFromHeading(heading as HTMLHeadingElement);
@@ -657,7 +676,7 @@ export function NewsPage() {
     : mainBlogCategory;
   const currentBlogMeta = activeBlogCategory || mainBlogCategory;
   const blogCanonical = currentBlogMeta?.link || '/blog';
-  const postCanonical = selectedPost ? `/blog/${selectedPost.slug}` : blogCanonical;
+  const postCanonical = selectedPost ? getBlogPostPath(selectedPost) : blogCanonical;
   const blogSchema = selectedPost ? buildSeoGraph(
     {
       '@type': 'Article',
@@ -763,7 +782,7 @@ export function NewsPage() {
                         <button onClick={() => setInlineTocOpenId(null)} className="text-[13px] text-[#0066cc]">Ẩn</button>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-2.5">
-                        {tocHeadings.map((item, idx) => (
+                        {tocHeadings.map((item) => (
                           <button
                             key={`sticky-item-${item.id}`}
                             onClick={() => {
@@ -774,7 +793,7 @@ export function NewsPage() {
                               item.level !== 2 && "pl-5"
                             )}
                           >
-                            <span className="flex-shrink-0">{idx + 1}.</span>
+                            <span className="flex-shrink-0">{item.number}.</span>
                             <span className="line-clamp-1">{item.text}</span>
                           </button>
                         ))}
@@ -861,7 +880,7 @@ export function NewsPage() {
                       animate={{ opacity: 1, height: 'auto' }}
                       className="mt-6 space-y-2.5 overflow-hidden"
                     >
-                      {tocHeadings.map((item, idx) => (
+                      {tocHeadings.map((item) => (
                         <button
                           key={`static-${item.id}`}
                           onClick={() => {
@@ -872,7 +891,7 @@ export function NewsPage() {
                             item.level !== 2 && "pl-6"
                           )}
                         >
-                          <span className="font-medium">{idx + 1}. {item.text}</span>
+                          <span className="font-medium">{item.number}. {item.text}</span>
                         </button>
                       ))}
                     </motion.div>
@@ -933,7 +952,7 @@ export function NewsPage() {
                           </button>
                         </div>
                         <div className="space-y-2.5">
-                          {tocHeadings.map((item, idx) => (
+                          {tocHeadings.map((item) => (
                             <button
                               key={item.id}
                               onClick={() => {
@@ -944,7 +963,7 @@ export function NewsPage() {
                                 item.level !== 2 && "pl-6"
                               )}
                             >
-                              <span className="font-medium">{idx + 1}. {item.text}</span>
+                              <span className="font-medium">{item.number}. {item.text}</span>
                             </button>
                           ))}
                         </div>
@@ -990,59 +1009,6 @@ export function NewsPage() {
               </div>
             )}
 
-            {/* Suggested Products Section */}
-            <div className="mt-20 pt-16 border-t border-zinc-100">
-              <div className="flex items-center justify-between mb-10">
-                <div>
-                  <h3 className="text-2xl font-black text-zinc-900 leading-tight mb-2">Sản phẩm cho bạn</h3>
-                  <p className="text-sm font-medium text-zinc-400 uppercase tracking-widest italic">Gợi ý từ UR SPORT</p>
-                </div>
-                <Button 
-                  onClick={() => navigate('/shop')}
-                  variant="outline" 
-                  className="rounded-full border-zinc-200 text-xs font-bold uppercase tracking-widest hover:border-[#1e4b64] hover:text-[#1e4b64] transition-all"
-                >
-                  Xem tất cả <ArrowRight className="ml-2 h-3 w-3" />
-                </Button>
-              </div>
-              
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
-                {products.slice(0, 3).map((product) => (
-                  <div 
-                    key={product.id}
-                    onClick={() => {
-                      const catSlug = product.category
-                        ? product.category.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')
-                        : 'san-pham';
-                      navigate(`/apparel/${catSlug}/${product.slug}`);
-                    }}
-                    className="group cursor-pointer space-y-4"
-                  >
-                    <div className="relative aspect-[3/4] overflow-hidden rounded-3xl bg-zinc-100 border border-zinc-100 shadow-sm transition-all duration-500 group-hover:shadow-xl group-hover:-translate-y-2">
-                      <LazyImage 
-                        src={product.images[0]} 
-                        alt={product.name} 
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
-                      <button className="absolute bottom-4 right-4 w-10 h-10 rounded-full bg-white text-zinc-900 shadow-xl flex items-center justify-center opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
-                        <ShoppingBag className="h-4 w-4" />
-                      </button>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">{product.category}</p>
-                      <h4 className="text-[13px] font-bold text-zinc-900 leading-tight line-clamp-2 group-hover:text-[#1e4b64] transition-colors">{product.name}</h4>
-                      <div className="flex items-center gap-2 pt-1">
-                        <span className="text-[14px] font-black text-[#ff3b30]">{(product.discountPrice || product.price).toLocaleString('vi-VN')}₫</span>
-                        {product.discountPrice && (
-                          <span className="text-[11px] text-zinc-300 line-through font-bold">{product.price.toLocaleString('vi-VN')}₫</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
 
           <aside className="relative w-full lg:w-[320px]">
@@ -1057,7 +1023,7 @@ export function NewsPage() {
                   <div 
                     key={post.id} 
                     className="flex gap-4 group cursor-pointer"
-                    onClick={() => navigate(`/blog/${post.id}`)}
+                    onClick={() => navigate(getBlogPostPath(post))}
                   >
                     <div className="w-20 h-20 flex-shrink-0 overflow-hidden rounded-xl">
                        <LazyImage 
@@ -1077,6 +1043,56 @@ export function NewsPage() {
               </div>
             </div>
           </aside>
+
+          {/* Suggested Products Section */}
+          <div className="lg:col-span-2 w-full mt-10 pt-12 border-t border-zinc-200">
+            <div className="flex items-center justify-between gap-6 mb-10">
+              <h3 className="text-[20px] font-bold text-zinc-900 uppercase tracking-tight">CÓ THỂ BẠN CŨNG THÍCH</h3>
+              <button
+                type="button"
+                onClick={() => navigate('/shop')}
+                className="shrink-0 text-[#1e4b64] text-sm font-bold hover:underline"
+              >
+                Xem tất cả
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
+              {products.slice(0, 5).map((product) => (
+                <div
+                  key={product.id}
+                  onClick={() => {
+                    const catSlug = product.category
+                      ? product.category.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')
+                      : 'san-pham';
+                    navigate(`/apparel/${catSlug}/${product.slug}`);
+                  }}
+                  className="group cursor-pointer"
+                >
+                  <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-zinc-50 border border-zinc-100 shadow-sm transition-all duration-500 group-hover:shadow-md">
+                    <LazyImage
+                      src={product.images[0]}
+                      alt={product.name}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
+                    <button className="absolute bottom-3 right-3 w-8 h-8 rounded-full bg-white text-zinc-900 shadow-lg flex items-center justify-center opacity-0 translate-y-3 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
+                      <ShoppingBag className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <h4 className="mt-4 mb-2 text-[14px] font-bold text-zinc-800 leading-snug line-clamp-2 group-hover:text-[#1e4b64] transition-colors">
+                    {product.name}
+                  </h4>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[16px] font-black text-[#ff3b30]">{(product.discountPrice || product.price).toLocaleString('vi-VN')}đ</span>
+                    {product.discountPrice && (
+                      <span className="text-xs text-zinc-400 line-through">{product.price.toLocaleString('vi-VN')}đ</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -1119,7 +1135,7 @@ export function NewsPage() {
           <article 
             key={post.id} 
             className="group cursor-pointer"
-            onClick={() => navigate(`/blog/${post.id}`)}
+            onClick={() => navigate(getBlogPostPath(post))}
           >
             <div className="relative aspect-[1024/682] overflow-hidden rounded-3xl mb-6 shadow-sm">
               <LazyImage 

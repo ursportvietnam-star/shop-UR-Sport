@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "prebuild": "node scripts/generate-sitemap.mjs",
+    "prebuild": "tsx scripts/generate-sitemap.ts",
+    "postbuild": "tsx scripts/generate-seo-snapshots.ts",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",

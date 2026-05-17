@@ -63,6 +63,16 @@ service cloud.firestore {
         request.resource.data.comment is string;
     }
 
+    function isValidNewsletterSubscriber() {
+      return request.resource.data.email is string &&
+        request.resource.data.email.size() <= 254 &&
+        request.resource.data.email.matches('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$') &&
+        request.resource.data.status == 'active' &&
+        request.resource.data.source is string &&
+        request.resource.data.source.size() <= 40 &&
+        request.resource.data.keys().hasOnly(['email', 'status', 'source', 'createdAt', 'updatedAt']);
+    }
+
     // Products: Public read, Admin write
     match /products/{productId} {
       allow read: if true;
@@ -88,6 +98,33 @@ service cloud.firestore {
     match /settings/{settingId} {
       allow read: if true;
       allow write: if isAdmin();
+    }
+
+    // Blog posts: Public read, Admin write
+    match /blogPosts/{postId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Media library: Public read, Admin write
+    match /media/{mediaId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Vouchers: Public read, Admin write
+    match /vouchers/{voucherId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Newsletter subscribers: Visitors can register/re-activate their own email only; admins manage the list
+    match /newsletterSubscribers/{subscriberId} {
+      allow create: if isAdmin() || isValidNewsletterSubscriber();
+      allow update: if isAdmin() || (isValidNewsletterSubscriber() &&
+        resource.data.email == request.resource.data.email &&
+        resource.data.source == request.resource.data.source);
+      allow read, delete: if isAdmin();
     }
     
     // Admins collection

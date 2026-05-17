@@ -17,6 +17,9 @@ const slugify = (text: string) =>
   text
     .toString()
     .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
     .trim()
     .replace(/\s+/g, '-')
     .replace(/[^a-z0-9-]/g, '')
@@ -363,6 +366,37 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
     setIsHtmlMode((prev) => !prev);
   };
 
+  const insertFaqTemplate = React.useCallback(() => {
+    const faqTemplate = `
+<h2>Câu hỏi thường gặp</h2>
+<h3>Câu hỏi 1?</h3>
+<p>Nhập câu trả lời 1 tại đây.</p>
+<h3>Câu hỏi 2?</h3>
+<p>Nhập câu trả lời 2 tại đây.</p>
+<h3>Câu hỏi 3?</h3>
+<p>Nhập câu trả lời 3 tại đây.</p>`;
+
+    if (isHtmlMode) {
+      setHtmlSource(prev => `${prev || ''}\n${faqTemplate}`.trim());
+      toast.success('Đã chèn mẫu FAQ vào HTML.');
+      return;
+    }
+
+    const quill = quillRef.current?.getEditor();
+    if (!quill) {
+      setContent(prev => `${prev || ''}${faqTemplate}`.trim());
+      return;
+    }
+
+    const range = quill.getSelection(true);
+    const insertIndex = range?.index ?? quill.getLength();
+    quill.clipboard.dangerouslyPasteHTML(insertIndex, faqTemplate, 'user');
+    quill.setSelection(insertIndex + 1, 0);
+    quill.update('user');
+    syncEditorHtml();
+    toast.success('Đã chèn 3 câu hỏi FAQ.');
+  }, [isHtmlMode, syncEditorHtml]);
+
   const modules = React.useMemo(() => ({
     toolbar: {
       container: '#blog-quill-toolbar',
@@ -488,18 +522,6 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
             <div className="space-y-2 text-sm font-semibold text-zinc-700">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <span>Nội dung bài viết</span>
-                <button
-                  type="button"
-                  onClick={toggleHtmlMode}
-                  className={cn(
-                    'inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-bold transition',
-                    isHtmlMode
-                      ? 'border-violet-600 bg-violet-600 text-white'
-                      : 'border-zinc-200 bg-white text-zinc-700 hover:border-violet-400 hover:text-violet-600'
-                  )}
-                >
-                  <span className="text-[11px]">{isHtmlMode ? 'SOẠN THẢO' : 'HTML'}</span>
-                </button>
               </div>
               <div ref={editorWrapRef} className="w-full product-quill-editor relative rounded-3xl border border-zinc-200 bg-white shadow-sm">
                 <style
@@ -521,11 +543,32 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
                         border: none !important;
                         background: transparent !important;
                       }
+                      .product-quill-editor .ql-toolbar .faq-toolbar-button,
+                      .product-quill-editor .ql-toolbar .html-toolbar-button {
+                        align-items: center !important;
+                        border-radius: 999px !important;
+                        display: inline-flex !important;
+                        gap: 0.25rem !important;
+                        height: 28px !important;
+                        justify-content: center !important;
+                        width: auto !important;
+                        padding: 0 0.45rem !important;
+                        color: #111827 !important;
+                        font-size: 0.72rem !important;
+                        font-weight: 900 !important;
+                      }
+                      .product-quill-editor .ql-toolbar .faq-toolbar-button::before {
+                        content: "FAQ" !important;
+                      }
+                      .product-quill-editor .ql-toolbar .html-toolbar-button.is-active {
+                        background: #7c3aed !important;
+                        color: #fff !important;
+                      }
                     `,
                   }}
                 />
                 <div className="border-b border-zinc-200 px-4 py-3 bg-white sticky top-0 z-10">
-                  <div id="blog-quill-toolbar" className="flex flex-wrap items-center gap-2">
+                  <div id="blog-quill-toolbar" className="ql-toolbar flex flex-wrap items-center gap-2">
                     <span className="ql-formats">
                       <select className="ql-header" defaultValue="">
                         <option value="1">H1</option>
@@ -560,6 +603,17 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
                         className="!inline-flex !items-center !justify-center"
                       >
                         <Upload className="h-4 w-4" />
+                      </button>
+                    </span>
+                    <span className="ql-formats">
+                      <button type="button" className="faq-toolbar-button" onClick={insertFaqTemplate} title="Chèn 3 câu hỏi FAQ" />
+                      <button
+                        type="button"
+                        onClick={toggleHtmlMode}
+                        title={isHtmlMode ? 'Soạn thảo trực quan' : 'Chế độ HTML'}
+                        className={cn('html-toolbar-button', isHtmlMode && 'is-active')}
+                      >
+                        <span>{isHtmlMode ? 'VISUAL' : 'HTML'}</span>
                       </button>
                     </span>
                     <span className="ql-formats">

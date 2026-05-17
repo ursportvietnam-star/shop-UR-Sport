@@ -28,6 +28,15 @@ export interface AIBlogData {
   socialCaption: string;
 }
 
+export interface AIProductSeoFix {
+  seoTitle: string;
+  metaDescription: string;
+  keywords: string;
+  shortDescription: string;
+  descriptionHtml: string;
+  features: string[];
+}
+
 export const getGeminiApiKey = () => {
   return localStorage.getItem('gemini_api_key') || (import.meta as any).env?.VITE_GEMINI_API_KEY || '';
 };
@@ -44,7 +53,7 @@ export const setDeepSeekApiKey = (key: string) => {
   localStorage.setItem('deepseek_api_key', key);
 };
 
-export type AIProvider = 'gemini' | 'deepseek';
+export type AIProvider = 'gemini' | 'deepseek' | 'openai';
 
 export async function generateProductSEO(prompt: string, provider: AIProvider = 'gemini'): Promise<AIProductData> {
   const systemPrompt = `Bạn là một chuyên gia bán hàng (Copywriter) và chuyên gia SEO hàng đầu cho thương mại điện tử Việt Nam.
@@ -78,6 +87,50 @@ TRẢ VỀ ĐÚNG FORMAT JSON, KHÔNG CÓ MARKDOWN:
     }
     throw error;
   }
+}
+
+export async function generateProductSeoFix(prompt: string, provider: AIProvider = 'gemini'): Promise<AIProductSeoFix> {
+  const systemPrompt = `Bạn là chuyên gia SEO thương mại điện tử cho UR Sport.
+Nhiệm vụ: Tối ưu lại SEO cho một sản phẩm đang có sẵn, KHÔNG đổi giá, KHÔNG bịa tồn kho, KHÔNG đổi thương hiệu.
+Trả về đúng JSON, không markdown:
+{
+  "seoTitle": "Title SEO 45-65 ký tự, có từ khóa chính và thương hiệu nếu tự nhiên",
+  "metaDescription": "Meta description 120-165 ký tự, nêu lợi ích, chất liệu/form và lời mời mua tự nhiên",
+  "keywords": "8-14 từ khóa tiếng Việt, phân tách bằng dấu phẩy",
+  "shortDescription": "2 câu mô tả ngắn, dễ đọc, dùng được làm đoạn mở đầu",
+  "descriptionHtml": "HTML mô tả sản phẩm 350-650 từ, có <p>, <h2>, <ul><li>, tập trung chất liệu, form, hoàn cảnh sử dụng, chọn size, chăm sóc",
+  "features": ["4-6 điểm nổi bật ngắn gọn, mỗi điểm dưới 70 ký tự"]
+}`;
+
+  try {
+    if (provider === 'openai') {
+      return await callOpenAIProductSeoFix(prompt);
+    }
+    if (provider === 'deepseek') {
+      return await callDeepSeek(systemPrompt, prompt);
+    }
+    return await callGemini(systemPrompt, prompt);
+  } catch (error: any) {
+    if (error.message.includes('API Key') || error.message.includes('not valid')) {
+      throw new Error('API Key AI chưa đúng hoặc chưa được cấu hình. Vui lòng cập nhật trong mục AI Sản Phẩm.');
+    }
+    throw error;
+  }
+}
+
+async function callOpenAIProductSeoFix(prompt: string): Promise<AIProductSeoFix> {
+  const response = await fetch('/api/ai/product-seo-fix', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt })
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data?.error || 'Không gọi được ChatGPT API');
+  }
+
+  return data as AIProductSeoFix;
 }
 
 export async function generateBlogSEO(prompt: string, provider: AIProvider = 'gemini'): Promise<AIBlogData> {
