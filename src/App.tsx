@@ -49,6 +49,163 @@ const getProductUrl = (product: Product) => {
   return `/${product.slug || product.id}`;
 };
 
+const TRUST_BADGES = [
+  { icon: Truck, title: 'Miễn phí vận chuyển', desc: 'Cho đơn hàng từ 500k', detailHref: '/chinh-sach-giao-hang' },
+  { icon: ShieldCheck, title: 'Thanh toán an toàn', desc: 'Bảo mật thông tin 100%' },
+  { icon: RefreshCcw, title: 'Đổi trả 30 ngày', desc: 'Dễ dàng và nhanh chóng', detailHref: '/chinh-sach-doi-tra' },
+  { icon: Phone, title: 'Hỗ trợ tận tâm', desc: 'Hotline: 0917 722 425' },
+];
+
+function TrustBadgesSection({ className = '' }: { className?: string }) {
+  return (
+    <section className={cn("bg-zinc-50/50 border-y border-zinc-100", className)}>
+      <div className="container-custom py-10 sm:py-12">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-7 lg:grid-cols-4 lg:gap-8">
+          {TRUST_BADGES.map((badge, idx) => (
+            <motion.div
+              key={badge.title}
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: idx * 0.1 }}
+              className="group flex items-center gap-4"
+            >
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-zinc-100 bg-white shadow-sm transition-all duration-500 group-hover:border-[#1e4b64] group-hover:bg-[#1e4b64] sm:h-14 sm:w-14">
+                <badge.icon className="h-5 w-5 text-[#1e4b64] transition-colors duration-500 group-hover:text-white sm:h-6 sm:w-6" />
+              </div>
+              <div>
+                <h4 className="mb-1 text-[11px] font-black uppercase tracking-widest text-zinc-900 sm:text-[12px]">{badge.title}</h4>
+                <p className="text-[10px] font-medium text-zinc-400 sm:text-[11px]">{badge.desc}</p>
+                {'detailHref' in badge && badge.detailHref && (
+                  <Link
+                    to={badge.detailHref}
+                    className="mt-1 inline-block text-[11px] font-medium text-[#1e4b64] transition-colors hover:text-[#153446] hover:underline"
+                  >
+                    Xem chi tiết
+                  </Link>
+                )}
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+const POLICY_CONTENT = {
+  shipping: {
+    slug: 'chinh-sach-giao-hang',
+    title: 'Chính sách giao hàng',
+    description: 'Thông tin giao hàng, phí vận chuyển và thời gian nhận hàng tại UR Sport.',
+    sections: [
+      {
+        heading: 'Miễn phí vận chuyển',
+        body: 'UR Sport hỗ trợ miễn phí vận chuyển cho đơn hàng từ 500k. Với đơn hàng dưới mức này, phí vận chuyển sẽ được thông báo rõ ở bước thanh toán.'
+      },
+      {
+        heading: 'Thời gian giao hàng',
+        body: 'Đơn hàng thường được xử lý trong ngày làm việc và giao theo thời gian của đơn vị vận chuyển. Khu vực nội thành có thể nhận nhanh hơn tùy địa chỉ.'
+      },
+      {
+        heading: 'Theo dõi đơn hàng',
+        body: 'Sau khi đơn được xác nhận, UR Sport sẽ hỗ trợ cập nhật tình trạng đơn hàng qua số điện thoại hoặc kênh liên hệ bạn đã cung cấp.'
+      }
+    ]
+  },
+  returns: {
+    slug: 'chinh-sach-doi-tra',
+    title: 'Chính sách đổi trả',
+    description: 'Thông tin đổi trả sản phẩm, điều kiện áp dụng và thời gian hỗ trợ tại UR Sport.',
+    sections: [
+      {
+        heading: 'Đổi trả trong 30 ngày',
+        body: 'UR Sport hỗ trợ đổi trả trong vòng 30 ngày với sản phẩm còn nguyên tình trạng phù hợp, chưa qua sử dụng sai cách và còn đủ thông tin đơn hàng.'
+      },
+      {
+        heading: 'Điều kiện đổi trả',
+        body: 'Sản phẩm cần còn tem, nhãn hoặc bao bì đi kèm nếu có. Các trường hợp lỗi sản xuất, giao nhầm mẫu, nhầm size hoặc phát sinh từ quá trình xử lý đơn sẽ được ưu tiên hỗ trợ.'
+      },
+      {
+        heading: 'Cách liên hệ',
+        body: 'Bạn có thể liên hệ hotline 0917 722 425 hoặc email support@ursport.vn để được hướng dẫn đổi trả nhanh chóng.'
+      }
+    ]
+  }
+};
+
+function PolicyPage({ type }: { type?: keyof typeof POLICY_CONTENT }) {
+  const { policySlug } = useParams();
+  const fallbackPolicy = type
+    ? POLICY_CONTENT[type]
+    : {
+        slug: policySlug || '',
+        title: 'Trang chính sách',
+        description: 'Thông tin chính sách hỗ trợ tại UR Sport.',
+        sections: []
+      };
+  const [policy, setPolicy] = React.useState(fallbackPolicy);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    getDoc(doc(db, 'settings', 'supportPolicies')).then(snap => {
+      const data = snap.exists() ? snap.data() : {};
+      const savedPolicy = type
+        ? data?.[type]
+        : Object.values(data || {}).find((item: any) => item?.slug === policySlug) || data?.[policySlug || ''];
+      if (isMounted && savedPolicy?.title) {
+        setPolicy({
+          ...fallbackPolicy,
+          ...savedPolicy,
+          sections: Array.isArray(savedPolicy.sections) && savedPolicy.sections.length > 0
+            ? savedPolicy.sections
+            : fallbackPolicy.sections
+        });
+      }
+    }).catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, [type, policySlug]);
+
+  useSEO({
+    title: `${policy.title} | UR Sport`,
+    description: policy.description,
+    canonical: absoluteUrl(type === 'shipping'
+      ? '/chinh-sach-giao-hang'
+      : type === 'returns'
+        ? '/chinh-sach-doi-tra'
+        : `/chinh-sach/${policy.slug || policySlug || ''}`),
+    robots: 'noindex, nofollow',
+    type: 'website'
+  });
+
+  return (
+    <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
+      <nav className="mb-8 flex items-center gap-2 text-sm font-medium text-zinc-400">
+        <Link to="/" className="transition-colors hover:text-zinc-900">Trang chủ</Link>
+        <ChevronRight className="h-4 w-4" />
+        <span className="text-zinc-700">{policy.title}</span>
+      </nav>
+
+      <article className="rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm sm:p-8">
+        <p className="mb-3 text-xs font-black uppercase tracking-[0.24em] text-[#1e4b64]">Thông tin hỗ trợ</p>
+        <h1 className="mb-4 text-2xl font-black tracking-tight text-zinc-950 sm:text-3xl">{policy.title}</h1>
+        <p className="mb-8 text-sm font-medium leading-7 text-zinc-500 sm:text-base">{policy.description}</p>
+
+        <div className="space-y-6">
+          {policy.sections.map(section => (
+            <section key={section.heading}>
+              <h2 className="mb-2 text-base font-black text-zinc-950">{section.heading}</h2>
+              <p className="text-sm leading-7 text-zinc-600">{section.body}</p>
+            </section>
+          ))}
+        </div>
+      </article>
+    </div>
+  );
+}
+
 function PersonalizedRecommendations({ products }: { products: Product[] }) {
   const navigate = useNavigate();
   const { cart } = useCart();
@@ -1494,12 +1651,12 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
       )}
 
       {seoContent && (
-        <div className="mt-16 pt-12 border-t border-zinc-100 w-full">
+        <div className="relative mt-16 w-full border-t border-zinc-100 pt-12">
           <div className="relative w-full overflow-x-hidden">
             <div 
               className={cn(
                 "product-description-container notranslate w-full text-zinc-600 transition-[max-height] duration-700 ease-in-out overflow-x-hidden",
-                !isSeoExpanded ? "max-h-[500px] overflow-y-hidden" : "max-h-none overflow-y-visible"
+                !isSeoExpanded ? "max-h-[118px] overflow-y-hidden sm:max-h-[132px]" : "max-h-none overflow-y-visible"
               )}
             >
               <div dangerouslySetInnerHTML={{ 
@@ -1508,22 +1665,36 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
             </div>
             
             {!isSeoExpanded && (
-              <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none z-10" />
+              <>
+                <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-10 h-16 bg-gradient-to-t from-white via-white/90 to-transparent" />
+                <div className="pointer-events-none absolute bottom-1 left-0 right-0 z-20 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => setIsSeoExpanded(true)}
+                    className="pointer-events-auto flex items-center gap-1.5 bg-white/95 px-2 py-1 text-sm font-bold text-[#1e4b64] transition-colors hover:text-[#153446]"
+                  >
+                    Xem thêm
+                    <ChevronDown className="h-4 w-4 transition-transform duration-300" />
+                  </button>
+                </div>
+              </>
             )}
           </div>
 
-          <div className="flex justify-center pt-8 mb-12">
-            <Button
-              variant="outline"
+          <div className={cn("flex justify-center", isSeoExpanded ? "pt-6 mb-12" : "hidden")}>
+            <button
+              type="button"
               onClick={() => setIsSeoExpanded(!isSeoExpanded)}
-              className="rounded-full border-zinc-200 bg-white text-zinc-900 text-sm font-bold hover:text-[#1e4b64] hover:border-[#1e4b64] transition-all flex items-center gap-2 group shadow-sm px-8"
+              className="pointer-events-auto flex items-center gap-1.5 bg-white/95 px-2 py-1 text-sm font-bold text-[#1e4b64] transition-colors hover:text-[#153446]"
             >
               {isSeoExpanded ? 'Thu gọn' : 'Xem thêm'}
-              <ChevronDown className={cn("h-4 w-4 transition-all duration-300", isSeoExpanded && "rotate-180")} />
-            </Button>
+              <ChevronDown className={cn("h-4 w-4 transition-transform duration-300", isSeoExpanded && "rotate-180")} />
+            </button>
           </div>
         </div>
       )}
+
+      {seoContent && <TrustBadgesSection className="mt-12" />}
 
     </div>
   );
@@ -1660,6 +1831,9 @@ function AppContent() {
               <Route path="/tai-khoan" element={<AccountPage />} />
               <Route path="/yeu-thich" element={<WishlistPage />} />
               <Route path="/da-xem" element={<RecentlyViewedPage />} />
+              <Route path="/chinh-sach-giao-hang" element={<PolicyPage type="shipping" />} />
+              <Route path="/chinh-sach-doi-tra" element={<PolicyPage type="returns" />} />
+              <Route path="/chinh-sach/:policySlug" element={<PolicyPage />} />
               <Route path="/blog" element={<NewsPage />} />
               <Route path="/blog/category/:categorySlug" element={<NewsPage />} />
               <Route path="/blog/:slug" element={<NewsPage />} />

@@ -774,14 +774,21 @@ export function NewsPage() {
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    className="bg-[#f8f9fa] border-b border-zinc-200 overflow-hidden"
+                    className="bg-transparent px-4 pb-5 overflow-hidden"
                   >
-                    <div className="max-w-7xl mx-auto p-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
-                      <div className="flex items-center justify-between mb-4">
-                        <h4 className="text-[15px] font-bold text-zinc-900">Mục lục</h4>
-                        <button onClick={() => setInlineTocOpenId(null)} className="text-[13px] text-[#0066cc]">Ẩn</button>
+                    <div className="max-w-[936px] mx-auto rounded-2xl bg-[#f8f9fa] border border-zinc-200 p-6 shadow-sm max-h-[min(70vh,720px)] overflow-y-auto custom-scrollbar">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-[16px] font-bold text-zinc-900">
+                          Mục lục
+                        </h4>
+                        <button
+                          onClick={() => setInlineTocOpenId(null)}
+                          className="text-[14px] text-[#0066cc] flex items-center gap-1 hover:underline font-medium"
+                        >
+                          Ẩn <ChevronDown className="h-4 w-4 rotate-180" />
+                        </button>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-2.5">
+                      <div className="mt-6 space-y-2.5">
                         {tocHeadings.map((item) => (
                           <button
                             key={`sticky-item-${item.id}`}
@@ -789,12 +796,11 @@ export function NewsPage() {
                               scrollToTocHeading(item.id, 160);
                             }}
                             className={cn(
-                              "text-left text-[14px] text-[#0066cc] hover:underline leading-snug flex gap-2",
-                              item.level !== 2 && "pl-5"
+                              "block w-full text-left text-[15px] text-[#0066cc] hover:underline transition-colors leading-snug",
+                              item.level !== 2 && "pl-6"
                             )}
                           >
-                            <span className="flex-shrink-0">{item.number}.</span>
-                            <span className="line-clamp-1">{item.text}</span>
+                            <span className="font-medium">{item.number}. {item.text}</span>
                           </button>
                         ))}
                       </div>
@@ -819,30 +825,30 @@ export function NewsPage() {
               {selectedPost.title}
             </h1>
 
-            <div className="flex items-center gap-2 mb-10">
-              <div className="flex items-center gap-1.5 bg-zinc-100 px-2 py-1 rounded text-[11px] font-bold text-zinc-500 uppercase">
+            <div className="mb-6 flex flex-wrap items-center gap-2 sm:mb-10">
+              <div className="flex items-center gap-1.5 rounded bg-zinc-100 px-2 py-1 text-[10px] font-bold uppercase text-zinc-500 sm:text-[11px]">
                 <Calendar className="h-3 w-3" />
                 {selectedPost.date}
               </div>
-              <span className="text-[11px] font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded uppercase">
+              <span className="rounded bg-orange-50 px-2 py-1 text-[10px] font-bold uppercase text-orange-600 sm:text-[11px]">
                 {selectedPost.category}
               </span>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-12 border-b border-zinc-100 pb-10">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-zinc-900 text-white flex items-center justify-center font-black text-lg">
+            <div className="mb-8 flex items-center justify-between gap-4 border-b border-zinc-100 pb-6 sm:mb-12 sm:pb-10">
+              <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-zinc-900 text-base font-black text-white sm:h-12 sm:w-12 sm:text-lg">
                   {(selectedPost.author || 'U').charAt(0)}
                 </div>
-                <div>
-                  <div className="font-black text-zinc-900 leading-none mb-1">{selectedPost.author || 'UR Sport'}</div>
-                  <div className="text-xs font-medium text-zinc-400 uppercase tracking-widest">UrSport Specialist</div>
+                <div className="min-w-0">
+                  <div className="truncate text-[14px] font-black leading-tight text-zinc-900 sm:text-base">{selectedPost.author || 'UR Sport'}</div>
+                  <div className="mt-0.5 truncate text-[10px] font-medium uppercase tracking-[0.14em] text-zinc-400 sm:text-xs sm:tracking-widest">UrSport Specialist</div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-shrink-0 items-center gap-2">
                 {[Share2, MessageCircle].map((Icon, i) => (
-                  <button key={i} className="w-9 h-9 rounded-full border border-zinc-200 flex items-center justify-center text-zinc-500 hover:bg-zinc-50 hover:text-black transition-all">
-                    <Icon className="h-4 w-4" />
+                  <button key={i} className="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 text-zinc-500 transition-all hover:bg-zinc-50 hover:text-black sm:h-9 sm:w-9">
+                    <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </button>
                 ))}
               </div>
