@@ -917,14 +917,14 @@ const formatSeoContentHtml = (html: string) => {
 function CategoryLandingBlocks({ config, productCount }: { config: CategoryLandingConfig; productCount: number }) {
   return (
     <section className="mb-10 space-y-5">
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden">
         {config.quickLinks.map(link => (
           <Link
             key={link.href}
             to={link.href}
-            className="group rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#1e4b64]/30 hover:shadow-md"
+            className="group min-w-[82%] snap-start rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#1e4b64]/30 hover:shadow-md sm:min-w-0"
           >
-            <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="mb-2 flex items-center justify-between gap-3">
               <span className="text-sm font-black text-zinc-950">{link.label}</span>
               <ArrowRight className="h-4 w-4 text-zinc-300 transition-colors group-hover:text-[#1e4b64]" />
             </div>
@@ -933,7 +933,7 @@ function CategoryLandingBlocks({ config, productCount }: { config: CategoryLandi
         ))}
       </div>
 
-      <div className="grid gap-4 rounded-3xl border border-zinc-100 bg-zinc-50/60 p-5 sm:grid-cols-[0.8fr_1.2fr] sm:p-6">
+      <div className="rounded-3xl border border-zinc-100 bg-zinc-50/60 p-5 sm:grid sm:grid-cols-[0.8fr_1.2fr] sm:gap-4 sm:p-6">
         <div>
           <p className="text-[11px] font-black uppercase tracking-widest text-[#1e4b64]">Gợi ý chọn nhanh</p>
           <h2 className="mt-2 text-xl font-black tracking-tight text-zinc-950">Chọn sản phẩm theo nhu cầu mặc</h2>
@@ -941,9 +941,9 @@ function CategoryLandingBlocks({ config, productCount }: { config: CategoryLandi
             Có {productCount} sản phẩm phù hợp. Dùng các gợi ý này để chọn nhanh theo chất liệu, form dáng và hoàn cảnh sử dụng.
           </p>
         </div>
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="-mx-5 mt-4 flex snap-x gap-3 overflow-x-auto px-5 pb-1 [scrollbar-width:none] sm:mx-0 sm:mt-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden">
           {config.buyingGuides.map(item => (
-            <div key={item.title} className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-zinc-100">
+            <div key={item.title} className="min-w-[82%] snap-start rounded-2xl bg-white p-4 shadow-sm ring-1 ring-zinc-100 sm:min-w-0">
               <Check className="mb-3 h-4 w-4 text-emerald-500" />
               <h3 className="text-sm font-black text-zinc-950">{item.title}</h3>
               <p className="mt-2 text-xs font-medium leading-5 text-zinc-500">{item.body}</p>
@@ -1422,10 +1422,10 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
             </p>
           )}
           
-          <div ref={filtersRef} className="flex flex-col gap-4 pt-4 border-t border-zinc-100 lg:flex-row lg:items-center lg:justify-between">
-            <div className="relative z-30 flex flex-wrap items-center gap-2 overflow-visible pb-1">
-              <div className="relative">
-                <Button type="button" variant="outline" onClick={() => toggleFilterMenu('all')} className="h-10 sm:h-11 rounded-full border-zinc-200 text-zinc-900 font-bold px-4 sm:px-5 gap-2 hover:bg-zinc-50 whitespace-nowrap">
+          <div ref={filtersRef} className="flex flex-col gap-3 pt-4 border-t border-zinc-100 lg:flex-row lg:items-center lg:justify-between">
+            <div className="relative z-30 grid w-full grid-cols-2 gap-2 overflow-visible pb-1 sm:flex sm:flex-wrap sm:items-center">
+              <div className="relative min-w-0">
+                <Button type="button" variant="outline" onClick={() => toggleFilterMenu('all')} className="h-10 w-full justify-between rounded-full border-zinc-200 px-3 text-[12px] font-bold text-zinc-900 hover:bg-zinc-50 sm:h-11 sm:w-auto sm:justify-center sm:px-5 sm:text-sm">
                   <SlidersHorizontal className="h-4 w-4" /> Bộ lọc <ChevronDown className="h-3 w-3 opacity-50" />
                 </Button>
                 <div className={cn(dropdownClass('all'), 'py-3')}>
@@ -1441,8 +1441,8 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
               </div>
 
               {/* Price Filter */}
-              <div className="relative">
-                <Button type="button" variant="outline" onClick={() => toggleFilterMenu('price')} className={cn("h-10 sm:h-11 rounded-full border-zinc-200 text-zinc-900 font-bold px-4 sm:px-5 gap-2 hover:bg-zinc-50 flex whitespace-nowrap", priceFilter && "border-[#1e4b64] bg-blue-50/50 text-[#1e4b64]")}>
+              <div className="relative min-w-0">
+                <Button type="button" variant="outline" onClick={() => toggleFilterMenu('price')} className={cn("flex h-10 w-full justify-between rounded-full border-zinc-200 px-3 text-[12px] font-bold text-zinc-900 hover:bg-zinc-50 sm:h-11 sm:w-auto sm:justify-center sm:px-5 sm:text-sm", priceFilter && "border-[#1e4b64] bg-blue-50/50 text-[#1e4b64]")}>
                   Giá {priceFilter && <span className="h-1.5 w-1.5 rounded-full bg-[#1e4b64]" />} <ChevronDown className="h-3 w-3 opacity-50" />
                 </Button>
                 <div className={cn(dropdownClass('price'), 'py-2')}>
@@ -1462,8 +1462,8 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
               </div>
 
               {/* Brand Filter */}
-              <div className="relative">
-                <Button type="button" variant="outline" onClick={() => toggleFilterMenu('brand')} className={cn("h-10 sm:h-11 rounded-full border-zinc-200 text-zinc-900 font-bold px-4 sm:px-5 gap-2 hover:bg-zinc-50 flex whitespace-nowrap", brandFilter && "border-[#1e4b64] bg-blue-50/50 text-[#1e4b64]")}>
+              <div className="relative min-w-0">
+                <Button type="button" variant="outline" onClick={() => toggleFilterMenu('brand')} className={cn("flex h-10 w-full justify-between rounded-full border-zinc-200 px-3 text-[12px] font-bold text-zinc-900 hover:bg-zinc-50 sm:h-11 sm:w-auto sm:justify-center sm:px-5 sm:text-sm", brandFilter && "border-[#1e4b64] bg-blue-50/50 text-[#1e4b64]")}>
                   Thương hiệu {brandFilter && <span className="h-1.5 w-1.5 rounded-full bg-[#1e4b64]" />} <ChevronDown className="h-3 w-3 opacity-50" />
                 </Button>
                 <div className={cn(dropdownClass('brand'), 'py-2')}>
@@ -1484,8 +1484,8 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
               </div>
 
               {/* Color Filter */}
-              <div className="relative">
-                <Button type="button" variant="outline" onClick={() => toggleFilterMenu('color')} className={cn("h-10 sm:h-11 rounded-full border-zinc-200 text-zinc-900 font-bold px-4 sm:px-5 gap-2 hover:bg-zinc-50 flex whitespace-nowrap", colorFilter && "border-[#1e4b64] bg-blue-50/50 text-[#1e4b64]")}>
+              <div className="relative min-w-0">
+                <Button type="button" variant="outline" onClick={() => toggleFilterMenu('color')} className={cn("flex h-10 w-full justify-between rounded-full border-zinc-200 px-3 text-[12px] font-bold text-zinc-900 hover:bg-zinc-50 sm:h-11 sm:w-auto sm:justify-center sm:px-5 sm:text-sm", colorFilter && "border-[#1e4b64] bg-blue-50/50 text-[#1e4b64]")}>
                   Màu sắc {colorFilter && <span className="h-1.5 w-1.5 rounded-full bg-[#1e4b64]" />} <ChevronDown className="h-3 w-3 opacity-50" />
                 </Button>
                 <div className={cn(dropdownClass('color'), 'py-2')}>
@@ -1506,8 +1506,8 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
               </div>
 
               {/* Size Filter */}
-              <div className="relative">
-                <Button type="button" variant="outline" onClick={() => toggleFilterMenu('size')} className={cn("h-10 sm:h-11 rounded-full border-zinc-200 text-zinc-900 font-bold px-4 sm:px-5 gap-2 hover:bg-zinc-50 flex whitespace-nowrap", sizeFilter && "border-[#1e4b64] bg-blue-50/50 text-[#1e4b64]")}>
+              <div className="relative min-w-0">
+                <Button type="button" variant="outline" onClick={() => toggleFilterMenu('size')} className={cn("flex h-10 w-full justify-between rounded-full border-zinc-200 px-3 text-[12px] font-bold text-zinc-900 hover:bg-zinc-50 sm:h-11 sm:w-auto sm:justify-center sm:px-5 sm:text-sm", sizeFilter && "border-[#1e4b64] bg-blue-50/50 text-[#1e4b64]")}>
                   Kích cỡ {sizeFilter && <span className="h-1.5 w-1.5 rounded-full bg-[#1e4b64]" />} <ChevronDown className="h-3 w-3 opacity-50" />
                 </Button>
                 <div className={cn(dropdownClass('size'), 'py-2')}>
@@ -1526,10 +1526,9 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
                   ))}
                 </div>
               </div>
-            </div>
 
-            <div className="relative">
-              <Button type="button" variant="outline" onClick={() => toggleFilterMenu('category')} className="h-10 rounded-full border-zinc-200 text-zinc-900 font-bold px-4 gap-2 hover:bg-zinc-50 whitespace-nowrap sm:h-11 sm:px-5">
+              <div className="relative min-w-0">
+              <Button type="button" variant="outline" onClick={() => toggleFilterMenu('category')} className="h-10 w-full justify-between rounded-full border-zinc-200 px-3 text-[12px] font-bold text-zinc-900 hover:bg-zinc-50 sm:h-11 sm:w-auto sm:justify-center sm:px-5 sm:text-sm">
                 <div className="flex items-center gap-2">
                   <div className="flex flex-col gap-0.5">
                     <div className="w-4 h-0.5 bg-zinc-900 rounded-full" />
@@ -1566,14 +1565,15 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
                   </button>
                 ))}
               </div>
+              </div>
             </div>
           </div>
 
-          <div className="flex flex-col gap-3 py-4 border-t border-zinc-100 mt-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-4 text-[13px] font-medium text-zinc-500">
+          <div className="mt-1 flex items-center justify-between gap-3 border-t border-zinc-100 py-3 sm:mt-2 sm:py-4">
+            <div className="min-w-0 text-[12px] font-medium text-zinc-500 sm:text-[13px]">
               <div className="relative">
-                <button type="button" onClick={() => toggleFilterMenu('sort')} className="flex items-center gap-1.5 cursor-pointer">
-                  Sắp xếp: <span className="text-[#1e4b64] hover:underline">
+                <button type="button" onClick={() => toggleFilterMenu('sort')} className="flex min-w-0 items-center gap-1.5 cursor-pointer">
+                  <span className="shrink-0">Sắp xếp:</span> <span className="truncate text-[#1e4b64] hover:underline">
                     {sortFilter === 'newest' ? 'Mới nhất' : 
                      sortFilter === 'price-asc' ? 'Giá thấp đến cao' :
                      sortFilter === 'price-desc' ? 'Giá cao đến thấp' :
@@ -1592,7 +1592,7 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-1 rounded-lg bg-zinc-50 p-1">
               <button className="h-8 w-8 flex items-center justify-center text-[#1e4b64] bg-blue-50 rounded">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-layout-grid"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
               </button>
