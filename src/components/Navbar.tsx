@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Search, Menu, LogOut, Phone, LogIn, UserPlus, X, UserRound, Heart, Clock } from 'lucide-react';
+import { ShoppingCart, Search, Menu, LogOut, Phone, LogIn, UserPlus, X, UserRound, Heart, Clock, Mic, PackageSearch } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../AuthContext';
 import { useCart } from '../CartContext';
@@ -33,6 +33,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [searchHistory, setSearchHistory] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      return JSON.parse(window.localStorage.getItem('ursport_search_history') || '[]');
+    } catch {
+      return [];
+    }
+  });
   const mobileSearchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -103,16 +111,35 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/shop?q=${encodeURIComponent(searchQuery.trim())}`);
+      const nextQuery = searchQuery.trim();
+      const nextHistory = [nextQuery, ...searchHistory.filter(item => item !== nextQuery)].slice(0, 5);
+      setSearchHistory(nextHistory);
+      window.localStorage.setItem('ursport_search_history', JSON.stringify(nextHistory));
+      navigate(`/shop?q=${encodeURIComponent(nextQuery)}`);
       setIsMobileSearchOpen(false);
       setIsSearchFocused(false);
       setSearchQuery('');
     }
   };
 
+  const startVoiceSearch = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'vi-VN';
+    recognition.interimResults = false;
+    recognition.onresult = (event: any) => {
+      const transcript = event.results?.[0]?.[0]?.transcript || '';
+      setSearchQuery(transcript);
+      if (transcript.trim()) navigate(`/shop?q=${encodeURIComponent(transcript.trim())}`);
+    };
+    recognition.start();
+  };
+
   // Shared icon button style — consistent across all
   const iconBtn = "flex items-center justify-center h-10 w-10 rounded-full transition-all active:scale-90 shrink-0";
   const shouldShowSuggestions = trimmedSearchQuery.length >= 2 && searchSuggestions.length > 0;
+  const trendingSearches = ['áo thun cotton', 'áo thun thể thao', 'áo polo nam', 'quần jogger'];
 
   const renderSearchSuggestions = (isMobile = false) => (
     <AnimatePresence>
@@ -233,6 +260,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
               >
                 <Search className="h-3.5 w-3.5" />
               </button>
+              <button
+                type="button"
+                onClick={startVoiceSearch}
+                className="absolute right-11 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-blue-50 hover:text-[#1e4b64]"
+                aria-label="Tìm kiếm bằng giọng nói"
+              >
+                <Mic className="h-3.5 w-3.5" />
+              </button>
               {renderSearchSuggestions()}
             </form>
           </div>
@@ -250,6 +285,15 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
               </div>
               <span className="text-[12px] font-bold">+84 917 722 425</span>
             </a>
+            <button
+              type="button"
+              onClick={() => navigate('/tra-cuu-don-hang')}
+              className={`${iconBtn} hidden text-zinc-600 hover:bg-blue-50 hover:text-[#1e4b64] md:flex`}
+              aria-label="Tra cứu đơn hàng"
+              title="Tra cứu đơn hàng"
+            >
+              <PackageSearch className="h-5 w-5" />
+            </button>
 
             {/* Search icon — mobile only */}
             <button
@@ -416,6 +460,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
                     className="flex-1 bg-transparent text-white placeholder:text-zinc-400 text-sm font-medium outline-none"
                   />
                 </div>
+                <button
+                  type="button"
+                  onClick={startVoiceSearch}
+                  className="h-10 w-10 bg-white/10 hover:bg-white/15 rounded-full flex items-center justify-center text-white transition-all active:scale-90 shrink-0"
+                  aria-label="Tìm kiếm bằng giọng nói"
+                >
+                  <Mic className="h-4 w-4" />
+                </button>
                 <button
                   type="button"
                   onClick={() => { setIsMobileSearchOpen(false); setSearchQuery(''); }}

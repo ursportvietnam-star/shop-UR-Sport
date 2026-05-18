@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Product } from '../types';
 import { useCart } from '../CartContext';
 import { useWishlist } from '../WishlistContext';
+import { useComparison } from '../ComparisonContext';
 import { toast } from 'sonner';
 import { Star, ShoppingBag, Heart, Plus, Settings, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -20,12 +21,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
+  const { isCompared, toggleCompare } = useComparison();
   const [selectedColor, setSelectedColor] = useState(product.colors?.[0] || 'Default');
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [isHovered, setIsHovered] = useState(false);
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
   const [quickViewImage, setQuickViewImage] = useState(product.images?.[0] || '');
   const liked = isWishlisted(product.id);
+  const compared = isCompared(product.id);
 
   const addSelectedToCart = (closeQuickView = false) => {
     if (!selectedSize && product.sizes && product.sizes.length > 0) {
@@ -56,6 +59,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
     e.stopPropagation();
     const saved = toggleWishlist(product.id);
     toast.success(saved ? 'Đã lưu vào yêu thích' : 'Đã bỏ khỏi yêu thích', {
+      position: 'top-center'
+    });
+  };
+
+  const handleCompareClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const added = toggleCompare(product);
+    toast.success(added ? 'Đã thêm vào bảng so sánh' : 'Đã bỏ khỏi bảng so sánh', {
       position: 'top-center'
     });
   };
@@ -135,6 +146,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
             aria-label="Xem nhanh sản phẩm"
           >
             <Eye className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={handleCompareClick}
+            className={cn(
+              "absolute right-2 top-[5.5rem] z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/85 text-zinc-500 shadow-sm backdrop-blur-md transition-all hover:bg-[#1e4b64] hover:text-white active:scale-90 sm:right-2.5 sm:top-[5.5rem]",
+              compared && "bg-[#1e4b64] text-white"
+            )}
+            aria-label="So sánh sản phẩm"
+          >
+            <Plus className="h-4 w-4" />
           </button>
         </div>
 

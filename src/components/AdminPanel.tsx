@@ -3,9 +3,9 @@ import {
   LayoutDashboard, Package, ShoppingBag, Users, MessageSquare,
   Image as ImageIcon, Settings, Plus, Trash2, Edit2, LogOut,
   TrendingUp, Eye, DollarSign, BarChart2, Menu, X, Bell,
-  Search, ChevronRight, ChevronDown, Megaphone, Upload, Star, AlertCircle, Copy, ExternalLink, Code2, Check as CheckIcon, Bot, Sparkles, Zap, Timer, Clock, Ticket, Download, Filter, MailCheck, Send, UserPlus
+  Search, ChevronRight, ChevronDown, Megaphone, Upload, Star, AlertCircle, Copy, ExternalLink, Code2, Check as CheckIcon, Bot, Sparkles, Zap, Timer, Clock, Ticket, Download, Filter, MailCheck, Send, UserPlus, ShieldCheck
 } from 'lucide-react';
-import { collection, onSnapshot, query, orderBy, deleteDoc, doc, setDoc, getDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, deleteDoc, doc, setDoc, getDoc, addDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { PRODUCTS as STATIC_PRODUCTS, STATIC_BLOG_POSTS, STATIC_ORDERS, STATIC_CUSTOMERS, CATEGORY_METADATA, STATIC_VOUCHERS } from '../data';
 import { ImageUpload } from './ImageUpload';
@@ -19,7 +19,7 @@ import { CategorySeoManager } from './CategorySeoManager';
 import { ProductSeoAutomationPanel, ProductSeoScoreBadge } from './ProductSeoAutomationPanel';
 import { AIProductData, AIBlogData, AIProductSeoFix } from '../lib/gemini';
 import { useAuth } from '../AuthContext';
-import { Product, BlogPost, Order, Voucher } from '../types';
+import { Product, BlogPost, Order, Voucher, Review } from '../types';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
@@ -50,7 +50,7 @@ interface NewsletterSubscriber {
   updatedAt?: any;
 }
 
-type AdminTab = 'dashboard' | 'strategy' | 'products' | 'orders' | 'customers' | 'newsletter' | 'vouchers' | 'blog' | 'media' | 'settings' | 'blog-categories' | 'policy-pages' | 'ai-product' | 'ai-blog' | 'flash-sale' | 'category-seo';
+type AdminTab = 'dashboard' | 'strategy' | 'products' | 'orders' | 'reviews' | 'customers' | 'newsletter' | 'vouchers' | 'blog' | 'media' | 'settings' | 'blog-categories' | 'policy-pages' | 'ai-product' | 'ai-blog' | 'flash-sale' | 'category-seo';
 
 type NavItem = {
   id: string;
@@ -83,6 +83,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'blog', label: 'Blog', icon: MessageSquare },
   { id: 'ai-blog', label: 'AI Blog', icon: Sparkles },
   { id: 'orders', label: 'Đơn hàng', icon: ShoppingBag },
+  { id: 'reviews', label: 'Quản lý đánh giá', icon: ShieldCheck },
   { id: 'customers', label: 'Khách hàng', icon: Users },
   { id: 'newsletter', label: 'Email đăng ký', icon: MailCheck },
   {
@@ -464,6 +465,8 @@ export const AdminPanel: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewReplies, setReviewReplies] = useState<Record<string, string>>({});
   const [newsletterSubscribers, setNewsletterSubscribers] = useState<NewsletterSubscriber[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -543,6 +546,19 @@ export const AdminPanel: React.FC = () => {
       setOrders(data.length > 0 ? data : STATIC_ORDERS);
     }, () => {
       setOrders(STATIC_ORDERS);
+    });
+    return () => unsubscribe();
+  }, [isAdmin]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    const q = query(collection(db, 'reviews'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Review[];
+      setReviews(data);
+      setReviewReplies(Object.fromEntries(data.map(review => [review.id, review.adminReply || ''])));
+    }, () => {
+      setReviews([]);
     });
     return () => unsubscribe();
   }, [isAdmin]);
@@ -764,6 +780,36 @@ export const AdminPanel: React.FC = () => {
       toast.success('Đã cập nhật trạng thái đơn hàng');
     } catch {
       toast.error('Lỗi khi cập nhật trạng thái');
+    }
+  };
+
+  const handleUpdateTracking = async (order: Order, field: 'trackingNumber' | 'trackingUrl', value: string) => {
+    try {
+      await setDoc(doc(db, 'orders', order.id), { [field]: value }, { merge: true });
+      toast.success('Đã cập nhật vận đơn');
+    } catch {
+      toast.error('Không thể cập nhật vận đơn');
+    }
+  };
+
+  const handleUpdateReviewStatus = async (review: Review, status: Review['status']) => {
+    try {
+      await updateDoc(doc(db, 'reviews', review.id), { status });
+      toast.success(status === 'approved' ? 'Đã duyệt đánh giá' : 'Đã cập nhật đánh giá');
+    } catch {
+      toast.error('Không thể cập nhật đánh giá');
+    }
+  };
+
+  const handleSaveReviewReply = async (review: Review) => {
+    try {
+      await updateDoc(doc(db, 'reviews', review.id), {
+        adminReply: reviewReplies[review.id] || '',
+        repliedAt: serverTimestamp()
+      });
+      toast.success('Đã lưu phản hồi');
+    } catch {
+      toast.error('Không thể lưu phản hồi');
     }
   };
 
@@ -1101,14 +1147,17 @@ Sitemap: https://ursport.vn/sitemap.xml`;
   };
 
   const handleApplyAIProduct = (data: AIProductData) => {
+    const intro = data.shortDescription?.trim() ? `<p><strong>${data.shortDescription.trim()}</strong></p><p><br></p>` : '';
+    const fullDescHtml = `${intro}${data.descriptionHtml || ''}`;
     const newProduct: Partial<Product> = {
+      id: `ai_${Date.now()}`,
       name: data.name,
       slug: data.slug,
-      description: data.descriptionHtml,
+      description: fullDescHtml,
       seoTitle: data.metaTitle,
       metaDescription: data.metaDescription,
       keywords: data.seoKeywords,
-      specifications: data.descriptionHtml,
+      specifications: fullDescHtml,
       brand: 'UR SPORT',
       origin: 'Việt Nam',
       material: 'Cotton Premium',
@@ -2322,6 +2371,20 @@ Sitemap: https://ursport.vn/sitemap.xml`;
                                 <option value="delivered" className="bg-[#13161f]">Đã giao</option>
                                 <option value="cancelled" className="bg-[#13161f]">Đã hủy</option>
                               </select>
+                              <div className="mt-2 grid gap-1">
+                                <input
+                                  defaultValue={order.trackingNumber || ''}
+                                  onBlur={event => handleUpdateTracking(order, 'trackingNumber', event.target.value)}
+                                  placeholder="Mã vận đơn"
+                                  className="w-36 rounded-lg border border-white/5 bg-white/5 px-2 py-1 text-[10px] font-bold text-white outline-none focus:border-[#1e4b64]"
+                                />
+                                <input
+                                  defaultValue={order.trackingUrl || ''}
+                                  onBlur={event => handleUpdateTracking(order, 'trackingUrl', event.target.value)}
+                                  placeholder="Link tra cứu"
+                                  className="w-36 rounded-lg border border-white/5 bg-white/5 px-2 py-1 text-[10px] font-bold text-white outline-none focus:border-[#1e4b64]"
+                                />
+                              </div>
                             </td>
                             <td className="px-6 py-4">
                               <div className="flex items-center justify-end gap-1">
@@ -2355,6 +2418,73 @@ Sitemap: https://ursport.vn/sitemap.xml`;
           )}
 
           {/* ─── CUSTOMERS ─── */}
+          {activeTab === 'reviews' && (
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-white/5 bg-[#13161f] p-5">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#1e4b64]">Review Management</p>
+                    <h2 className="mt-2 text-xl font-black text-white">Quản lý đánh giá khách hàng</h2>
+                  </div>
+                  <div className="flex gap-2 text-xs font-black uppercase">
+                    <span className="rounded-full bg-amber-400/10 px-3 py-1 text-amber-300">{reviews.filter(r => (r.status || 'pending') === 'pending').length} chờ duyệt</span>
+                    <span className="rounded-full bg-emerald-400/10 px-3 py-1 text-emerald-300">{reviews.filter(r => !r.status || r.status === 'approved').length} hiển thị</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-4">
+                {reviews.length === 0 ? (
+                  <div className="rounded-2xl border border-white/5 bg-[#13161f] p-12 text-center">
+                    <Star className="mx-auto mb-3 h-10 w-10 text-white/10" />
+                    <p className="text-sm font-bold text-white/35">Chưa có đánh giá nào</p>
+                  </div>
+                ) : reviews.map(review => (
+                  <article key={review.id} className="rounded-2xl border border-white/5 bg-[#13161f] p-5">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="min-w-0">
+                        <div className="mb-2 flex flex-wrap items-center gap-2">
+                          <span className={cn(
+                            'rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest',
+                            (!review.status || review.status === 'approved') ? 'bg-emerald-400/10 text-emerald-300' :
+                            review.status === 'hidden' ? 'bg-red-400/10 text-red-300' : 'bg-amber-400/10 text-amber-300'
+                          )}>
+                            {!review.status || review.status === 'approved' ? 'Đã duyệt' : review.status === 'hidden' ? 'Đã ẩn' : 'Chờ duyệt'}
+                          </span>
+                          <span className="text-xs font-bold text-white/30">{review.createdAt?.toDate ? review.createdAt.toDate().toLocaleString('vi-VN') : 'Mới đây'}</span>
+                        </div>
+                        <h3 className="text-base font-black text-white">{review.productName || review.productId}</h3>
+                        <p className="mt-1 text-sm font-bold text-white/45">{review.userName} · {review.variant || 'Không có phân loại'}</p>
+                        <div className="mt-3 flex gap-0.5">
+                          {[1, 2, 3, 4, 5].map(star => (
+                            <Star key={star} className={cn('h-4 w-4', star <= review.rating ? 'fill-amber-400 text-amber-400' : 'text-white/10')} />
+                          ))}
+                        </div>
+                        <p className="mt-3 max-w-3xl text-sm font-medium leading-6 text-white/70">{review.comment}</p>
+                      </div>
+
+                      <div className="w-full space-y-3 lg:w-80">
+                        <textarea
+                          value={reviewReplies[review.id] || ''}
+                          onChange={event => setReviewReplies(prev => ({ ...prev, [review.id]: event.target.value }))}
+                          rows={3}
+                          placeholder="Phản hồi của shop..."
+                          className="w-full resize-none rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm font-medium text-white outline-none focus:border-[#1e4b64]"
+                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          <button onClick={() => handleUpdateReviewStatus(review, 'approved')} className="rounded-xl bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-300 hover:bg-emerald-500/20">Duyệt</button>
+                          <button onClick={() => handleUpdateReviewStatus(review, 'hidden')} className="rounded-xl bg-red-500/10 px-3 py-2 text-xs font-black text-red-300 hover:bg-red-500/20">Ẩn</button>
+                          <button onClick={() => handleUpdateReviewStatus(review, 'pending')} className="rounded-xl bg-amber-500/10 px-3 py-2 text-xs font-black text-amber-300 hover:bg-amber-500/20">Chờ</button>
+                          <button onClick={() => handleSaveReviewReply(review)} className="rounded-xl bg-[#1e4b64] px-3 py-2 text-xs font-black text-white hover:bg-[#256580]">Lưu trả lời</button>
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
+
           {activeTab === 'customers' && (
             <div className="space-y-4">
               <div className="bg-[#13161f] border border-white/5 rounded-2xl overflow-hidden">

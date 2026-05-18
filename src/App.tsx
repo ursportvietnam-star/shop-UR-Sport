@@ -13,17 +13,18 @@ import { BestSeller } from './components/BestSeller';
 import { FULLCollectionSection } from './components/FULLCollectionSection';
 import { StorefrontVoucherBanner } from './components/StorefrontVoucherBanner';
 import { PRODUCTS, CATEGORIES, CATEGORY_METADATA, STATIC_BLOG_POSTS } from './data';
-import { Product, Category } from './types';
+import { Product, Category, Order } from './types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AuthProvider } from './AuthContext';
 import { CartProvider, useCart } from './CartContext';
 import { WishlistProvider, useWishlist } from './WishlistContext';
 import { RecentlyViewedProvider, useRecentlyViewed } from './RecentlyViewedContext';
+import { ComparisonProvider, useComparison } from './ComparisonContext';
 import { ProductsProvider, useProducts } from './ProductsContext';
 import { Toaster } from 'sonner';
-import { getDoc, doc } from 'firebase/firestore';
+import { collection, getDoc, getDocs, doc, query, where } from 'firebase/firestore';
 import { db } from './firebase';
-import { Filter, SlidersHorizontal, ArrowRight, Check, Star, ShieldCheck, Truck, RefreshCcw, ChevronRight, ChevronDown, Phone, MessageCircle } from 'lucide-react';
+import { Filter, SlidersHorizontal, ArrowRight, Check, Star, ShieldCheck, Truck, RefreshCcw, ChevronRight, ChevronDown, Phone, MessageCircle, PackageSearch } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -90,6 +91,198 @@ function TrustBadgesSection({ className = '' }: { className?: string }) {
         </div>
       </div>
     </section>
+  );
+}
+
+function OrderLookupPage() {
+  const [phone, setPhone] = React.useState('');
+  const [code, setCode] = React.useState('');
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [order, setOrder] = React.useState<Order | null>(null);
+  const [message, setMessage] = React.useState('');
+
+  const statusSteps = [
+    { key: 'pending', label: 'Chờ xác nhận' },
+    { key: 'processing', label: 'Đang chuẩn bị' },
+    { key: 'shipped', label: 'Đang giao' },
+    { key: 'delivered', label: 'Đã giao' }
+  ];
+  const stepIndex = order ? Math.max(0, statusSteps.findIndex(step => step.key === order.status)) : -1;
+
+  const handleLookup = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setIsLoading(true);
+    setOrder(null);
+    setMessage('');
+    try {
+      const normalizedCode = code.trim();
+      const normalizedPhone = phone.trim();
+      const byCode = normalizedCode.startsWith('UR')
+        ? query(collection(db, 'orders'), where('orderCode', '==', normalizedCode))
+        : query(collection(db, 'orders'));
+      const snapshot = await getDocs(byCode);
+      const found = snapshot.docs
+        .map(item => ({ id: item.id, ...item.data() }) as Order)
+        .find(item => {
+          const matchesPhone = item.shippingAddress?.phone?.replace(/\s+/g, '') === normalizedPhone.replace(/\s+/g, '');
+          const matchesCode = item.orderCode === normalizedCode || item.id.slice(0, 8).toLowerCase() === normalizedCode.toLowerCase();
+          return matchesPhone && matchesCode;
+        });
+
+      if (!found) {
+        setMessage('Không tìm thấy đơn hàng. Bạn kiểm tra lại số điện thoại và mã đơn nhé.');
+        return;
+      }
+      setOrder(found);
+    } catch {
+      setMessage('Chưa thể tra cứu đơn lúc này. Vui lòng thử lại sau.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50/70">
+      <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="rounded-[28px] border border-zinc-100 bg-white p-6 shadow-sm sm:p-8">
+          <div className="mb-6">
+            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#1e4b64]">Order Lookup</p>
+            <h1 className="mt-2 text-2xl font-black text-zinc-950 sm:text-3xl">Tra cứu đơn hàng</h1>
+            <p className="mt-2 text-sm font-medium leading-6 text-zinc-500">Nhập số điện thoại và mã đơn để xem trạng thái xử lý, vận đơn và thông tin giao hàng.</p>
+          </div>
+
+          <form onSubmit={handleLookup} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+            <input value={phone} onChange={event => setPhone(event.target.value)} placeholder="Số điện thoại" className="h-12 rounded-2xl border border-zinc-200 px-4 text-sm font-bold outline-none focus:border-[#1e4b64]" />
+            <input value={code} onChange={event => setCode(event.target.value)} placeholder="Mã đơn, ví dụ UR12345678" className="h-12 rounded-2xl border border-zinc-200 px-4 text-sm font-bold outline-none focus:border-[#1e4b64]" />
+            <button disabled={isLoading} className="h-12 rounded-2xl bg-[#1e4b64] px-6 text-sm font-black text-white hover:bg-[#153446] disabled:opacity-60">
+              {isLoading ? 'Đang tìm...' : 'Tra cứu'}
+            </button>
+          </form>
+
+          {message && <p className="mt-5 rounded-2xl bg-amber-50 p-4 text-sm font-bold text-amber-700">{message}</p>}
+
+          {order && (
+            <div className="mt-6 rounded-3xl border border-zinc-100 bg-zinc-50/70 p-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-sm font-black text-zinc-950">Đơn #{order.orderCode || order.id.slice(0, 8).toUpperCase()}</p>
+                  <p className="mt-1 text-xs font-bold text-zinc-400">{order.shippingAddress.fullName} · {order.shippingAddress.phone}</p>
+                </div>
+                <p className="text-xl font-black text-[#1e4b64]">{(order.finalTotal ?? order.total).toLocaleString('vi-VN')}đ</p>
+              </div>
+
+              <div className="mt-6 grid grid-cols-4 gap-2">
+                {statusSteps.map((step, index) => {
+                  const active = order.status !== 'cancelled' && stepIndex >= index;
+                  return (
+                    <div key={step.key}>
+                      <div className={cn('mb-2 h-1.5 rounded-full', active ? 'bg-[#1e4b64]' : 'bg-zinc-200')} />
+                      <p className={cn('text-[10px] font-black uppercase', active ? 'text-[#1e4b64]' : 'text-zinc-300')}>{step.label}</p>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {(order.trackingNumber || order.trackingUrl) && (
+                <div className="mt-5 rounded-2xl bg-white p-4">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-[#1e4b64]">Vận chuyển</p>
+                  <p className="mt-2 text-sm font-bold text-zinc-700">{order.trackingNumber || 'Đã có thông tin vận chuyển'}</p>
+                  {order.trackingUrl && <a href={order.trackingUrl} target="_blank" rel="noreferrer" className="mt-2 inline-block text-sm font-black text-[#1e4b64] underline">Xem chi tiết vận đơn</a>}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProductComparisonPage() {
+  const { products } = useProducts();
+  const { compareIds, removeCompare, clearCompare } = useComparison();
+  const comparedProducts = compareIds
+    .map(id => products.find(product => product.id === id))
+    .filter((product): product is Product => Boolean(product));
+
+  return (
+    <div className="min-h-screen bg-slate-50/70">
+      <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#1e4b64]">Product Comparison</p>
+            <h1 className="mt-2 text-2xl font-black text-zinc-950 sm:text-3xl">So sánh sản phẩm</h1>
+          </div>
+          {comparedProducts.length > 0 && (
+            <button onClick={clearCompare} className="rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-black text-zinc-700 hover:bg-zinc-100">
+              Xóa so sánh
+            </button>
+          )}
+        </div>
+
+        {comparedProducts.length === 0 ? (
+          <div className="rounded-[28px] border border-zinc-100 bg-white p-12 text-center shadow-sm">
+            <PackageSearch className="mx-auto mb-4 h-12 w-12 text-zinc-300" />
+            <h2 className="text-xl font-black text-zinc-950">Chưa chọn sản phẩm để so sánh</h2>
+            <Link to="/shop" className="mt-6 inline-flex h-11 items-center rounded-full bg-[#1e4b64] px-6 text-sm font-black text-white">Chọn sản phẩm</Link>
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-[28px] border border-zinc-100 bg-white shadow-sm">
+            <table className="min-w-[760px] w-full text-left">
+              <tbody className="divide-y divide-zinc-100">
+                <tr>
+                  <th className="w-44 p-4 text-xs font-black uppercase tracking-widest text-zinc-400">Sản phẩm</th>
+                  {comparedProducts.map(product => (
+                    <td key={product.id} className="p-4 align-top">
+                      <button onClick={() => removeCompare(product.id)} className="mb-3 text-xs font-black text-red-500">Bỏ so sánh</button>
+                      <img src={product.images?.[0]} alt={product.name} className="mb-3 aspect-square w-32 rounded-2xl object-cover" />
+                      <Link to={`/${product.slug || product.id}`} className="block text-sm font-black text-zinc-950 hover:text-[#1e4b64]">{product.name}</Link>
+                    </td>
+                  ))}
+                </tr>
+                {[
+                  ['Giá', (product: Product) => `${(product.discountPrice || product.price).toLocaleString('vi-VN')}đ`],
+                  ['Danh mục', (product: Product) => String(product.category)],
+                  ['Chất liệu', (product: Product) => product.material || 'Đang cập nhật'],
+                  ['Form dáng', (product: Product) => product.style || product.fashionStyle || 'Đang cập nhật'],
+                  ['Màu sắc', (product: Product) => product.colors?.join(', ') || 'Đang cập nhật'],
+                  ['Kích cỡ', (product: Product) => product.sizes?.join(', ') || 'Đang cập nhật'],
+                  ['Đánh giá', (product: Product) => `${product.rating || 0}/5 (${product.reviewsCount || 0})`],
+                ].map(([label, getter]) => (
+                  <tr key={String(label)}>
+                    <th className="p-4 text-xs font-black uppercase tracking-widest text-zinc-400">{String(label)}</th>
+                    {comparedProducts.map(product => (
+                      <td key={product.id} className="p-4 text-sm font-bold text-zinc-700">{(getter as (product: Product) => string)(product)}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CompareFloatingBar() {
+  const navigate = useNavigate();
+  const { compareIds, clearCompare } = useComparison();
+  if (compareIds.length === 0) return null;
+
+  return (
+    <div className="fixed bottom-5 left-1/2 z-40 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-2xl border border-zinc-200 bg-white p-3 shadow-2xl sm:bottom-6">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-[#1e4b64]">So sánh</p>
+          <p className="text-sm font-black text-zinc-950">{compareIds.length}/3 sản phẩm</p>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={clearCompare} className="rounded-full px-3 py-2 text-xs font-black text-zinc-500 hover:bg-zinc-100">Xóa</button>
+          <button onClick={() => navigate('/so-sanh')} className="rounded-full bg-[#1e4b64] px-4 py-2 text-xs font-black text-white">Xem bảng</button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -1774,6 +1967,7 @@ function AppContent() {
         <CartProvider>
         <WishlistProvider>
         <RecentlyViewedProvider>
+        <ComparisonProvider>
         <div className="min-h-screen bg-white font-sans selection:bg-black selection:text-white w-full overflow-x-hidden relative">
           {!isAdminRoute && (
             <Navbar 
@@ -1828,6 +2022,8 @@ function AppContent() {
               <Route path="/apparel/:categorySlug/:productSlug" element={<ProductDetail />} />
               <Route path="/checkout" element={<Checkout onComplete={handleCheckoutComplete} />} />
               <Route path="/dat-hang-thanh-cong/:orderId" element={<OrderSuccessPage />} />
+              <Route path="/tra-cuu-don-hang" element={<OrderLookupPage />} />
+              <Route path="/so-sanh" element={<ProductComparisonPage />} />
               <Route path="/tai-khoan" element={<AccountPage />} />
               <Route path="/yeu-thich" element={<WishlistPage />} />
               <Route path="/da-xem" element={<RecentlyViewedPage />} />
@@ -1870,6 +2066,7 @@ function AppContent() {
                 onClose={() => setIsCartOpen(false)} 
                 onCheckout={handleCheckout}
               />
+              <CompareFloatingBar />
             </>
           )}
           
@@ -1878,6 +2075,7 @@ function AppContent() {
           {/* Floating Contact Menu */}
           {!isAdminRoute && <FloatingContactMenu />}
         </div>
+        </ComparisonProvider>
         </RecentlyViewedProvider>
         </WishlistProvider>
       </CartProvider>

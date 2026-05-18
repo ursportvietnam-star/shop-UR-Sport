@@ -17,7 +17,6 @@ import {
   onSnapshot,
   serverTimestamp,
   doc,
-  runTransaction,
   getDoc
 } from 'firebase/firestore';
 import { Review, Product } from '../types';
@@ -240,7 +239,8 @@ export const ProductDetail: React.FC = () => {
         ...doc.data()
       })) as Review[];
 
-      const sortedReviews = [...reviewsData].sort((a, b) => {
+      const visibleReviews = reviewsData.filter(review => isAdmin || !review.status || review.status === 'approved');
+      const sortedReviews = [...visibleReviews].sort((a, b) => {
         const timeA = a.createdAt?.seconds || 0;
         const timeB = b.createdAt?.seconds || 0;
         return timeB - timeA;
@@ -399,6 +399,7 @@ export const ProductDetail: React.FC = () => {
 
       await addDoc(collection(db, 'reviews'), {
         productId: product.id,
+        productName: product.name,
         userId: user.uid,
         userName: user?.displayName || newReview.userName,
         rating: newReview.rating,
@@ -406,26 +407,8 @@ export const ProductDetail: React.FC = () => {
         variant: `${selectedSize} / ${selectedColor}`,
         images: imageUrls,
         videos: videoUrls,
+        status: 'pending',
         createdAt: serverTimestamp()
-      });
-
-      const productRef = doc(db, 'products', product.id);
-
-      await runTransaction(db, async (transaction) => {
-        const productDoc = await transaction.get(productRef);
-        if (!productDoc.exists()) return;
-
-        const currentData = productDoc.data();
-        const currentCount = currentData.reviewsCount || 0;
-        const currentRating = currentData.rating || 0;
-
-        const newCount = currentCount + 1;
-        const newAvgRating = parseFloat(((currentRating * currentCount + newReview.rating) / newCount).toFixed(1));
-
-        transaction.update(productRef, {
-          rating: newAvgRating,
-          reviewsCount: newCount
-        });
       });
 
       setNewReview({ rating: 5, comment: '', userName: '' });
@@ -1301,6 +1284,12 @@ export const ProductDetail: React.FC = () => {
                           <p className="text-zinc-700 text-[16px] leading-relaxed font-medium">
                             {review.comment}
                           </p>
+                          {review.adminReply && (
+                            <div className="rounded-2xl border border-[#1e4b64]/10 bg-blue-50/60 p-4">
+                              <p className="text-[11px] font-black uppercase tracking-widest text-[#1e4b64]">UR Sport phản hồi</p>
+                              <p className="mt-2 text-sm font-medium leading-6 text-zinc-700">{review.adminReply}</p>
+                            </div>
+                          )}
 
                           {(review.images?.length || review.videos?.length) && (
                             <div className="flex flex-wrap gap-4 pt-2">

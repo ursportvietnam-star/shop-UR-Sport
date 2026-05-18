@@ -669,7 +669,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         collarType: formData.collarType
       };
 
-      if (product && product.id) {
+      if (product && product.id && !product.id.startsWith('ai_')) {
         await updateDoc(doc(db, 'products', product.id), payload);
         toast.success('Cập nhật sản phẩm thành công!');
       } else {
@@ -685,7 +685,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
       onSuccess();
       
       // Reset form ONLY for new product additions
-      if (!product) {
+      if (!product || (product && product.id && product.id.startsWith('ai_'))) {
         onClose();
         setFormData({
           name: '',

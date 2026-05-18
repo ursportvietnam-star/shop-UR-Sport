@@ -1,14 +1,55 @@
 import React from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { CheckCircle2, ClipboardList, Home, PackageSearch, ShieldCheck, Truck } from 'lucide-react';
+import { CheckCircle2, Clipboard, ClipboardList, Home, PackageSearch, ShieldCheck, Truck } from 'lucide-react';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase';
+import { Order } from '../types';
+import { BANK_TRANSFER_INFO, getPaymentLabel, getTransferContent, getVietQrUrl } from '../lib/payment';
+import { toast } from 'sonner';
 
 export const OrderSuccessPage: React.FC = () => {
   const { orderId } = useParams<{ orderId?: string }>();
-  const shortOrderId = orderId ? orderId.slice(0, 8).toUpperCase() : '';
+  const [order, setOrder] = React.useState<Order | null>(null);
+  const [isLoadingOrder, setIsLoadingOrder] = React.useState(Boolean(orderId));
+  const shortOrderId = order?.orderCode || (orderId ? orderId.slice(0, 8).toUpperCase() : '');
+  const payableTotal = order?.finalTotal ?? order?.total ?? 0;
+  const paymentMethod = order?.paymentMethod;
+  const shouldShowQr = Boolean(order && paymentMethod && paymentMethod !== 'cod');
+  const transferContent = order?.transferContent || getTransferContent(order?.orderCode, orderId);
+  const qrUrl = getVietQrUrl({ amount: payableTotal, transferContent });
+
+  React.useEffect(() => {
+    if (!orderId) return;
+
+    let isMounted = true;
+    setIsLoadingOrder(true);
+
+    getDoc(doc(db, 'orders', orderId)).then(snap => {
+      if (!isMounted) return;
+      if (snap.exists()) {
+        setOrder({ id: snap.id, ...snap.data() } as Order);
+      }
+    }).finally(() => {
+      if (isMounted) setIsLoadingOrder(false);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [orderId]);
+
+  const copyText = async (value: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(`Đã copy ${label}`);
+    } catch {
+      toast.error('Không thể copy tự động');
+    }
+  };
 
   return (
     <div className="min-h-[70vh] bg-white">
-      <div className="mx-auto max-w-3xl px-4 py-20 text-center sm:px-6">
+      <div className="mx-auto max-w-4xl px-4 py-20 text-center sm:px-6">
         <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-full bg-emerald-50 text-emerald-500 ring-8 ring-emerald-50/60">
           <CheckCircle2 className="h-12 w-12" />
         </div>
@@ -27,6 +68,64 @@ export const OrderSuccessPage: React.FC = () => {
           <div className="mx-auto mt-8 max-w-md rounded-2xl border border-dashed border-[#1e4b64]/30 bg-blue-50/40 px-5 py-4">
             <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Mã đơn hàng</p>
             <p className="mt-1 text-2xl font-black tracking-widest text-[#1e4b64]">#{shortOrderId}</p>
+          </div>
+        )}
+
+        {isLoadingOrder && (
+          <div className="mx-auto mt-8 h-40 max-w-2xl animate-pulse rounded-3xl bg-zinc-50" />
+        )}
+
+        {shouldShowQr && (
+          <div className="mx-auto mt-8 grid max-w-3xl gap-6 rounded-3xl border border-blue-100 bg-blue-50/30 p-5 text-left shadow-sm sm:grid-cols-[220px_1fr] sm:p-6">
+            <div className="mx-auto rounded-3xl bg-white p-4 shadow-lg ring-1 ring-blue-100">
+              <img
+                src={qrUrl}
+                alt="Mã QR VietQR thanh toán đơn hàng"
+                loading="lazy"
+                className="h-48 w-48 object-contain"
+              />
+            </div>
+
+            <div className="flex flex-col justify-center">
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#1e4b64]">Thanh toán VietQR</p>
+              <h2 className="mt-2 text-xl font-black text-zinc-950">Quét mã để thanh toán đơn hàng</h2>
+              <p className="mt-2 text-sm font-medium leading-6 text-zinc-500">
+                Mã QR đã điền sẵn số tiền và nội dung chuyển khoản. Vui lòng giữ đúng nội dung để shop xác nhận nhanh hơn.
+              </p>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl bg-white p-4 ring-1 ring-blue-100">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Số tiền</p>
+                  <p className="mt-1 text-lg font-black text-[#1e4b64]">{payableTotal.toLocaleString('vi-VN')}đ</p>
+                </div>
+                <div className="rounded-2xl bg-white p-4 ring-1 ring-blue-100">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Phương thức</p>
+                  <p className="mt-1 text-sm font-black text-zinc-900">{getPaymentLabel(paymentMethod)}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => copyText(BANK_TRANSFER_INFO.accountNumber, 'số tài khoản')}
+                  className="rounded-2xl bg-white p-4 text-left ring-1 ring-blue-100 transition-colors hover:bg-blue-50"
+                >
+                  <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Số tài khoản</p>
+                  <p className="mt-1 flex items-center gap-2 text-sm font-black text-zinc-900">
+                    {BANK_TRANSFER_INFO.accountNumber}
+                    <Clipboard className="h-3.5 w-3.5 text-[#1e4b64]" />
+                  </p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => copyText(transferContent, 'nội dung chuyển khoản')}
+                  className="rounded-2xl bg-white p-4 text-left ring-1 ring-blue-100 transition-colors hover:bg-blue-50"
+                >
+                  <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Nội dung</p>
+                  <p className="mt-1 flex items-center gap-2 text-sm font-black text-zinc-900">
+                    {transferContent}
+                    <Clipboard className="h-3.5 w-3.5 text-[#1e4b64]" />
+                  </p>
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

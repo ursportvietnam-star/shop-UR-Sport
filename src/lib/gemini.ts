@@ -208,7 +208,10 @@ async function callGemini(systemInstruction: string, userPrompt: string) {
   const payload = {
     contents: [
       { role: 'user', parts: [{ text: `[SYSTEM INSTRUCTION]\n${systemInstruction}\n\n[USER PROMPT]\n${userPrompt}` }] }
-    ]
+    ],
+    generationConfig: {
+      responseMimeType: "application/json"
+    }
   };
 
   try {

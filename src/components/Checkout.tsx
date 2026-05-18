@@ -17,6 +17,7 @@ import { VoucherSelectionModal } from './VoucherSelectionModal';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
 import { STATIC_VOUCHERS } from '../data';
+import { BANK_TRANSFER_INFO, createOrderCode, getTransferContent, getVietQrUrl } from '../lib/payment';
 
 const checkoutSchema = z.object({
   fullName: z.string().min(2, 'Vui lòng nhập họ tên'),
@@ -142,7 +143,12 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
       const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
       const { db } = await import('../firebase');
       
+      const orderCode = createOrderCode();
+      const savedPaymentMethod = paymentMethod === 'e_wallet' ? activeWallet : paymentMethod;
+      const transferContent = getTransferContent(orderCode);
+
       const orderData = {
+        orderCode,
         userId: user.uid,
         items: cart,
         total: total,
@@ -157,7 +163,8 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
         },
         email: data.email,
         note: data.note || '',
-        paymentMethod: paymentMethod,
+        paymentMethod: savedPaymentMethod,
+        transferContent: savedPaymentMethod === 'cod' ? null : transferContent,
         createdAt: serverTimestamp()
       };
 
@@ -347,10 +354,10 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                           <img 
                             src={
                               activeWallet === 'momo' 
-                                ? `https://img.vietqr.io/image/970415-0917722425-compact2.jpg?amount=${finalTotal}&addInfo=UR%20MOMO`
+                                ? getVietQrUrl({ amount: finalTotal, transferContent: 'UR MOMO' })
                                 : activeWallet === 'zalopay'
-                                  ? `https://img.vietqr.io/image/970436-0917722425-compact2.jpg?amount=${finalTotal}&addInfo=UR%20ZALO`
-                                  : `https://img.vietqr.io/image/970422-0917722425-compact2.jpg?amount=${finalTotal}&addInfo=UR%20SHOPEE`
+                                  ? getVietQrUrl({ amount: finalTotal, transferContent: 'UR ZALO' })
+                                  : getVietQrUrl({ amount: finalTotal, transferContent: 'UR SHOPEE' })
                             } 
                             alt="Mã QR thanh toán ví điện tử" 
                             loading="lazy"
@@ -379,7 +386,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                              <div className="grid grid-cols-2 gap-4">
                                 <div className="p-4 bg-zinc-50 rounded-2xl">
                                    <p className="text-[10px] text-zinc-400 font-black uppercase mb-1">Người nhận</p>
-                                   <p className="font-black text-sm text-zinc-900 uppercase">NGUYỄN BẢO</p>
+                                    <p className="font-black text-sm text-zinc-900 uppercase">{BANK_TRANSFER_INFO.accountName}</p>
                                 </div>
                                 <div className="p-4 bg-zinc-50 rounded-2xl">
                                    <p className="text-[10px] text-zinc-400 font-black uppercase mb-1">Số tiền</p>
@@ -405,7 +412,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                     <div className="flex flex-col md:flex-row gap-8 items-center">
                       <div className="bg-white p-4 rounded-3xl shadow-2xl shadow-blue-200/20 ring-1 ring-blue-100 shrink-0">
                         <img 
-                          src={`https://img.vietqr.io/image/MB-0917722425-compact2.jpg?amount=${finalTotal}&addInfo=UR%20ORDER`} 
+                          src={getVietQrUrl({ amount: finalTotal, transferContent: 'UR ORDER' })} 
                           alt="Mã QR chuyển khoản ngân hàng" 
                           loading="lazy"
                           className="w-44 h-44 object-contain"
@@ -423,15 +430,15 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                         <div className="grid grid-cols-2 gap-y-6 gap-x-4">
                           <div className="col-span-2">
                             <p className="text-[10px] text-zinc-400 font-black uppercase tracking-widest mb-1">Ngân hàng</p>
-                            <p className="font-black text-base text-zinc-900">MB BANK (Ngân Hàng Quân Đội)</p>
+                            <p className="font-black text-base text-zinc-900">{BANK_TRANSFER_INFO.bankName}</p>
                           </div>
                           <div>
                             <p className="text-[10px] text-zinc-400 font-black uppercase tracking-widest mb-1">Số tài khoản</p>
-                            <p className="font-black text-2xl text-[#1e4b64] tracking-tight">0917722425</p>
+                            <p className="font-black text-2xl text-[#1e4b64] tracking-tight">{BANK_TRANSFER_INFO.accountNumber}</p>
                           </div>
                           <div>
                             <p className="text-[10px] text-zinc-400 font-black uppercase tracking-widest mb-1">Tên tài khoản</p>
-                            <p className="font-black text-base text-zinc-900 uppercase">NGUYEN BAO</p>
+                            <p className="font-black text-base text-zinc-900 uppercase">{BANK_TRANSFER_INFO.accountName}</p>
                           </div>
                         </div>
                         

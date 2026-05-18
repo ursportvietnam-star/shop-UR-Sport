@@ -58,6 +58,8 @@ export interface CartItem extends Product {
 export interface Review {
   id: string;
   productId: string;
+  productName?: string;
+  orderId?: string;
   userId?: string;
   userName: string;
   rating: number;
@@ -65,6 +67,10 @@ export interface Review {
   createdAt: any;
   images?: string[];
   videos?: string[];
+  variant?: string;
+  status?: 'pending' | 'approved' | 'hidden';
+  adminReply?: string;
+  repliedAt?: any;
 }
 
 export interface Order {
@@ -75,7 +81,12 @@ export interface Order {
   discountAmount?: number;
   finalTotal?: number;
   voucherCode?: string | null;
+  orderCode?: string;
+  transferContent?: string | null;
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  trackingNumber?: string;
+  trackingUrl?: string;
+  loyaltyPointsEarned?: number;
   shippingAddress: {
     fullName: string;
     phone: string;
