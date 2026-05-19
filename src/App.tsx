@@ -2035,6 +2035,7 @@ function AppContent() {
               <Route path="/blog/:slug" element={<NewsPage />} />
               <Route path="/quan-tri" element={<AdminPanel />} />
               <Route path="/quantri" element={<AdminPanel />} />
+              <Route path="/admin" element={<AdminPanel />} />
               <Route path="/ao-thun-nam-the-thao" element={<Navigate to="/ao-thun-the-thao-nam" replace />} />
               <Route path="/ao-thun-nam-cotton" element={<Navigate to="/ao-thun-cotton-nam" replace />} />
               {/* Clean Category URLs at root */}

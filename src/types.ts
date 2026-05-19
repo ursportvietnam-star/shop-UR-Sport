@@ -1,3 +1,5 @@
+import type { FirestoreTimestamp } from './types/firestore';
+
 export type Category =
   | 'Áo thun nam'
   | 'Áo thun thể thao nam'
@@ -46,7 +48,7 @@ export interface Product {
   material?: string;
   fashionStyle?: string;
   collarType?: string;
-  createdAt?: any;
+  createdAt?: FirestoreTimestamp;
 }
 
 export interface CartItem extends Product {
@@ -64,13 +66,13 @@ export interface Review {
   userName: string;
   rating: number;
   comment: string;
-  createdAt: any;
+  createdAt: FirestoreTimestamp;
   images?: string[];
   videos?: string[];
   variant?: string;
   status?: 'pending' | 'approved' | 'hidden';
   adminReply?: string;
-  repliedAt?: any;
+  repliedAt?: FirestoreTimestamp;
 }
 
 export interface Order {
@@ -95,7 +97,7 @@ export interface Order {
   email?: string;
   paymentMethod?: 'cod' | 'bank_transfer' | 'momo' | 'zalopay' | 'shopeepay' | string;
   note?: string;
-  createdAt: any;
+  createdAt: FirestoreTimestamp;
 }
 
 export interface BlogPost {
@@ -113,7 +115,7 @@ export interface BlogPost {
   customSchema?: string;
   images?: string[];
   videos?: string[];
-  createdAt?: any;
+  createdAt?: FirestoreTimestamp;
 }
 
 export interface Voucher {
@@ -132,5 +134,5 @@ export interface Voucher {
   usedCount: number;
   isActive: boolean;
   applicableProducts?: string[]; // array of product ids or 'all'
-  createdAt?: any;
+  createdAt?: FirestoreTimestamp;
 }

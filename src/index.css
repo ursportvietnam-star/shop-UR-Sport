@@ -223,6 +223,164 @@
   table-layout: fixed !important;
 }
 
+.blog-content {
+  --table-border: #e5e7eb;
+  --table-header-bg: #111827;
+  --table-header-bg-soft: #1f2937;
+}
+
+.blog-content .table-wrap,
+.product-description-container .table-wrap {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  margin: 30px 0 !important;
+  padding-bottom: 4px !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.blog-content:has(table),
+.product-description-container:has(table) {
+  overflow-x: auto !important;
+}
+
+.blog-content table,
+.product-description-container table {
+  width: 100% !important;
+  min-width: 680px !important;
+  max-width: none !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  table-layout: auto !important;
+  display: table !important;
+  margin: 28px 0 !important;
+  overflow: hidden !important;
+  border: 1px solid var(--table-border) !important;
+  border-radius: 16px !important;
+  background: #ffffff !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08) !important;
+}
+
+.blog-content .table-wrap table,
+.product-description-container .table-wrap table {
+  margin: 0 !important;
+}
+
+.blog-content thead,
+.product-description-container thead {
+  background: linear-gradient(135deg, var(--table-header-bg), var(--table-header-bg-soft)) !important;
+  color: #ffffff !important;
+}
+
+.blog-content th,
+.product-description-container th {
+  padding: 18px !important;
+  text-align: center !important;
+  font-size: 16px !important;
+  line-height: 1.45 !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+.blog-content th:last-child,
+.product-description-container th:last-child {
+  border-right: 0 !important;
+}
+
+.blog-content td,
+.product-description-container td {
+  padding: 16px !important;
+  font-size: 15px !important;
+  line-height: 1.6 !important;
+  vertical-align: middle !important;
+  color: #374151 !important;
+  border-right: 1px solid var(--table-border) !important;
+  border-bottom: 1px solid var(--table-border) !important;
+  background: #ffffff !important;
+}
+
+.blog-content td:last-child,
+.product-description-container td:last-child {
+  border-right: 0 !important;
+}
+
+.blog-content tbody tr:last-child td,
+.product-description-container tbody tr:last-child td {
+  border-bottom: 0 !important;
+}
+
+.blog-content tbody tr:nth-child(even) td,
+.product-description-container tbody tr:nth-child(even) td {
+  background: #f9fafb !important;
+}
+
+.blog-content tbody tr:hover td,
+.product-description-container tbody tr:hover td {
+  background: #eef6ff !important;
+  transition: background-color 0.2s ease !important;
+}
+
+.blog-content td:first-child,
+.product-description-container td:first-child {
+  width: 30% !important;
+  min-width: 190px !important;
+  font-weight: 700 !important;
+  color: #111827 !important;
+  background: #f3f4f6 !important;
+}
+
+.blog-content tbody tr:nth-child(even) td:first-child,
+.product-description-container tbody tr:nth-child(even) td:first-child {
+  background: #eef2f7 !important;
+}
+
+.blog-content tbody tr:hover td:first-child,
+.product-description-container tbody tr:hover td:first-child {
+  background: #dbeafe !important;
+}
+
+.blog-content .badge-good,
+.blog-content .badge-normal,
+.product-description-container .badge-good,
+.product-description-container .badge-normal {
+  display: inline-block !important;
+  padding: 6px 12px !important;
+  border-radius: 999px !important;
+  font-size: 13px !important;
+  line-height: 1.3 !important;
+  font-weight: 700 !important;
+  white-space: nowrap !important;
+}
+
+.blog-content .badge-good,
+.product-description-container .badge-good {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+}
+
+.blog-content .badge-normal,
+.product-description-container .badge-normal {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+}
+
+@media (max-width: 767px) {
+  .blog-content table,
+  .product-description-container table {
+    min-width: 620px !important;
+    border-radius: 12px !important;
+  }
+
+  .blog-content th,
+  .blog-content td,
+  .product-description-container th,
+  .product-description-container td {
+    padding: 13px !important;
+    font-size: 14px !important;
+  }
+}
+
 .product-description-container .seo-faq-section {
   width: 100% !important;
   margin: 2.5rem 0 !important;

@@ -3,6 +3,7 @@ import { generateProductSEO, AIProductData, getGeminiApiKey, setGeminiApiKey } f
 import { Bot, Sparkles, Send, Settings, Save, AlertCircle, BrainCircuit } from 'lucide-react';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
+import { sanitizeRichHtml } from '../lib/htmlContent';
 
 interface AIProductAssistantProps {
   onApply: (data: AIProductData) => void;
@@ -14,6 +15,7 @@ export function AIProductAssistant({ onApply }: AIProductAssistantProps) {
   const [result, setResult] = useState<AIProductData | null>(null);
   const [geminiKey, setGeminiKey] = useState(getGeminiApiKey());
   const [showSettings, setShowSettings] = useState(!getGeminiApiKey());
+  const safeDescriptionHtml = React.useMemo(() => sanitizeRichHtml(result?.descriptionHtml || ''), [result?.descriptionHtml]);
 
   const handleSaveSettings = () => {
     setGeminiApiKey(geminiKey);
@@ -189,7 +191,7 @@ export function AIProductAssistant({ onApply }: AIProductAssistantProps) {
 
           <div>
             <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Mô tả dài HTML (Preview)</label>
-            <div className="mt-2 p-6 bg-zinc-50 border border-zinc-200 rounded-xl prose max-w-none text-zinc-800" dangerouslySetInnerHTML={{ __html: result.descriptionHtml }} />
+            <div className="mt-2 p-6 bg-zinc-50 border border-zinc-200 rounded-xl prose max-w-none text-zinc-800" dangerouslySetInnerHTML={{ __html: safeDescriptionHtml }} />
           </div>
         </div>
       )}

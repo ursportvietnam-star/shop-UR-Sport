@@ -1,26 +1,36 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import {
   LayoutDashboard, Package, ShoppingBag, Users, MessageSquare,
   Image as ImageIcon, Settings, Plus, Trash2, Edit2, LogOut,
   TrendingUp, Eye, DollarSign, BarChart2, Menu, X, Bell,
   Search, ChevronRight, ChevronDown, Megaphone, Upload, Star, AlertCircle, Copy, ExternalLink, Code2, Check as CheckIcon, Bot, Sparkles, Zap, Timer, Clock, Ticket, Download, Filter, MailCheck, Send, UserPlus, ShieldCheck, Network
 } from 'lucide-react';
-import { collection, onSnapshot, query, orderBy, deleteDoc, doc, setDoc, getDoc, addDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
-import { db } from '../firebase';
 import { PRODUCTS as STATIC_PRODUCTS, STATIC_BLOG_POSTS, STATIC_ORDERS, STATIC_CUSTOMERS, CATEGORY_METADATA, STATIC_VOUCHERS } from '../data';
 import { ImageUpload } from './ImageUpload';
 import { AddProductModal } from './AddProductModal';
 import { AddBlogPostModal } from './AddBlogPostModal';
 import { AddVoucherModal } from './AddVoucherModal';
 import { OrderDetailModal } from './OrderDetailModal';
-import { AIProductAssistant } from './AIProductAssistant';
-import { AIBlogAssistant } from './AIBlogAssistant';
 import { CategorySeoManager } from './CategorySeoManager';
 import { ContentMapSeoPanel } from './ContentMapSeoPanel';
 import { ProductSeoAutomationPanel, ProductSeoScoreBadge } from './ProductSeoAutomationPanel';
 import { AIProductData, AIBlogData, AIProductSeoFix } from '../lib/gemini';
 import { useAuth } from '../AuthContext';
 import { Product, BlogPost, Order, Voucher, Review } from '../types';
+import type {
+  AdminNavigationItem,
+  AdminOrderStatus,
+  AdminTab,
+  BannerItem,
+  BlogCategoryItem,
+  FirestoreTimestamp,
+  FlashSaleSettings,
+  FloatingMenuSettings,
+  MediaItem,
+  NavigationItem,
+  NewsletterSendResult,
+  NewsletterSubscriber,
+} from '../types/admin';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
@@ -35,80 +45,99 @@ import {
   ProductCategoryOption,
   slugifyVietnamese
 } from '../lib/categoryConfig';
+import {
+  addAdminDocument,
+  adminTimestamp,
+  deleteAdminDocument,
+  getAdminSetting,
+  mergeAdminDocument,
+  saveAdminSetting,
+  subscribeAdminCollection,
+  updateAdminDocument,
+} from '../services/adminData';
 
-interface MediaItem {
-  id: string;
-  url: string;
-  createdAt: any;
-}
+const AIProductAssistant = React.lazy(() =>
+  import('./AIProductAssistant').then(module => ({ default: module.AIProductAssistant }))
+);
+const AIBlogAssistant = React.lazy(() =>
+  import('./AIBlogAssistant').then(module => ({ default: module.AIBlogAssistant }))
+);
+const AdminSettingsTab = React.lazy(() =>
+  import('./admin/AdminSettingsTab').then(module => ({ default: module.AdminSettingsTab }))
+);
+const MediaLibraryTab = React.lazy(() =>
+  import('./admin/MediaLibraryTab').then(module => ({ default: module.MediaLibraryTab }))
+);
+const PolicyPagesManager = React.lazy(() =>
+  import('./admin/PolicyPagesManager').then(module => ({ default: module.PolicyPagesManager }))
+);
 
-interface NewsletterSubscriber {
-  id: string;
-  email: string;
-  status?: 'active' | 'unsubscribed';
-  source?: string;
-  createdAt?: any;
-  updatedAt?: any;
-}
-
-type AdminTab = 'dashboard' | 'strategy' | 'products' | 'orders' | 'reviews' | 'customers' | 'newsletter' | 'vouchers' | 'blog' | 'media' | 'settings' | 'blog-categories' | 'policy-pages' | 'ai-product' | 'ai-blog' | 'flash-sale' | 'category-seo' | 'content-map';
-
-type NavItem = {
-  id: string;
-  label: string;
-  icon: React.FC<any>;
-  isGroup?: boolean;
-  children?: { id: AdminTab; label: string; icon: React.FC<any> }[];
-};
-
-type BlogCategoryItem = {
-  id: number | string;
-  label: string;
-  link: string;
-  icon: string;
-  group: 'main' | 'category' | 'subcategory';
-  parentLabel?: string;
-  h1?: string;
-  description?: string;
-  seoTitle?: string;
-  metaDescription?: string;
-};
+const AdminTabFallback = () => (
+  <div className="rounded-2xl border border-white/5 bg-[#13161f] p-10 text-center">
+    <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-white/10 border-t-[#1e4b64]" />
+    <p className="text-sm font-bold text-white/40">Đang tải công cụ...</p>
+  </div>
+);
 
 const BLOG_CATEGORIES_STORAGE_KEY = 'ursport_blog_categories_final_v1';
 
-const NAV_ITEMS: NavItem[] = [
-  { id: 'strategy', label: 'Chiến lược', icon: BarChart2 },
+const NAV_ITEMS: AdminNavigationItem[] = [
   { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },
-  { id: 'products', label: 'Sản phẩm', icon: Package },
-  { id: 'ai-product', label: 'AI Sản Phẩm', icon: Bot },
-  { id: 'blog', label: 'Blog', icon: MessageSquare },
-  { id: 'ai-blog', label: 'AI Blog', icon: Sparkles },
-  { id: 'orders', label: 'Đơn hàng', icon: ShoppingBag },
-  { id: 'reviews', label: 'Quản lý đánh giá', icon: ShieldCheck },
-  { id: 'customers', label: 'Khách hàng', icon: Users },
-  { id: 'newsletter', label: 'Email đăng ký', icon: MailCheck },
+  { id: 'strategy', label: 'Chiến lược', icon: BarChart2 },
+  {
+    id: 'sales-group',
+    label: 'Quản lý Bán hàng',
+    icon: ShoppingBag,
+    isGroup: true,
+    children: [
+      { id: 'orders', label: 'Đơn hàng', icon: ShoppingBag },
+      { id: 'customers', label: 'Khách hàng', icon: Users },
+      { id: 'reviews', label: 'Quản lý đánh giá', icon: ShieldCheck },
+    ]
+  },
+  {
+    id: 'catalog-group',
+    label: 'Nội dung & Sản phẩm',
+    icon: Package,
+    isGroup: true,
+    children: [
+      { id: 'products', label: 'Sản phẩm', icon: Package },
+      { id: 'blog', label: 'Bài viết (Blog)', icon: MessageSquare },
+      { id: 'blog-categories', label: 'Danh mục Blog', icon: MessageSquare },
+    ]
+  },
   {
     id: 'marketing-group',
-    label: 'Kênh Marketing',
+    label: 'Marketing & Khuyến mãi',
     icon: Megaphone,
     isGroup: true,
     children: [
       { id: 'flash-sale', label: 'Flash Sale', icon: Zap },
       { id: 'vouchers', label: 'Mã giảm giá', icon: Ticket },
-      { id: 'content-map', label: 'Content Map SEO', icon: Network },
-      { id: 'category-seo', label: 'SEO Danh mục', icon: Search }
+      { id: 'newsletter', label: 'Email đăng ký', icon: MailCheck },
     ]
   },
-  { id: 'media', label: 'Thư viện ảnh', icon: ImageIcon },
   {
-    id: 'settings-group',
-    label: 'Cài đặt',
+    id: 'seo-ai-group',
+    label: 'SEO & Công cụ AI',
+    icon: Bot,
+    isGroup: true,
+    children: [
+      { id: 'ai-product', label: 'AI Sản Phẩm', icon: Bot },
+      { id: 'ai-blog', label: 'AI Tạo Blog', icon: Sparkles },
+      { id: 'category-seo', label: 'SEO Danh mục', icon: Search },
+      { id: 'content-map', label: 'Content Map SEO', icon: Network },
+    ]
+  },
+  {
+    id: 'system-group',
+    label: 'Hệ thống',
     icon: Settings,
     isGroup: true,
     children: [
+      { id: 'media', label: 'Thư viện ảnh', icon: ImageIcon },
+      { id: 'policy-pages', label: 'Trang chính sách', icon: Code2 },
       { id: 'settings', label: 'Cài đặt chung', icon: Settings },
-      { id: 'blog-categories', label: 'Danh mục Blog', icon: MessageSquare },
-      { id: 'policy-pages', label: 'Trang chính sách', icon: Code2 }
     ]
   },
 ];
@@ -207,238 +236,6 @@ const DEFAULT_BLOG_CATEGORIES: BlogCategoryItem[] = [
   }
 ];
 
-const DEFAULT_POLICY_PAGES = {
-  shipping: {
-    slug: 'chinh-sach-giao-hang',
-    title: 'Chính sách giao hàng',
-    description: 'Thông tin giao hàng, phí vận chuyển và thời gian nhận hàng tại UR Sport.',
-    sections: [
-      {
-        heading: 'Miễn phí vận chuyển',
-        body: 'UR Sport hỗ trợ miễn phí vận chuyển cho đơn hàng từ 500k. Với đơn hàng dưới mức này, phí vận chuyển sẽ được thông báo rõ ở bước thanh toán.'
-      },
-      {
-        heading: 'Thời gian giao hàng',
-        body: 'Đơn hàng thường được xử lý trong ngày làm việc và giao theo thời gian của đơn vị vận chuyển. Khu vực nội thành có thể nhận nhanh hơn tùy địa chỉ.'
-      },
-      {
-        heading: 'Theo dõi đơn hàng',
-        body: 'Sau khi đơn được xác nhận, UR Sport sẽ hỗ trợ cập nhật tình trạng đơn hàng qua số điện thoại hoặc kênh liên hệ bạn đã cung cấp.'
-      }
-    ]
-  },
-  returns: {
-    slug: 'chinh-sach-doi-tra',
-    title: 'Chính sách đổi trả',
-    description: 'Thông tin đổi trả sản phẩm, điều kiện áp dụng và thời gian hỗ trợ tại UR Sport.',
-    sections: [
-      {
-        heading: 'Đổi trả trong 30 ngày',
-        body: 'UR Sport hỗ trợ đổi trả trong vòng 30 ngày với sản phẩm còn nguyên tình trạng phù hợp, chưa qua sử dụng sai cách và còn đủ thông tin đơn hàng.'
-      },
-      {
-        heading: 'Điều kiện đổi trả',
-        body: 'Sản phẩm cần còn tem, nhãn hoặc bao bì đi kèm nếu có. Các trường hợp lỗi sản xuất, giao nhầm mẫu, nhầm size hoặc phát sinh từ quá trình xử lý đơn sẽ được ưu tiên hỗ trợ.'
-      },
-      {
-        heading: 'Cách liên hệ',
-        body: 'Bạn có thể liên hệ hotline 0917 722 425 hoặc email support@ursport.vn để được hướng dẫn đổi trả nhanh chóng.'
-      }
-    ]
-  }
-};
-
-type PolicyPageKey = string;
-type PolicyPageItem = typeof DEFAULT_POLICY_PAGES.shipping;
-type PolicyPagesState = Record<string, PolicyPageItem>;
-
-function PolicyPagesManager() {
-  const [pages, setPages] = useState<PolicyPagesState>(DEFAULT_POLICY_PAGES);
-  const [selected, setSelected] = useState<PolicyPageKey>('shipping');
-  const [isSaving, setIsSaving] = useState(false);
-
-  useEffect(() => {
-    getDoc(doc(db, 'settings', 'supportPolicies')).then(snap => {
-      if (!snap.exists()) return;
-      const data = snap.data();
-      setPages({
-        shipping: { ...DEFAULT_POLICY_PAGES.shipping, ...(data.shipping || {}) },
-        returns: { ...DEFAULT_POLICY_PAGES.returns, ...(data.returns || {}) },
-        ...Object.fromEntries(
-          Object.entries(data).filter(([key]) => key !== 'shipping' && key !== 'returns')
-        ) as PolicyPagesState
-      });
-    }).catch(() => {
-      toast.error('Không thể tải trang chính sách');
-    });
-  }, []);
-
-  const current = pages[selected] || pages.shipping;
-
-  const updateCurrent = (updater: (page: PolicyPageItem) => PolicyPageItem) => {
-    setPages(prev => ({
-      ...prev,
-      [selected]: updater(prev[selected] || prev.shipping)
-    }));
-  };
-
-  const getPolicyPath = (key: string, page: PolicyPageItem) => {
-    if (key === 'shipping') return '/chinh-sach-giao-hang';
-    if (key === 'returns') return '/chinh-sach-doi-tra';
-    return `/chinh-sach/${page.slug || key}`;
-  };
-
-  const addPolicyPage = () => {
-    const baseSlug = 'trang-chinh-sach-moi';
-    const usedSlugs = new Set(Object.values(pages).map(page => page.slug));
-    let slug = baseSlug;
-    let counter = 2;
-    while (usedSlugs.has(slug)) {
-      slug = `${baseSlug}-${counter}`;
-      counter += 1;
-    }
-
-    const key = `custom-${Date.now()}`;
-    setPages(prev => ({
-      ...prev,
-      [key]: {
-        slug,
-        title: 'Trang chính sách mới',
-        description: 'Mô tả ngắn cho trang chính sách mới.',
-        sections: [
-          {
-            heading: 'Nội dung chính',
-            body: 'Nhập nội dung chi tiết cho trang chính sách tại đây.'
-          }
-        ]
-      }
-    }));
-    setSelected(key);
-  };
-
-  const savePages = async () => {
-    setIsSaving(true);
-    try {
-      await setDoc(doc(db, 'settings', 'supportPolicies'), pages);
-      toast.success('Đã lưu trang chính sách');
-    } catch (error) {
-      toast.error('Không thể lưu trang chính sách');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-6 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-xl font-black text-white">Trang chính sách</h2>
-          <p className="mt-1 text-sm font-medium text-white/35">Quản lý nội dung trang giao hàng và đổi trả. Các trang này đang được đặt noindex.</p>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <button
-            onClick={addPolicyPage}
-            className="rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-black text-white transition-all hover:bg-white/10"
-          >
-            Thêm trang mới
-          </button>
-          <button
-            onClick={savePages}
-            disabled={isSaving}
-            className="rounded-xl bg-[#1e4b64] px-5 py-3 text-sm font-black text-white transition-all hover:bg-[#256580] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isSaving ? 'Đang lưu...' : 'Lưu thay đổi'}
-          </button>
-        </div>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-          {Object.entries(pages).map(([key, page]) => (
-            <button
-              key={key}
-              onClick={() => setSelected(key)}
-              className={cn(
-                "mb-2 w-full rounded-xl px-4 py-3 text-left transition-all",
-                selected === key ? "bg-[#1e4b64] text-white" : "text-white/55 hover:bg-white/5 hover:text-white"
-              )}
-            >
-              <span className="block text-sm font-black">{page.title}</span>
-              <span className="mt-1 block text-xs font-medium opacity-60">{getPolicyPath(key, page)}</span>
-            </button>
-          ))}
-        </div>
-
-        <div className="space-y-5 rounded-2xl border border-white/10 bg-white/[0.03] p-6">
-          <div>
-            <label className="mb-2 block text-xs font-black uppercase tracking-widest text-white/35">Tiêu đề</label>
-            <input
-              value={current.title}
-              onChange={event => updateCurrent(page => ({ ...page, title: event.target.value }))}
-              className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm font-bold text-white outline-none transition-colors focus:border-[#1e4b64]"
-            />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-xs font-black uppercase tracking-widest text-white/35">Slug URL</label>
-            <input
-              value={current.slug}
-              onChange={event => updateCurrent(page => ({
-                ...page,
-                slug: slugifyVietnamese(event.target.value) || page.slug
-              }))}
-              disabled={selected === 'shipping' || selected === 'returns'}
-              className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm font-bold text-white outline-none transition-colors focus:border-[#1e4b64] disabled:cursor-not-allowed disabled:opacity-50"
-            />
-            <p className="mt-2 text-xs font-medium text-white/25">
-              URL: {getPolicyPath(selected, current)}
-            </p>
-          </div>
-
-          <div>
-            <label className="mb-2 block text-xs font-black uppercase tracking-widest text-white/35">Mô tả ngắn</label>
-            <textarea
-              value={current.description}
-              onChange={event => updateCurrent(page => ({ ...page, description: event.target.value }))}
-              rows={3}
-              className="w-full resize-none rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm font-medium leading-6 text-white outline-none transition-colors focus:border-[#1e4b64]"
-            />
-          </div>
-
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-black uppercase tracking-widest text-white/60">Các mục nội dung</h3>
-              <span className="text-xs font-bold text-white/25">noindex, nofollow</span>
-            </div>
-
-            {current.sections.map((section, index) => (
-              <div key={index} className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                <input
-                  value={section.heading}
-                  onChange={event => updateCurrent(page => ({
-                    ...page,
-                    sections: page.sections.map((item, itemIndex) => itemIndex === index ? { ...item, heading: event.target.value } : item)
-                  }))}
-                  className="mb-3 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-black text-white outline-none transition-colors focus:border-[#1e4b64]"
-                />
-                <textarea
-                  value={section.body}
-                  onChange={event => updateCurrent(page => ({
-                    ...page,
-                    sections: page.sections.map((item, itemIndex) => itemIndex === index ? { ...item, body: event.target.value } : item)
-                  }))}
-                  rows={4}
-                  className="w-full resize-none rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium leading-6 text-white outline-none transition-colors focus:border-[#1e4b64]"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 const loadCachedBlogCategories = () => {
   if (typeof window === 'undefined') return null;
   try {
@@ -463,7 +260,7 @@ export const AdminPanel: React.FC = () => {
   const isLocalhost = typeof window !== 'undefined' &&
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
-  const [expandedGroups, setExpandedGroups] = useState<string[]>(['marketing-group', 'settings-group']);
+  const [expandedGroups, setExpandedGroups] = useState<string[]>(['sales-group', 'catalog-group']);
   const [products, setProducts] = useState<Product[]>([]);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -498,15 +295,15 @@ export const AdminPanel: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isOrderDetailModalOpen, setIsOrderDetailModalOpen] = useState(false);
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
-  const [banners, setBanners] = useState<any[]>([]);
-  const [navigation, setNavigation] = useState<any[]>([]);
-  const [floatingMenu, setFloatingMenu] = useState({
+  const [banners, setBanners] = useState<BannerItem[]>([]);
+  const [navigation, setNavigation] = useState<NavigationItem[]>([]);
+  const [floatingMenu, setFloatingMenu] = useState<FloatingMenuSettings>({
     zaloPhone: '0917722425',
     callPhone: '0917722425',
     zaloIcon: 'https://res.cloudinary.com/dcj4qhcfh/image/upload/v1778164803/media/rbkdvi2xgqeg6b79cq1n.webp',
     callIcon: 'https://res.cloudinary.com/dcj4qhcfh/image/upload/v1778166005/media/ximp16qsaxdt7noebddh.jpg'
   });
-  const [flashSaleSettings, setFlashSaleSettings] = useState({
+  const [flashSaleSettings, setFlashSaleSettings] = useState<FlashSaleSettings>({
     isActive: false,
     products: [] as { id: string; flashSalePrice: number; sold: number }[],
     startTime: '',
@@ -516,9 +313,7 @@ export const AdminPanel: React.FC = () => {
 
   useEffect(() => {
     if (!isAdmin) return;
-    const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Product[];
+    const unsubscribe = subscribeAdminCollection<Product>('products', (data) => {
       setProducts(data.length > 0 ? data : STATIC_PRODUCTS);
       setLoading(false);
     }, () => {
@@ -530,9 +325,7 @@ export const AdminPanel: React.FC = () => {
 
   useEffect(() => {
     if (!isAdmin) return;
-    const q = query(collection(db, 'blogPosts'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as BlogPost[];
+    const unsubscribe = subscribeAdminCollection<BlogPost>('blogPosts', (data) => {
       setBlogPosts(data.length > 0 ? data : STATIC_BLOG_POSTS);
     }, () => {
       setBlogPosts(STATIC_BLOG_POSTS);
@@ -542,9 +335,7 @@ export const AdminPanel: React.FC = () => {
 
   useEffect(() => {
     if (!isAdmin) return;
-    const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Order[];
+    const unsubscribe = subscribeAdminCollection<Order>('orders', (data) => {
       setOrders(data.length > 0 ? data : STATIC_ORDERS);
     }, () => {
       setOrders(STATIC_ORDERS);
@@ -554,9 +345,7 @@ export const AdminPanel: React.FC = () => {
 
   useEffect(() => {
     if (!isAdmin) return;
-    const q = query(collection(db, 'reviews'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Review[];
+    const unsubscribe = subscribeAdminCollection<Review>('reviews', (data) => {
       setReviews(data);
       setReviewReplies(Object.fromEntries(data.map(review => [review.id, review.adminReply || ''])));
     }, () => {
@@ -567,9 +356,7 @@ export const AdminPanel: React.FC = () => {
 
   useEffect(() => {
     if (!isAdmin) return;
-    const q = query(collection(db, 'media'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as MediaItem[];
+    const unsubscribe = subscribeAdminCollection<MediaItem>('media', (data) => {
       setMediaItems(data);
     }, () => {
       setMediaItems([]);
@@ -579,9 +366,7 @@ export const AdminPanel: React.FC = () => {
 
   useEffect(() => {
     if (!isAdmin) return;
-    const q = query(collection(db, 'newsletterSubscribers'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as NewsletterSubscriber[];
+    const unsubscribe = subscribeAdminCollection<NewsletterSubscriber>('newsletterSubscribers', (data) => {
       setNewsletterSubscribers(data);
     }, () => {
       setNewsletterSubscribers([]);
@@ -591,9 +376,7 @@ export const AdminPanel: React.FC = () => {
 
   useEffect(() => {
     if (!isAdmin) return;
-    const q = query(collection(db, 'vouchers'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Voucher[];
+    const unsubscribe = subscribeAdminCollection<Voucher>('vouchers', (data) => {
       setVouchers(data.length > 0 ? data : STATIC_VOUCHERS);
     }, () => {
       setVouchers(STATIC_VOUCHERS);
@@ -604,10 +387,10 @@ export const AdminPanel: React.FC = () => {
   // Load settings from Firestore
   useEffect(() => {
     if (!isAdmin) return;
-    getDoc(doc(db, 'settings', 'customCss')).then(snap => {
-      if (snap.exists()) setCustomCss(snap.data().css || '');
+    getAdminSetting<{ css?: string }>('customCss').then(data => {
+      if (data) setCustomCss(data.css || '');
     });
-    getDoc(doc(db, 'settings', 'blogCategories')).then(snap => {
+    getAdminSetting<{ items?: BlogCategoryItem[] }>('blogCategories').then(data => {
       const cached = loadCachedBlogCategories();
       if (isLocalhost) {
         cacheBlogCategories(cached || DEFAULT_BLOG_CATEGORIES);
@@ -617,8 +400,8 @@ export const AdminPanel: React.FC = () => {
         return;
       }
 
-      if (snap.exists()) {
-        const categories = snap.data().items;
+      if (data) {
+        const categories = data.items;
         if (Array.isArray(categories) && categories.length > 0) {
           const normalized = categories.map((item, index) => normalizeBlogCategoryItem(item, index));
           cacheBlogCategories(normalized);
@@ -628,27 +411,26 @@ export const AdminPanel: React.FC = () => {
         }
       }
     });
-    getDoc(doc(db, 'settings', 'banners')).then(snap => {
-      if (snap.exists()) setBanners(snap.data().items || []);
+    getAdminSetting<{ items?: BannerItem[] }>('banners').then(data => {
+      if (data) setBanners(data.items || []);
     });
-    getDoc(doc(db, 'settings', 'navigation')).then(snap => {
-      if (snap.exists()) {
-        setNavigation((snap.data().items || []).map(normalizeNavigationItem));
+    getAdminSetting<{ items?: NavigationItem[] }>('navigation').then(data => {
+      if (data) {
+        setNavigation((data.items || []).map(normalizeNavigationItem));
       } else {
         setNavigation(defaultNavigationItems());
       }
     });
-    getDoc(doc(db, 'settings', 'floatingMenu')).then(snap => {
-      if (snap.exists()) setFloatingMenu(prev => ({ ...prev, ...snap.data() }));
+    getAdminSetting<Partial<FloatingMenuSettings>>('floatingMenu').then(data => {
+      if (data) setFloatingMenu(prev => ({ ...prev, ...data }));
     });
-    getDoc(doc(db, 'settings', 'flashSale')).then(snap => {
-      if (snap.exists()) {
-        const data = snap.data();
+    getAdminSetting<Partial<FlashSaleSettings> & { productIds?: string[] }>('flashSale').then(data => {
+      if (data) {
         setFlashSaleSettings(prev => ({ 
           ...prev, 
           ...data,
           // Migration/Compatibility check
-          products: data.products || (data.productIds || []).map((id: string) => ({ id, flashSalePrice: 0 }))
+          products: data.products || (data.productIds || []).map((id: string) => ({ id, flashSalePrice: 0, sold: 0 }))
         }));
       }
     });
@@ -656,7 +438,7 @@ export const AdminPanel: React.FC = () => {
 
   const handleSaveCss = async () => {
     try {
-      await setDoc(doc(db, 'settings', 'customCss'), { css: customCss });
+      await saveAdminSetting('customCss', { css: customCss });
       // Inject immediately into current page
       let styleEl = document.getElementById('custom-global-css') as HTMLStyleElement | null;
       if (!styleEl) {
@@ -692,7 +474,7 @@ export const AdminPanel: React.FC = () => {
     try {
       cacheBlogCategories(normalized);
       setBlogCategories(normalized);
-      await setDoc(doc(db, 'settings', 'blogCategories'), { items: normalized });
+      await saveAdminSetting('blogCategories', { items: normalized });
       blogCategoriesDirtyRef.current = false;
       toast.success('Đã lưu danh mục Blog');
     } catch {
@@ -726,7 +508,7 @@ export const AdminPanel: React.FC = () => {
   const handleDeleteCss = async () => {
     if (!window.confirm('Xóa toàn bộ CSS tùy biến?')) return;
     try {
-      await setDoc(doc(db, 'settings', 'customCss'), { css: '' });
+      await saveAdminSetting('customCss', { css: '' });
       setCustomCss('');
       const styleEl = document.getElementById('custom-global-css');
       if (styleEl) styleEl.textContent = '';
@@ -739,7 +521,7 @@ export const AdminPanel: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (!window.confirm('Bạn có chắc muốn xóa sản phẩm này?')) return;
     try {
-      await deleteDoc(doc(db, 'products', id));
+      await deleteAdminDocument('products', id);
       toast.success('Đã xóa sản phẩm');
     } catch {
       toast.error('Lỗi khi xóa sản phẩm');
@@ -749,7 +531,7 @@ export const AdminPanel: React.FC = () => {
   const handleDeleteBlogPost = async (id: string) => {
     if (!window.confirm('Bạn có chắc muốn xóa bài viết này?')) return;
     try {
-      await deleteDoc(doc(db, 'blogPosts', id));
+      await deleteAdminDocument('blogPosts', id);
       toast.success('Đã xóa bài viết');
     } catch {
       toast.error('Lỗi khi xóa bài viết');
@@ -759,7 +541,7 @@ export const AdminPanel: React.FC = () => {
   const handleDeleteOrder = async (id: string) => {
     if (!window.confirm('Xóa đơn hàng này?')) return;
     try {
-      await deleteDoc(doc(db, 'orders', id));
+      await deleteAdminDocument('orders', id);
       toast.success('Đã xóa đơn hàng');
     } catch {
       toast.error('Lỗi khi xóa đơn hàng');
@@ -769,7 +551,7 @@ export const AdminPanel: React.FC = () => {
   const handleDeleteVoucher = async (id: string) => {
     if (!window.confirm('Bạn có chắc muốn xóa mã giảm giá này?')) return;
     try {
-      await deleteDoc(doc(db, 'vouchers', id));
+      await deleteAdminDocument('vouchers', id);
       toast.success('Đã xóa mã giảm giá');
     } catch {
       toast.error('Lỗi khi xóa mã giảm giá');
@@ -778,7 +560,7 @@ export const AdminPanel: React.FC = () => {
 
   const handleUpdateOrderStatus = async (id: string, status: Order['status']) => {
     try {
-      await setDoc(doc(db, 'orders', id), { status }, { merge: true });
+      await mergeAdminDocument('orders', id, { status });
       toast.success('Đã cập nhật trạng thái đơn hàng');
     } catch {
       toast.error('Lỗi khi cập nhật trạng thái');
@@ -787,7 +569,7 @@ export const AdminPanel: React.FC = () => {
 
   const handleUpdateTracking = async (order: Order, field: 'trackingNumber' | 'trackingUrl', value: string) => {
     try {
-      await setDoc(doc(db, 'orders', order.id), { [field]: value }, { merge: true });
+      await mergeAdminDocument('orders', order.id, { [field]: value });
       toast.success('Đã cập nhật vận đơn');
     } catch {
       toast.error('Không thể cập nhật vận đơn');
@@ -796,7 +578,7 @@ export const AdminPanel: React.FC = () => {
 
   const handleUpdateReviewStatus = async (review: Review, status: Review['status']) => {
     try {
-      await updateDoc(doc(db, 'reviews', review.id), { status });
+      await updateAdminDocument('reviews', review.id, { status });
       toast.success(status === 'approved' ? 'Đã duyệt đánh giá' : 'Đã cập nhật đánh giá');
     } catch {
       toast.error('Không thể cập nhật đánh giá');
@@ -805,9 +587,9 @@ export const AdminPanel: React.FC = () => {
 
   const handleSaveReviewReply = async (review: Review) => {
     try {
-      await updateDoc(doc(db, 'reviews', review.id), {
+      await updateAdminDocument('reviews', review.id, {
         adminReply: reviewReplies[review.id] || '',
-        repliedAt: serverTimestamp()
+        repliedAt: adminTimestamp()
       });
       toast.success('Đã lưu phản hồi');
     } catch {
@@ -817,17 +599,16 @@ export const AdminPanel: React.FC = () => {
 
   const handleCopy = async (product: Product) => {
     try {
-      const { addDoc, collection: col, serverTimestamp } = await import('firebase/firestore');
+      const { id: _productId, ...productData } = product;
       const copy = {
-        ...product,
+        ...productData,
         name: product.name + ' (Copy)',
         slug: (product.slug || '') + '-copy-' + Date.now(),
-        createdAt: serverTimestamp(),
+        createdAt: adminTimestamp(),
         rating: 5,
         reviewsCount: 0,
       };
-      delete (copy as any).id;
-      await addDoc(col(db, 'products'), copy);
+      await addAdminDocument('products', copy);
       toast.success('Sản phẩm đã được sao chép thành công!');
     } catch {
       toast.error('Lỗi khi sao chép sản phẩm');
@@ -836,9 +617,9 @@ export const AdminPanel: React.FC = () => {
 
   const handleSaveMedia = async (url: string) => {
     try {
-      await addDoc(collection(db, 'media'), {
+      await addAdminDocument('media', {
         url,
-        createdAt: serverTimestamp()
+        createdAt: adminTimestamp()
       });
       toast.success('Đã lưu ảnh vào thư viện!');
     } catch {
@@ -846,9 +627,9 @@ export const AdminPanel: React.FC = () => {
     }
   };
 
-  const handleSaveBanners = async (newBanners: any[]) => {
+  const handleSaveBanners = async (newBanners: BannerItem[]) => {
     try {
-      await setDoc(doc(db, 'settings', 'banners'), { items: newBanners });
+      await saveAdminSetting('banners', { items: newBanners });
       setBanners(newBanners);
       toast.success('Đã lưu cài đặt Banner');
     } catch (error) {
@@ -856,10 +637,10 @@ export const AdminPanel: React.FC = () => {
     }
   };
 
-  const handleSaveNavigation = async (newNav: any[]) => {
+  const handleSaveNavigation = async (newNav: NavigationItem[]) => {
     try {
       const normalized = newNav.map(normalizeNavigationItem);
-      await setDoc(doc(db, 'settings', 'navigation'), { items: normalized });
+      await saveAdminSetting('navigation', { items: normalized });
       setNavigation(normalized);
       toast.success('Đã lưu Menu Navigation');
     } catch (error) {
@@ -867,7 +648,7 @@ export const AdminPanel: React.FC = () => {
     }
   };
 
-  const updateNavigationItem = (itemId: number | string, updater: (item: any) => any) => {
+  const updateNavigationItem = (itemId: number | string, updater: (item: NavigationItem) => NavigationItem) => {
     setNavigation(prev => prev.map(item => item.id === itemId ? updater({ ...item }) : item));
   };
 
@@ -877,7 +658,7 @@ export const AdminPanel: React.FC = () => {
     }
   };
 
-  const addChildNavigationItem = (parent: any) => {
+  const addChildNavigationItem = (parent: NavigationItem) => {
     const childLabel = `${parent.label} mục con`;
     const childItem = normalizeNavigationItem({
       id: Date.now(),
@@ -895,7 +676,7 @@ export const AdminPanel: React.FC = () => {
 
   const handleSaveFloatingMenu = async () => {
     try {
-      await setDoc(doc(db, 'settings', 'floatingMenu'), floatingMenu);
+      await saveAdminSetting('floatingMenu', floatingMenu);
       toast.success('Đã cập nhật cài đặt Menu nổi!');
     } catch {
       toast.error('Lỗi khi lưu cài đặt');
@@ -904,7 +685,7 @@ export const AdminPanel: React.FC = () => {
 
   const handleSaveFlashSale = async () => {
     try {
-      await setDoc(doc(db, 'settings', 'flashSale'), flashSaleSettings);
+      await saveAdminSetting('flashSale', flashSaleSettings);
       toast.success('Đã lưu cài đặt Flash Sale!');
     } catch {
       toast.error('Lỗi khi lưu Flash Sale');
@@ -914,7 +695,7 @@ export const AdminPanel: React.FC = () => {
   const handleDeleteMedia = async (id: string) => {
     if (!window.confirm('Xóa ảnh này khỏi thư viện?')) return;
     try {
-      await deleteDoc(doc(db, 'media', id));
+      await deleteAdminDocument('media', id);
       toast.success('Đã xóa ảnh');
     } catch {
       toast.error('Lỗi khi xóa ảnh');
@@ -923,11 +704,11 @@ export const AdminPanel: React.FC = () => {
 
   const handleNewsletterStatus = async (subscriber: NewsletterSubscriber, status: 'active' | 'unsubscribed') => {
     try {
-      await setDoc(doc(db, 'newsletterSubscribers', subscriber.id), {
+      await mergeAdminDocument('newsletterSubscribers', subscriber.id, {
         ...subscriber,
         status,
-        updatedAt: serverTimestamp()
-      }, { merge: true });
+        updatedAt: adminTimestamp()
+      });
       toast.success(status === 'active' ? 'Đã bật nhận tin' : 'Đã hủy nhận tin');
     } catch {
       toast.error('Lỗi khi cập nhật email đăng ký');
@@ -937,7 +718,7 @@ export const AdminPanel: React.FC = () => {
   const handleDeleteNewsletterSubscriber = async (subscriber: NewsletterSubscriber) => {
     if (!window.confirm(`Xóa email ${subscriber.email} khỏi danh sách đăng ký?`)) return;
     try {
-      await deleteDoc(doc(db, 'newsletterSubscribers', subscriber.id));
+      await deleteAdminDocument('newsletterSubscribers', subscriber.id);
       setSelectedNewsletterIds(prev => prev.filter(id => id !== subscriber.id));
       toast.success('Đã xóa email đăng ký');
     } catch {
@@ -953,13 +734,13 @@ export const AdminPanel: React.FC = () => {
     }
 
     try {
-      await setDoc(doc(db, 'newsletterSubscribers', encodeURIComponent(email)), {
+      await mergeAdminDocument('newsletterSubscribers', encodeURIComponent(email), {
         email,
         status: 'active',
         source: 'admin',
-        updatedAt: serverTimestamp(),
-        createdAt: serverTimestamp()
-      }, { merge: true });
+        updatedAt: adminTimestamp(),
+        createdAt: adminTimestamp()
+      });
       setManualNewsletterEmail('');
       toast.success('Đã thêm email vào danh sách');
     } catch {
@@ -1011,14 +792,14 @@ export const AdminPanel: React.FC = () => {
         })
       });
 
-      const result = await response.json().catch(() => ({}));
+      const result = await response.json().catch(() => ({})) as NewsletterSendResult;
       if (!response.ok) {
         throw new Error(result.error || 'Gửi email thất bại');
       }
 
       toast.success(`Đã gửi ${result.sent || 0} email${result.failed ? `, lỗi ${result.failed}` : ''}`);
-    } catch (error: any) {
-      toast.error(error.message || 'Lỗi khi gửi email');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Lỗi khi gửi email');
     } finally {
       setIsSendingNewsletter(false);
     }
@@ -1262,15 +1043,15 @@ Sitemap: https://ursport.vn/sitemap.xml`;
     const descriptionHtml = intro && !body.includes(fix.shortDescription.trim())
       ? `${intro}${body}`
       : body;
-    await setDoc(doc(db, 'products', product.id), {
+    await mergeAdminDocument('products', product.id, {
       seoTitle: fix.seoTitle,
       metaDescription: fix.metaDescription,
       keywords: fix.keywords,
       description: descriptionHtml,
       specifications: descriptionHtml,
       features: fix.features,
-      updatedAt: serverTimestamp()
-    }, { merge: true });
+      updatedAt: adminTimestamp()
+    });
   };
 
   const totalRevenue = products.reduce((sum, p) => sum + p.price, 0);
@@ -1340,7 +1121,7 @@ Sitemap: https://ursport.vn/sitemap.xml`;
       tone: 'emerald' as const,
     }] : []),
   ];
-  const formatNewsletterDate = (value: any) => {
+  const formatNewsletterDate = (value?: FirestoreTimestamp) => {
     const date = value?.toDate?.() || (value?.seconds ? new Date(value.seconds * 1000) : null);
     return date ? date.toLocaleDateString('vi-VN') : 'Chưa rõ';
   };
@@ -1351,7 +1132,7 @@ Sitemap: https://ursport.vn/sitemap.xml`;
     return [...items, { id: item.id, label: item.label }];
   }, []).find(item => item.id === activeTab)?.label || 'Dashboard';
   const parentNavigationItems = navigation.filter(nav => nav.group !== 'subcategory');
-  const getChildNavigationItems = (parent: any) => navigation.filter(
+  const getChildNavigationItems = (parent: NavigationItem) => navigation.filter(
     nav => nav.group === 'subcategory' && normalizeMenuLabel(nav.parentLabel) === normalizeMenuLabel(parent.label)
   );
   const parentBlogCategoryItems = blogCategories.filter(item => item.group !== 'subcategory');
@@ -1401,7 +1182,7 @@ Sitemap: https://ursport.vn/sitemap.xml`;
     setBlogCategories(updated);
   };
 
-  const renderNavigationCard = (nav: any, isChild = false) => (
+  const renderNavigationCard = (nav: NavigationItem, isChild = false) => (
     <div key={nav.id} className={cn(
       "bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex gap-4",
       isChild && "ml-8 border-[#1e4b64]/30 bg-[#1e4b64]/5"
@@ -2326,7 +2107,7 @@ Sitemap: https://ursport.vn/sitemap.xml`;
                             <td className="px-6 py-4">
                               <p className="text-white text-sm font-bold">#{order.id.substring(0, 8)}</p>
                               <p className="text-white/30 text-[11px] font-medium">
-                                {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleString('vi-VN') : order.createdAt}
+                                {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleString('vi-VN') : String(order.createdAt || '')}
                               </p>
                             </td>
                             <td className="px-6 py-4">
@@ -2362,7 +2143,7 @@ Sitemap: https://ursport.vn/sitemap.xml`;
                             <td className="px-6 py-4">
                               <select
                                 value={order.status}
-                                onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value as any)}
+                                onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value as AdminOrderStatus)}
                                 className={cn(
                                   "bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-[10px] font-black uppercase tracking-wider focus:outline-none transition-all",
                                   order.status === 'delivered' ? "text-emerald-400" :
@@ -2795,652 +2576,59 @@ Sitemap: https://ursport.vn/sitemap.xml`;
 
           {/* ─── AI PRODUCT ASSISTANT ─── */}
           {activeTab === 'ai-product' && (
-            <AIProductAssistant onApply={handleApplyAIProduct} />
+            <React.Suspense fallback={<AdminTabFallback />}>
+              <AIProductAssistant onApply={handleApplyAIProduct} />
+            </React.Suspense>
           )}
 
           {/* ─── AI BLOG ASSISTANT ─── */}
           {activeTab === 'ai-blog' && (
-            <AIBlogAssistant onApply={handleApplyAIBlog} blogPosts={blogPosts} />
+            <React.Suspense fallback={<AdminTabFallback />}>
+              <AIBlogAssistant onApply={handleApplyAIBlog} blogPosts={blogPosts} />
+            </React.Suspense>
           )}
 
           {/* ─── MEDIA ─── */}
           {activeTab === 'media' && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-[#13161f] border border-white/5 rounded-2xl p-6">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="h-10 w-10 bg-blue-500/10 rounded-xl flex items-center justify-center">
-                      <Upload className="h-5 w-5 text-blue-400" />
-                    </div>
-                    <div>
-                      <h3 className="text-white font-black text-sm uppercase tracking-widest">Tải ảnh lên</h3>
-                      <p className="text-white/30 text-xs font-medium">Lưu tại /images/blog/</p>
-                    </div>
-                  </div>
-                  <ImageUpload
-                    onUploadComplete={handleSaveMedia}
-                    folder="images/blog"
-                    storage="blog-local"
-                    label="Kéo thả hoặc nhấn để chọn ảnh"
-                  />
-                </div>
-                <div className="bg-[#13161f] border border-white/5 rounded-2xl p-6">
-                  <h3 className="text-white font-black text-sm uppercase tracking-widest mb-6">Thông tin lưu trữ</h3>
-                  <div className="space-y-4">
-                    {[
-                      { label: 'Lưu trong public/images/blog', color: 'bg-emerald-500' },
-                      { label: 'Link dạng /images/blog/ten-file', color: 'bg-blue-500' },
-                      { label: 'Dễ chèn vào HTML bài viết', color: 'bg-purple-500' },
-                      { label: 'Hỗ trợ đa định dạng', color: 'bg-orange-500' },
-                    ].map((item, i) => (
-                      <div key={i} className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-xl border border-white/5">
-                        <div className={cn("h-2 w-2 rounded-full shrink-0", item.color)} />
-                        <span className="text-white/60 text-sm font-medium">{item.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Media Gallery */}
-              <div className="bg-[#13161f] border border-white/5 rounded-2xl overflow-hidden">
-                <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between">
-                  <h3 className="text-white font-black text-sm uppercase tracking-widest">Ảnh đã tải lên</h3>
-                  <p className="text-white/30 text-xs font-medium">{mediaItems.length} ảnh</p>
-                </div>
-                <div className="p-6">
-                  {mediaItems.length === 0 ? (
-                    <div className="py-20 text-center">
-                      <ImageIcon className="h-12 w-12 text-white/10 mx-auto mb-3" />
-                      <p className="text-white/30 font-bold text-sm">Chưa có ảnh nào trong thư viện</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                      {mediaItems.map((item) => (
-                        <div key={item.id} className="group relative aspect-square rounded-xl overflow-hidden bg-white/5 border border-white/5 hover:border-[#1e4b64]/50 transition-all">
-                          <img 
-                            src={item.url} 
-                            alt="" 
-                            className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500"
-                          />
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                            <button
-                              onClick={() => {
-                                navigator.clipboard.writeText(item.url);
-                                toast.success('Đã sao chép link!');
-                              }}
-                              className="p-2 bg-white/10 hover:bg-[#1e4b64] rounded-lg text-white transition-all"
-                              title="Sao chép link"
-                            >
-                              <Copy className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteMedia(item.id)}
-                              className="p-2 bg-white/10 hover:bg-red-500 rounded-lg text-white transition-all"
-                              title="Xóa"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                          {/* Info overlay on mobile/hover */}
-                          <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                            <p className="text-[8px] text-white/50 truncate font-mono">{item.url}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+            <React.Suspense fallback={<AdminTabFallback />}>
+              <MediaLibraryTab
+                mediaItems={mediaItems}
+                onDeleteMedia={handleDeleteMedia}
+                onSaveMedia={handleSaveMedia}
+              />
+            </React.Suspense>
           )}
-
           {/* ─── SETTINGS ─── */}
           {activeTab === 'settings' && (
-            <div className="space-y-6">
-              {/* Custom CSS */}
-              <div className="bg-[#13161f] border border-white/5 rounded-2xl overflow-hidden">
-                <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
-                  <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 bg-purple-500/10 rounded-xl flex items-center justify-center">
-                      <Code2 className="h-4 w-4 text-purple-400" />
-                    </div>
-                    <div>
-                      <h3 className="text-white font-black text-sm uppercase tracking-widest">Tùy biến giao diện (Custom CSS)</h3>
-                      <p className="text-white/30 text-xs font-medium mt-0.5">CSS sẽ được chèn vào trang qua thẻ <code className="text-purple-400">#custom-global-css</code></p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={handleDeleteCss}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold transition-all"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" /> Xóa
-                    </button>
-                    <button
-                      onClick={handleSaveCss}
-                      className={cn(
-                        "flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold transition-all",
-                        cssSaved
-                          ? "bg-emerald-500 text-white"
-                          : "bg-[#1e4b64] hover:bg-[#153446] text-white"
-                      )}
-                    >
-                      {cssSaved ? <CheckIcon className="h-3.5 w-3.5" /> : <Upload className="h-3.5 w-3.5" />}
-                      {cssSaved ? 'Đã lưu!' : 'Lưu & Áp dụng'}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Code editor area */}
-                <div className="relative">
-                  {/* Line numbers */}
-                  <div className="absolute left-0 top-0 bottom-0 w-12 bg-white/[0.02] border-r border-white/5 pointer-events-none flex flex-col items-end pt-4 pb-4 pr-2 select-none overflow-hidden">
-                    {Array.from({ length: Math.max(customCss.split('\n').length, 20) }, (_, i) => (
-                      <span key={i} className="text-white/15 text-xs font-mono leading-6">{i + 1}</span>
-                    ))}
-                  </div>
-                  <textarea
-                    value={customCss}
-                    onChange={e => setCustomCss(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Tab') {
-                        e.preventDefault();
-                        const start = e.currentTarget.selectionStart;
-                        const end = e.currentTarget.selectionEnd;
-                        const val = customCss;
-                        setCustomCss(val.substring(0, start) + '  ' + val.substring(end));
-                        setTimeout(() => e.currentTarget.setSelectionRange(start + 2, start + 2), 0);
-                      }
-                      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-                        e.preventDefault();
-                        handleSaveCss();
-                      }
-                    }}
-                    spellCheck={false}
-                    placeholder={`/* Nhập CSS tùy biến của bạn vào đây... */\n\n/* Ví dụ: */\n.product-card {\n  border-radius: 16px;\n}\n\nbody {\n  font-family: 'Inter', sans-serif;\n}`}
-                    className="w-full min-h-[400px] bg-transparent pl-14 pr-6 pt-4 pb-4 text-[13px] font-mono text-green-300 leading-6 resize-y outline-none placeholder:text-white/15 border-none"
-                    style={{ caretColor: '#4ade80' }}
-                  />
-                </div>
-
-                <div className="px-6 py-3 border-t border-white/5 flex items-center justify-between">
-                  <p className="text-white/25 text-[11px] font-medium">
-                    {customCss.split('\n').length} dòng • {customCss.length} ký tự • Lưu nhanh: <kbd className="bg-white/10 px-1.5 py-0.5 rounded text-white/40">Ctrl+S</kbd>
-                  </p>
-                  <p className="text-white/25 text-[11px]">Tab = 2 spaces</p>
-                </div>
-              </div>
-
-              {/* Banner Management */}
-              <div className="bg-[#13161f] border border-white/5 rounded-2xl p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h3 className="text-white font-black text-sm uppercase tracking-widest">Quản lý Hero Banners</h3>
-                    <p className="text-white/30 text-xs mt-1">Tùy chỉnh các hình ảnh và tiêu đề chạy ở đầu trang chủ</p>
-                  </div>
-                  <button 
-                    onClick={() => handleSaveBanners([...banners, { id: Date.now(), image: '', title: 'TIÊU ĐỀ MỚI', subtitle: 'Subtitle', link: '' }])}
-                    className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white text-xs font-bold transition-all flex items-center gap-2"
-                  >
-                    <Plus className="h-3.5 w-3.5" /> Thêm Banner
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  {banners.length === 0 ? (
-                    <div className="py-10 text-center border-2 border-dashed border-white/5 rounded-2xl">
-                      <p className="text-white/20 text-sm font-medium">Chưa có banner nào. Hãy thêm banner đầu tiên.</p>
-                    </div>
-                  ) : (
-                    banners.map((banner, idx) => (
-                      <div key={banner.id} className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 space-y-4">
-                        <div className="flex items-start gap-4">
-                          <div className="w-48 shrink-0">
-                            <ImageUpload 
-                              folder="banners"
-                              label=""
-                              externalPreview={banner.image}
-                              onUploadComplete={(url) => {
-                                const updated = [...banners];
-                                updated[idx].image = url;
-                                setBanners(updated);
-                              }}
-                            />
-                          </div>
-                          <div className="flex-1 space-y-3">
-                            <div>
-                              <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Tiêu đề (Dùng \n để xuống dòng)</label>
-                              <input 
-                                type="text"
-                                value={banner.title}
-                                onChange={(e) => {
-                                  const updated = [...banners];
-                                  updated[idx].title = e.target.value;
-                                  setBanners(updated);
-                                }}
-                                className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#1e4b64]/50"
-                              />
-                            </div>
-                            <div>
-                              <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Phụ đề (Subtitle)</label>
-                              <input 
-                                type="text"
-                                value={banner.subtitle || ''}
-                                onChange={(e) => {
-                                  const updated = [...banners];
-                                  updated[idx].subtitle = e.target.value;
-                                  setBanners(updated);
-                                }}
-                                className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#1e4b64]/50"
-                              />
-                            </div>
-                            <div>
-                              <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Đường dẫn (Link - Ví dụ: /ao-thun)</label>
-                              <input 
-                                type="text"
-                                value={banner.link || ''}
-                                onChange={(e) => {
-                                  const updated = [...banners];
-                                  updated[idx].link = e.target.value;
-                                  setBanners(updated);
-                                }}
-                                className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#1e4b64]/50"
-                              />
-                            </div>
-                          </div>
-                          <button 
-                            onClick={() => {
-                              if(window.confirm('Xóa banner này?')) {
-                                const updated = banners.filter((_, i) => i !== idx);
-                                handleSaveBanners(updated);
-                              }
-                            }}
-                            className="p-2 text-white/20 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                  {banners.length > 0 && (
-                    <div className="flex justify-end pt-2">
-                      <button 
-                        onClick={() => handleSaveBanners(banners)}
-                        className="px-6 py-2 bg-[#1e4b64] hover:bg-[#153446] text-white text-sm font-bold rounded-xl shadow-lg transition-all"
-                      >
-                        Lưu thay đổi Banner
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Navigation Menu Settings */}
-              <div className="bg-[#13161f] border border-white/5 rounded-2xl p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h3 className="text-white font-black text-sm uppercase tracking-widest">Quản lý Menu Navigation</h3>
-                    <p className="text-white/30 text-xs mt-1">Tùy chỉnh các mục menu và danh mục sản phẩm có icon</p>
-                  </div>
-                  <div className="flex flex-wrap justify-end gap-2">
-                    <button 
-                      onClick={() => setNavigation([...navigation, { id: Date.now(), label: 'Mục mới', link: '/', icon: '', group: 'main' }])}
-                      className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white text-xs font-bold transition-all flex items-center gap-2"
-                    >
-                      <Plus className="h-3.5 w-3.5" /> Thêm Mục Menu
-                    </button>
-                    <button 
-                      onClick={() => setNavigation([
-                        ...navigation,
-                        ...DEFAULT_SEO_SUBCATEGORIES.map((item, i) => ({
-                          id: Date.now() + i,
-                          label: item.label,
-                          link: item.link,
-                          icon: '',
-                          group: 'subcategory',
-                          parentLabel: item.parentLabel
-                        }))
-                      ])}
-                      className="px-4 py-2 bg-[#1e4b64] hover:bg-[#153446] border border-[#1e4b64] rounded-xl text-white text-xs font-bold transition-all flex items-center gap-2"
-                    >
-                      <Plus className="h-3.5 w-3.5" /> Thêm 3 Trang Con Áo Thun
-                    </button>
-                  </div>
-                </div>
-
-                <datalist id="navigation-parent-categories">
-                  {CATEGORY_METADATA.map(cat => (
-                    <option key={cat.slug} value={cat.name} />
-                  ))}
-                </datalist>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {navigation.length === 0 ? (
-                    <div className="col-span-full py-10 text-center border-2 border-dashed border-white/5 rounded-2xl">
-                      <p className="text-white/20 text-sm font-medium">Chưa có mục menu nào. Hãy thêm mục đầu tiên.</p>
-                    </div>
-                  ) : (
-                    parentNavigationItems.map(nav => {
-                      const idx = navigation.findIndex(item => item.id === nav.id);
-                      const childItems = getChildNavigationItems(nav);
-                      return (
-                      <div key={nav.id} className="space-y-3">
-                      <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex gap-4">
-                        <div className="w-20 shrink-0">
-                          <ImageUpload 
-                            folder="nav"
-                            label=""
-                            compact={true}
-                            externalPreview={nav.icon}
-                            onUploadComplete={(url) => {
-                              const updated = [...navigation];
-                              updated[idx].icon = url;
-                              setNavigation(updated);
-                            }}
-                          />
-                        </div>
-                        <div className="flex-1 space-y-2">
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Nhãn (Label)</label>
-                              <input 
-                                type="text"
-                                value={nav.label}
-                                onChange={(e) => {
-                                  const updated = [...navigation];
-                                  updated[idx].label = e.target.value;
-                                  if (updated[idx].group === 'category') {
-                                    updated[idx].link = linkForCategoryLabel(e.target.value);
-                                  }
-                                  if (updated[idx].group === 'subcategory') {
-                                    updated[idx].link = linkForSubcategoryLabel(e.target.value);
-                                  }
-                                  setNavigation(updated);
-                                }}
-                                className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
-                              />
-                            </div>
-                            <div>
-                              <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Nhóm</label>
-                              <select 
-                                value={nav.group}
-                                onChange={(e) => {
-                                  const updated = [...navigation];
-                                  updated[idx].group = e.target.value;
-                                  if (e.target.value === 'category') {
-                                    updated[idx].link = linkForCategoryLabel(updated[idx].label);
-                                    updated[idx].parentLabel = '';
-                                  }
-                                  if (e.target.value === 'subcategory') {
-                                    updated[idx].link = linkForSubcategoryLabel(updated[idx].label);
-                                    updated[idx].parentLabel = updated[idx].parentLabel || 'Áo thun nam';
-                                  }
-                                  setNavigation(updated);
-                                }}
-                                className="w-full bg-[#1c1f26] border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
-                              >
-                                <option value="main">Danh mục chính</option>
-                                <option value="category">Danh mục sản phẩm</option>
-                                <option value="subcategory">Danh mục con SEO</option>
-                              </select>
-                            </div>
-                          </div>
-                          {nav.group === 'subcategory' && (
-                            <div>
-                              <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Danh mục cha</label>
-                              <input
-                                type="text"
-                                value={nav.parentLabel || ''}
-                                list="navigation-parent-categories"
-                                placeholder="VD: Áo thun nam"
-                                onChange={(e) => {
-                                  const updated = [...navigation];
-                                  updated[idx].parentLabel = e.target.value;
-                                  updated[idx].link = linkForSubcategoryLabel(updated[idx].label);
-                                  setNavigation(updated);
-                                }}
-                                className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
-                              />
-                              <p className="text-[10px] text-white/25 mt-1">
-                                Dùng cho menu con và silo SEO. Ví dụ: Áo thun nam → Áo thun nam cotton.
-                              </p>
-                            </div>
-                          )}
-                          <div>
-                            <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Đường dẫn (Link)</label>
-                              <input 
-                                type="text"
-                                value={nav.link}
-                                onChange={(e) => {
-                                  const updated = [...navigation];
-                                updated[idx].link = e.target.value;
-                                setNavigation(updated);
-                              }}
-                              className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
-                            />
-                          </div>
-                          {nav.group === 'category' && (
-                            <button
-                              type="button"
-                              onClick={() => addChildNavigationItem(nav)}
-                              className="mt-2 inline-flex items-center gap-2 rounded-lg border border-[#1e4b64]/50 bg-[#1e4b64]/15 px-3 py-2 text-xs font-bold text-white hover:bg-[#1e4b64]/25 transition-all"
-                            >
-                              <Plus className="h-3.5 w-3.5" /> Tạo mục con
-                            </button>
-                          )}
-                        </div>
-                        <button 
-                          onClick={() => {
-                            if(window.confirm('Xóa mục này?')) {
-                              const updated = navigation.filter((_, i) => i !== idx);
-                              handleSaveNavigation(updated);
-                            }
-                          }}
-                          className="h-8 w-8 flex items-center justify-center text-white/20 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                      {childItems.map(child => renderNavigationCard(child, true))}
-                      </div>
-                      );
-                    })
-                  )}
-                  {navigation.length > 0 && (
-                    <div className="col-span-full flex justify-end pt-2">
-                      <button 
-                        onClick={() => handleSaveNavigation(navigation)}
-                        className="px-6 py-2 bg-[#1e4b64] hover:bg-[#153446] text-white text-sm font-bold rounded-xl shadow-lg transition-all"
-                      >
-                        Lưu Menu Navigation
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Floating Contact Settings */}
-              <div className="bg-[#13161f] border border-white/5 rounded-2xl p-6">
-                <h3 className="text-white font-black text-sm uppercase tracking-widest mb-6">Cài đặt Menu Liên hệ (Nút nổi)</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Số điện thoại Zalo</label>
-                      <input 
-                        type="text"
-                        value={floatingMenu.zaloPhone}
-                        onChange={(e) => setFloatingMenu({...floatingMenu, zaloPhone: e.target.value})}
-                        placeholder="0917722425"
-                        className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#1e4b64]/50"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Số điện thoại Hotline</label>
-                      <input 
-                        type="text"
-                        value={floatingMenu.callPhone}
-                        onChange={(e) => setFloatingMenu({...floatingMenu, callPhone: e.target.value})}
-                        placeholder="0917722425"
-                        className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#1e4b64]/50"
-                      />
-                    </div>
-                    <button 
-                      onClick={handleSaveFloatingMenu}
-                      className="px-6 py-2.5 bg-[#1e4b64] hover:bg-[#153446] text-white text-sm font-bold rounded-xl shadow-lg transition-all"
-                    >
-                      Lưu thông tin liên hệ
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase text-white/30 block">Ảnh Icon Zalo</label>
-                      <ImageUpload 
-                        folder="settings"
-                        label=""
-                        externalPreview={floatingMenu.zaloIcon}
-                        onUploadComplete={(url) => {
-                          const updated = {...floatingMenu, zaloIcon: url};
-                          setFloatingMenu(updated);
-                          setDoc(doc(db, 'settings', 'floatingMenu'), updated);
-                        }}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase text-white/30 block">Ảnh Icon Tổng (Nút chính)</label>
-                      <ImageUpload 
-                        folder="settings"
-                        label=""
-                        externalPreview={floatingMenu.callIcon}
-                        onUploadComplete={(url) => {
-                          const updated = {...floatingMenu, callIcon: url};
-                          setFloatingMenu(updated);
-                          setDoc(doc(db, 'settings', 'floatingMenu'), updated);
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Quick snippets */}
-              <div className="bg-[#13161f] border border-white/5 rounded-2xl p-6">
-                <h3 className="text-white font-black text-xs uppercase tracking-widest mb-4">Snippets gợi ý</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {[
-                    { label: 'Bo góc card', css: '.product-card { border-radius: 20px; }' },
-                    { label: 'Ẩn footer', css: 'footer { display: none; }' },
-                    { label: 'Font hệ thống', css: 'body { font-family: \'Inter\', sans-serif; }' },
-                    { label: 'Responsive Video', css: '.video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; }\n.video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }' },
-                    { label: 'Scrollbar tùy biến', css: '::-webkit-scrollbar { width: 6px; }\n::-webkit-scrollbar-thumb { background: #1e4b64; border-radius: 3px; }' },
-                    { label: 'Nút CTA nổi bật', css: '.btn-primary { background: linear-gradient(135deg, #1e4b64, #153446); box-shadow: 0 4px 15px rgba(30,75,100,0.4); }' },
-                  ].map((snippet, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setCustomCss(prev => prev + (prev ? '\n\n' : '') + '/* ' + snippet.label + ' */\n' + snippet.css)}
-                      className="text-left p-3 bg-white/[0.03] hover:bg-white/[0.07] border border-white/5 hover:border-purple-500/30 rounded-xl transition-all group"
-                    >
-                      <p className="text-white/80 text-xs font-bold group-hover:text-purple-400 transition-colors">{snippet.label}</p>
-                      <p className="text-white/25 text-[10px] font-mono mt-1 truncate">{snippet.css.split('\n')[0]}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* SEO & Sitemap */}
-              <div className="bg-[#13161f] border border-white/5 rounded-2xl p-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <Search className="h-5 w-5 text-[#1e4b64]" />
-                  <div>
-                    <h3 className="text-white font-black text-sm uppercase tracking-widest">Cập nhật Sitemap & Robots.txt</h3>
-                    <p className="text-white/30 text-xs mt-1">Tự động tạo sitemap chứa tất cả danh mục, sản phẩm, và bài viết mới nhất để tải xuống.</p>
-                  </div>
-                </div>
-                
-                <div className="flex flex-wrap gap-4 mb-6">
-                  <button 
-                    onClick={() => setShowSitemapPreview(!showSitemapPreview)}
-                    className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white text-sm font-bold rounded-xl border border-white/5 transition-all flex items-center gap-2 group"
-                  >
-                    <Eye className="h-4 w-4 text-emerald-400 group-hover:scale-110 transition-transform" />
-                    {showSitemapPreview ? 'Đóng Xem Trước' : 'Xem trước Sitemap & Cập nhật'}
-                  </button>
-                  <button 
-                    onClick={handleGenerateSitemap}
-                    className="px-6 py-3 bg-[#1e4b64] hover:bg-[#153446] text-white text-sm font-bold rounded-xl shadow-lg shadow-[#1e4b64]/20 transition-all flex items-center gap-2 group"
-                  >
-                    <Download className="h-4 w-4 group-hover:-translate-y-1 transition-transform" />
-                    Tải Sitemap.xml Mới Nhất
-                  </button>
-                  <button 
-                    onClick={handleGenerateRobots}
-                    className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white text-sm font-bold rounded-xl border border-white/5 transition-all flex items-center gap-2 group"
-                  >
-                    <Download className="h-4 w-4 group-hover:-translate-y-1 transition-transform" />
-                    Tải Robots.txt
-                  </button>
-                </div>
-                
-                {showSitemapPreview && (
-                  <div className="mt-6 border-t border-white/5 pt-6 grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-top-4">
-                    <div className="lg:col-span-1 space-y-4">
-                      <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
-                        <h4 className="text-emerald-400 font-bold text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
-                          <CheckIcon className="h-3.5 w-3.5" />
-                          Tổng quan sitemap
-                        </h4>
-                        <div className="space-y-2 text-sm text-white/70">
-                          <div className="flex justify-between"><span>Sản phẩm:</span> <span className="text-white font-bold">{products.length} mục</span></div>
-                          <div className="flex justify-between"><span>Bài viết:</span> <span className="text-white font-bold">{blogPosts.length} mục</span></div>
-                          <div className="flex justify-between"><span>Danh mục:</span> <span className="text-white font-bold">{CATEGORY_METADATA.length} mục</span></div>
-                        </div>
-                      </div>
-                      
-                      <div className="bg-white/5 border border-white/5 rounded-xl p-4">
-                        <h4 className="text-white font-bold text-xs uppercase tracking-widest mb-3">Vừa cập nhật gần đây</h4>
-                        <ul className="space-y-3">
-                          {products.slice(0, 3).map(p => (
-                            <li key={p.id} className="flex gap-3 text-sm">
-                              <span className="text-[#1e4b64] mt-0.5">•</span>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-white truncate">{p.name}</p>
-                                <p className="text-white/30 text-[10px]">{p.category}</p>
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                    
-                    <div className="lg:col-span-2">
-                      <div className="bg-[#0f1117] rounded-xl border border-white/10 overflow-hidden flex flex-col h-[400px]">
-                        <div className="bg-white/5 px-4 py-2 border-b border-white/5 flex justify-between items-center">
-                          <span className="text-white/50 text-xs font-mono">sitemap.xml</span>
-                          <button 
-                            onClick={() => {
-                              navigator.clipboard.writeText(generateSitemapString());
-                              toast.success('Đã copy sitemap!');
-                            }}
-                            className="p-1.5 hover:bg-white/10 rounded-md text-white/50 hover:text-white transition-colors"
-                            title="Copy toàn bộ"
-                          >
-                            <Copy className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                        <div className="p-4 overflow-auto flex-1 custom-scrollbar">
-                          <pre className="text-emerald-400/80 text-[11px] sm:text-xs font-mono whitespace-pre-wrap leading-relaxed">
-                            {generateSitemapString()}
-                          </pre>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+            <React.Suspense fallback={<AdminTabFallback />}>
+              <AdminSettingsTab
+                addChildNavigationItem={addChildNavigationItem}
+                banners={banners}
+                blogPosts={blogPosts}
+                cssSaved={cssSaved}
+                customCss={customCss}
+                floatingMenu={floatingMenu}
+                generateSitemapString={generateSitemapString}
+                getChildNavigationItems={getChildNavigationItems}
+                handleDeleteCss={handleDeleteCss}
+                handleGenerateRobots={handleGenerateRobots}
+                handleGenerateSitemap={handleGenerateSitemap}
+                handleSaveBanners={handleSaveBanners}
+                handleSaveCss={handleSaveCss}
+                handleSaveFloatingMenu={handleSaveFloatingMenu}
+                handleSaveNavigation={handleSaveNavigation}
+                navigation={navigation}
+                parentNavigationItems={parentNavigationItems}
+                products={products}
+                renderNavigationCard={renderNavigationCard}
+                setBanners={setBanners}
+                setCustomCss={setCustomCss}
+                setFloatingMenu={setFloatingMenu}
+                setNavigation={setNavigation}
+                setShowSitemapPreview={setShowSitemapPreview}
+                showSitemapPreview={showSitemapPreview}
+              />
+            </React.Suspense>
           )}
 
           {activeTab === 'blog-categories' && (
@@ -4009,7 +3197,9 @@ Sitemap: https://ursport.vn/sitemap.xml`;
           )}
 
           {activeTab === 'policy-pages' && (
-            <PolicyPagesManager />
+            <React.Suspense fallback={<AdminTabFallback />}>
+              <PolicyPagesManager />
+            </React.Suspense>
           )}
         </main>
       </div>
@@ -4065,3 +3255,7 @@ Sitemap: https://ursport.vn/sitemap.xml`;
     </div>
   );
 };
+
+
+
+

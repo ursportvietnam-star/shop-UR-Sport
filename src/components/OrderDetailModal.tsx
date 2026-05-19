@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { X, User, Phone, MapPin, Package, Clock, CreditCard, StickyNote, Tag } from 'lucide-react';
 import { Order } from '../types';
 import { cn } from '@/lib/utils';
@@ -39,7 +39,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, isOpe
             <div>
               <h3 className="text-white font-black text-lg uppercase tracking-tight">Chi tiết đơn hàng #{order.id.substring(0, 8)}</h3>
               <p className="text-white/30 text-xs font-medium">
-                Ngày đặt: {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleString('vi-VN') : order.createdAt}
+                Ngày đặt: {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleString('vi-VN') : String(order.createdAt || '')}
               </p>
             </div>
           </div>
@@ -221,3 +221,4 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, isOpe
     </div>
   );
 };
+

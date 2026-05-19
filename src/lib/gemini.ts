@@ -112,6 +112,9 @@ Yêu cầu bắt buộc:
 - Nếu prompt có primary keyword, intent, funnel, internal links, outline H2/H3 thì phải bám sát các dữ liệu đó.
 - SEO title nên 45-65 ký tự. Meta description nên 120-165 ký tự.
 - contentHtml dài khoảng 900-1400 từ, không mỏng nội dung, không lặp ý.
+- Khi bài có phần so sánh, khác nhau, ưu/nhược điểm, chọn giữa 2-4 lựa chọn hoặc prompt có các từ "so sánh", "vs", "khác gì", phải chèn 1 bảng HTML trong contentHtml theo đúng cấu trúc:
+  <div class="table-wrap"><table class="compare-table"><thead><tr><th>Tiêu chí</th><th>Lựa chọn 1</th><th>Lựa chọn 2</th></tr></thead><tbody><tr><td>Tiêu chí cụ thể</td><td><span class="badge-good">Điểm mạnh</span></td><td><span class="badge-normal">Hạn chế</span></td></tr></tbody></table></div>
+- Bảng so sánh phải đặt ngay sau đoạn giới thiệu phần so sánh, dùng class table-wrap, compare-table, badge-good, badge-normal. Không dùng markdown table, không tự thêm thẻ <style>.
 - Tạo nội dung theo phễu TOFU/MOFU/BOFU phù hợp với chủ đề.
 - Có mở bài trả lời nhanh intent, H2/H3 rõ ràng, phần chọn/so sánh/checklist thực tế, FAQ và CTA về category/product.
 - Internal links phải chèn tự nhiên trong HTML bằng thẻ <a href="/duong-dan">anchor text</a>, ưu tiên đúng link prompt cung cấp.

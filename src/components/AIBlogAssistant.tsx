@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { BlogPost } from '../types';
 import { DailySeoSuggestionPanel } from './DailySeoSuggestionPanel';
 import { SeoSuggestion, buildSeoBlogPrompt } from '../lib/dailySeoSuggestions';
+import { sanitizeRichHtml } from '../lib/htmlContent';
 
 interface AIBlogAssistantProps {
   onApply: (data: AIBlogData) => void;
@@ -19,6 +20,7 @@ export function AIBlogAssistant({ onApply, blogPosts = [] }: AIBlogAssistantProp
   const [geminiKey, setGeminiKey] = useState(getGeminiApiKey());
   const [showSettings, setShowSettings] = useState(!getGeminiApiKey());
   const [activeSuggestionSlug, setActiveSuggestionSlug] = useState<string | undefined>();
+  const safeContentHtml = React.useMemo(() => sanitizeRichHtml(result?.contentHtml || ''), [result?.contentHtml]);
 
   const handleSaveSettings = () => {
     setGeminiApiKey(geminiKey);
@@ -74,7 +76,8 @@ export function AIBlogAssistant({ onApply, blogPosts = [] }: AIBlogAssistantProp
     { label: 'Meta description chuẩn', passed: Boolean(result.metaDescription && result.metaDescription.length <= 170) },
     { label: 'Có H2/H3', passed: /<h2[\s>]|<h3[\s>]/i.test(result.contentHtml || '') },
     { label: 'Có FAQ', passed: /Câu hỏi thường gặp|FAQ|<h3[\s>].+\?/i.test(result.contentHtml || '') },
-    { label: 'Có internal links', passed: /href="\//i.test(result.contentHtml || '') || result.internalLinkMap.length > 0 }
+    { label: 'Có internal links', passed: /href="\//i.test(result.contentHtml || '') || result.internalLinkMap.length > 0 },
+    { label: 'Có bảng so sánh', passed: !/so sánh| vs |khác gì/i.test(result.contentHtml || prompt) || /class="table-wrap"|class="compare-table"/i.test(result.contentHtml || '') }
   ] : [];
 
   return (
@@ -270,7 +273,7 @@ export function AIBlogAssistant({ onApply, blogPosts = [] }: AIBlogAssistantProp
 
           <div>
             <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Nội dung bài viết (HTML)</label>
-            <div className="mt-2 p-8 bg-zinc-50 border border-zinc-200 rounded-xl prose max-w-none text-zinc-800" dangerouslySetInnerHTML={{ __html: result.contentHtml }} />
+            <div className="mt-2 p-8 bg-zinc-50 border border-zinc-200 rounded-xl prose max-w-none text-zinc-800" dangerouslySetInnerHTML={{ __html: safeContentHtml }} />
           </div>
         </div>
       )}

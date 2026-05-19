@@ -354,6 +354,7 @@ export const buildSeoBlogPrompt = (suggestion: SeoSuggestion) => {
     '- Nội dung HTML dùng <p>, <h2>, <h3>, <ul>, <li>, <strong> khi cần.',
     '- Có phần FAQ cuối bài theo cấu trúc <h2>Câu hỏi thường gặp</h2>, mỗi câu hỏi là <h3>, câu trả lời ngay sau bằng <p>.',
     '- CTA phải tự nhiên về URSport và các link nội bộ ở trên.',
+    '- Nếu bài có phần so sánh, khác nhau, ưu/nhược điểm hoặc chọn giữa 2-4 lựa chọn, phải chèn bảng HTML đúng format: <div class="table-wrap"><table class="compare-table"><thead><tr><th>Tiêu chí</th><th>Lựa chọn 1</th><th>Lựa chọn 2</th></tr></thead><tbody><tr><td>Tiêu chí cụ thể</td><td><span class="badge-good">Điểm mạnh</span></td><td><span class="badge-normal">Hạn chế</span></td></tr></tbody></table></div>. Không dùng markdown table, không thêm thẻ <style>.',
     '- Không thêm markdown trong contentHtml.'
   ].join('\n');
 };

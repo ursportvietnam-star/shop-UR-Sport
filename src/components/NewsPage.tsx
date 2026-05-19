@@ -7,6 +7,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useSEO } from '../hooks/useSEO';
 import { SITE_URL, absoluteUrl, buildBreadcrumbSchema, buildSeoGraph, cleanSeoText } from '../lib/seo';
 import { formatFaqContentHtml } from '../lib/faqHtml';
+import { removeEmptyMedia, sanitizeRichHtml } from '../lib/htmlContent';
 import { collection, onSnapshot, query, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { STATIC_BLOG_POSTS as POSTS } from '../data';
@@ -346,6 +347,8 @@ export function NewsPage() {
       return;
     }
 
+    removeEmptyMedia(wrapper);
+
     const schemas: string[] = [];
     wrapper.querySelectorAll('script[type="application/ld+json"]').forEach((script) => {
       const schemaText = script.textContent?.trim();
@@ -391,6 +394,8 @@ export function NewsPage() {
     schemaTextNodes.forEach(node => {
       node.textContent = '';
     });
+
+    wrapper.innerHTML = sanitizeRichHtml(wrapper.innerHTML);
 
     Array.from(wrapper.querySelectorAll('h2, h3')).forEach((heading) => {
       const headingText = normalizeTextForMatch(heading.textContent || '');

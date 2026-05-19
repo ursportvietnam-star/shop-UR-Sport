@@ -10,7 +10,12 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "ai": "node ai-advisor.mjs",
+    "ai:website": "node ai-advisor.mjs --mode=website",
+    "ai:blog": "node ai-advisor.mjs --mode=blog",
+    "ai:product": "node ai-advisor.mjs --mode=product",
+    "ai:export": "node ai-advisor.mjs --mode=full --export"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",

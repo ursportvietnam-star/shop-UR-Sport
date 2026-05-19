@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import 'react-quill-new/dist/quill.snow.css';
 import { BlogPost } from '../types';
 import beautify from 'js-beautify';
+import { removeEmptyMedia, sanitizeRichHtml } from '../lib/htmlContent';
 
 // ── Đăng ký blots cho <figure> và <figcaption> để Quill không strip các thẻ này ──
 const BlockEmbedClass = Quill.import('blots/block/embed') as any;
@@ -81,6 +82,8 @@ const imageFigureHtml = (src: string, alt = '', caption = '') => `
 </figure>
 <p><br></p>`;
 
+const containsTableHtml = (html: string) => /<table[\s>]/i.test(html);
+
 interface AddBlogPostModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -135,6 +138,8 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
       setCategory('Tin tức');
       setAuthor('UrSport Team');
       setContent('');
+      setIsHtmlMode(false);
+      setHtmlSource('');
       setCoverImage('');
       setImageUrls([]);
       setVideoUrls([]);
@@ -165,7 +170,8 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
       setCategory(post.category || 'Tin tức');
       setAuthor(post.author || 'UrSport Team');
       setContent(post.content || '');
-      setHtmlSource(post.content || '');
+      setHtmlSource(containsTableHtml(post.content || '') ? beautifyHtml(post.content || '') : post.content || '');
+      setIsHtmlMode(containsTableHtml(post.content || ''));
       setCoverImage(post.image || '');
       setImageUrls(post.images || []);
       setVideoUrls(post.videos || []);
@@ -314,7 +320,7 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
     });
 
     return {
-      html: wrapper.innerHTML,
+      html: sanitizeRichHtml(wrapper.innerHTML),
       schema: schemas[0] || ''
     };
   };
@@ -324,6 +330,8 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
     const document = parser.parseFromString(`<div>${html}</div>`, 'text/html');
     const wrapper = document.body.firstElementChild as HTMLElement | null;
     if (!wrapper) return html;
+
+    removeEmptyMedia(wrapper);
 
     wrapper.querySelectorAll('p.blog-image-caption').forEach((caption) => {
       const previous = caption.previousElementSibling as HTMLElement | null;
@@ -987,6 +995,12 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
       setHtmlSource(pretty);
     } else {
       const normalized = normalizeImageFigures(htmlSource);
+      if (containsTableHtml(normalized)) {
+        setContent(normalized);
+        setHtmlSource(beautifyHtml(normalized));
+        toast.info('Bài viết có bảng HTML. Hãy giữ chế độ HTML để bảng không bị editor trực quan làm hỏng.');
+        return;
+      }
       setContent(normalized);
       setHtmlSource(beautifyHtml(normalized));
     }
@@ -1262,10 +1276,10 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
                       <button
                         type="button"
                         onClick={toggleHtmlMode}
-                        title={isHtmlMode ? 'Soạn thảo trực quan' : 'Chế độ HTML'}
+                        title={isHtmlMode ? 'Đang sửa HTML - bấm để chuyển sang trực quan' : 'Đang soạn trực quan - bấm để chuyển sang HTML'}
                         className={cn('html-toolbar-button', isHtmlMode && 'is-active')}
                       >
-                        <span>{isHtmlMode ? 'VISUAL' : 'HTML'}</span>
+                        <span>{isHtmlMode ? 'HTML' : 'VISUAL'}</span>
                       </button>
                     </span>
                     <span className="ql-formats">

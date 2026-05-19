@@ -50,6 +50,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { formatFaqContentHtml } from '../lib/faqHtml';
+import { sanitizeRichHtml } from '../lib/htmlContent';
 import { showAddToCartToast } from './AddToCartToast';
 import { ProductCard } from './ProductCard';
 
@@ -1435,7 +1436,7 @@ const FeatureLine = ({ label, value, opacity = "" }: { label: string; value: str
 
 const ProductDescriptionHtml = React.memo(({ html, className }: { html: string; className?: string }) => {
   const containerRef = React.useRef<HTMLDivElement>(null);
-  const formattedHtml = React.useMemo(() => formatFaqContentHtml(html), [html]);
+  const formattedHtml = React.useMemo(() => sanitizeRichHtml(formatFaqContentHtml(html)), [html]);
 
   React.useEffect(() => {
     if (containerRef.current && containerRef.current.innerHTML !== formattedHtml) {
