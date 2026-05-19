@@ -56,7 +56,7 @@ export function ProductSeoAutomationPanel({ products, onOptimizeProduct, onApply
   const handleGenerateFix = async (product: Product, issues: string[]) => {
     setGeneratingId(product.id);
     try {
-      const fix = await generateProductSeoFix(buildFixPrompt(product, issues), 'openai');
+      const fix = await generateProductSeoFix(buildFixPrompt(product, issues));
       setFixes(prev => ({ ...prev, [product.id]: fix }));
       toast.success('AI đã tạo bản sửa SEO');
     } catch (error: any) {
@@ -102,8 +102,7 @@ export function ProductSeoAutomationPanel({ products, onOptimizeProduct, onApply
       for (const { product, audit } of targets) {
         setGeneratingId(product.id);
         const fix = await generateProductSeoFix(
-          buildFixPrompt(product, audit.issues.map(issue => `${issue.label}: ${issue.detail}`)),
-          'openai'
+          buildFixPrompt(product, audit.issues.map(issue => `${issue.label}: ${issue.detail}`))
         );
         generated += 1;
         setFixes(prev => ({ ...prev, [product.id]: fix }));

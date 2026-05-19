@@ -1,3 +1,5 @@
+import { SEO_GUIDE_CONTEXT } from './seoGuide';
+
 export interface AIProductData {
   name: string;
   slug: string;
@@ -38,24 +40,14 @@ export interface AIProductSeoFix {
 }
 
 export const getGeminiApiKey = () => {
-  return localStorage.getItem('gemini_api_key') || (import.meta as any).env?.VITE_GEMINI_API_KEY || '';
+  return (import.meta as any).env?.VITE_GEMINI_API_KEY || localStorage.getItem('gemini_api_key') || '';
 };
 
 export const setGeminiApiKey = (key: string) => {
   localStorage.setItem('gemini_api_key', key);
 };
 
-export const getDeepSeekApiKey = () => {
-  return localStorage.getItem('deepseek_api_key') || 'sk-f24bb51d84ee4fda8f9221e07842ef33';
-};
-
-export const setDeepSeekApiKey = (key: string) => {
-  localStorage.setItem('deepseek_api_key', key);
-};
-
-export type AIProvider = 'gemini' | 'deepseek' | 'openai';
-
-export async function generateProductSEO(prompt: string, provider: AIProvider = 'gemini'): Promise<AIProductData> {
+export async function generateProductSEO(prompt: string): Promise<AIProductData> {
   const systemPrompt = `Bạn là một chuyên gia bán hàng (Copywriter) và chuyên gia SEO hàng đầu cho thương mại điện tử Việt Nam.
 Nhiệm vụ: Tạo nội dung sản phẩm cho shop đồ thể thao nam UR Sport. Văn phong cần mạnh mẽ, chuyên nghiệp, tập trung vào lợi ích người dùng.
 TRẢ VỀ ĐÚNG FORMAT JSON, KHÔNG CÓ MARKDOWN:
@@ -77,9 +69,6 @@ TRẢ VỀ ĐÚNG FORMAT JSON, KHÔNG CÓ MARKDOWN:
 }`;
 
   try {
-    if (provider === 'deepseek') {
-      return await callDeepSeek(systemPrompt, prompt);
-    }
     return await callGemini(systemPrompt, prompt);
   } catch (error: any) {
     if (error.message.includes('API Key') || error.message.includes('not valid')) {
@@ -89,7 +78,7 @@ TRẢ VỀ ĐÚNG FORMAT JSON, KHÔNG CÓ MARKDOWN:
   }
 }
 
-export async function generateProductSeoFix(prompt: string, provider: AIProvider = 'gemini'): Promise<AIProductSeoFix> {
+export async function generateProductSeoFix(prompt: string): Promise<AIProductSeoFix> {
   const systemPrompt = `Bạn là chuyên gia SEO thương mại điện tử cho UR Sport.
 Nhiệm vụ: Tối ưu lại SEO cho một sản phẩm đang có sẵn, KHÔNG đổi giá, KHÔNG bịa tồn kho, KHÔNG đổi thương hiệu.
 Trả về đúng JSON, không markdown:
@@ -103,12 +92,6 @@ Trả về đúng JSON, không markdown:
 }`;
 
   try {
-    if (provider === 'openai') {
-      return await callOpenAIProductSeoFix(prompt);
-    }
-    if (provider === 'deepseek') {
-      return await callDeepSeek(systemPrompt, prompt);
-    }
     return await callGemini(systemPrompt, prompt);
   } catch (error: any) {
     if (error.message.includes('API Key') || error.message.includes('not valid')) {
@@ -118,24 +101,23 @@ Trả về đúng JSON, không markdown:
   }
 }
 
-async function callOpenAIProductSeoFix(prompt: string): Promise<AIProductSeoFix> {
-  const response = await fetch('/api/ai/product-seo-fix', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt })
-  });
+export async function generateBlogSEO(prompt: string): Promise<AIBlogData> {
+  const systemPrompt = `Bạn là một Content Strategist SEO cho URSport, chuyên thời trang nam thể thao/casual tại Việt Nam.
+Viết 1 bài blog chuyên sâu, hữu ích và có khả năng chuyển đổi mềm cho URSport. Nội dung phải bám đúng brief, không viết hàng loạt, không tự đổi chủ đề.
+Tuân thủ SEO.md của URSport:
+${SEO_GUIDE_CONTEXT}
 
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data?.error || 'Không gọi được ChatGPT API');
-  }
-
-  return data as AIProductSeoFix;
-}
-
-export async function generateBlogSEO(prompt: string, provider: AIProvider = 'gemini'): Promise<AIBlogData> {
-  const systemPrompt = `Bạn là một Content Creator chuyên nghiệp về thời trang nam.
-Viết bài blog chuyên sâu (>1000 từ) cho UR Sport. Nội dung cần hữu ích, chia sẻ kiến thức phối đồ, chọn vải, hoặc xu hướng.
+Yêu cầu bắt buộc:
+- Nếu prompt có slug bắt buộc, phải trả về đúng slug đó, không tự rút gọn hoặc đổi URL.
+- Nếu prompt có primary keyword, intent, funnel, internal links, outline H2/H3 thì phải bám sát các dữ liệu đó.
+- SEO title nên 45-65 ký tự. Meta description nên 120-165 ký tự.
+- contentHtml dài khoảng 900-1400 từ, không mỏng nội dung, không lặp ý.
+- Tạo nội dung theo phễu TOFU/MOFU/BOFU phù hợp với chủ đề.
+- Có mở bài trả lời nhanh intent, H2/H3 rõ ràng, phần chọn/so sánh/checklist thực tế, FAQ và CTA về category/product.
+- Internal links phải chèn tự nhiên trong HTML bằng thẻ <a href="/duong-dan">anchor text</a>, ưu tiên đúng link prompt cung cấp.
+- FAQ cuối bài dùng đúng format: <h2>Câu hỏi thường gặp</h2>, mỗi câu hỏi là <h3>, câu trả lời ngay sau bằng <p>.
+- Không nhồi từ khóa, không viết chung chung, ưu tiên ý định tìm kiếm của người mua nam tại Việt Nam.
+- Không bịa thông tin kỹ thuật quá mức; nếu nói về chất liệu, chỉ mô tả theo trải nghiệm phổ biến và tiêu chí chọn.
 TRẢ VỀ JSON CHUẨN:
 {
   "title": "Tiêu đề Blog cực kỳ thu hút, chuẩn SEO",
@@ -151,9 +133,6 @@ TRẢ VỀ JSON CHUẨN:
 }`;
 
   try {
-    if (provider === 'deepseek') {
-      return await callDeepSeek(systemPrompt, prompt);
-    }
     return await callGemini(systemPrompt, prompt);
   } catch (error: any) {
     if (error.message.includes('API Key') || error.message.includes('not valid')) {
@@ -163,47 +142,12 @@ TRẢ VỀ JSON CHUẨN:
   }
 }
 
-async function callDeepSeek(systemInstruction: string, userPrompt: string) {
-  const apiKey = getDeepSeekApiKey();
-  if (!apiKey) throw new Error('DeepSeek API Key chưa được cấu hình.');
-
-  try {
-    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: [
-          { role: 'system', content: systemInstruction },
-          { role: 'user', content: userPrompt }
-        ],
-        response_format: { type: 'json_object' }
-      })
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error?.message || 'Lỗi kết nối DeepSeek API');
-    }
-
-    const data = await response.json();
-    const text = data.choices[0].message.content;
-    return JSON.parse(text);
-  } catch (error: any) {
-    console.error('DeepSeek error:', error);
-    throw new Error(error.message || 'Lỗi xử lý DeepSeek AI');
-  }
-}
-
 async function callGemini(systemInstruction: string, userPrompt: string) {
   const apiKey = getGeminiApiKey();
   if (!apiKey) throw new Error('Gemini API Key chưa được cấu hình.');
 
   // Sử dụng bản v1beta để hỗ trợ đầy đủ response_mime_type
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
   
   const payload = {
     contents: [

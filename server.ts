@@ -1,6 +1,5 @@
 import express from "express";
 import "dotenv/config";
-import { randomUUID } from "crypto";
 import fs from "fs/promises";
 import path from "path";
 import { createServer as createViteServer } from "vite";
@@ -105,83 +104,6 @@ async function startServer() {
     }
   });
 
-  app.post("/api/ai/product-seo-fix", async (req, res) => {
-    try {
-      const apiKey = process.env.OPENAI_API_KEY;
-      const model = process.env.OPENAI_MODEL || "gpt-5-mini";
-
-      if (!apiKey) {
-        return res.status(500).json({ error: "OPENAI_API_KEY is not configured" });
-      }
-
-      const prompt = String(req.body?.prompt || "").trim();
-      if (!prompt || prompt.length > 12000) {
-        return res.status(400).json({ error: "Prompt is required and must be under 12000 characters" });
-      }
-
-      const schema = {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          seoTitle: { type: "string" },
-          metaDescription: { type: "string" },
-          keywords: { type: "string" },
-          shortDescription: { type: "string" },
-          descriptionHtml: { type: "string" },
-          features: {
-            type: "array",
-            items: { type: "string" },
-            minItems: 4,
-            maxItems: 6,
-          },
-        },
-        required: ["seoTitle", "metaDescription", "keywords", "shortDescription", "descriptionHtml", "features"],
-      };
-
-      const response = await fetch("https://api.openai.com/v1/responses", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model,
-          instructions: `Bạn là chuyên gia SEO thương mại điện tử cho UR Sport.
-Tối ưu lại SEO cho sản phẩm có sẵn, không đổi giá, không bịa tồn kho, không đổi thương hiệu.
-Viết bằng tiếng Việt tự nhiên, rõ lợi ích mua hàng, ưu tiên từ khóa sản phẩm nam/thể thao.`,
-          input: prompt,
-          text: {
-            format: {
-              type: "json_schema",
-              name: "product_seo_fix",
-              strict: true,
-              schema,
-            },
-          },
-        }),
-      });
-
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        return res.status(response.status).json({
-          error: data?.error?.message || "OpenAI request failed",
-        });
-      }
-
-      const outputText = data.output_text || data.output?.flatMap((item: any) => item.content || [])
-        .find((content: any) => content.type === "output_text")?.text;
-
-      if (!outputText) {
-        return res.status(502).json({ error: "OpenAI did not return text output" });
-      }
-
-      res.json(JSON.parse(outputText));
-    } catch (error) {
-      console.error("OpenAI SEO fix failed:", error);
-      res.status(500).json({ error: "OpenAI SEO fix failed" });
-    }
-  });
-
   app.post(
     "/api/upload-blog-image",
     express.raw({ type: ["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml"], limit: "10mb" }),
@@ -200,10 +122,14 @@ Viết bằng tiếng Việt tự nhiên, rõ lợi ích mua hàng, ưu tiên t�
         };
         const contentType = req.headers["content-type"] || "";
         const ext = mimeToExt[contentType] || "jpg";
-        const originalName = Array.isArray(req.headers["x-file-name"])
+        const encodedOriginalName = Array.isArray(req.headers["x-file-name"])
           ? req.headers["x-file-name"][0]
           : req.headers["x-file-name"];
+        const originalName = encodedOriginalName ? decodeURIComponent(encodedOriginalName) : "";
         const baseName = (originalName || "blog-image")
+          .split(/[\\/]/)
+          .pop()
+          ?.trim()
           .replace(/\.[a-z0-9]+$/i, "")
           .toLowerCase()
           .normalize("NFD")
@@ -211,7 +137,7 @@ Viết bằng tiếng Việt tự nhiên, rõ lợi ích mua hàng, ưu tiên t�
           .replace(/[^a-z0-9]+/g, "-")
           .replace(/^-+|-+$/g, "")
           .slice(0, 80) || "blog-image";
-        const fileName = `${baseName}-${randomUUID().slice(0, 8)}.${ext}`;
+        const fileName = `${baseName}.${ext}`;
         const uploadDir = path.join(process.cwd(), "public", "images", "blog");
 
         await fs.mkdir(uploadDir, { recursive: true });

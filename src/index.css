@@ -142,6 +142,32 @@
   margin-bottom: 1.5em !important;
 }
 
+.blog-content figure,
+.product-description-container figure {
+  margin: 24px 0 !important;
+  text-align: center !important;
+}
+
+.blog-content figure img,
+.product-description-container figure img {
+  display: block !important;
+  margin: 0 auto !important;
+  max-width: 100% !important;
+  width: auto !important;
+  height: auto !important;
+  border-radius: 12px !important;
+}
+
+.blog-content figure figcaption,
+.product-description-container figure figcaption {
+  margin-top: 10px !important;
+  font-size: 14px !important;
+  font-style: italic !important;
+  color: #6b7280 !important;
+  text-align: center !important;
+  line-height: 1.5 !important;
+}
+
 /* Standalone <video> tag (not inside .video-container) */
 .product-description-container video {
   width: 100% !important;

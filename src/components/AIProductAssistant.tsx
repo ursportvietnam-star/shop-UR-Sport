@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { generateProductSEO, AIProductData, getGeminiApiKey, setGeminiApiKey, getDeepSeekApiKey, setDeepSeekApiKey, AIProvider } from '../lib/gemini';
+import { generateProductSEO, AIProductData, getGeminiApiKey, setGeminiApiKey } from '../lib/gemini';
 import { Bot, Sparkles, Send, Settings, Save, AlertCircle, BrainCircuit } from 'lucide-react';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 
 interface AIProductAssistantProps {
   onApply: (data: AIProductData) => void;
@@ -13,14 +12,11 @@ export function AIProductAssistant({ onApply }: AIProductAssistantProps) {
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AIProductData | null>(null);
-  const [provider, setProvider] = useState<AIProvider>('gemini');
   const [geminiKey, setGeminiKey] = useState(getGeminiApiKey());
-  const [deepSeekKey, setDeepSeekKey] = useState(getDeepSeekApiKey());
-  const [showSettings, setShowSettings] = useState(!getGeminiApiKey() && !getDeepSeekApiKey());
+  const [showSettings, setShowSettings] = useState(!getGeminiApiKey());
 
   const handleSaveSettings = () => {
     setGeminiApiKey(geminiKey);
-    setDeepSeekApiKey(deepSeekKey);
     toast.success('Đã lưu cấu hình AI!');
     setShowSettings(false);
   };
@@ -32,7 +28,7 @@ export function AIProductAssistant({ onApply }: AIProductAssistantProps) {
     }
     setLoading(true);
     try {
-      const data = await generateProductSEO(prompt, provider);
+      const data = await generateProductSEO(prompt);
       setResult(data);
       toast.success('Tạo nội dung thành công!');
     } catch (error: any) {
@@ -66,18 +62,6 @@ export function AIProductAssistant({ onApply }: AIProductAssistantProps) {
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-blue-500"
               />
             </div>
-            
-            <div>
-              <label className="text-[10px] font-black uppercase text-zinc-500 mb-2 block tracking-widest">DeepSeek API Key</label>
-              <input 
-                type="password" 
-                value={deepSeekKey}
-                onChange={e => setDeepSeekKey(e.target.value)}
-                placeholder="sk-..."
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-blue-500"
-              />
-            </div>
-
             <Button onClick={handleSaveSettings} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-6 rounded-xl gap-2">
               <Save className="h-5 w-5" /> Lưu cấu hình
             </Button>
@@ -101,25 +85,8 @@ export function AIProductAssistant({ onApply }: AIProductAssistantProps) {
           </button>
         </div>
 
-        <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-xl mb-6 w-fit">
-          <button 
-            onClick={() => setProvider('gemini')}
-            className={cn(
-              "px-4 py-2 rounded-lg text-xs font-black transition-all",
-              provider === 'gemini' ? "bg-white text-blue-600 shadow-sm" : "text-zinc-500 hover:text-zinc-700"
-            )}
-          >
-            Google Gemini
-          </button>
-          <button 
-            onClick={() => setProvider('deepseek')}
-            className={cn(
-              "px-4 py-2 rounded-lg text-xs font-black transition-all",
-              provider === 'deepseek' ? "bg-white text-blue-600 shadow-sm" : "text-zinc-500 hover:text-zinc-700"
-            )}
-          >
-            DeepSeek-V3
-          </button>
+        <div className="mb-6 inline-flex rounded-xl bg-blue-50 px-3 py-2 text-xs font-black uppercase tracking-wider text-blue-700">
+          Google Gemini
         </div>
         
         <div className="flex flex-col gap-4">

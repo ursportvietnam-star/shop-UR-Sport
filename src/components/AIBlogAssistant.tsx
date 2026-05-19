@@ -1,38 +1,54 @@
 import React, { useState } from 'react';
-import { generateBlogSEO, AIBlogData, getGeminiApiKey, setGeminiApiKey, getDeepSeekApiKey, setDeepSeekApiKey, AIProvider } from '../lib/gemini';
+import { generateBlogSEO, AIBlogData, getGeminiApiKey, setGeminiApiKey } from '../lib/gemini';
 import { Sparkles, Send, Settings, Save, AlertCircle, PenTool, BrainCircuit } from 'lucide-react';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { BlogPost } from '../types';
+import { DailySeoSuggestionPanel } from './DailySeoSuggestionPanel';
+import { SeoSuggestion, buildSeoBlogPrompt } from '../lib/dailySeoSuggestions';
 
 interface AIBlogAssistantProps {
   onApply: (data: AIBlogData) => void;
+  blogPosts?: BlogPost[];
 }
 
-export function AIBlogAssistant({ onApply }: AIBlogAssistantProps) {
+export function AIBlogAssistant({ onApply, blogPosts = [] }: AIBlogAssistantProps) {
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AIBlogData | null>(null);
-  const [provider, setProvider] = useState<AIProvider>('gemini');
   const [geminiKey, setGeminiKey] = useState(getGeminiApiKey());
-  const [deepSeekKey, setDeepSeekKey] = useState(getDeepSeekApiKey());
-  const [showSettings, setShowSettings] = useState(!getGeminiApiKey() && !getDeepSeekApiKey());
+  const [showSettings, setShowSettings] = useState(!getGeminiApiKey());
+  const [activeSuggestionSlug, setActiveSuggestionSlug] = useState<string | undefined>();
 
   const handleSaveSettings = () => {
     setGeminiApiKey(geminiKey);
-    setDeepSeekApiKey(deepSeekKey);
     toast.success('Đã lưu cấu hình AI!');
     setShowSettings(false);
   };
 
-  const handleGenerate = async () => {
-    if (!prompt.trim()) {
+  const buildPromptFromSuggestion = (suggestion: SeoSuggestion) => buildSeoBlogPrompt(suggestion);
+
+  const handleUseSuggestion = (suggestion: SeoSuggestion) => {
+    setPrompt(buildPromptFromSuggestion(suggestion));
+    toast.success('Đã đưa gợi ý SEO vào prompt AI Blog.');
+  };
+
+  const handleGenerateFromSuggestion = async (suggestion: SeoSuggestion) => {
+    const suggestionPrompt = buildPromptFromSuggestion(suggestion);
+    setPrompt(suggestionPrompt);
+    await handleGenerate(suggestionPrompt, suggestion.slug);
+  };
+
+  const handleGenerate = async (promptOverride?: string, suggestionSlug?: string) => {
+    const finalPrompt = (promptOverride || prompt).trim();
+    if (!finalPrompt) {
       toast.error('Vui lòng nhập chủ đề bài viết');
       return;
     }
     setLoading(true);
+    setActiveSuggestionSlug(suggestionSlug);
     try {
-      const data = await generateBlogSEO(prompt, provider);
+      const data = await generateBlogSEO(finalPrompt);
       setResult(data);
       toast.success('Tạo bài viết thành công!');
     } catch (error: any) {
@@ -40,11 +56,36 @@ export function AIBlogAssistant({ onApply }: AIBlogAssistantProps) {
       if (error.message.includes('API Key')) setShowSettings(true);
     } finally {
       setLoading(false);
+      setActiveSuggestionSlug(undefined);
     }
   };
 
+  const promptChecklist = [
+    { label: 'Có slug/URL rõ ràng', passed: /slug|\/blog\//i.test(prompt) },
+    { label: 'Có keyword chính', passed: /primary keyword|keyword:/i.test(prompt) },
+    { label: 'Có intent/funnel', passed: /intent|funnel|TOFU|MOFU|BOFU/i.test(prompt) },
+    { label: 'Có internal link', passed: /internal links|\/ao-|\/quan-|\/blog\//i.test(prompt) },
+    { label: 'Có outline H2/H3', passed: /H2:|H3:/i.test(prompt) }
+  ];
+
+  const resultChecklist = result ? [
+    { label: 'Title có đủ', passed: Boolean(result.title && result.title.length <= 80) },
+    { label: 'Slug có đủ', passed: Boolean(result.slug) },
+    { label: 'Meta description chuẩn', passed: Boolean(result.metaDescription && result.metaDescription.length <= 170) },
+    { label: 'Có H2/H3', passed: /<h2[\s>]|<h3[\s>]/i.test(result.contentHtml || '') },
+    { label: 'Có FAQ', passed: /Câu hỏi thường gặp|FAQ|<h3[\s>].+\?/i.test(result.contentHtml || '') },
+    { label: 'Có internal links', passed: /href="\//i.test(result.contentHtml || '') || result.internalLinkMap.length > 0 }
+  ] : [];
+
   return (
     <div className="space-y-6">
+      <DailySeoSuggestionPanel
+        blogPosts={blogPosts}
+        onUseSuggestion={handleUseSuggestion}
+        onGenerateSuggestion={handleGenerateFromSuggestion}
+        generatingSlug={activeSuggestionSlug}
+      />
+
       {showSettings && (
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl space-y-6">
           <div className="flex items-start gap-3">
@@ -66,18 +107,6 @@ export function AIBlogAssistant({ onApply }: AIBlogAssistantProps) {
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-purple-500"
               />
             </div>
-            
-            <div>
-              <label className="text-[10px] font-black uppercase text-zinc-500 mb-2 block tracking-widest">DeepSeek API Key</label>
-              <input 
-                type="password" 
-                value={deepSeekKey}
-                onChange={e => setDeepSeekKey(e.target.value)}
-                placeholder="sk-..."
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-purple-500"
-              />
-            </div>
-
             <Button onClick={handleSaveSettings} className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-6 rounded-xl gap-2 transition-all active:scale-[0.98]">
               <Save className="h-5 w-5" /> Lưu cấu hình
             </Button>
@@ -101,39 +130,45 @@ export function AIBlogAssistant({ onApply }: AIBlogAssistantProps) {
           </button>
         </div>
 
-        <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-xl mb-6 w-fit">
-          <button 
-            onClick={() => setProvider('gemini')}
-            className={cn(
-              "px-4 py-2 rounded-lg text-xs font-black transition-all",
-              provider === 'gemini' ? "bg-white text-purple-600 shadow-sm" : "text-zinc-500 hover:text-zinc-700"
-            )}
-          >
-            Google Gemini
-          </button>
-          <button 
-            onClick={() => setProvider('deepseek')}
-            className={cn(
-              "px-4 py-2 rounded-lg text-xs font-black transition-all",
-              provider === 'deepseek' ? "bg-white text-purple-600 shadow-sm" : "text-zinc-500 hover:text-zinc-700"
-            )}
-          >
-            DeepSeek-V3
-          </button>
+        <div className="mb-6 inline-flex rounded-xl bg-purple-50 px-3 py-2 text-xs font-black uppercase tracking-wider text-purple-700">
+          Google Gemini
         </div>
         
-        <div className="flex flex-col gap-4">
-          <textarea
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Nhập chủ đề bài viết... AI sẽ viết nội dung chuyên sâu, chuẩn SEO và gợi ý link nội bộ."
-            className="w-full min-h-[140px] p-5 bg-zinc-50 border border-zinc-200 rounded-2xl outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all resize-y text-zinc-900 leading-relaxed"
-          />
-          <div className="flex justify-end pt-2">
+          <div className="flex flex-col gap-4">
+            <textarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="Chọn 'Dùng gợi ý' ở card phía trên hoặc nhập brief bài viết. AI sẽ giữ slug, keyword, internal link và outline theo quy trình SEO."
+              className="w-full min-h-[220px] p-5 bg-zinc-50 border border-zinc-200 rounded-2xl outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all resize-y text-zinc-900 leading-relaxed"
+            />
+          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+            <div className="mb-3 flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-purple-500" />
+              <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Checklist trước khi viết</p>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+              {promptChecklist.map(item => (
+                <div
+                  key={item.label}
+                  className={`rounded-lg border px-3 py-2 text-[11px] font-bold ${
+                    item.passed
+                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                      : 'border-zinc-200 bg-white text-zinc-400'
+                  }`}
+                >
+                  {item.label}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs font-medium leading-5 text-zinc-500">
+              Quy trình tốt nhất: chọn gợi ý hôm nay, kiểm tra prompt đủ 5 tín hiệu, tạo bài, rồi Apply to Blog để mở form duyệt trước khi publish.
+            </p>
             <Button 
-              onClick={handleGenerate} 
+              onClick={() => handleGenerate()} 
               disabled={loading || !prompt.trim()}
-              className="bg-purple-600 hover:bg-purple-700 text-white font-black h-14 px-10 gap-3 rounded-2xl shadow-lg shadow-purple-500/20 active:scale-95 transition-all"
+              className="bg-purple-600 hover:bg-purple-700 text-white font-black h-14 px-10 gap-3 rounded-2xl shadow-lg shadow-purple-500/20 active:scale-95 transition-all shrink-0"
             >
               {loading ? (
                 <div className="h-6 w-6 rounded-full border-3 border-white border-t-transparent animate-spin" />
@@ -159,6 +194,24 @@ export function AIBlogAssistant({ onApply }: AIBlogAssistantProps) {
             >
               <Send className="h-4 w-4" /> Apply to Blog
             </Button>
+          </div>
+
+          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+            <p className="mb-3 text-[10px] font-black uppercase tracking-widest text-zinc-500">SEO QA trước khi đưa vào form</p>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
+              {resultChecklist.map(item => (
+                <div
+                  key={item.label}
+                  className={`rounded-lg border px-3 py-2 text-[11px] font-bold ${
+                    item.passed
+                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                      : 'border-amber-200 bg-amber-50 text-amber-700'
+                  }`}
+                >
+                  {item.label}
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

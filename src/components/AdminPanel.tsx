@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Package, ShoppingBag, Users, MessageSquare,
   Image as ImageIcon, Settings, Plus, Trash2, Edit2, LogOut,
   TrendingUp, Eye, DollarSign, BarChart2, Menu, X, Bell,
-  Search, ChevronRight, ChevronDown, Megaphone, Upload, Star, AlertCircle, Copy, ExternalLink, Code2, Check as CheckIcon, Bot, Sparkles, Zap, Timer, Clock, Ticket, Download, Filter, MailCheck, Send, UserPlus, ShieldCheck
+  Search, ChevronRight, ChevronDown, Megaphone, Upload, Star, AlertCircle, Copy, ExternalLink, Code2, Check as CheckIcon, Bot, Sparkles, Zap, Timer, Clock, Ticket, Download, Filter, MailCheck, Send, UserPlus, ShieldCheck, Network
 } from 'lucide-react';
 import { collection, onSnapshot, query, orderBy, deleteDoc, doc, setDoc, getDoc, addDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -16,6 +16,7 @@ import { OrderDetailModal } from './OrderDetailModal';
 import { AIProductAssistant } from './AIProductAssistant';
 import { AIBlogAssistant } from './AIBlogAssistant';
 import { CategorySeoManager } from './CategorySeoManager';
+import { ContentMapSeoPanel } from './ContentMapSeoPanel';
 import { ProductSeoAutomationPanel, ProductSeoScoreBadge } from './ProductSeoAutomationPanel';
 import { AIProductData, AIBlogData, AIProductSeoFix } from '../lib/gemini';
 import { useAuth } from '../AuthContext';
@@ -50,7 +51,7 @@ interface NewsletterSubscriber {
   updatedAt?: any;
 }
 
-type AdminTab = 'dashboard' | 'strategy' | 'products' | 'orders' | 'reviews' | 'customers' | 'newsletter' | 'vouchers' | 'blog' | 'media' | 'settings' | 'blog-categories' | 'policy-pages' | 'ai-product' | 'ai-blog' | 'flash-sale' | 'category-seo';
+type AdminTab = 'dashboard' | 'strategy' | 'products' | 'orders' | 'reviews' | 'customers' | 'newsletter' | 'vouchers' | 'blog' | 'media' | 'settings' | 'blog-categories' | 'policy-pages' | 'ai-product' | 'ai-blog' | 'flash-sale' | 'category-seo' | 'content-map';
 
 type NavItem = {
   id: string;
@@ -94,6 +95,7 @@ const NAV_ITEMS: NavItem[] = [
     children: [
       { id: 'flash-sale', label: 'Flash Sale', icon: Zap },
       { id: 'vouchers', label: 'Mã giảm giá', icon: Ticket },
+      { id: 'content-map', label: 'Content Map SEO', icon: Network },
       { id: 'category-seo', label: 'SEO Danh mục', icon: Search }
     ]
   },
@@ -1176,6 +1178,9 @@ Sitemap: https://ursport.vn/sitemap.xml`;
       slug: data.slug,
       content: data.contentHtml,
       excerpt: data.metaDescription,
+      seoTitle: data.metaTitle,
+      metaDescription: data.metaDescription,
+      customSchema: data.faqSchema,
       category: 'Xu hướng thời trang',
       author: 'UR SPORT Team',
       date: new Date().toLocaleDateString('vi-VN')
@@ -2795,7 +2800,7 @@ Sitemap: https://ursport.vn/sitemap.xml`;
 
           {/* ─── AI BLOG ASSISTANT ─── */}
           {activeTab === 'ai-blog' && (
-            <AIBlogAssistant onApply={handleApplyAIBlog} />
+            <AIBlogAssistant onApply={handleApplyAIBlog} blogPosts={blogPosts} />
           )}
 
           {/* ─── MEDIA ─── */}
@@ -3992,6 +3997,15 @@ Sitemap: https://ursport.vn/sitemap.xml`;
           
           {activeTab === 'category-seo' && (
             <CategorySeoManager />
+          )}
+
+          {activeTab === 'content-map' && (
+            <ContentMapSeoPanel
+              products={products}
+              blogPosts={blogPosts}
+              navigation={navigation}
+              blogCategories={blogCategories}
+            />
           )}
 
           {activeTab === 'policy-pages' && (

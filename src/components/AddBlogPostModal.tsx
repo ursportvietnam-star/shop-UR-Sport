@@ -1,14 +1,58 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { X, Upload, Trash2 } from 'lucide-react';
+import { AlignCenter, AlignLeft, AlignRight, Tag, X, Upload, Trash2 } from 'lucide-react';
 import { collection, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
 import ReactQuill from 'react-quill-new';
+import Quill from 'quill';
 import { toast } from 'sonner';
 import 'react-quill-new/dist/quill.snow.css';
 import { BlogPost } from '../types';
 import beautify from 'js-beautify';
+
+// ── Đăng ký blots cho <figure> và <figcaption> để Quill không strip các thẻ này ──
+const BlockEmbedClass = Quill.import('blots/block/embed') as any;
+const BlockClass = Quill.import('blots/block') as any;
+
+class FigcaptionBlot extends BlockClass {
+  static blotName = 'figcaption';
+  static tagName = 'figcaption';
+}
+try { Quill.register(FigcaptionBlot, true); } catch {}
+
+class FigureBlot extends BlockEmbedClass {
+  static blotName = 'figure';
+  static tagName = 'figure';
+
+  static create(value: { src: string; alt?: string; caption?: string; width?: string; height?: string }) {
+    const node = super.create() as HTMLElement;
+    const img = document.createElement('img');
+    img.setAttribute('src', value.src || '');
+    img.setAttribute('alt', value.alt || '');
+    img.setAttribute('width', value.width || '1200');
+    img.setAttribute('height', value.height || '675');
+    if (value.width) img.style.width = value.width;
+    node.appendChild(img);
+    const figcaption = document.createElement('figcaption');
+    figcaption.textContent = value.caption || '';
+    node.appendChild(figcaption);
+    return node;
+  }
+
+  static value(node: HTMLElement) {
+    const img = node.querySelector('img');
+    const figcaption = node.querySelector('figcaption');
+    return {
+      src: img?.getAttribute('src') || '',
+      alt: img?.getAttribute('alt') || '',
+      caption: figcaption?.textContent || '',
+      width: img?.getAttribute('width') || '1200',
+      height: img?.getAttribute('height') || '675',
+    };
+  }
+}
+try { Quill.register(FigureBlot, true); } catch {}
 
 const CLOUDINARY_CLOUD_NAME = 'dcj4qhcfh';
 const CLOUDINARY_UPLOAD_PRESET = 'ursport_uploads';
@@ -24,6 +68,18 @@ const slugify = (text: string) =>
     .replace(/\s+/g, '-')
     .replace(/[^a-z0-9-]/g, '')
     .replace(/-+/g, '-');
+
+const imageFigureHtml = (src: string, alt = '', caption = '') => `
+<figure>
+  <img
+    src="${src}"
+    alt="${alt}"
+    width="1200"
+    height="675"
+  >
+  <figcaption>${caption}</figcaption>
+</figure>
+<p><br></p>`;
 
 interface AddBlogPostModalProps {
   isOpen: boolean;
@@ -52,7 +108,25 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
   const [htmlSource, setHtmlSource] = useState('');
   const [seoTitle, setSeoTitle] = useState('');
   const [metaDescription, setMetaDescription] = useState('');
+  const [captionDraft, setCaptionDraft] = useState('');
+  const [altDraft, setAltDraft] = useState('');
+  const [imageEditPanel, setImageEditPanel] = useState<'caption' | 'alt' | 'replace' | null>(null);
+  const [replaceImageUrl, setReplaceImageUrl] = useState('');
+  const [selectedEditorImage, setSelectedEditorImage] = useState<{
+    src: string;
+    width: string;
+    alignment: 'left' | 'center' | 'right';
+    toolbarLeft: number;
+    toolbarTop: number;
+  } | null>(null);
   const categoryOptions = blogCategories.length > 0 ? blogCategories : DEFAULT_BLOG_CATEGORIES;
+  const selectedEditorImageRef = useRef<HTMLImageElement | null>(null);
+  const imageToolbarRef = useRef<HTMLDivElement | null>(null);
+  const imageAltBySrcRef = useRef<Record<string, string>>({});
+  const imageCaptionBySrcRef = useRef<Record<string, string>>({});
+  // Refs để các handler Quill đọc state mà không cần close over (tránh Quill reinitialize)
+  const isHtmlModeRef = useRef(false);
+  const htmlSourceRef = useRef('');
 
   useEffect(() => {
     if (!isOpen) {
@@ -68,10 +142,24 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
       setUploading(false);
       setSeoTitle('');
       setMetaDescription('');
+      imageAltBySrcRef.current = {};
+      imageCaptionBySrcRef.current = {};
       return;
     }
 
     if (post) {
+      imageAltBySrcRef.current = {};
+      imageCaptionBySrcRef.current = {};
+      const parser = new DOMParser();
+      const parsed = parser.parseFromString(`<div>${post.content || ''}</div>`, 'text/html');
+      parsed.querySelectorAll('img').forEach((img) => {
+        const src = img.getAttribute('src') || '';
+        if (!src) return;
+        const alt = img.getAttribute('alt') || img.getAttribute('title') || '';
+        const caption = img.closest('figure')?.querySelector('figcaption')?.textContent || '';
+        if (alt.trim()) imageAltBySrcRef.current[src] = alt.trim();
+        if (caption.trim()) imageCaptionBySrcRef.current[src] = caption.trim();
+      });
       setTitle(post.title || '');
       setSlug(post.slug || slugify(post.title || ''));
       setCategory(post.category || 'Tin tức');
@@ -85,6 +173,9 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
       setMetaDescription(post.metaDescription || '');
     }
   }, [isOpen, post]);
+
+  useEffect(() => { isHtmlModeRef.current = isHtmlMode; }, [isHtmlMode]);
+  useEffect(() => { htmlSourceRef.current = htmlSource; }, [htmlSource]);
 
   const uploadFile = async (file: File, resourceType: 'image' | 'video') => {
     setUploading(true);
@@ -228,11 +319,469 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
     };
   };
 
+  const normalizeImageFigures = (html: string) => {
+    const parser = new DOMParser();
+    const document = parser.parseFromString(`<div>${html}</div>`, 'text/html');
+    const wrapper = document.body.firstElementChild as HTMLElement | null;
+    if (!wrapper) return html;
+
+    wrapper.querySelectorAll('p.blog-image-caption').forEach((caption) => {
+      const previous = caption.previousElementSibling as HTMLElement | null;
+      const figure = previous?.tagName === 'FIGURE' ? previous : null;
+      const image = figure?.querySelector('img');
+      if (!figure || !image) return;
+
+      let figcaption = figure.querySelector('figcaption');
+      if (!figcaption) {
+        figcaption = document.createElement('figcaption');
+        figure.appendChild(figcaption);
+      }
+      figcaption.textContent = caption.textContent || '';
+      caption.remove();
+    });
+
+    wrapper.querySelectorAll('img').forEach((image) => {
+      const src = image.getAttribute('src') || '';
+      const savedAlt = src ? imageAltBySrcRef.current[src] : '';
+      const savedCaption = src ? imageCaptionBySrcRef.current[src] : '';
+      if (savedAlt) {
+        image.setAttribute('alt', savedAlt);
+        image.setAttribute('title', savedAlt);
+      }
+      if (!image.getAttribute('width')) image.setAttribute('width', '1200');
+      if (!image.getAttribute('height')) image.setAttribute('height', '675');
+
+      if (image.closest('figure')) {
+        const figure = image.closest('figure') as HTMLElement;
+        const existingFigcaption = figure.querySelector('figcaption');
+        if (existingFigcaption) existingFigcaption.remove();
+        const figcaption = document.createElement('figcaption');
+        figcaption.textContent = savedCaption || existingFigcaption?.textContent || '';
+        figure.appendChild(figcaption);
+        return;
+      }
+
+      const parent = image.parentElement;
+      const figure = document.createElement('figure');
+      const next = parent?.nextElementSibling as HTMLElement | null;
+      const captionText = savedCaption || (next?.classList.contains('blog-image-caption') ? next.textContent || '' : '');
+
+      if (parent?.tagName === 'P') {
+        parent.insertAdjacentElement('beforebegin', figure);
+      } else {
+        image.insertAdjacentElement('beforebegin', figure);
+      }
+      figure.appendChild(image);
+
+      const figcaption = document.createElement('figcaption');
+      figcaption.textContent = captionText.trim();
+      figure.appendChild(figcaption);
+      if (next?.classList.contains('blog-image-caption')) next.remove();
+
+      if (parent?.tagName === 'P' && !parent.textContent?.trim() && parent.children.length === 0) {
+        parent.remove();
+      }
+    });
+
+    wrapper.querySelectorAll('figure').forEach((figure) => {
+      const image = figure.querySelector('img');
+      if (!image) {
+        figure.remove();
+        return;
+      }
+
+      const captions = Array.from(figure.querySelectorAll('figcaption'));
+      captions.slice(1).forEach((caption) => caption.remove());
+      if (captions.length === 0) {
+        figure.appendChild(document.createElement('figcaption'));
+      }
+    });
+
+    return wrapper.innerHTML;
+  };
+
+  const getQuillEditor = () => {
+    try {
+      return quillRef.current?.getEditor?.() || null;
+    } catch {
+      return null;
+    }
+  };
+
   const syncEditorHtml = () => {
-    const html = quillRef.current?.getEditor()?.root?.innerHTML;
+    const html = getQuillEditor()?.root?.innerHTML;
     if (typeof html === 'string') {
       setContent(html);
     }
+  };
+
+  const commitEditorHtml = (html: string) => {
+    const normalized = normalizeImageFigures(html);
+    setContent(normalized);
+    if (isHtmlMode) {
+      setHtmlSource(beautifyHtml(normalized));
+    }
+  };
+
+  const readImageAlignment = (image: HTMLImageElement): 'left' | 'center' | 'right' => {
+    const marginLeft = image.style.marginLeft;
+    const marginRight = image.style.marginRight;
+    if (marginLeft === '0px' && marginRight === 'auto') return 'left';
+    if (marginLeft === 'auto' && marginRight === '0px') return 'right';
+    return 'center';
+  };
+
+  const selectEditorImage = React.useCallback((image: HTMLImageElement | null) => {
+    selectedEditorImageRef.current?.classList.remove('ql-selected-blog-image');
+    selectedEditorImageRef.current = image;
+
+    if (!image) {
+      setSelectedEditorImage(null);
+      setImageEditPanel(null);
+      setCaptionDraft('');
+      setAltDraft('');
+      setReplaceImageUrl('');
+      return;
+    }
+
+    image.classList.add('ql-selected-blog-image');
+    const imageRect = image.getBoundingClientRect();
+    const wrapperRect = editorWrapRef.current?.getBoundingClientRect();
+    const wrapperScrollLeft = editorWrapRef.current?.scrollLeft || 0;
+    const wrapperScrollTop = editorWrapRef.current?.scrollTop || 0;
+    const nextSelection = {
+      src: image.getAttribute('src') || '',
+      width: image.style.width || '100%',
+      alignment: readImageAlignment(image),
+      toolbarLeft: wrapperRect ? imageRect.left - wrapperRect.left + wrapperScrollLeft : 0,
+      toolbarTop: wrapperRect ? Math.max(6, imageRect.top - wrapperRect.top + wrapperScrollTop - 42) : 0,
+    };
+
+    setSelectedEditorImage((current) => {
+      if (
+        current?.src === nextSelection.src &&
+        current.width === nextSelection.width &&
+        current.alignment === nextSelection.alignment &&
+        Math.round(current.toolbarLeft) === Math.round(nextSelection.toolbarLeft) &&
+        Math.round(current.toolbarTop) === Math.round(nextSelection.toolbarTop)
+      ) {
+        return current;
+      }
+
+      return nextSelection;
+    });
+    const figure = image.closest('figure') as HTMLElement | null;
+    const caption = figure ? getDirectFigcaption(figure)?.textContent || '' : '';
+    setCaptionDraft(caption);
+    setAltDraft(image.getAttribute('alt') || '');
+    setReplaceImageUrl(image.getAttribute('src') || '');
+  }, []);
+
+  const handleEditorAreaPointer = (event: React.MouseEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement | null;
+    if (!target || imageToolbarRef.current?.contains(target)) return;
+
+    const image = target.closest('.ql-editor img') as HTMLImageElement | null;
+
+    if (image && editorWrapRef.current?.contains(image)) {
+      event.preventDefault();
+      event.stopPropagation();
+      const src = image.getAttribute('src') || '';
+      if (src) {
+        const figcaption = image.closest('figure')?.querySelector('figcaption');
+        if (figcaption?.textContent?.trim()) {
+          imageCaptionBySrcRef.current[src] = figcaption.textContent.trim();
+        }
+        const alt = image.getAttribute('alt') || image.getAttribute('title') || '';
+        if (alt.trim()) {
+          imageAltBySrcRef.current[src] = alt.trim();
+        }
+      }
+      selectEditorImage(image);
+      return;
+    }
+
+    if (!target.closest('.ql-editor')) {
+      selectEditorImage(null);
+    }
+  };
+
+  useEffect(() => {
+    if (!isOpen || isHtmlMode) {
+      selectEditorImage(null);
+      return;
+    }
+
+    let root: HTMLElement | undefined;
+    let handleEditorKeydown: ((event: KeyboardEvent) => void) | undefined;
+    let handleOutsideClick: ((event: MouseEvent) => void) | undefined;
+    let updateToolbarPosition: (() => void) | undefined;
+
+    let retryCount = 0;
+    let timer = 0;
+
+    const attachListeners = () => {
+      const quill = getQuillEditor();
+      root = quill?.root as HTMLElement | undefined;
+      if (!root) {
+        retryCount += 1;
+        if (retryCount < 10) {
+          timer = window.setTimeout(attachListeners, 50);
+        }
+        return;
+      }
+
+      handleEditorKeydown = (event: KeyboardEvent) => {
+        if ((event.key === 'Backspace' || event.key === 'Delete') && selectedEditorImageRef.current) {
+          selectedEditorImageRef.current.remove();
+          selectEditorImage(null);
+          syncEditorHtml();
+        }
+      };
+
+      handleOutsideClick = (event: MouseEvent) => {
+        const target = event.target as HTMLElement | null;
+        if (!target) return;
+        if (root?.contains(target) || imageToolbarRef.current?.contains(target)) return;
+        selectEditorImage(null);
+      };
+
+      updateToolbarPosition = () => {
+        if (selectedEditorImageRef.current) {
+          selectEditorImage(selectedEditorImageRef.current);
+        }
+      };
+
+      root.addEventListener('keydown', handleEditorKeydown);
+      document.addEventListener('mousedown', handleOutsideClick);
+      window.addEventListener('resize', updateToolbarPosition);
+    };
+
+    timer = window.setTimeout(attachListeners, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+      if (root && handleEditorKeydown) root.removeEventListener('keydown', handleEditorKeydown);
+      if (handleOutsideClick) document.removeEventListener('mousedown', handleOutsideClick);
+      if (updateToolbarPosition) window.removeEventListener('resize', updateToolbarPosition);
+    };
+  }, [content, isHtmlMode, isOpen, selectEditorImage]);
+
+  const updateSelectedImage = (updates: Partial<CSSStyleDeclaration>) => {
+    const image = selectedEditorImageRef.current;
+    if (!image) return;
+
+    Object.entries(updates).forEach(([property, value]) => {
+      if (typeof value === 'string') {
+        image.style[property as any] = value;
+      }
+    });
+    selectEditorImage(image);
+    syncEditorHtml();
+  };
+
+  const setSelectedImageAlignment = (alignment: 'left' | 'center' | 'right') => {
+    const alignments = {
+      left: { display: 'block', marginLeft: '0px', marginRight: 'auto' },
+      center: { display: 'block', marginLeft: 'auto', marginRight: 'auto' },
+      right: { display: 'block', marginLeft: 'auto', marginRight: '0px' },
+    };
+    updateSelectedImage(alignments[alignment] as Partial<CSSStyleDeclaration>);
+  };
+
+  const setSelectedImageWidth = (width: string) => {
+    updateSelectedImage({ width, maxWidth: '100%' } as Partial<CSSStyleDeclaration>);
+  };
+
+  const ensureImageFigure = (image: HTMLImageElement) => {
+    const existingFigure = image.closest('figure') as HTMLElement | null;
+    if (existingFigure) return existingFigure;
+
+    const figure = document.createElement('figure');
+    const parent = image.parentElement;
+
+    if (parent?.tagName === 'P') {
+      parent.insertAdjacentElement('beforebegin', figure);
+    } else {
+      image.insertAdjacentElement('beforebegin', figure);
+    }
+
+    figure.appendChild(image);
+    if (parent?.tagName === 'P' && !parent.textContent?.trim() && parent.children.length === 0) {
+      parent.remove();
+    }
+    return figure;
+  };
+
+  const getDirectFigcaption = (figure: HTMLElement) =>
+    Array.from(figure.children).find((child) => child.tagName === 'FIGCAPTION') as HTMLElement | undefined;
+
+  const removeSelectedEditorImage = () => {
+    const image = selectedEditorImageRef.current;
+    if (!image) return;
+    const figure = image.closest('figure');
+
+    if (figure) {
+      figure.remove();
+    } else {
+      const imageBlock = image.closest('p') || image;
+      const nextElement = imageBlock.nextElementSibling as HTMLElement | null;
+      if (nextElement?.classList.contains('blog-image-caption')) {
+        nextElement.remove();
+      }
+      image.remove();
+    }
+
+    selectEditorImage(null);
+    syncEditorHtml();
+    toast.success('Đã xoá ảnh khỏi nội dung.');
+  };
+
+  const updateSelectedImageCaption = () => {
+    const image = selectedEditorImageRef.current;
+    if (!image) return;
+
+    const figure = ensureImageFigure(image);
+    const legacyCaption = figure.nextElementSibling as HTMLElement | null;
+    const existingCaption = getDirectFigcaption(figure);
+    const currentCaption = existingCaption?.textContent || (legacyCaption?.classList.contains('blog-image-caption') ? legacyCaption.textContent || '' : '');
+    setCaptionDraft(currentCaption);
+    setImageEditPanel((current) => current === 'caption' ? null : 'caption');
+    selectEditorImage(image);
+  };
+
+  const applySelectedImageCaption = () => {
+    const image = selectedEditorImageRef.current;
+    if (!image) return;
+    const src = image.getAttribute('src') || '';
+    if (!src) {
+      toast.error('Không tìm thấy ảnh để cập nhật caption.');
+      return;
+    }
+
+    // Ghi trực tiếp vào DOM của Quill trước khi commit
+    const figure = ensureImageFigure(image);
+    let figcaption = getDirectFigcaption(figure);
+    if (!figcaption) {
+      figcaption = document.createElement('figcaption');
+      figure.appendChild(figcaption);
+    }
+    figcaption.textContent = captionDraft.trim();
+
+    if (captionDraft.trim()) {
+      imageCaptionBySrcRef.current[src] = captionDraft.trim();
+    } else {
+      delete imageCaptionBySrcRef.current[src];
+    }
+
+    commitEditorHtml(getQuillEditor()?.root?.innerHTML || content);
+    setImageEditPanel(null);
+    toast.success(captionDraft.trim() ? 'Đã cập nhật ghi chú ảnh.' : 'Đã xoá ghi chú ảnh.');
+  };
+
+  const updateSelectedImageAlt = () => {
+    const image = selectedEditorImageRef.current;
+    if (!image) return;
+
+    setAltDraft(image.getAttribute('alt') || '');
+    setImageEditPanel((current) => current === 'alt' ? null : 'alt');
+    selectEditorImage(image);
+  };
+
+  const applySelectedImageAlt = () => {
+    const image = selectedEditorImageRef.current;
+    if (!image) return;
+    const src = image.getAttribute('src') || '';
+    if (!src) {
+      toast.error('Không tìm thấy ảnh để cập nhật Alt.');
+      return;
+    }
+
+    // Ghi trực tiếp vào DOM của Quill trước khi commit
+    image.setAttribute('alt', altDraft.trim());
+    image.setAttribute('title', altDraft.trim());
+
+    if (altDraft.trim()) {
+      imageAltBySrcRef.current[src] = altDraft.trim();
+    } else {
+      delete imageAltBySrcRef.current[src];
+    }
+    commitEditorHtml(getQuillEditor()?.root?.innerHTML || content);
+    setImageEditPanel(null);
+    toast.success('Đã cập nhật Alt ảnh.');
+  };
+
+  const replaceSelectedEditorImage = async () => {
+    const image = selectedEditorImageRef.current;
+    if (!image) return;
+
+    setReplaceImageUrl(image.getAttribute('src') || '');
+    setImageEditPanel((current) => current === 'replace' ? null : 'replace');
+    selectEditorImage(image);
+  };
+
+  const applySelectedImageUrl = () => {
+    const image = selectedEditorImageRef.current;
+    if (!image) return;
+
+    if (!replaceImageUrl.trim()) {
+      toast.error('Đường dẫn ảnh không được để trống.');
+      return;
+    }
+
+    const oldSrc = image.getAttribute('src') || '';
+    if (oldSrc && oldSrc !== replaceImageUrl.trim()) {
+      if (imageAltBySrcRef.current[oldSrc]) {
+        imageAltBySrcRef.current[replaceImageUrl.trim()] = imageAltBySrcRef.current[oldSrc];
+        delete imageAltBySrcRef.current[oldSrc];
+      }
+      if (imageCaptionBySrcRef.current[oldSrc]) {
+        imageCaptionBySrcRef.current[replaceImageUrl.trim()] = imageCaptionBySrcRef.current[oldSrc];
+        delete imageCaptionBySrcRef.current[oldSrc];
+      }
+    }
+    image.setAttribute('src', replaceImageUrl.trim());
+    commitEditorHtml(getQuillEditor()?.root?.innerHTML || content);
+    setImageEditPanel(null);
+    toast.success('Đã thay ảnh bằng đường dẫn mới.');
+  };
+
+  const uploadReplacementImage = async () => {
+    const image = selectedEditorImageRef.current;
+    if (!image) return;
+
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.click();
+
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      const toastId = toast.loading('Đang upload ảnh thay thế...');
+
+      try {
+        const url = await uploadFile(file, 'image');
+        const oldSrc = image.getAttribute('src') || '';
+        if (oldSrc && oldSrc !== url) {
+          if (imageAltBySrcRef.current[oldSrc]) {
+            imageAltBySrcRef.current[url] = imageAltBySrcRef.current[oldSrc];
+            delete imageAltBySrcRef.current[oldSrc];
+          }
+          if (imageCaptionBySrcRef.current[oldSrc]) {
+            imageCaptionBySrcRef.current[url] = imageCaptionBySrcRef.current[oldSrc];
+            delete imageCaptionBySrcRef.current[oldSrc];
+          }
+        }
+        image.setAttribute('src', url);
+        commitEditorHtml(getQuillEditor()?.root?.innerHTML || content);
+        setReplaceImageUrl(url);
+        setImageEditPanel(null);
+        toast.success('Đã thay ảnh trong nội dung.', { id: toastId });
+      } catch (error: any) {
+        toast.error(error.message || 'Lỗi khi thay ảnh', { id: toastId });
+      }
+    };
   };
 
   const normalizeHtmlText = (html: string) => {
@@ -262,38 +811,112 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
       unformatted: ['a', 'span', 'strong', 'b', 'em', 'i', 'u', 's', 'code', 'small'],
     });
 
-  const handleImageInsert = async () => {
+  const handleImageInsert = React.useCallback(async () => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
-    input.click();
-
+    // Guards chống double-trigger
+    let handled = false;
     input.onchange = async () => {
+      if (handled) return;
+      handled = true;
       const file = input.files?.[0];
       if (!file) return;
       const toastId = toast.loading('Đang tải ảnh lên...');
       try {
         const url = await uploadFile(file, 'image');
-        const quill = quillRef.current?.getEditor();
+        if (isHtmlModeRef.current) {
+          const nextSource = `${htmlSourceRef.current || ''}\n${imageFigureHtml(escapeHtmlAttr(url))}`.trim();
+          setHtmlSource(beautifyHtml(normalizeImageFigures(nextSource)));
+          toast.success('Đã chèn ảnh thành công', { id: toastId });
+          return;
+        }
+
+        const quill = getQuillEditor();
         if (quill) {
           const range = quill.getSelection(true);
           quill.clipboard.dangerouslyPasteHTML(
             range.index,
-            `<p><img src="${escapeHtmlAttr(url)}" style="display:block;margin:2rem auto;max-width:100%;border-radius:12px;" /></p><p><br></p>`,
+            `${imageFigureHtml(escapeHtmlAttr(url))}<p><br></p>`,
             'user'
           );
-          quill.setSelection(range.index + 1);
+          // Quill inserts the figure (which may have length 1 or more depending on blots)
+          // and the <p><br></p>. The safest way is to just let user click or move cursor to the end.
+          // But we can try to set selection to range.index + 2 (1 for figure, 1 for p).
+          setTimeout(() => {
+            quill.setSelection(range.index + 2, 'silent');
+          }, 0);
           quill.update('user');
-          syncEditorHtml();
+          commitEditorHtml(quill.root.innerHTML);
         }
         toast.success('Đã chèn ảnh thành công', { id: toastId });
       } catch (error: any) {
         toast.error(error.message || 'Lỗi khi tải ảnh', { id: toastId });
       }
     };
+    input.click();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Upload nhiều ảnh rồi chèn vào vị trí con trỏ trong editor
+  const insertImageFilesToEditor = async (files: File[]) => {
+    const imageFiles = files.filter(f => f.type.startsWith('image/'));
+    if (imageFiles.length === 0) return false;
+
+    const toastId = toast.loading(`Đang tải ${imageFiles.length > 1 ? imageFiles.length + ' ảnh' : 'ảnh'} lên...`);
+    try {
+      for (const file of imageFiles) {
+        const url = await uploadFile(file, 'image');
+        if (isHtmlMode) {
+          const html = imageFigureHtml(escapeHtmlAttr(url));
+          setHtmlSource(prev => beautifyHtml(normalizeImageFigures(`${prev || ''}\n${html}`.trim())));
+        } else {
+          const quill = getQuillEditor();
+          if (quill) {
+            const range = quill.getSelection(true);
+            quill.clipboard.dangerouslyPasteHTML(
+              range.index,
+              `${imageFigureHtml(escapeHtmlAttr(url))}<p><br></p>`,
+              'user'
+            );
+            setTimeout(() => {
+              quill.setSelection(range.index + 2, 'silent');
+            }, 0);
+            quill.update('user');
+            commitEditorHtml(quill.root.innerHTML);
+          }
+        }
+      }
+      toast.success(imageFiles.length > 1 ? `Đã chèn ${imageFiles.length} ảnh thành công.` : 'Đã chèn ảnh thành công.', { id: toastId });
+    } catch (error: any) {
+      toast.error(error.message || 'Lỗi khi tải ảnh', { id: toastId });
+    }
+    return true;
   };
 
-  const handleVideoInsert = async () => {
+  // Drag & drop ảnh vào vùng editor
+  const handleEditorDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    if (imageToolbarRef.current?.contains(e.target as Node)) return;
+    const files = Array.from(e.dataTransfer.files);
+    if (files.some(f => f.type.startsWith('image/'))) {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragOver(false);
+      await insertImageFilesToEditor(files);
+    }
+  };
+
+  // Paste ảnh từ clipboard (Ctrl+V)
+  const handleEditorPaste = async (e: React.ClipboardEvent<HTMLDivElement>) => {
+    const items = Array.from(e.clipboardData.items);
+    const imageItems = items.filter(item => item.type.startsWith('image/'));
+    if (imageItems.length === 0) return;
+    e.preventDefault();
+    const files = imageItems.map(item => item.getAsFile()).filter(Boolean) as File[];
+    await insertImageFilesToEditor(files);
+  };
+
+  const handleVideoInsert = React.useCallback(async () => {
     const input = window.prompt('Nhập URL video hoặc mã iframe để chèn vào bài viết');
     if (!input) return;
     let videoUrl = input.trim();
@@ -313,7 +936,7 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
       if (videoId) videoUrl = `https://player.vimeo.com/video/${videoId}`;
     }
 
-    const quill = quillRef.current?.getEditor();
+    const quill = getQuillEditor();
     if (!quill) return;
     const range = quill.getSelection(true);
     quill.insertEmbed(range.index, 'video', videoUrl, 'user');
@@ -321,7 +944,8 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
     quill.update('user');
     syncEditorHtml();
     toast.success('Đã chèn video thành công!');
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleVideoFileInsert = async () => {
     const input = document.createElement('input');
@@ -335,7 +959,7 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
       const toastId = toast.loading('Đang tải video lên...');
       try {
         const url = await uploadFile(file, 'video');
-        const quill = quillRef.current?.getEditor();
+        const quill = getQuillEditor();
         if (quill) {
           const range = quill.getSelection(true);
           quill.clipboard.dangerouslyPasteHTML(
@@ -356,12 +980,15 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
 
   const toggleHtmlMode = () => {
     if (!isHtmlMode) {
-      const current = quillRef.current?.getEditor()?.root?.innerHTML || content;
-      const pretty = beautifyHtml(current);
-      setContent(current);
+      const current = getQuillEditor()?.root?.innerHTML || content;
+      const normalized = normalizeImageFigures(current);
+      const pretty = beautifyHtml(normalized);
+      setContent(normalized);
       setHtmlSource(pretty);
     } else {
-      setContent(htmlSource);
+      const normalized = normalizeImageFigures(htmlSource);
+      setContent(normalized);
+      setHtmlSource(beautifyHtml(normalized));
     }
     setIsHtmlMode((prev) => !prev);
   };
@@ -382,7 +1009,7 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
       return;
     }
 
-    const quill = quillRef.current?.getEditor();
+    const quill = getQuillEditor();
     if (!quill) {
       setContent(prev => `${prev || ''}${faqTemplate}`.trim());
       return;
@@ -405,7 +1032,14 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
         video: handleVideoInsert,
       },
     },
-  }), [handleImageInsert, handleVideoInsert]);
+    clipboard: {
+      matchVisual: false,
+    },
+  // handlers đã stable (useCallback([])), modules không bao giờ thay đổi
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), []);
+
+  const [isDragOver, setIsDragOver] = useState(false);
 
   const handleSubmit = async (event?: React.FormEvent) => {
     event?.preventDefault();
@@ -419,7 +1053,7 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
     setIsSubmitting(true);
     try {
       const finalSlug = slug.trim() ? slugify(slug) : slugify(title);
-      const { html: cleanedContent, schema: extractedSchema } = extractJsonLdFromHtml(finalContent);
+      const { html: cleanedContent, schema: extractedSchema } = extractJsonLdFromHtml(normalizeImageFigures(finalContent));
       const postData: Omit<BlogPost, 'id'> = {
         title: title.trim(),
         slug: finalSlug,
@@ -522,8 +1156,21 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
             <div className="space-y-2 text-sm font-semibold text-zinc-700">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <span>Nội dung bài viết</span>
+                <span className="text-xs font-normal text-zinc-400 flex items-center gap-1">
+                  <Upload className="h-3 w-3" />
+                  Kéo &amp; thả ảnh vào editor, hoặc Ctrl+V để chèn từ clipboard
+                </span>
               </div>
-              <div ref={editorWrapRef} className="w-full product-quill-editor relative rounded-3xl border border-zinc-200 bg-white shadow-sm">
+              <div
+                ref={editorWrapRef}
+                onMouseDownCapture={handleEditorAreaPointer}
+                onDrop={handleEditorDrop}
+                onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                onDragLeave={(e) => { if (!editorWrapRef.current?.contains(e.relatedTarget as Node)) setIsDragOver(false); }}
+                onDragEnd={() => setIsDragOver(false)}
+                onPaste={handleEditorPaste}
+                className={cn('w-full product-quill-editor relative rounded-3xl border border-zinc-200 bg-white shadow-sm transition-colors', isDragOver && 'is-drag-over border-blue-400')}
+              >
                 <style
                   dangerouslySetInnerHTML={{
                     __html: `
@@ -534,7 +1181,12 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
                       .product-quill-editor .ql-editor h1 { font-size: 2em; font-weight: 900; margin-bottom: 1rem; color: #18181b; }
                       .product-quill-editor .ql-editor h2 { font-size: 1.5em; font-weight: 800; margin-bottom: 1rem; color: #18181b; }
                       .product-quill-editor .ql-editor h3 { font-size: 1.17em; font-weight: 700; margin-bottom: 1rem; color: #18181b; }
-                      .product-quill-editor .ql-editor img { border-radius: 8px; margin: 2rem auto; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); max-width: 100%; cursor: pointer; display: block; }
+                      .product-quill-editor .ql-editor figure { margin: 24px 0; text-align: center; }
+                      .product-quill-editor .ql-editor figure img,
+                      .product-quill-editor .ql-editor img { border-radius: 12px; box-sizing: border-box; height: auto; margin: 0 auto; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); max-width: 100%; cursor: pointer; display: block; }
+                      .product-quill-editor .ql-editor img.ql-selected-blog-image { box-shadow: 0 0 0 2px #2563eb !important; outline: none; }
+                      .product-quill-editor .ql-editor figure figcaption,
+                      .product-quill-editor .ql-editor .blog-image-caption { color: #6b7280; font-size: 14px; font-style: italic; line-height: 1.5; margin: 10px auto 0; max-width: 760px; text-align: center; }
                       .product-quill-editor .ql-editor iframe { border-radius: 8px; margin: 2rem 0; width: 100%; aspect-ratio: 16/9; }
                       .product-quill-editor .ql-editor video { border-radius: 12px; margin: 2rem 0 2rem auto; max-width: 100%; width: min(100%, 720px); display: block; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
                       .product-quill-editor .ql-snow .ql-tooltip { z-index: 9999; }
@@ -592,7 +1244,7 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
                     </span>
                     <span className="ql-formats">
                       <button className="ql-link" />
-                      <button className="ql-image" />
+                      <button className="ql-image" onClick={isHtmlMode ? handleImageInsert : undefined} />
                       <button className="ql-video" />
                     </span>
                     <span className="ql-formats">
@@ -635,6 +1287,104 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
                     theme="snow"
                     modules={modules}
                   />
+                )}
+                {/* Drag overlay */}
+                {isDragOver && (
+                  <div className="pointer-events-none absolute inset-0 z-30 flex flex-col items-center justify-center rounded-3xl border-2 border-blue-400 bg-blue-50/90 gap-3">
+                    <div className="rounded-full bg-blue-100 p-4">
+                      <Upload className="h-8 w-8 text-blue-500" />
+                    </div>
+                    <p className="text-sm font-bold text-blue-600">Thả ảnh vào đây để upload</p>
+                    <p className="text-xs text-blue-400">Ảnh sẽ tự động upload lên Cloudinary và chèn vào bài viết</p>
+                  </div>
+                )}
+                {selectedEditorImage && !isHtmlMode && (
+                  <div
+                    ref={imageToolbarRef}
+                    className="absolute z-20 flex w-max items-center gap-1 rounded-md bg-zinc-950 px-2 py-1 text-white shadow-[0_10px_24px_rgba(15,23,42,0.24)]"
+                    style={{
+                      left: `${selectedEditorImage.toolbarLeft}px`,
+                      top: `${selectedEditorImage.toolbarTop}px`,
+                    }}
+                  >
+                    <div className="flex items-center gap-0.5 border-r border-white/15 pr-1">
+                      <button type="button" onClick={() => setSelectedImageAlignment('left')} title="Căn trái" className={cn('rounded p-1.5 text-white/70 hover:bg-white/10 hover:text-white', selectedEditorImage.alignment === 'left' && 'bg-white/10 text-white')}>
+                        <AlignLeft className="h-4 w-4" />
+                      </button>
+                      <button type="button" onClick={() => setSelectedImageAlignment('center')} title="Căn giữa" className={cn('rounded p-1.5 text-white/70 hover:bg-white/10 hover:text-white', selectedEditorImage.alignment === 'center' && 'bg-white/10 text-white')}>
+                        <AlignCenter className="h-4 w-4" />
+                      </button>
+                      <button type="button" onClick={() => setSelectedImageAlignment('right')} title="Căn phải" className={cn('rounded p-1.5 text-white/70 hover:bg-white/10 hover:text-white', selectedEditorImage.alignment === 'right' && 'bg-white/10 text-white')}>
+                        <AlignRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <button type="button" onClick={updateSelectedImageCaption} title="Thêm hoặc sửa caption" className={cn('inline-flex items-center gap-1 rounded px-2 py-1.5 text-xs font-black text-white hover:bg-white/10', imageEditPanel === 'caption' && 'bg-blue-500')}>
+                      <span className="text-sm leading-none">T</span>
+                      Caption
+                    </button>
+                    <button type="button" onClick={replaceSelectedEditorImage} title="Upload ảnh hoặc thay bằng đường dẫn" className={cn('inline-flex items-center gap-1 rounded px-2 py-1.5 text-xs font-black text-white hover:bg-white/10', imageEditPanel === 'replace' && 'bg-blue-500')}>
+                      <Upload className="h-3.5 w-3.5" />
+                      Thay ảnh
+                    </button>
+                    <button type="button" onClick={updateSelectedImageAlt} title="Sửa Alt text" className={cn('inline-flex items-center gap-1 rounded px-2 py-1.5 text-xs font-black text-white hover:bg-white/10', imageEditPanel === 'alt' ? 'bg-emerald-500' : altDraft ? 'bg-emerald-600/70' : '')}>
+                      <Tag className="h-3.5 w-3.5" />
+                      Alt
+                    </button>
+                    <button type="button" onClick={removeSelectedEditorImage} title="Xoá ảnh khỏi nội dung" className="rounded p-1.5 text-white/70 hover:bg-red-500 hover:text-white">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                    {imageEditPanel === 'caption' && (
+                      <>
+                        <input
+                          autoFocus
+                          type="text"
+                          value={captionDraft}
+                          onChange={(event) => setCaptionDraft(event.target.value)}
+                          onKeyDown={(event) => event.key === 'Enter' && applySelectedImageCaption()}
+                          placeholder="Nhập ghi chú..."
+                          className="ml-1 w-56 rounded border border-white/20 bg-white/10 px-2 py-1 text-xs font-medium text-white outline-none placeholder:text-white/40 focus:border-blue-400"
+                        />
+                        <button type="button" onClick={applySelectedImageCaption} className="rounded bg-blue-500 px-2 py-1 text-[11px] font-bold text-white hover:bg-blue-400">
+                          Áp dụng
+                        </button>
+                      </>
+                    )}
+                    {imageEditPanel === 'alt' && (
+                      <>
+                        <input
+                          autoFocus
+                          type="text"
+                          value={altDraft}
+                          onChange={(event) => setAltDraft(event.target.value)}
+                          onKeyDown={(event) => event.key === 'Enter' && applySelectedImageAlt()}
+                          placeholder="Nhập thẻ alt..."
+                          className="ml-1 w-56 rounded border border-white/20 bg-white/10 px-2 py-1 text-xs font-medium text-white outline-none placeholder:text-white/40 focus:border-emerald-400"
+                        />
+                        <button type="button" onClick={applySelectedImageAlt} className="rounded bg-emerald-500 px-2 py-1 text-[11px] font-bold text-white hover:bg-emerald-400">
+                          Áp dụng
+                        </button>
+                      </>
+                    )}
+                    {imageEditPanel === 'replace' && (
+                      <>
+                        <input
+                          autoFocus
+                          type="text"
+                          value={replaceImageUrl}
+                          onChange={(event) => setReplaceImageUrl(event.target.value)}
+                          onKeyDown={(event) => event.key === 'Enter' && applySelectedImageUrl()}
+                          placeholder="/images/blog/ten-anh.webp"
+                          className="ml-1 w-64 rounded border border-white/20 bg-white/10 px-2 py-1 text-xs font-medium text-white outline-none placeholder:text-white/40 focus:border-blue-400"
+                        />
+                        <button type="button" onClick={applySelectedImageUrl} className="rounded bg-blue-500 px-2 py-1 text-[11px] font-bold text-white hover:bg-blue-400">
+                          URL
+                        </button>
+                        <button type="button" onClick={uploadReplacementImage} className="rounded bg-white/10 px-2 py-1 text-[11px] font-bold text-white hover:bg-white/20">
+                          Upload
+                        </button>
+                      </>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -808,3 +1558,4 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
     </div>
   );
 };
+

@@ -11,6 +11,9 @@ import { CATEGORIES } from '../data';
 import ReactQuill, { Quill } from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 
+const DEFAULT_PRODUCT_SIZES = ['M', 'L', 'XL', 'XXL', '3XL', '4XL'];
+const DEFAULT_PRODUCT_SIZE_TEXT = DEFAULT_PRODUCT_SIZES.join(',');
+
 // ── Custom Video Blot ──────────────────────────────────────────────────
 const BlockEmbed = Quill.import('blots/block/embed') as any;
 class VideoContainerBlot extends BlockEmbed {
@@ -343,7 +346,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
     category: CATEGORIES[0],
     description: '',
     stock: '',
-    sizes: '',
+    sizes: DEFAULT_PRODUCT_SIZE_TEXT,
     sizeGuideUrl: '',
     slug: '',
     seoTitle: '',
@@ -452,7 +455,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         category: CATEGORIES[0],
         description: '',
         stock: '',
-        sizes: '',
+        sizes: DEFAULT_PRODUCT_SIZE_TEXT,
         sizeGuideUrl: '',
         slug: '',
         seoTitle: '',
@@ -653,7 +656,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         price: Number(formData.price),
         discountPrice: formData.discountPrice ? Number(formData.discountPrice) : null,
         stock: Number(formData.stock),
-        sizes: parsedSizes.length > 0 ? parsedSizes : ['S', 'M', 'L', 'XL'],
+        sizes: parsedSizes.length > 0 ? parsedSizes : DEFAULT_PRODUCT_SIZES,
         sizeGuideUrl: formData.sizeGuideUrl,
         slug: formData.slug.trim() || formData.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[đĐ]/g, 'd').replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, ''),
         seoTitle: formData.seoTitle,
@@ -694,7 +697,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
           category: CATEGORIES[0],
           description: '',
           stock: '',
-          sizes: '',
+          sizes: DEFAULT_PRODUCT_SIZE_TEXT,
           sizeGuideUrl: '',
           slug: '',
           seoTitle: '',
@@ -1478,7 +1481,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                       value={formData.sizes}
                       onChange={(e) => setFormData({...formData, sizes: e.target.value})}
                       className="w-full h-8 px-2 text-[14px] font-medium text-zinc-900 bg-transparent outline-none"
-                      placeholder="S, M, L, XL..."
+                      placeholder={DEFAULT_PRODUCT_SIZE_TEXT}
                     />
                   </div>
                 </div>
