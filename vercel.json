@@ -7,7 +7,7 @@
       "destination": "/api/$1"
     },
     {
-      "source": "/((?!api/|images/|assets/|favicon.svg|sitemap.xml|robots.txt|manifest.webmanifest|sw.js).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
