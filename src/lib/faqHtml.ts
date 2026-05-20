@@ -34,7 +34,6 @@ export const formatFaqContentHtml = (html: string) => {
 
     const details = doc.createElement('details');
     details.className = 'seo-faq';
-    if (index === 0) details.open = true;
 
     const summary = doc.createElement('summary');
     summary.className = 'seo-faq-question';
@@ -93,7 +92,6 @@ export const formatFaqContentHtml = (html: string) => {
         if (questionHtml && textFromHtml(answerHtml)) {
           const details = doc.createElement('details');
           details.className = 'seo-faq';
-          if (faqIndex === 0) details.open = true;
 
           const summary = doc.createElement('summary');
           summary.className = 'seo-faq-question';

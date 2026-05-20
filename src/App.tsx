@@ -1017,7 +1017,6 @@ const formatSeoContentHtml = (html: string) => {
 
     const details = doc.createElement('details');
     details.className = 'seo-faq';
-    if (index === 0) details.open = true;
 
     const summary = doc.createElement('summary');
     summary.className = 'seo-faq-question';
@@ -1073,7 +1072,6 @@ const formatSeoContentHtml = (html: string) => {
         if (questionHtml && answerNodes.length) {
           const details = doc.createElement('details');
           details.className = 'seo-faq';
-          if (faqIndex === 0) details.open = true;
 
           const summary = doc.createElement('summary');
           summary.className = 'seo-faq-question';

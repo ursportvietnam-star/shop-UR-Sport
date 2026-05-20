@@ -436,7 +436,6 @@ export function NewsPage() {
 
         const details = document.createElement('details');
         details.className = 'seo-faq';
-        if (faqIndex === 0) details.open = true;
 
         const summary = document.createElement('summary');
         summary.className = 'seo-faq-question';
