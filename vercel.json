@@ -7,11 +7,23 @@
       "destination": "/api/$1"
     },
     {
+      "source": "/quan-tri/(.*)",
+      "destination": "/index.html"
+    },
+    {
       "source": "/quan-tri",
       "destination": "/index.html"
     },
     {
+      "source": "/quantri/(.*)",
+      "destination": "/index.html"
+    },
+    {
       "source": "/quantri",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin/(.*)",
       "destination": "/index.html"
     },
     {
