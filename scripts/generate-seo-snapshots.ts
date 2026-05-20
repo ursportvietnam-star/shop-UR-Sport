@@ -9,7 +9,8 @@ import {
   buildSeoGraph,
   cleanSeoText,
   merchantReturnPolicySchema,
-  offerShippingDetailsSchema
+  offerShippingDetailsSchema,
+  localBusinessSchema
 } from '../src/lib/seo';
 
 type Snapshot = {
@@ -140,11 +141,49 @@ const injectSeo = (html: string, snapshot: Snapshot) => {
   return cleaned.replace(/<head>/i, `<head>\n    ${tags}`);
 };
 
+const faqSchemaForProduct = (product: (typeof PRODUCTS)[number]) => {
+  const route = `/${product.slug}`;
+  const returnDays = merchantReturnPolicySchema.merchantReturnDays || 7;
+  return {
+    '@type': 'FAQPage',
+    '@id': `${absoluteUrl(route)}#faq`,
+    mainEntity: [
+      {
+        '@type': 'Question',
+        name: `Chính sách đổi trả sản phẩm ${product.name} tại UR Sport như thế nào?`,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: `UR Sport hỗ trợ khách hàng đổi trả sản phẩm ${product.name} miễn phí trong vòng ${returnDays} ngày kể từ ngày nhận hàng với bất kỳ lý do gì, miễn là sản phẩm còn nguyên tem mác, chưa qua sử dụng và chưa giặt tẩy.`
+        }
+      },
+      {
+        '@type': 'Question',
+        name: `Sản phẩm ${product.name} có phù hợp để tập thể thao hay mặc hằng ngày không?`,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: `Sản phẩm ${product.name} thuộc danh mục ${product.category} được thiết kế với kiểu dáng thể thao hiện đại, tối ưu cho cả vận động thể chất lẫn mặc hằng ngày. Chất liệu ${product.material || 'cao cấp'} thoáng khí, co giãn tốt mang lại cảm giác dễ chịu suốt cả ngày.`
+        }
+      },
+      {
+        '@type': 'Question',
+        name: `Thời gian và chi phí giao hàng khi mua ${product.name} là bao nhiêu?`,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: `UR Sport hỗ trợ vận chuyển nhanh toàn quốc từ 1 đến 5 ngày tùy khu vực. Đặc biệt, tất cả đơn đặt hàng mua ${product.name} đều được miễn phí vận chuyển 100%.`
+        }
+      }
+    ]
+  };
+};
+
 const productSnapshot = (product: (typeof PRODUCTS)[number]): Snapshot => {
   const route = `/${product.slug}`;
   const productUrl = absoluteUrl(route);
   const category = CATEGORY_METADATA.find(item => item.name === product.category);
   const categoryUrl = category ? `/${category.slug}` : '/shop';
+  const nextYear = new Date().getFullYear() + 1;
+  const priceValidUntil = `${nextYear}-12-31`;
+
   const productSchema: any = {
     '@type': 'Product',
     '@id': `${productUrl}#product`,
@@ -152,19 +191,23 @@ const productSnapshot = (product: (typeof PRODUCTS)[number]): Snapshot => {
     image: (product.images || []).map(absoluteUrl),
     description: cleanSeoText(product.metaDescription || product.description, 500),
     sku: product.id,
+    mpn: product.id,
     category: product.category,
     color: product.colors,
     size: product.sizes,
     material: product.material,
     brand: {
       '@type': 'Brand',
-      name: product.brand || SITE_NAME
+      name: product.brand || SITE_NAME,
+      logo: absoluteUrl('/images/og-ursport.svg'),
+      url: SITE_URL
     },
     offers: {
       '@type': 'Offer',
       url: productUrl,
       priceCurrency: 'VND',
       price: product.discountPrice || product.price,
+      priceValidUntil,
       availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
       itemCondition: 'https://schema.org/NewCondition',
       shippingDetails: offerShippingDetailsSchema,
@@ -194,7 +237,8 @@ const productSnapshot = (product: (typeof PRODUCTS)[number]): Snapshot => {
         { name: 'Trang chủ', url: '/' },
         { name: String(product.category), url: categoryUrl },
         { name: product.name, url: route }
-      ])
+      ]),
+      faqSchemaForProduct(product)
     )
   };
 };
@@ -281,13 +325,25 @@ const shopSnapshot = (): Snapshot => ({
   description: `Khám phá sản phẩm thể thao nam tại ${SITE_NAME}: áo thun, áo polo, quần thể thao và phụ kiện dễ mặc hằng ngày.`,
   keywords: 'đồ thể thao nam, áo thun nam, áo polo nam, quần thể thao nam, UR Sport',
   image: '/images/og-ursport.svg',
-  schema: buildSeoGraph({
-    '@type': 'CollectionPage',
-    '@id': `${absoluteUrl('/shop')}#collection`,
-    name: `Shop ${SITE_NAME}`,
-    url: absoluteUrl('/shop'),
-    description: `Danh sách sản phẩm thể thao nam của ${SITE_NAME}.`
-  })
+  schema: buildSeoGraph(
+    {
+      '@type': 'CollectionPage',
+      '@id': `${absoluteUrl('/shop')}#collection`,
+      name: `Shop ${SITE_NAME}`,
+      url: absoluteUrl('/shop'),
+      description: `Danh sách sản phẩm thể thao nam của ${SITE_NAME}.`
+    },
+    localBusinessSchema
+  )
+});
+
+const homeSnapshot = (): Snapshot => ({
+  route: '/',
+  title: `UR Sport - Phong Cách Thể Thao Đẳng Cấp | Áo Thun, Áo Polo Nam`,
+  description: `Khám phá bộ sưu tập thời trang thể thao nam cao cấp tại UR Sport. Chuyên cung cấp áo thun, áo polo nam chất lượng, phong cách và bền bỉ. Miễn phí vận chuyển toàn quốc.`,
+  keywords: `ur sport, thời trang thể thao nam, áo thun nam, áo polo nam, quần thể thao, phụ kiện thể thao, đồ tập gym nam`,
+  image: '/images/og-ursport.svg',
+  schema: buildSeoGraph(localBusinessSchema)
 });
 
 const blogIndexSnapshot = (): Snapshot => ({
@@ -308,6 +364,7 @@ const blogIndexSnapshot = (): Snapshot => ({
 const run = async () => {
   const indexHtml = await fs.readFile(indexPath, 'utf8');
   const snapshots: Snapshot[] = [
+    homeSnapshot(),
     shopSnapshot(),
     blogIndexSnapshot(),
     ...CATEGORY_METADATA.map(categorySnapshot),

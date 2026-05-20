@@ -127,6 +127,12 @@ service cloud.firestore {
       allow read, delete: if isAdmin();
     }
     
+    // Category SEO rules: public read, admin write
+    match /categorySeo/{seoId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
     // Admins collection
     match /admins/{adminId} {
       allow read: if isSignedIn();

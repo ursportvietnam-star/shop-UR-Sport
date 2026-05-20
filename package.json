@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "prebuild": "tsx scripts/generate-sitemap.ts",
+    "prebuild": "tsx scripts/check-broken-links.ts && tsx scripts/generate-sitemap.ts",
     "postbuild": "tsx scripts/generate-seo-snapshots.ts",
     "build": "vite build",
     "preview": "vite preview",

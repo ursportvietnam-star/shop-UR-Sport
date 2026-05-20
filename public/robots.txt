@@ -5,6 +5,13 @@ Disallow: /admin
 Disallow: /checkout
 Disallow: /api/
 Disallow: /*.json$
+Disallow: /shop?*
+Disallow: /*?sort=*
+Disallow: /*?price=*
+Disallow: /*?color=*
+Disallow: /*?size=*
+Disallow: /*?brand=*
+Disallow: /*?search=*
 
 User-agent: GPTBot
 Allow: /

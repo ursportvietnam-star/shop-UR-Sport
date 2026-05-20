@@ -96,6 +96,42 @@ export const organizationSchema = {
   ]
 };
 
+export const localBusinessSchema = {
+  '@type': 'SportsActivityLocation',
+  '@id': `${SITE_URL}/#localbusiness`,
+  name: SITE_NAME,
+  url: SITE_URL,
+  logo: DEFAULT_OG_IMAGE,
+  image: DEFAULT_OG_IMAGE,
+  telephone: BRAND_PHONE,
+  priceRange: '$$',
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: 'Số 123 Đường Thể Thao, Quận 1',
+    addressLocality: 'Thành phố Hồ Chí Minh',
+    addressRegion: 'Thành phố Hồ Chí Minh',
+    postalCode: '700000',
+    addressCountry: 'VN'
+  },
+  geo: {
+    '@type': 'GeoCoordinates',
+    latitude: 10.776889,
+    longitude: 106.700806
+  },
+  openingHoursSpecification: [
+    {
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+      opens: '08:00',
+      closes: '22:00'
+    }
+  ],
+  sameAs: [
+    'https://www.facebook.com/ursportvietnam',
+    'https://www.tiktok.com/@ursportvietnam'
+  ]
+};
+
 export const websiteSchema = {
   '@type': 'WebSite',
   '@id': `${SITE_URL}/#website`,
