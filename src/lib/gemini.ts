@@ -1,4 +1,5 @@
 import { SEO_GUIDE_CONTEXT } from './seoGuide';
+import PRODUCT_SEO_GUIDE_CONTEXT from '../../PRODUCT_SKILL.md?raw';
 
 export interface AIProductData {
   name: string;
@@ -47,9 +48,21 @@ export const setGeminiApiKey = (key: string) => {
   localStorage.setItem('gemini_api_key', key);
 };
 
+export const getAIProvider = () => {
+  return localStorage.getItem('ai_provider') || 'gemini';
+};
+
+export const setAIProvider = (provider: 'gemini' | 'local') => {
+  localStorage.setItem('ai_provider', provider);
+};
+
 export async function generateProductSEO(prompt: string): Promise<AIProductData> {
   const systemPrompt = `Bạn là một chuyên gia bán hàng (Copywriter) và chuyên gia SEO hàng đầu cho thương mại điện tử Việt Nam.
 Nhiệm vụ: Tạo nội dung sản phẩm cho shop đồ thể thao nam UR Sport. Văn phong cần mạnh mẽ, chuyên nghiệp, tập trung vào lợi ích người dùng.
+
+Tuân thủ hướng dẫn chuẩn SEO của URSport (Product Skill File):
+${PRODUCT_SEO_GUIDE_CONTEXT}
+
 TRẢ VỀ ĐÚNG FORMAT JSON, KHÔNG CÓ MARKDOWN:
 {
   "name": "Tên sản phẩm chuẩn SEO, giật tít, thu hút khách bấm vào",
@@ -81,13 +94,17 @@ TRẢ VỀ ĐÚNG FORMAT JSON, KHÔNG CÓ MARKDOWN:
 export async function generateProductSeoFix(prompt: string): Promise<AIProductSeoFix> {
   const systemPrompt = `Bạn là chuyên gia SEO thương mại điện tử cho UR Sport.
 Nhiệm vụ: Tối ưu lại SEO cho một sản phẩm đang có sẵn, KHÔNG đổi giá, KHÔNG bịa tồn kho, KHÔNG đổi thương hiệu.
+
+Tuân thủ hướng dẫn chuẩn SEO của URSport (Product Skill File):
+${PRODUCT_SEO_GUIDE_CONTEXT}
+
 Trả về đúng JSON, không markdown:
 {
   "seoTitle": "Title SEO 45-65 ký tự, có từ khóa chính và thương hiệu nếu tự nhiên",
   "metaDescription": "Meta description 120-165 ký tự, nêu lợi ích, chất liệu/form và lời mời mua tự nhiên",
   "keywords": "8-14 từ khóa tiếng Việt, phân tách bằng dấu phẩy",
   "shortDescription": "2 câu mô tả ngắn, dễ đọc, dùng được làm đoạn mở đầu",
-  "descriptionHtml": "HTML mô tả sản phẩm 350-650 từ, có <p>, <h2>, <ul><li>, tập trung chất liệu, form, hoàn cảnh sử dụng, chọn size, chăm sóc",
+  "descriptionHtml": "HTML mô tả sản phẩm 350-650 từ, có <p>, <h2>, <ul><li>, tập trung chất liệu, form, hoàn cảnh sử dụng, chọn size, chăm sóc. Nội dung tuân thủ đúng chuẩn Product Page của URSport.",
   "features": ["4-6 điểm nổi bật ngắn gọn, mỗi điểm dưới 70 ký tự"]
 }`;
 
@@ -146,6 +163,46 @@ TRẢ VỀ JSON CHUẨN:
 }
 
 async function callGemini(systemInstruction: string, userPrompt: string) {
+  const provider = getAIProvider();
+
+  if (provider === 'local') {
+    const url = 'http://127.0.0.1:11434/api/generate';
+    const payload = {
+      model: "qwen2.5",
+      prompt: `[SYSTEM INSTRUCTION]\n${systemInstruction}\n\n[USER PROMPT]\n${userPrompt}`,
+      stream: false,
+      format: "json"
+    };
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Local AI Error (${response.status}). Ollama có đang chạy không?`);
+      }
+
+      const data = await response.json();
+      const text = data.response;
+      if (!text) throw new Error('Không nhận được phản hồi từ Local AI');
+
+      return JSON.parse(text);
+    } catch (error: any) {
+      console.error('Local AI error:', error);
+      if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
+        throw new Error('Không kết nối được Local AI. Hãy chắc chắn bạn đã bật Ollama và tải model qwen2.5');
+      }
+      if (error.name === 'SyntaxError') {
+        throw new Error('AI trả về định dạng không hợp lệ. Vui lòng thử lại.');
+      }
+      throw new Error(error.message || 'Lỗi xử lý Local AI');
+    }
+  }
+
+  // --- GEMINI ---
   const apiKey = getGeminiApiKey();
   if (!apiKey) throw new Error('Gemini API Key chưa được cấu hình.');
 

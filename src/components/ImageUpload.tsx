@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Upload, X, CheckCircle2, Loader2, AlertCircle, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { auth } from '../firebase';
 
 interface ImageUploadProps {
   onUploadComplete: (url: string) => void;
@@ -44,8 +45,9 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      toast.error('Vui lòng chọn file hình ảnh!');
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Vui lòng chọn file hình ảnh định dạng JPG, PNG, WebP hoặc GIF!');
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
@@ -70,16 +72,26 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     setIsDone(false);
 
     try {
+      const token = await auth.currentUser?.getIdToken();
+      const headers: Record<string, string> = {
+        'Content-Type': file.type,
+        'X-File-Name': encodeURIComponent(file.name),
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch('/api/upload-blog-image', {
         method: 'POST',
-        headers: {
-          'Content-Type': file.type,
-          'X-File-Name': encodeURIComponent(file.name),
-        },
+        headers,
         body: file,
       });
 
-      if (!response.ok) throw new Error('Upload failed');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Upload failed');
+      }
 
       const data = await response.json();
       onUploadComplete(data.url);
@@ -87,8 +99,8 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
       setProgress(100);
       setIsDone(true);
       toast.success('Đã lưu ảnh vào /images/blog/');
-    } catch {
-      const errMsg = 'Không thể lưu ảnh vào /images/blog. Kiểm tra server upload.';
+    } catch (error: any) {
+      const errMsg = error.message || 'Không thể lưu ảnh vào /images/blog. Kiểm tra server upload.';
       setUploadError(errMsg);
       toast.error(errMsg);
       setProgress(0);

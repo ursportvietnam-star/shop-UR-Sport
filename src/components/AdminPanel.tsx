@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   LayoutDashboard, Package, ShoppingBag, Users, MessageSquare,
   Image as ImageIcon, Settings, Plus, Trash2, Edit2, LogOut,
@@ -383,6 +383,39 @@ export const AdminPanel: React.FC = () => {
     });
     return () => unsubscribe();
   }, [isAdmin]);
+
+  // Xử lý deep-linking chỉnh sửa khi load admin panel từ Broken Link Checker
+  useEffect(() => {
+    if (!isAdmin || loading || products.length === 0) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get('tab');
+    const editParam = params.get('edit');
+
+    if (!tabParam || !editParam) return;
+
+    if (tabParam === 'products') {
+      const matchedProduct = products.find(p => p.slug === editParam || p.id === editParam);
+      if (matchedProduct) {
+        setActiveTab('products');
+        setEditingProduct(matchedProduct);
+        setIsAddModalOpen(true);
+        // Xóa query parameters khỏi URL để tránh modal tự động mở lại khi refresh
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
+      }
+    } else if (tabParam === 'blog') {
+      const matchedPost = blogPosts.find(p => p.slug === editParam || p.id === editParam);
+      if (matchedPost) {
+        setActiveTab('blog');
+        setEditingBlogPost(matchedPost);
+        setIsBlogModalOpen(true);
+        // Xóa query parameters khỏi URL
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
+      }
+    }
+  }, [isAdmin, loading, products, blogPosts]);
 
   // Load settings from Firestore
   useEffect(() => {

@@ -1,5 +1,111 @@
 [
   {
+    "timestamp": "2026-05-19T14:59:32.876Z",
+    "mode": "full",
+    "results": {
+      "website": {
+        "ok": 7,
+        "bad": 0,
+        "total": 498
+      },
+      "blog": {
+        "total": 240,
+        "good": 219,
+        "errors": 21,
+        "pct": 91
+      },
+      "product": {
+        "season": "🔥 Mùa hè (tháng 5) — nhu cầu đồ thoáng mát, gym, chạy bộ tăng cao"
+      }
+    },
+    "elapsed": "293.0s"
+  },
+  {
+    "timestamp": "2026-05-19T14:46:49.291Z",
+    "mode": "product",
+    "results": {
+      "product": {
+        "season": "🔥 Mùa hè (tháng 5) — nhu cầu đồ thoáng mát, gym, chạy bộ tăng cao"
+      }
+    },
+    "elapsed": "310.4s"
+  },
+  {
+    "timestamp": "2026-05-19T14:36:17.020Z",
+    "mode": "full",
+    "results": {
+      "website": {
+        "ok": 7,
+        "bad": 0,
+        "total": 521
+      },
+      "blog": {
+        "total": 240,
+        "good": 219,
+        "errors": 21,
+        "pct": 91
+      },
+      "product": {
+        "season": "🔥 Mùa hè (tháng 5) — nhu cầu đồ thoáng mát, gym, chạy bộ tăng cao"
+      }
+    },
+    "elapsed": "483.8s"
+  },
+  {
+    "timestamp": "2026-05-19T14:27:47.940Z",
+    "mode": "full",
+    "results": {
+      "website": {
+        "ok": 7,
+        "bad": 0,
+        "total": 1424
+      },
+      "blog": {
+        "total": 240,
+        "good": 219,
+        "errors": 21,
+        "pct": 91
+      },
+      "product": {
+        "season": "🔥 Mùa hè (tháng 5) — nhu cầu đồ thoáng mát, gym, chạy bộ tăng cao"
+      }
+    },
+    "elapsed": "69.4s"
+  },
+  {
+    "timestamp": "2026-05-19T14:26:51.495Z",
+    "mode": "blog",
+    "results": {
+      "blog": {
+        "total": 240,
+        "good": 219,
+        "errors": 21,
+        "pct": 91
+      }
+    },
+    "elapsed": "2.2s"
+  },
+  {
+    "timestamp": "2026-05-19T14:01:59.696Z",
+    "mode": "product",
+    "results": {
+      "product": {
+        "season": "🔥 Mùa hè (tháng 5) — nhu cầu đồ thoáng mát, gym, chạy bộ tăng cao"
+      }
+    },
+    "elapsed": "274.9s"
+  },
+  {
+    "timestamp": "2026-05-19T13:23:09.254Z",
+    "mode": "product",
+    "results": {
+      "product": {
+        "season": "🔥 Mùa hè (tháng 5) — nhu cầu đồ thoáng mát, gym, chạy bộ tăng cao"
+      }
+    },
+    "elapsed": "0.2s"
+  },
+  {
     "timestamp": "2026-05-19T13:08:09.839Z",
     "mode": "product",
     "results": {

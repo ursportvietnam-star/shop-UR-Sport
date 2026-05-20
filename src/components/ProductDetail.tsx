@@ -1098,11 +1098,11 @@ export const ProductDetail: React.FC = () => {
               <h4 className="text-xl font-bold text-zinc-900 tracking-tight">Đánh giá sản phẩm</h4>
             </div>
 
-            <div className="bg-[#fffbf8] border border-[#f9ede5] p-6 sm:p-8 rounded-sm flex flex-col md:flex-row items-center gap-8 md:gap-12">
-              <div className="text-center md:text-left">
-                <div className="text-[#ee4d2d] font-medium mb-2">
-                  <span className="text-3xl font-bold">{product.rating ? product.rating.toFixed(1) : '0.0'}</span>
-                  <span className="text-lg ml-1">trên 5</span>
+            <div className="bg-[#fffbf8] border border-[#f9ede5] p-6 sm:p-8 rounded-3xl flex flex-col md:flex-row items-center gap-6 sm:gap-8 md:gap-12 shadow-sm/50">
+              <div className="text-center md:text-left shrink-0">
+                <div className="text-[#ee4d2d] font-bold mb-2 flex items-baseline justify-center md:justify-start gap-1">
+                  <span className="text-4xl font-black tracking-tight">{product.rating ? product.rating.toFixed(1) : '0.0'}</span>
+                  <span className="text-sm font-bold text-zinc-500 uppercase tracking-wide">trên 5</span>
                 </div>
                 <div className="flex justify-center md:justify-start gap-0.5">
                   {[...Array(5)].map((_, i) => (
@@ -1111,7 +1111,7 @@ export const ProductDetail: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex-1 flex flex-wrap gap-2.5">
+              <div className="flex-1 flex flex-wrap gap-2 justify-center md:justify-start w-full">
                 {(() => {
                   const formatCount = (count: number) => {
                     if (count >= 1000) return `${(count / 1000).toFixed(1).replace('.', ',')}k`;
@@ -1132,10 +1132,10 @@ export const ProductDetail: React.FC = () => {
                       key={filter.id}
                       onClick={() => { setReviewFilter(filter.id); setCurrentPage(1); }}
                       className={cn(
-                        "px-4 py-2 text-[14px] rounded-sm border transition-all min-w-[100px] h-10 flex items-center justify-center",
+                        "px-4 py-2.5 text-xs sm:text-sm rounded-full border transition-all duration-200 flex items-center justify-center cursor-pointer select-none active:scale-95",
                         reviewFilter === filter.id
-                          ? "bg-white border-[#ee4d2d] text-[#ee4d2d]"
-                          : "bg-white border-zinc-200 text-zinc-800 hover:border-zinc-300"
+                          ? "bg-[#ee4d2d]/10 border-[#ee4d2d] text-[#ee4d2d] font-bold shadow-sm"
+                          : "bg-white border-zinc-200 text-zinc-700 hover:border-[#ee4d2d]/50 hover:bg-[#ee4d2d]/5 font-medium"
                       )}
                     >
                       {filter.label}
@@ -1146,28 +1146,28 @@ export const ProductDetail: React.FC = () => {
             </div>
 
             {!isCheckingPurchase && (hasPurchased || isAdmin) ? (
-              <div className="bg-white rounded-[24px] p-6 sm:p-8 border border-zinc-100 shadow-sm">
+              <div className="bg-white rounded-[24px] p-5 sm:p-8 border border-zinc-100 shadow-sm">
                 <h5 className="text-lg font-bold text-zinc-900 mb-4">Viết cảm nhận của bạn</h5>
-                <form onSubmit={handleSubmitReview} className="space-y-4">
-                  <div className="flex items-center gap-6">
-                    <span className="text-sm font-bold text-zinc-600 uppercase">Bạn chấm mấy sao?</span>
+                <form onSubmit={handleSubmitReview} className="space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 pb-2">
+                    <span className="text-xs sm:text-sm font-bold text-zinc-500 uppercase tracking-wider">Bạn chấm mấy sao?</span>
                     <div className="flex gap-2">
                       {[1, 2, 3, 4, 5].map((star) => (
-                        <button key={star} type="button" onClick={() => setNewReview({ ...newReview, rating: star })} className="transition-transform active:scale-125">
+                        <button key={star} type="button" onClick={() => setNewReview({ ...newReview, rating: star })} className="transition-transform active:scale-125 cursor-pointer">
                           <Star className={cn("h-8 w-8 transition-all", star <= newReview.rating ? "fill-[#ee4d2d] text-[#ee4d2d]" : "text-zinc-200")} />
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  <div className="space-y-6">
+                  <div className="space-y-4">
                     {!user && (
                       <input
                         type="text"
                         placeholder="Họ và tên của bạn..."
                         value={newReview.userName}
                         onChange={(e) => setNewReview({ ...newReview, userName: e.target.value })}
-                        className="w-full px-6 py-4 bg-zinc-50 border-none rounded-2xl text-sm font-medium focus:ring-2 focus:ring-[#ee4d2d]/20 outline-none transition-all"
+                        className="w-full px-6 py-4 bg-zinc-50 border border-transparent rounded-2xl text-sm font-medium focus:ring-2 focus:ring-[#ee4d2d]/20 focus:border-[#ee4d2d]/30 outline-none transition-all"
                       />
                     )}
                     <textarea
@@ -1175,14 +1175,14 @@ export const ProductDetail: React.FC = () => {
                       placeholder="Sản phẩm mặc có mát không? Form dáng thế nào?..."
                       value={newReview.comment}
                       onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
-                      className="w-full px-6 py-6 bg-zinc-50 border-none rounded-[24px] text-sm font-medium focus:ring-2 focus:ring-[#ee4d2d]/20 outline-none transition-all resize-none"
+                      className="w-full px-6 py-6 bg-zinc-50 border border-transparent rounded-[24px] text-sm font-medium focus:ring-2 focus:ring-[#ee4d2d]/20 focus:border-[#ee4d2d]/30 outline-none transition-all resize-none"
                     />
                   </div>
 
                   <div className="space-y-4">
                     <div className="flex flex-wrap gap-4">
-                      <label className="flex items-center gap-2 px-6 py-3 bg-zinc-50 hover:bg-zinc-100 rounded-xl cursor-pointer transition-all border-2 border-dashed border-zinc-200 text-zinc-600 font-bold text-xs uppercase tracking-widest group">
-                        <Camera className="h-4 w-4 group-hover:text-[#ee4d2d] transition-colors" />
+                      <label className="flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3.5 bg-zinc-50 hover:bg-zinc-100 rounded-2xl cursor-pointer transition-all border-2 border-dashed border-zinc-200 text-zinc-600 font-bold text-xs uppercase tracking-widest group">
+                        <Camera className="h-4 w-4 group-hover:text-[#ee4d2d] group-active:text-[#ee4d2d] transition-colors shrink-0" />
                         <span>Thêm ảnh hoặc video</span>
                         <input type="file" multiple accept="image/*,video/*" className="hidden" onChange={handleFileChange} />
                       </label>
@@ -1205,7 +1205,7 @@ export const ProductDetail: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => removeFile(idx)}
-                              className="absolute top-1 right-1 w-6 h-6 bg-black/60 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
+                              className="absolute top-1 right-1 w-6 h-6 bg-black/60 text-white rounded-full flex items-center justify-center sm:opacity-0 group-hover:opacity-100 opacity-100 transition-opacity hover:bg-red-500 cursor-pointer"
                             >
                               <X className="h-3.5 w-3.5" />
                             </button>
@@ -1215,8 +1215,8 @@ export const ProductDetail: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="flex justify-end">
-                    <Button type="submit" disabled={isSubmittingReview} className="bg-[#ee4d2d] hover:bg-[#d73211] text-white px-12 py-7 rounded-2xl font-bold tracking-widest shadow-xl shadow-red-500/20 active:scale-95 transition-all">
+                  <div className="flex justify-end w-full sm:w-auto">
+                    <Button type="submit" disabled={isSubmittingReview} className="w-full sm:w-auto bg-[#ee4d2d] hover:bg-[#d73211] text-white px-12 py-5 sm:py-7 h-auto rounded-2xl font-bold tracking-widest shadow-xl shadow-red-500/20 active:scale-95 transition-all cursor-pointer">
                       {isSubmittingReview ? 'Đang gửi...' : 'Gửi đánh giá ngay'}
                     </Button>
                   </div>
@@ -1255,10 +1255,10 @@ export const ProductDetail: React.FC = () => {
                 return (
                   <>
                     {paginated.map((review: any) => (
-                      <div key={review.id} className="bg-white p-8 rounded-[28px] border border-zinc-100 shadow-sm space-y-6 transition-all hover:shadow-md">
+                      <div key={review.id} className="bg-white p-5 sm:p-8 rounded-[24px] sm:rounded-[28px] border border-zinc-100 shadow-sm space-y-6 transition-all hover:shadow-md">
                         <div className="flex justify-between items-start">
                           <div className="flex items-center gap-4">
-                            <div className="h-14 w-14 rounded-full bg-gradient-to-br from-[#ee4d2d] to-[#ff7337] flex items-center justify-center text-white font-bold text-xl border-4 border-white shadow-md shrink-0">
+                            <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-gradient-to-br from-[#ee4d2d] to-[#ff7337] flex items-center justify-center text-white font-bold text-lg sm:text-xl border-4 border-white shadow-md shrink-0">
                               {review.userName.charAt(0).toUpperCase()}
                             </div>
                             <div>
@@ -1268,11 +1268,11 @@ export const ProductDetail: React.FC = () => {
                                   <Star key={i} className={cn("h-3.5 w-3.5", i < review.rating ? "fill-[#ee4d2d] text-[#ee4d2d]" : "text-zinc-200")} />
                                 ))}
                               </div>
-                              <div className="flex items-center gap-3 mt-2 text-[12px] text-zinc-400 font-medium">
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[12px] text-zinc-400 font-medium">
                                 <span>{review.createdAt?.toDate ? review.createdAt.toDate().toLocaleString('vi-VN') : 'Mới đây'}</span>
                                 {review.variant && (
                                   <>
-                                    <span className="w-1 h-1 bg-zinc-200 rounded-full" />
+                                    <span className="w-1 h-1 bg-zinc-200 rounded-full hidden sm:inline" />
                                     <span>Phân loại hàng: {review.variant}</span>
                                   </>
                                 )}
@@ -1281,7 +1281,7 @@ export const ProductDetail: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="pl-18 space-y-4">
+                        <div className="pl-0 sm:pl-18 space-y-4">
                           <p className="text-zinc-700 text-[16px] leading-relaxed font-medium">
                             {review.comment}
                           </p>
@@ -1336,7 +1336,7 @@ export const ProductDetail: React.FC = () => {
                             setCurrentPage(prev => prev - 1);
                             window.scrollTo({ top: document.getElementById('reviews-section')?.offsetTop || 0, behavior: 'smooth' });
                           }}
-                          className="w-10 h-10 flex items-center justify-center rounded-sm border border-zinc-200 disabled:opacity-30 hover:bg-zinc-50 transition-colors"
+                          className="w-10 h-10 flex items-center justify-center rounded-xl border border-zinc-200 disabled:opacity-30 hover:bg-zinc-50 transition-colors cursor-pointer"
                         >
                           <ChevronLeft className="h-4 w-4" />
                         </button>
@@ -1351,7 +1351,7 @@ export const ProductDetail: React.FC = () => {
                                 window.scrollTo({ top: document.getElementById('reviews-section')?.offsetTop || 0, behavior: 'smooth' });
                               }}
                               className={cn(
-                                "w-10 h-10 flex items-center justify-center rounded-sm text-sm font-medium transition-all",
+                                "w-10 h-10 flex items-center justify-center rounded-xl text-sm font-semibold transition-all cursor-pointer",
                                 currentPage === page
                                   ? "bg-[#ee4d2d] text-white shadow-md"
                                   : "text-zinc-500 hover:bg-zinc-50 border border-transparent hover:border-zinc-200"
@@ -1368,7 +1368,7 @@ export const ProductDetail: React.FC = () => {
                             setCurrentPage(prev => prev + 1);
                             window.scrollTo({ top: document.getElementById('reviews-section')?.offsetTop || 0, behavior: 'smooth' });
                           }}
-                          className="w-10 h-10 flex items-center justify-center rounded-sm border border-zinc-200 disabled:opacity-30 hover:bg-zinc-50 transition-colors"
+                          className="w-10 h-10 flex items-center justify-center rounded-xl border border-zinc-200 disabled:opacity-30 hover:bg-zinc-50 transition-colors cursor-pointer"
                         >
                           <ChevronRight className="h-4 w-4" />
                         </button>

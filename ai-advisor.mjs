@@ -24,13 +24,16 @@ import fs from 'fs';
 
 // ─── CLI ARGS ─────────────────────────────────────────────────────────────────
 const args = process.argv.slice(2);
-const MODE   = args.find(a => a.startsWith('--mode='))?.split('=')[1] || 'full';
-const EXPORT = args.includes('--export');
-const QUIET  = args.includes('--quiet');
+const MODE     = args.find(a => a.startsWith('--mode='))?.split('=')[1] || 'full';
+const PROVIDER = args.find(a => a.startsWith('--provider='))?.split('=')[1] || 'gemini';
+const MODEL    = args.find(a => a.startsWith('--model='))?.split('=')[1] || 'qwen2.5';
+const EXPORT   = args.includes('--export');
+const QUIET    = args.includes('--quiet');
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const GEMINI_KEY = process.env.GEMINI_KEY || '';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
+const OLLAMA_URL = 'http://127.0.0.1:11434/api/generate';
 const SITE_URL   = (process.env.SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
 
 const SEO_FILES = [
@@ -73,6 +76,7 @@ const C = {
   reset:  '\x1b[0m',  bold:   '\x1b[1m',  dim:    '\x1b[2m',
   red:    '\x1b[31m', green:  '\x1b[32m', yellow: '\x1b[33m',
   blue:   '\x1b[34m', cyan:   '\x1b[36m', white:  '\x1b[37m',
+  magenta:'\x1b[35m'
 };
 
 const log  = (...a) => !QUIET && console.log(...a);
@@ -122,7 +126,32 @@ function checkArticle(art) {
   return errs;
 }
 
-async function askGemini(prompt) {
+async function askAI(prompt) {
+  if (PROVIDER === 'local') {
+    try {
+      const res = await fetch(OLLAMA_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: MODEL,
+          prompt: prompt,
+          stream: false
+        }),
+      });
+      if (!res.ok) {
+        return `[Lỗi Local AI ${res.status}: Hãy chắc chắn Ollama đang chạy và model "${MODEL}" đã được tải]`;
+      }
+      const d = await res.json();
+      return d.response || `[Lỗi: không nhận được phản hồi từ Ollama]`;
+    } catch (e) {
+      if (e.cause?.code === 'ECONNREFUSED') {
+        return `[Lỗi kết nối Local AI: Không tìm thấy Ollama tại ${OLLAMA_URL}. Bạn đã bật Ollama chưa?]`;
+      }
+      return `[Lỗi kết nối Local AI: ${e.message}]`;
+    }
+  }
+
+  // Mặc định dùng Gemini
   if (!GEMINI_KEY) return '⚠️  Chưa có GEMINI_KEY — set biến môi trường: GEMINI_KEY=AIza... node ai-advisor.mjs';
   try {
     const res = await fetch(GEMINI_URL, {
@@ -139,9 +168,9 @@ async function askGemini(prompt) {
     }
     const d = await res.json();
     return d.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
-      || `[Lỗi: không nhận được phản hồi]`;
+      || `[Lỗi: không nhận được phản hồi từ Gemini]`;
   } catch (e) {
-    return `[Lỗi kết nối: ${e.message}]`;
+    return `[Lỗi kết nối Gemini: ${e.message}]`;
   }
 }
 
@@ -355,7 +384,7 @@ NHIỆM VỤ:
 
 Trả lời tiếng Việt, ngắn gọn, dùng emoji, actionable.`;
 
-  const advice = await askGemini(prompt);
+  const advice = await askAI(prompt);
   log('');
   log(advice);
 
@@ -436,7 +465,7 @@ NHIỆM VỤ:
 
 Format: Số thứ tự rõ ràng, dùng emoji, ngắn gọn, tiếng Việt, actionable.`;
 
-  const advice = await askGemini(prompt);
+  const advice = await askAI(prompt);
   log('');
   log(advice);
 
@@ -469,11 +498,15 @@ async function main() {
   console.log(`${C.bold}${C.cyan}║   🤖  URSport AI Content Advisor  v2.0         ║${C.reset}`);
   console.log(`${C.bold}${C.cyan}║   📅  ${tsVN.padEnd(41)}║${C.reset}`);
   console.log(`${C.bold}${C.cyan}║   ⚙️   Mode: ${MODE.padEnd(35)}║${C.reset}`);
+  console.log(`${C.bold}${C.cyan}║   🧠  AI:   ${(PROVIDER + (PROVIDER === 'local' ? ` (${MODEL})` : '')).padEnd(35)}║${C.reset}`);
   console.log(`${C.bold}${C.cyan}╚════════════════════════════════════════════════╝${C.reset}\n`);
 
-  if (!GEMINI_KEY) {
-    warn('⚠️  GEMINI_KEY chưa được đặt — AI suggestions sẽ bị tắt.');
-    warn('   Để bật AI: GEMINI_KEY=AIza... node ai-advisor.mjs\n');
+  if (PROVIDER === 'gemini' && !GEMINI_KEY) {
+    warn('⚠️  GEMINI_KEY chưa được đặt — AI suggestions (Gemini) sẽ bị tắt.');
+    warn('   Để dùng Local AI: node ai-advisor.mjs --provider=local');
+    warn('   Để dùng Gemini:   GEMINI_KEY=AIza... node ai-advisor.mjs\n');
+  } else if (PROVIDER === 'local') {
+    info(`🧠 Đang sử dụng Local AI (Ollama) với model: ${C.magenta}${MODEL}${C.reset}\n`);
   }
 
   const runData = { timestamp: new Date().toISOString(), mode: MODE, results: {} };

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { generateBlogSEO, AIBlogData, getGeminiApiKey, setGeminiApiKey } from '../lib/gemini';
+import { generateBlogSEO, AIBlogData, getGeminiApiKey, setGeminiApiKey, getAIProvider, setAIProvider } from '../lib/gemini';
 import { Sparkles, Send, Settings, Save, AlertCircle, PenTool, BrainCircuit } from 'lucide-react';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
@@ -18,12 +18,14 @@ export function AIBlogAssistant({ onApply, blogPosts = [] }: AIBlogAssistantProp
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AIBlogData | null>(null);
   const [geminiKey, setGeminiKey] = useState(getGeminiApiKey());
-  const [showSettings, setShowSettings] = useState(!getGeminiApiKey());
+  const [provider, setProvider] = useState<'gemini' | 'local'>(getAIProvider() as 'gemini' | 'local');
+  const [showSettings, setShowSettings] = useState(!getGeminiApiKey() && provider === 'gemini');
   const [activeSuggestionSlug, setActiveSuggestionSlug] = useState<string | undefined>();
   const safeContentHtml = React.useMemo(() => sanitizeRichHtml(result?.contentHtml || ''), [result?.contentHtml]);
 
   const handleSaveSettings = () => {
     setGeminiApiKey(geminiKey);
+    setAIProvider(provider);
     toast.success('Đã lưu cấu hình AI!');
     setShowSettings(false);
   };
@@ -101,15 +103,42 @@ export function AIBlogAssistant({ onApply, blogPosts = [] }: AIBlogAssistantProp
           
           <div className="space-y-4">
             <div>
-              <label className="text-[10px] font-black uppercase text-zinc-500 mb-2 block tracking-widest">Google Gemini Key</label>
-              <input 
-                type="password" 
-                value={geminiKey}
-                onChange={e => setGeminiKey(e.target.value)}
-                placeholder="AIzaSy..."
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-purple-500"
-              />
+              <label className="text-[10px] font-black uppercase text-zinc-500 mb-2 block tracking-widest">Nguồn AI (Provider)</label>
+              <div className="flex gap-2 mb-4">
+                <button
+                  onClick={() => setProvider('gemini')}
+                  className={`flex-1 py-2 px-4 rounded-xl font-bold text-sm transition-all border ${provider === 'gemini' ? 'bg-purple-600 border-purple-500 text-white' : 'bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10'}`}
+                >
+                  Google Gemini (Nhanh)
+                </button>
+                <button
+                  onClick={() => setProvider('local')}
+                  className={`flex-1 py-2 px-4 rounded-xl font-bold text-sm transition-all border ${provider === 'local' ? 'bg-purple-600 border-purple-500 text-white' : 'bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10'}`}
+                >
+                  Local AI - Ollama (Bảo mật)
+                </button>
+              </div>
             </div>
+            
+            {provider === 'gemini' && (
+              <div>
+                <label className="text-[10px] font-black uppercase text-zinc-500 mb-2 block tracking-widest">Google Gemini Key</label>
+                <input 
+                  type="password" 
+                  value={geminiKey}
+                  onChange={e => setGeminiKey(e.target.value)}
+                  placeholder="AIzaSy..."
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-purple-500"
+                />
+              </div>
+            )}
+            {provider === 'local' && (
+              <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-xl">
+                <p className="text-sm text-purple-200">
+                  <strong className="text-purple-400">Yêu cầu:</strong> Bạn cần cài đặt Ollama và tải model <code>qwen2.5</code> trên máy tính (Cổng mặc định: 11434).
+                </p>
+              </div>
+            )}
             <Button onClick={handleSaveSettings} className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-6 rounded-xl gap-2 transition-all active:scale-[0.98]">
               <Save className="h-5 w-5" /> Lưu cấu hình
             </Button>
@@ -134,7 +163,7 @@ export function AIBlogAssistant({ onApply, blogPosts = [] }: AIBlogAssistantProp
         </div>
 
         <div className="mb-6 inline-flex rounded-xl bg-purple-50 px-3 py-2 text-xs font-black uppercase tracking-wider text-purple-700">
-          Google Gemini
+          {provider === 'local' ? '🧠 Local AI (Ollama qwen2.5)' : '☁️ Google Gemini'}
         </div>
         
           <div className="flex flex-col gap-4">
