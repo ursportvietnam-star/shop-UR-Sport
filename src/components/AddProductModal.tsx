@@ -145,12 +145,13 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
   const selectedImgRef = useRef<HTMLImageElement | null>(null);
   const imageAltBySrcRef = useRef<Record<string, string>>({});
   const imageCaptionBySrcRef = useRef<Record<string, string>>({});
+  const imagePickerOpenRef = useRef(false);
   const [isHtmlMode, setIsHtmlMode] = useState(false);
   const [htmlSource, setHtmlSource] = useState('');
   const [productCategoryOptions, setProductCategoryOptions] = useState(() => getProductCategoryOptions());
 
   const escapeHtmlAttr = (value: string) =>
-    value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    value ? value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
 
   const normalizeImageAltTitles = (html: string) => {
     if (!html || typeof window === 'undefined' || !window.DOMParser) return html;
@@ -263,8 +264,9 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
     const quill = quillRef.current?.getEditor();
     if (!quill) return;
     const range = quill.getSelection(true);
-    quill.clipboard.dangerouslyPasteHTML(range.index, html, 'user');
-    quill.setSelection(range.index + 1, 0, 'user');
+        const insertIndex = range?.index ?? quill.getLength();
+    quill.clipboard.dangerouslyPasteHTML(insertIndex, html, 'user');
+    quill.setSelection(insertIndex + 1, 0, 'user');
     quill.update('user');
     syncEditorHtml();
   };
@@ -364,6 +366,75 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
     fashionStyle: '',
     collarType: ''
   });
+
+  const uploadProductDescriptionImage = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      throw new Error('Vui long chon file anh hop le.');
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      throw new Error('File qua lon! Toi da 10MB.');
+    }
+
+    const uploadData = new FormData();
+    uploadData.append('file', file);
+    uploadData.append('upload_preset', 'ursport_uploads');
+    uploadData.append('folder', 'product_descriptions');
+
+    const res = await fetch(`https://api.cloudinary.com/v1_1/dcj4qhcfh/image/upload`, {
+      method: 'POST',
+      body: uploadData
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.secure_url) {
+      throw new Error(data.error?.message || 'Upload failed');
+    }
+
+    return data.secure_url as string;
+  };
+
+  const handleProductDescriptionImageInsert = React.useCallback(async () => {
+    if (imagePickerOpenRef.current) return;
+    imagePickerOpenRef.current = true;
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    const unlockPicker = () => {
+      window.setTimeout(() => {
+        imagePickerOpenRef.current = false;
+      }, 250);
+    };
+
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) {
+        unlockPicker();
+        return;
+      }
+
+      const toastId = toast.loading('Dang tai anh len mo ta...');
+      try {
+        const imageUrl = await uploadProductDescriptionImage(file);
+        const imageHtml = `<p><img src="${escapeHtmlAttr(imageUrl)}" alt="" title="" data-align="center" style="${getImageAlignStyle('center')}" /></p><p><br></p>`;
+
+        if (isHtmlMode) {
+          setHtmlSource(prev => beautifyHtml(`${prev || ''}\n${imageHtml}`.trim()));
+        } else {
+          insertHtmlIntoEditor(imageHtml);
+        }
+
+        toast.success('Da chen anh thanh cong', { id: toastId });
+      } catch (error: any) {
+        toast.error(error.message || 'Loi khi tai anh', { id: toastId });
+      } finally {
+        input.value = '';
+        unlockPicker();
+      }
+    };
+
+    input.oncancel = unlockPicker;
+    window.setTimeout(unlockPicker, 15000);
+    input.click();
+  }, [isHtmlMode]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -503,22 +574,26 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                 body: uploadData
               });
               const data = await res.json();
+              if (!res.ok) {
+                throw new Error(data.error?.message || 'Upload failed');
+              }
               
               const quill = quillRef.current?.getEditor();
               if (quill) {
                 const range = quill.getSelection(true);
+                const insertIndex = range?.index ?? quill.getLength();
                 quill.clipboard.dangerouslyPasteHTML(
-                  range.index,
+                  insertIndex,
                   `<p><img src="${escapeHtmlAttr(data.secure_url)}" alt="" title="" data-align="center" style="${getImageAlignStyle('center')}" /></p><p><br></p>`,
                   'user'
                 );
-                quill.setSelection(range.index + 1);
+                quill.setSelection(insertIndex + 1);
                 quill.update('user');
                 syncEditorHtml();
               }
               toast.success('Đã chèn ảnh thành công', { id: toastId });
-            } catch (error) {
-              toast.error('Lỗi khi tải ảnh', { id: toastId });
+            } catch (error: any) {
+              toast.error(error.message || 'Lỗi khi tải ảnh', { id: toastId });
             }
           };
         },
@@ -535,6 +610,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
     const quill = quillRef.current?.getEditor();
     if (!quill) return;
     const range = quill.getSelection(true);
+        const insertIndex = range?.index ?? quill.getLength();
 
     // Phân tích nội dung nhập vào
     const input = videoInput.trim();
@@ -559,8 +635,8 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
     }
 
     // Chèn bằng custom blot của chúng ta
-    quill.insertEmbed(range.index, 'videoContainer', videoUrl, 'user');
-    quill.setSelection(range.index + 1, 0, 'user');
+    quill.insertEmbed(insertIndex, 'videoContainer', videoUrl, 'user');
+    quill.setSelection(insertIndex + 1, 0, 'user');
     quill.update('user');
     syncEditorHtml();
 
@@ -598,8 +674,9 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
       const quill = quillRef.current?.getEditor();
       if (quill) {
         const range = quill.getSelection(true);
-        quill.insertEmbed(range.index, 'uploadedVideo', data.secure_url, 'user');
-        quill.setSelection(range.index + 1, 0, 'user');
+        const insertIndex = range?.index ?? quill.getLength();
+        quill.insertEmbed(insertIndex, 'uploadedVideo', data.secure_url, 'user');
+        quill.setSelection(insertIndex + 1, 0, 'user');
         quill.update('user');
         syncEditorHtml();
       }
@@ -1076,23 +1153,23 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                         </select>
                       </span>
                       <span className="ql-formats">
-                        <button className="ql-bold" />
-                        <button className="ql-italic" />
-                        <button className="ql-underline" />
-                        <button className="ql-strike" />
-                        <button className="ql-blockquote" />
+                        <button type="button" className="ql-bold" />
+                        <button type="button" className="ql-italic" />
+                        <button type="button" className="ql-underline" />
+                        <button type="button" className="ql-strike" />
+                        <button type="button" className="ql-blockquote" />
                       </span>
                       <span className="ql-formats">
-                        <button className="ql-list" value="ordered" />
-                        <button className="ql-list" value="bullet" />
+                        <button type="button" className="ql-list" value="ordered" />
+                        <button type="button" className="ql-list" value="bullet" />
                       </span>
                       <span className="ql-formats">
                         <select className="ql-align" />
                       </span>
                       <span className="ql-formats">
-                        <button className="ql-link" />
-                        <button className="ql-image" />
-                        <button className="ql-video" />
+                        <button type="button" className="ql-link" />
+                        <button type="button" className="ql-image" onClick={isHtmlMode ? handleProductDescriptionImageInsert : undefined} />
+                        <button type="button" className="ql-video" />
                       </span>
                       <span className="ql-formats">
                         <button
@@ -1105,7 +1182,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                         </button>
                       </span>
                       <span className="ql-formats">
-                        <button className="ql-clean" />
+                        <button type="button" className="ql-clean" />
                       </span>
                     </div>
                     <button

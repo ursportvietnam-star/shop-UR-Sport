@@ -53,6 +53,9 @@ export function DailySeoSuggestionPanel({
                   <span className="rounded-lg bg-white/5 px-2 py-1 text-[10px] font-black text-white/45">
                     Cụm: {dailySuggestion.cluster}
                   </span>
+                  <span className="rounded-lg bg-white/5 px-2 py-1 text-[10px] font-black text-white/45">
+                    MD: {dailySuggestion.sourceFile}
+                  </span>
                 </div>
 
                 <p className="text-base font-black leading-6 text-white">{dailySuggestion.title}</p>
@@ -136,6 +139,9 @@ export function DailySeoSuggestionPanel({
                   </span>
                   <span className="rounded-lg bg-white/5 px-2 py-1 text-[10px] font-black text-white/40">
                     Cụm: {post.cluster}
+                  </span>
+                  <span className="rounded-lg bg-white/5 px-2 py-1 text-[10px] font-black text-white/40">
+                    MD: {post.sourceFile}
                   </span>
                 </div>
                 <p className="text-sm font-black leading-5 text-white">{post.title}</p>

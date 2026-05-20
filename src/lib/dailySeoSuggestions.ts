@@ -7,6 +7,9 @@ import chatLieuPlan from '../../04-chat-lieu.md?raw';
 import sizePlan from '../../05-size.md?raw';
 import phoiDoPlan from '../../06-phoi-do.md?raw';
 import buyerPlan from '../../07-buyer.md?raw';
+import keywordMasterPlan from '../../08-keyword-master.md?raw';
+import roadmapPlan from '../../09-roadmap.md?raw';
+import aiAutomationPlan from '../../10-ai-automation.md?raw';
 
 export type SeoSuggestion = {
   id: string;
@@ -25,6 +28,7 @@ export type SeoSuggestion = {
   seoDescription: string;
   internalLinks: string[];
   reason: string;
+  sourceMarkdownContext: string;
   outline: Array<{
     h2: string;
     h3: string[];
@@ -39,6 +43,12 @@ const SEO_PLAN_FILES = [
   { sourceFile: '05-size.md', raw: sizePlan },
   { sourceFile: '06-phoi-do.md', raw: phoiDoPlan },
   { sourceFile: '07-buyer.md', raw: buyerPlan }
+];
+
+const SEO_GLOBAL_CONTEXT_FILES = [
+  { sourceFile: '08-keyword-master.md', raw: keywordMasterPlan },
+  { sourceFile: '09-roadmap.md', raw: roadmapPlan },
+  { sourceFile: '10-ai-automation.md', raw: aiAutomationPlan }
 ];
 
 const SOURCE_CLUSTER: Record<string, string> = {
@@ -105,6 +115,36 @@ const cleanSlug = (value: string) => value.replace(/`/g, '').trim();
 
 const stripQuestionMark = (value: string) => value.replace(/\?+$/g, '').trim();
 
+const compactMarkdownContext = (value: string, maxLength = 4200) =>
+  value
+    .replace(/\r\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+    .slice(0, maxLength);
+
+const extractSuggestionMarkdownContext = (raw: string, order?: number) => {
+  if (!order) return compactMarkdownContext(raw, 3000);
+  const pattern = new RegExp(`(^##\\s+${order}\\.\\s+[\\s\\S]*?)(?=^##\\s+\\d+\\.\\s+|$)`, 'm');
+  const match = raw.match(pattern);
+  return compactMarkdownContext(match?.[1] || raw, 3200);
+};
+
+const getGlobalMarkdownContext = () =>
+  SEO_GLOBAL_CONTEXT_FILES
+    .map(file => {
+      const lines = file.raw
+        .split(/\r?\n/)
+        .filter(line =>
+          /^#{1,3}\s+/.test(line)
+          || /keyword|intent|funnel|roadmap|automation|internal link|content|SEO/i.test(line)
+        )
+        .slice(0, 42)
+        .join('\n');
+
+      return `### ${file.sourceFile}\n${compactMarkdownContext(lines || file.raw, 1800)}`;
+    })
+    .join('\n\n');
+
 const compactTitle = (title: string, maxLength = 58) => {
   const cleanTitle = stripQuestionMark(title);
   if (cleanTitle.length <= maxLength) return cleanTitle;
@@ -170,6 +210,7 @@ const parsePlanFile = (raw: string, sourceFile: string): SeoSuggestion[] => {
       }),
       internalLinks: current.internalLinks || [],
       reason: '',
+      sourceMarkdownContext: extractSuggestionMarkdownContext(raw, current.order),
       outline: []
     } as SeoSuggestion;
 
@@ -340,12 +381,24 @@ export const buildSeoBlogPrompt = (suggestion: SeoSuggestion) => {
     `Funnel: ${suggestion.funnel}`,
     `Content silo: ${suggestion.cluster}`,
     `Lý do chọn bài hôm nay: ${suggestion.reason}`,
+    'Bat buoc doc va bam sat Markdown context ben duoi. Neu context .md mau thuan voi outline tu dong, uu tien context .md.',
     '',
     'Internal links bắt buộc chèn tự nhiên trong bài:',
     ...suggestion.internalLinks.map(link => `- ${link}`),
     '',
     'Outline H2/H3 nên bám sát:',
     outlineText,
+    '',
+    `Nguon file .md cua goi y: ${suggestion.sourceFile}`,
+    'Trich doan .md lien quan den bai nay:',
+    '```md',
+    suggestion.sourceMarkdownContext || 'Khong tim thay doan .md rieng cho goi y nay.',
+    '```',
+    '',
+    'Ngu canh tong hop tu 08-keyword-master.md, 09-roadmap.md va 10-ai-automation.md:',
+    '```md',
+    getGlobalMarkdownContext(),
+    '```',
     '',
     'Yêu cầu chất lượng:',
     '- Không đổi slug.',

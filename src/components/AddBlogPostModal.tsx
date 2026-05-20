@@ -127,6 +127,7 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
   const imageToolbarRef = useRef<HTMLDivElement | null>(null);
   const imageAltBySrcRef = useRef<Record<string, string>>({});
   const imageCaptionBySrcRef = useRef<Record<string, string>>({});
+  const imagePickerOpenRef = useRef(false);
   // Refs để các handler Quill đọc state mà không cần close over (tránh Quill reinitialize)
   const isHtmlModeRef = useRef(false);
   const htmlSourceRef = useRef('');
@@ -185,35 +186,30 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
 
   const uploadFile = async (file: File, resourceType: 'image' | 'video') => {
     setUploading(true);
-    setUploadProgress(0);
-    return new Promise<string>((resolve, reject) => {
+    setUploadProgress(10);
+    try {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
       formData.append('folder', `blog/${resourceType}`);
 
-      const xhr = new XMLHttpRequest();
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          setUploadProgress(Math.round((event.loaded / event.total) * 100));
-        }
-      };
-      xhr.onload = () => {
-        setUploading(false);
-        if (xhr.status === 200) {
-          const data = JSON.parse(xhr.responseText);
-          resolve(data.secure_url);
-        } else {
-          reject(new Error('Upload thất bại, kiểm tra cấu hình Cloudinary.'));
-        }
-      };
-      xhr.onerror = () => {
-        setUploading(false);
-        reject(new Error('Lỗi tải lên. Vui lòng thử lại.'));
-      };
-      xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`);
-      xhr.send(formData);
-    });
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`, {
+        method: 'POST',
+        body: formData
+      });
+      
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error?.message || `Upload thất bại: ${res.statusText}`);
+      }
+      return data.secure_url;
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      throw new Error(error.message === 'Failed to fetch' ? 'Lỗi kết nối mạng. Vui lòng thử lại.' : (error.message || 'Lỗi tải lên. Vui lòng thử lại.'));
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+    }
   };
 
   const handleCoverImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -221,6 +217,10 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       toast.error('Vui lòng chọn file ảnh hợp lệ cho ảnh đại diện.');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File quá lớn! Tối đa 10MB.');
       return;
     }
     try {
@@ -247,6 +247,10 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
           toast.error('Vui lòng chọn file video hợp lệ.');
           continue;
         }
+        if (file.size > (type === 'video' ? 100 : 10) * 1024 * 1024) {
+          toast.error(`File quá lớn! Tối đa ${type === 'video' ? '100MB' : '10MB'}.`);
+          continue;
+        }
         const url = await uploadFile(file, type);
         urls.push(url);
         toast.success(`${type === 'image' ? 'Ảnh' : 'Video'} đã được tải lên.`);
@@ -262,7 +266,7 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
   }; 
 
   const escapeHtmlAttr = (value: string) =>
-    value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    value ? value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
 
   const extractJsonLdFromHtml = (html: string) => {
     const parser = new DOMParser();
@@ -820,16 +824,26 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
     });
 
   const handleImageInsert = React.useCallback(async () => {
+    if (imagePickerOpenRef.current) return;
+    imagePickerOpenRef.current = true;
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
+    const unlockPicker = () => {
+      window.setTimeout(() => {
+        imagePickerOpenRef.current = false;
+      }, 250);
+    };
     // Guards chống double-trigger
     let handled = false;
     input.onchange = async () => {
       if (handled) return;
       handled = true;
       const file = input.files?.[0];
-      if (!file) return;
+      if (!file) {
+        unlockPicker();
+        return;
+      }
       const toastId = toast.loading('Đang tải ảnh lên...');
       try {
         const url = await uploadFile(file, 'image');
@@ -843,16 +857,17 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
         const quill = getQuillEditor();
         if (quill) {
           const range = quill.getSelection(true);
+        const insertIndex = range?.index ?? quill.getLength();
           quill.clipboard.dangerouslyPasteHTML(
-            range.index,
+            insertIndex,
             `${imageFigureHtml(escapeHtmlAttr(url))}<p><br></p>`,
             'user'
           );
           // Quill inserts the figure (which may have length 1 or more depending on blots)
           // and the <p><br></p>. The safest way is to just let user click or move cursor to the end.
-          // But we can try to set selection to range.index + 2 (1 for figure, 1 for p).
+          // But we can try to set selection to insertIndex + 2 (1 for figure, 1 for p).
           setTimeout(() => {
-            quill.setSelection(range.index + 2, 'silent');
+            quill.setSelection(insertIndex + 2, 'silent');
           }, 0);
           quill.update('user');
           commitEditorHtml(quill.root.innerHTML);
@@ -862,6 +877,8 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
         toast.error(error.message || 'Lỗi khi tải ảnh', { id: toastId });
       }
     };
+    input.oncancel = unlockPicker;
+    window.setTimeout(unlockPicker, 15000);
     input.click();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -882,13 +899,14 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
           const quill = getQuillEditor();
           if (quill) {
             const range = quill.getSelection(true);
+        const insertIndex = range?.index ?? quill.getLength();
             quill.clipboard.dangerouslyPasteHTML(
-              range.index,
+              insertIndex,
               `${imageFigureHtml(escapeHtmlAttr(url))}<p><br></p>`,
               'user'
             );
             setTimeout(() => {
-              quill.setSelection(range.index + 2, 'silent');
+              quill.setSelection(insertIndex + 2, 'silent');
             }, 0);
             quill.update('user');
             commitEditorHtml(quill.root.innerHTML);
@@ -947,8 +965,9 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
     const quill = getQuillEditor();
     if (!quill) return;
     const range = quill.getSelection(true);
-    quill.insertEmbed(range.index, 'video', videoUrl, 'user');
-    quill.setSelection(range.index + 1, 0, 'user');
+        const insertIndex = range?.index ?? quill.getLength();
+    quill.insertEmbed(insertIndex, 'video', videoUrl, 'user');
+    quill.setSelection(insertIndex + 1, 0, 'user');
     quill.update('user');
     syncEditorHtml();
     toast.success('Đã chèn video thành công!');
@@ -970,12 +989,13 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
         const quill = getQuillEditor();
         if (quill) {
           const range = quill.getSelection(true);
+        const insertIndex = range?.index ?? quill.getLength();
           quill.clipboard.dangerouslyPasteHTML(
-            range.index,
+            insertIndex,
             `<p><video controls src="${escapeHtmlAttr(url)}" style="width:100%;border-radius:12px;" /></p><p><br></p>`,
             'user'
           );
-          quill.setSelection(range.index + 1);
+          quill.setSelection(insertIndex + 1);
           quill.update('user');
           syncEditorHtml();
         }
@@ -1241,22 +1261,22 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
                       </select>
                     </span>
                     <span className="ql-formats">
-                      <button className="ql-bold" />
-                      <button className="ql-italic" />
-                      <button className="ql-underline" />
-                      <button className="ql-strike" />
+                      <button type="button" className="ql-bold" />
+                      <button type="button" className="ql-italic" />
+                      <button type="button" className="ql-underline" />
+                      <button type="button" className="ql-strike" />
                     </span>
                     <span className="ql-formats">
-                      <button className="ql-list" value="ordered" />
-                      <button className="ql-list" value="bullet" />
+                      <button type="button" className="ql-list" value="ordered" />
+                      <button type="button" className="ql-list" value="bullet" />
                     </span>
                     <span className="ql-formats">
                       <select className="ql-align" />
                     </span>
                     <span className="ql-formats">
-                      <button className="ql-link" />
-                      <button className="ql-image" onClick={isHtmlMode ? handleImageInsert : undefined} />
-                      <button className="ql-video" />
+                      <button type="button" className="ql-link" />
+                      <button type="button" className="ql-image" onClick={isHtmlMode ? handleImageInsert : undefined} />
+                      <button type="button" className="ql-video" />
                     </span>
                     <span className="ql-formats">
                       <button
@@ -1637,4 +1657,3 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
     </div>
   );
 };
-
