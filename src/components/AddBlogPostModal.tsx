@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AlignCenter, AlignLeft, AlignRight, Tag, X, Upload, Trash2 } from 'lucide-react';
+import { AlignCenter, AlignLeft, AlignRight, Tag, X, Upload, Trash2, Code } from 'lucide-react';
 import { collection, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Button } from './ui/button';
@@ -996,10 +996,7 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
     } else {
       const normalized = normalizeImageFigures(htmlSource);
       if (containsTableHtml(normalized)) {
-        setContent(normalized);
-        setHtmlSource(beautifyHtml(normalized));
         toast.info('Bài viết có bảng HTML. Hãy giữ chế độ HTML để bảng không bị editor trực quan làm hỏng.');
-        return;
       }
       setContent(normalized);
       setHtmlSource(beautifyHtml(normalized));
@@ -1288,11 +1285,79 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
                   </div>
                 </div>
                 {isHtmlMode ? (
-                  <textarea
-                    value={htmlSource}
-                    onChange={(e) => setHtmlSource(e.target.value)}
-                    className="w-full min-h-[420px] resize-none border-none bg-white p-4 text-sm leading-6 text-zinc-700 outline-none"
-                  />
+                  /* ── HTML SOURCE EDITOR ── */
+                  <div className="rounded-xl overflow-hidden border border-zinc-200 shadow-sm">
+                    {/* Header bar */}
+                    <div className="flex items-center justify-between px-4 py-2 bg-[#1e1e2e] select-none">
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-1.5">
+                          <div className="w-3 h-3 rounded-full bg-red-500/70" />
+                          <div className="w-3 h-3 rounded-full bg-yellow-500/70" />
+                          <div className="w-3 h-3 rounded-full bg-green-500/70" />
+                        </div>
+                        <span className="text-white/30 text-[11px] font-mono ml-2">content.html</span>
+                      </div>
+                      <span className="text-white/20 text-[10px] font-mono">
+                        {htmlSource.split('\n').length} dòng
+                      </span>
+                    </div>
+
+                    {/* Editor with line numbers */}
+                    <div className="relative flex bg-[#1e1e2e]">
+                      {/* Line numbers */}
+                      <div className="select-none text-right pr-4 pl-3 pt-4 pb-4 text-[12px] font-mono text-[#4b5563] leading-6 bg-[#161622] border-r border-white/5 min-w-[3rem]">
+                        {htmlSource.split('\n').map((_, i) => (
+                          <div key={i}>{i + 1}</div>
+                        ))}
+                      </div>
+
+                      {/* Textarea */}
+                      <textarea
+                        value={htmlSource}
+                        onChange={e => setHtmlSource(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Tab') {
+                            e.preventDefault();
+                            const s = e.currentTarget.selectionStart;
+                            const end = e.currentTarget.selectionEnd;
+                            const v = htmlSource;
+                            setHtmlSource(v.substring(0, s) + '  ' + v.substring(end));
+                            setTimeout(() => e.currentTarget.setSelectionRange(s + 2, s + 2), 0);
+                          }
+                          if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+                            e.preventDefault();
+                            setHtmlSource(beautifyHtml(htmlSource));
+                          }
+                        }}
+                        spellCheck={false}
+                        className="flex-1 bg-transparent pl-4 pr-6 pt-4 pb-4 text-[13px] font-mono text-[#a9b1d6] leading-6 resize-none outline-none min-h-[420px] w-full"
+                        style={{ caretColor: '#7aa2f7' }}
+                      />
+                    </div>
+
+                    {/* Status bar */}
+                    <div className="flex items-center justify-between px-4 py-2 bg-[#161622] border-t border-white/5">
+                      <p className="text-[#4b5563] text-[11px] font-mono">
+                        {htmlSource.length} ký tự &nbsp;•&nbsp; {htmlSource.split('\n').length} dòng
+                      </p>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setHtmlSource(beautifyHtml(htmlSource))}
+                          className="text-[#7aa2f7] text-[11px] font-mono hover:text-[#bb9af7] transition-colors"
+                        >
+                          Format &nbsp;(Ctrl+B)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={toggleHtmlMode}
+                          className="text-[11px] font-bold text-emerald-400 hover:text-emerald-300 transition-colors"
+                        >
+                          ← Áp dụng vào Visual
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 ) : (
                   <ReactQuill
                     ref={quillRef}
