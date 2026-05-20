@@ -4,6 +4,7 @@ const ALLOWED_TAGS = new Set([
   'BLOCKQUOTE',
   'BR',
   'CODE',
+  'DETAILS',
   'DIV',
   'EM',
   'FIGCAPTION',
@@ -18,9 +19,11 @@ const ALLOWED_TAGS = new Set([
   'LI',
   'OL',
   'P',
+  'SECTION',
   'SMALL',
   'SPAN',
   'STRONG',
+  'SUMMARY',
   'TABLE',
   'TBODY',
   'TD',
@@ -36,6 +39,7 @@ const GLOBAL_ATTRS = new Set(['class', 'id', 'title']);
 
 const TAG_ATTRS: Record<string, Set<string>> = {
   A: new Set(['href', 'rel', 'target']),
+  DETAILS: new Set(['open']),
   IFRAME: new Set(['allow', 'allowfullscreen', 'frameborder', 'loading', 'src', 'title']),
   IMG: new Set(['alt', 'height', 'loading', 'src', 'title', 'width']),
   LI: new Set(['data-list']),
