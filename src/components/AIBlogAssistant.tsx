@@ -7,6 +7,7 @@ import { BlogPost } from '../types';
 import { DailySeoSuggestionPanel } from './DailySeoSuggestionPanel';
 import { SeoSuggestion, buildSeoBlogPrompt } from '../lib/dailySeoSuggestions';
 import { sanitizeRichHtml } from '../lib/htmlContent';
+import { analyzeInternalLinks, injectInternalLinks } from '../lib/autoLinker';
 
 interface AIBlogAssistantProps {
   onApply: (data: AIBlogData) => void;
@@ -22,6 +23,24 @@ export function AIBlogAssistant({ onApply, blogPosts = [] }: AIBlogAssistantProp
   const [showSettings, setShowSettings] = useState(!getGeminiApiKey() && provider === 'gemini');
   const [activeSuggestionSlug, setActiveSuggestionSlug] = useState<string | undefined>();
   const safeContentHtml = React.useMemo(() => sanitizeRichHtml(result?.contentHtml || ''), [result?.contentHtml]);
+
+  const detectedLinks = React.useMemo(() => {
+    return analyzeInternalLinks(result?.contentHtml || '', blogPosts);
+  }, [result?.contentHtml, blogPosts]);
+
+  const handleAutoLink = () => {
+    if (!result) return;
+    const { updatedHtml, changesCount } = injectInternalLinks(result.contentHtml, blogPosts);
+    if (changesCount > 0) {
+      setResult({
+        ...result,
+        contentHtml: updatedHtml
+      });
+      toast.success(`Tối ưu liên kết thành công! Đã chèn thêm ${changesCount} liên kết nội bộ chuẩn SEO.`);
+    } else {
+      toast.info('Tất cả các từ khóa phù hợp đã được chèn liên kết trước đó!');
+    }
+  };
 
   const handleSaveSettings = () => {
     setGeminiApiKey(geminiKey);
@@ -244,6 +263,62 @@ export function AIBlogAssistant({ onApply, blogPosts = [] }: AIBlogAssistantProp
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* SEO Internal Link Auto-Suggester Panel */}
+          <div className="bg-purple-50/40 border border-purple-100/80 rounded-2xl p-6 space-y-4 animate-in fade-in duration-300">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2.5 bg-purple-600 rounded-xl text-white shadow-md shadow-purple-500/10">
+                  <Sparkles className="h-5 w-5 animate-pulse" />
+                </div>
+                <div>
+                  <h4 className="font-black text-zinc-950 uppercase tracking-tighter text-base leading-tight">🔗 Tối ưu hóa Liên kết Nội bộ (SEO Internal Links)</h4>
+                  <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest mt-1">
+                    Hệ thống tự động phát hiện và đề xuất chèn link trỏ về store UR Sport.
+                  </p>
+                </div>
+              </div>
+              
+              <Button 
+                onClick={handleAutoLink}
+                disabled={!detectedLinks.some(d => d.status === 'suggested')}
+                className="bg-purple-600 hover:bg-purple-700 disabled:bg-zinc-100 disabled:text-zinc-400 text-white font-black h-12 px-6 rounded-xl shadow-lg shadow-purple-500/15 flex items-center gap-2 active:scale-95 transition-all self-start sm:self-center"
+              >
+                <Sparkles className="h-4 w-4" /> Tự động chèn liên kết
+              </Button>
+            </div>
+
+            {detectedLinks.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
+                {detectedLinks.map((link, idx) => (
+                  <div 
+                    key={idx}
+                    className={`flex items-center justify-between p-3.5 rounded-xl border transition-all ${
+                      link.status === 'already_linked'
+                        ? 'bg-emerald-50/50 border-emerald-100/80 text-emerald-800'
+                        : 'bg-amber-50/50 border-amber-100/80 text-amber-800'
+                    }`}
+                  >
+                    <div className="flex flex-col gap-1 min-w-0">
+                      <span className="text-xs font-bold truncate capitalize text-zinc-800">{link.keyword}</span>
+                      <span className="text-[10px] opacity-75 font-mono truncate text-zinc-500">{link.url}</span>
+                    </div>
+                    <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md shrink-0 ${
+                      link.status === 'already_linked'
+                        ? 'bg-emerald-100/60 text-emerald-700'
+                        : 'bg-amber-100/60 text-amber-700'
+                    }`}>
+                      {link.status === 'already_linked' ? 'Đã liên kết' : 'Gợi ý chèn'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6 text-zinc-400 text-xs font-bold uppercase tracking-wider border border-dashed border-zinc-200 rounded-xl bg-zinc-50">
+                Không tìm thấy từ khóa SEO phù hợp để tối ưu trong bài viết này.
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
