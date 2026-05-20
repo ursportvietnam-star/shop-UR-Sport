@@ -1145,7 +1145,7 @@ export const ProductDetail: React.FC = () => {
               </div>
             </div>
 
-            {!isCheckingPurchase && (hasPurchased || isAdmin) ? (
+            {!isCheckingPurchase && hasPurchased ? (
               <div className="bg-white rounded-[24px] p-5 sm:p-8 border border-zinc-100 shadow-sm">
                 <h5 className="text-lg font-bold text-zinc-900 mb-4">Viết cảm nhận của bạn</h5>
                 <form onSubmit={handleSubmitReview} className="space-y-6">
