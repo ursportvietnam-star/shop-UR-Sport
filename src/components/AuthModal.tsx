@@ -17,8 +17,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   
-  const { loginWithGoogle, devLogin } = useAuth();
+  const { loginWithGoogle, devLogin, loginWithEmail, registerWithEmail } = useAuth();
   const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
   React.useEffect(() => {
@@ -27,13 +28,41 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
     }
   }, [isOpen, initialMode]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (mode === 'register' && password !== confirmPassword) {
-      toast.error('Mật khẩu không khớp!');
+    if (isLoading) return;
+
+    if (!email || !password) {
+      toast.error('Vui lòng nhập email và mật khẩu');
       return;
     }
-    toast.info('Tính năng đăng nhập email đang được phát triển. Vui lòng sử dụng Đăng nhập Google.');
+
+    if (mode === 'register') {
+      if (!displayName.trim()) {
+        toast.error('Vui lòng nhập tên của bạn');
+        return;
+      }
+      if (password !== confirmPassword) {
+        toast.error('Mật khẩu không khớp!');
+        return;
+      }
+    }
+
+    setIsLoading(true);
+    try {
+      if (mode === 'login') {
+        await loginWithEmail(email, password);
+        toast.success('Đăng nhập thành công!');
+      } else {
+        await registerWithEmail(email, password, displayName);
+        toast.success('Đăng ký tài khoản thành công!');
+      }
+      onClose();
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGoogleLogin = async () => {
@@ -156,9 +185,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
 
                 <button 
                   type="submit"
-                  className="w-full h-14 rounded-2xl bg-[#1e4b64] text-white font-bold text-lg flex items-center justify-center gap-2 shadow-[0_8px_20px_rgba(30,75,100,0.25)] hover:shadow-[0_12px_28px_rgba(30,75,100,0.35)] hover:-translate-y-0.5 transition-all active:scale-95 group"
+                  disabled={isLoading}
+                  className="w-full h-14 rounded-2xl bg-[#1e4b64] text-white font-bold text-lg flex items-center justify-center gap-2 shadow-[0_8px_20px_rgba(30,75,100,0.25)] hover:shadow-[0_12px_28px_rgba(30,75,100,0.35)] hover:-translate-y-0.5 transition-all active:scale-95 disabled:opacity-70 disabled:hover:translate-y-0 group"
                 >
-                  {mode === 'login' ? (
+                  {isLoading ? (
+                    <span className="flex items-center gap-2">
+                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      Đang xử lý...
+                    </span>
+                  ) : mode === 'login' ? (
                     <>
                       <span>Đăng nhập</span>
                       <LogIn className="h-5 w-5 group-hover:translate-x-1 transition-transform" />

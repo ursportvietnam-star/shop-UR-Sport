@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { onAuthStateChanged, User, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
+import { onAuthStateChanged, User, signInWithPopup, GoogleAuthProvider, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { toast } from 'sonner';
 import { auth, db } from './firebase';
@@ -9,6 +9,8 @@ interface AuthContextType {
   isAdmin: boolean;
   loading: boolean;
   loginWithGoogle: () => Promise<void>;
+  loginWithEmail: (email: string, password: string) => Promise<void>;
+  registerWithEmail: (email: string, password: string, displayName: string) => Promise<void>;
   devLogin: () => void;
   logout: () => Promise<void>;
 }
@@ -101,6 +103,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const loginWithEmail = async (email: string, password: string) => {
+    try {
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      setUser(result.user);
+    } catch (error: any) {
+      console.error('Login error detail:', error);
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        throw new Error('Email hoặc mật khẩu không đúng');
+      }
+      throw new Error(error.message || 'Đăng nhập thất bại');
+    }
+  };
+
+  const registerWithEmail = async (email: string, password: string, displayName: string) => {
+    try {
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      if (result.user) {
+        await updateProfile(result.user, { displayName });
+        // Force a re-fetch of the user object so UI updates with displayName
+        setUser({ ...result.user, displayName } as User);
+      }
+    } catch (error: any) {
+      console.error('Register error detail:', error);
+      if (error.code === 'auth/email-already-in-use') {
+        throw new Error('Email này đã được sử dụng');
+      } else if (error.code === 'auth/weak-password') {
+        throw new Error('Mật khẩu quá yếu (cần ít nhất 6 ký tự)');
+      }
+      throw new Error(error.message || 'Đăng ký thất bại');
+    }
+  };
+
   // ── DEV BYPASS: chỉ dùng khi chạy localhost ──
   const devLogin = () => {
     if (!isLocalhost) return;
@@ -121,7 +155,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAdmin, loading, loginWithGoogle, devLogin, logout }}>
+    <AuthContext.Provider value={{ user, isAdmin, loading, loginWithGoogle, loginWithEmail, registerWithEmail, devLogin, logout }}>
       {children}
     </AuthContext.Provider>
   );
