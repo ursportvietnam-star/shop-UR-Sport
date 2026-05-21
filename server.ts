@@ -308,8 +308,8 @@ async function startServer() {
           .replace(/^-+|-+$/g, "")
           .slice(0, 80) || "blog-image";
         
-        // Prevent collisions with unique timestamp suffix
-        const fileName = `${baseName}-${Date.now()}.${ext}`;
+        // Use clean base name for SEO
+        const fileName = `${baseName}.${ext}`;
         const uploadDir = path.join(process.cwd(), "public", "images", "blog");
 
         await fs.mkdir(uploadDir, { recursive: true });
