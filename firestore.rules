@@ -138,5 +138,13 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow write: if false; // Only manageable via console
     }
+
+    // Users collection for managing customer accounts
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) || isAdmin();
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
   }
 }

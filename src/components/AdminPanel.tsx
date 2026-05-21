@@ -11,6 +11,7 @@ import { AddProductModal } from './AddProductModal';
 import { AddBlogPostModal } from './AddBlogPostModal';
 import { AddVoucherModal } from './AddVoucherModal';
 import { OrderDetailModal } from './OrderDetailModal';
+import { CustomerManagementTab } from './admin/CustomerManagementTab';
 import { CategorySeoManager } from './CategorySeoManager';
 import { ContentMapSeoPanel } from './ContentMapSeoPanel';
 import { ProductSeoAutomationPanel, ProductSeoScoreBadge } from './ProductSeoAutomationPanel';
@@ -2305,43 +2306,7 @@ Sitemap: https://ursport.vn/sitemap.xml`;
           )}
 
           {activeTab === 'customers' && (
-            <div className="space-y-4">
-              <div className="bg-[#13161f] border border-white/5 rounded-2xl overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left">
-                    <thead>
-                      <tr className="border-b border-white/5">
-                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Khách hàng</th>
-                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Email</th>
-                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Số điện thoại</th>
-                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Đơn hàng</th>
-                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Tổng chi tiêu</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/[0.04]">
-                      {STATIC_CUSTOMERS.map(customer => (
-                        <tr key={customer.id} className="hover:bg-white/[0.02] transition-all">
-                          <td className="px-6 py-4">
-                            <p className="text-white text-sm font-bold">{customer.name}</p>
-                            <p className="text-white/30 text-[11px] font-medium">#{customer.id}</p>
-                          </td>
-                          <td className="px-6 py-4 text-white/70 text-sm font-medium">{customer.email}</td>
-                          <td className="px-6 py-4 text-white/70 text-sm font-medium">{customer.phone}</td>
-                          <td className="px-6 py-4">
-                            <span className="px-3 py-1 bg-blue-500/10 text-blue-400 text-xs font-black rounded-lg">
-                              {customer.ordersCount} đơn
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <p className="text-[#1e4b64] font-black text-sm">{customer.totalSpent.toLocaleString('vi-VN')}₫</p>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
+            <CustomerManagementTab />
           )}
 
           {/* ─── NEWSLETTER SUBSCRIBERS ─── */}

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { onAuthStateChanged, User, signInWithPopup, GoogleAuthProvider, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { toast } from 'sonner';
 import { auth, db } from './firebase';
 
@@ -68,7 +68,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setIsAdmin(true);
         } else {
           try {
-            // Check if user is listed in Firestore admins collection
             const adminDoc = await getDoc(doc(db, 'admins', authUser.uid));
             setIsAdmin(adminDoc.exists());
           } catch (error: any) {
@@ -76,6 +75,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setIsAdmin(false);
           }
         }
+
+        // Check if user is banned
+        try {
+          const userDoc = await getDoc(doc(db, 'users', authUser.uid));
+          if (userDoc.exists() && userDoc.data().status === 'banned') {
+            await signOut(auth);
+            setUser(null);
+            setIsAdmin(false);
+            setLoading(false);
+            // We use setTimeout because toast might fire before AuthProvider is fully mounted or when state is unstable
+            setTimeout(() => toast.error('Tài khoản của bạn đã bị khóa.'), 100);
+            return;
+          }
+        } catch (error) {
+          console.error('Error checking banned status:', error);
+        }
+
       } else {
         setIsAdmin(false);
       }
@@ -89,6 +105,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     provider.setCustomParameters({ prompt: 'select_account' });
     try {
       const result = await signInWithPopup(auth, provider);
+      
+      // Check if banned
+      const userRef = doc(db, 'users', result.user.uid);
+      const snap = await getDoc(userRef);
+      if (snap.exists() && snap.data().status === 'banned') {
+        await signOut(auth);
+        throw new Error('Tài khoản của bạn đã bị khóa.');
+      } else if (!snap.exists()) {
+        // Sync new user
+        await setDoc(userRef, {
+          uid: result.user.uid,
+          email: result.user.email,
+          displayName: result.user.displayName || 'Người dùng mới',
+          photoURL: result.user.photoURL || null,
+          createdAt: serverTimestamp(),
+          status: 'active',
+          role: 'customer'
+        });
+      }
+      
       setUser(result.user);
     } catch (error: any) {
       console.error('Login error detail:', error);
@@ -106,6 +142,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginWithEmail = async (email: string, password: string) => {
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
+      
+      // Check if banned
+      const userRef = doc(db, 'users', result.user.uid);
+      const snap = await getDoc(userRef);
+      if (snap.exists() && snap.data().status === 'banned') {
+        await signOut(auth);
+        throw new Error('Tài khoản của bạn đã bị khóa.');
+      }
+      
       setUser(result.user);
     } catch (error: any) {
       console.error('Login error detail:', error);
@@ -121,6 +166,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const result = await createUserWithEmailAndPassword(auth, email, password);
       if (result.user) {
         await updateProfile(result.user, { displayName });
+        
+        // Sync new user
+        await setDoc(doc(db, 'users', result.user.uid), {
+          uid: result.user.uid,
+          email: result.user.email,
+          displayName: displayName,
+          photoURL: null,
+          createdAt: serverTimestamp(),
+          status: 'active',
+          role: 'customer'
+        });
+
         // Force a re-fetch of the user object so UI updates with displayName
         setUser({ ...result.user, displayName } as User);
       }
