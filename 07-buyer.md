@@ -17,13 +17,13 @@
 **Funnel stage:** BOFU  
 **Content silo:** 07 - Buyer / Commercial SEO Content Plan  
 **Priority:** HIGH  
-**Recommended URL:** `https://ursport.vn/blog/mua-ao-thun-nam-cao-cap-o-dau`
+**Recommended URL:** `https://shop-ur-sport.vercel.app/blog/mua-ao-thun-nam-cao-cap-o-dau`
 
 **Internal link targets:**
 - `/ao-thun-nam`
 - `/quan-the-thao-nam`
-- `/do-tap-gym-nam`
-- `/collection/best-seller`
+- `/ao-thun-the-thao-nam`
+- `/ao-thun-nam`
 
 **CTA target:** Mua ngay tại URSport  
 **Suggested schema:** `Article` + `FAQPage` + `BreadcrumbList`
@@ -51,13 +51,13 @@
 **Funnel stage:** BOFU  
 **Content silo:** 07 - Buyer / Commercial SEO Content Plan  
 **Priority:** HIGH  
-**Recommended URL:** `https://ursport.vn/blog/mua-quan-the-thao-nam-dep-o-dau`
+**Recommended URL:** `https://shop-ur-sport.vercel.app/blog/mua-quan-the-thao-nam-dep-o-dau`
 
 **Internal link targets:**
 - `/ao-thun-nam`
 - `/quan-the-thao-nam`
-- `/do-tap-gym-nam`
-- `/collection/best-seller`
+- `/ao-thun-the-thao-nam`
+- `/ao-thun-nam`
 
 **CTA target:** Mua ngay tại URSport  
 **Suggested schema:** `Article` + `FAQPage` + `BreadcrumbList`
@@ -85,13 +85,13 @@
 **Funnel stage:** BOFU  
 **Content silo:** 07 - Buyer / Commercial SEO Content Plan  
 **Priority:** HIGH  
-**Recommended URL:** `https://ursport.vn/blog/mua-do-tap-gym-nam-gia-tot-o-dau`
+**Recommended URL:** `https://shop-ur-sport.vercel.app/blog/mua-do-tap-gym-nam-gia-tot-o-dau`
 
 **Internal link targets:**
 - `/ao-thun-nam`
 - `/quan-the-thao-nam`
-- `/do-tap-gym-nam`
-- `/collection/best-seller`
+- `/ao-thun-the-thao-nam`
+- `/ao-thun-nam`
 
 **CTA target:** Mua ngay tại URSport  
 **Suggested schema:** `Article` + `FAQPage` + `BreadcrumbList`
@@ -119,13 +119,13 @@
 **Funnel stage:** BOFU  
 **Content silo:** 07 - Buyer / Commercial SEO Content Plan  
 **Priority:** HIGH  
-**Recommended URL:** `https://ursport.vn/blog/ao-thun-nam-ursport-co-tot-khong`
+**Recommended URL:** `https://shop-ur-sport.vercel.app/blog/ao-thun-nam-ursport-co-tot-khong`
 
 **Internal link targets:**
 - `/ao-thun-nam`
 - `/quan-the-thao-nam`
-- `/do-tap-gym-nam`
-- `/collection/best-seller`
+- `/ao-thun-the-thao-nam`
+- `/ao-thun-nam`
 
 **CTA target:** Mua ngay tại URSport  
 **Suggested schema:** `Article` + `FAQPage` + `BreadcrumbList`
@@ -153,13 +153,13 @@
 **Funnel stage:** BOFU  
 **Content silo:** 07 - Buyer / Commercial SEO Content Plan  
 **Priority:** HIGH  
-**Recommended URL:** `https://ursport.vn/blog/quan-the-thao-nam-ursport-co-dang-mua-khong`
+**Recommended URL:** `https://shop-ur-sport.vercel.app/blog/quan-the-thao-nam-ursport-co-dang-mua-khong`
 
 **Internal link targets:**
 - `/ao-thun-nam`
 - `/quan-the-thao-nam`
-- `/do-tap-gym-nam`
-- `/collection/best-seller`
+- `/ao-thun-the-thao-nam`
+- `/ao-thun-nam`
 
 **CTA target:** Mua ngay tại URSport  
 **Suggested schema:** `Article` + `FAQPage` + `BreadcrumbList`
@@ -187,13 +187,13 @@
 **Funnel stage:** BOFU  
 **Content silo:** 07 - Buyer / Commercial SEO Content Plan  
 **Priority:** HIGH  
-**Recommended URL:** `https://ursport.vn/blog/do-gym-nam-ursport-phu-hop-ai`
+**Recommended URL:** `https://shop-ur-sport.vercel.app/blog/do-gym-nam-ursport-phu-hop-ai`
 
 **Internal link targets:**
 - `/ao-thun-nam`
 - `/quan-the-thao-nam`
-- `/do-tap-gym-nam`
-- `/collection/best-seller`
+- `/ao-thun-the-thao-nam`
+- `/ao-thun-nam`
 
 **CTA target:** Mua ngay tại URSport  
 **Suggested schema:** `Article` + `FAQPage` + `BreadcrumbList`
@@ -221,13 +221,13 @@
 **Funnel stage:** BOFU  
 **Content silo:** 07 - Buyer / Commercial SEO Content Plan  
 **Priority:** HIGH  
-**Recommended URL:** `https://ursport.vn/blog/so-sanh-ao-thun-ursport-voi-ao-thun-pho-thong`
+**Recommended URL:** `https://shop-ur-sport.vercel.app/blog/so-sanh-ao-thun-ursport-voi-ao-thun-pho-thong`
 
 **Internal link targets:**
 - `/ao-thun-nam`
 - `/quan-the-thao-nam`
-- `/do-tap-gym-nam`
-- `/collection/best-seller`
+- `/ao-thun-the-thao-nam`
+- `/ao-thun-nam`
 
 **CTA target:** Mua ngay tại URSport  
 **Suggested schema:** `Article` + `FAQPage` + `BreadcrumbList`
@@ -255,13 +255,13 @@
 **Funnel stage:** BOFU  
 **Content silo:** 07 - Buyer / Commercial SEO Content Plan  
 **Priority:** HIGH  
-**Recommended URL:** `https://ursport.vn/blog/vi-sao-nen-chon-quan-ao-nam-the-thao-casual`
+**Recommended URL:** `https://shop-ur-sport.vercel.app/blog/vi-sao-nen-chon-quan-ao-nam-the-thao-casual`
 
 **Internal link targets:**
 - `/ao-thun-nam`
 - `/quan-the-thao-nam`
-- `/do-tap-gym-nam`
-- `/collection/best-seller`
+- `/ao-thun-the-thao-nam`
+- `/ao-thun-nam`
 
 **CTA target:** Mua ngay tại URSport  
 **Suggested schema:** `Article` + `FAQPage` + `BreadcrumbList`
@@ -289,13 +289,13 @@
 **Funnel stage:** BOFU  
 **Content silo:** 07 - Buyer / Commercial SEO Content Plan  
 **Priority:** HIGH  
-**Recommended URL:** `https://ursport.vn/blog/top-san-pham-ursport-nen-mua-dau-tien`
+**Recommended URL:** `https://shop-ur-sport.vercel.app/blog/top-san-pham-ursport-nen-mua-dau-tien`
 
 **Internal link targets:**
 - `/ao-thun-nam`
 - `/quan-the-thao-nam`
-- `/do-tap-gym-nam`
-- `/collection/best-seller`
+- `/ao-thun-the-thao-nam`
+- `/ao-thun-nam`
 
 **CTA target:** Mua ngay tại URSport  
 **Suggested schema:** `Article` + `FAQPage` + `BreadcrumbList`
@@ -323,13 +323,13 @@
 **Funnel stage:** BOFU  
 **Content silo:** 07 - Buyer / Commercial SEO Content Plan  
 **Priority:** HIGH  
-**Recommended URL:** `https://ursport.vn/blog/san-pham-ursport-ban-chay-nhat`
+**Recommended URL:** `https://shop-ur-sport.vercel.app/blog/san-pham-ursport-ban-chay-nhat`
 
 **Internal link targets:**
 - `/ao-thun-nam`
 - `/quan-the-thao-nam`
-- `/do-tap-gym-nam`
-- `/collection/best-seller`
+- `/ao-thun-the-thao-nam`
+- `/ao-thun-nam`
 
 **CTA target:** Mua ngay tại URSport  
 **Suggested schema:** `Article` + `FAQPage` + `BreadcrumbList`
@@ -357,13 +357,13 @@
 **Funnel stage:** BOFU  
 **Content silo:** 07 - Buyer / Commercial SEO Content Plan  
 **Priority:** MEDIUM  
-**Recommended URL:** `https://ursport.vn/blog/combo-ao-thun-va-quan-the-thao-nam`
+**Recommended URL:** `https://shop-ur-sport.vercel.app/blog/combo-ao-thun-va-quan-the-thao-nam`
 
 **Internal link targets:**
 - `/ao-thun-nam`
 - `/quan-the-thao-nam`
-- `/do-tap-gym-nam`
-- `/collection/best-seller`
+- `/ao-thun-the-thao-nam`
+- `/ao-thun-nam`
 
 **CTA target:** Mua ngay tại URSport  
 **Suggested schema:** `Article` + `FAQPage` + `BreadcrumbList`
@@ -391,13 +391,13 @@
 **Funnel stage:** BOFU  
 **Content silo:** 07 - Buyer / Commercial SEO Content Plan  
 **Priority:** MEDIUM  
-**Recommended URL:** `https://ursport.vn/blog/set-do-nam-mac-hang-ngay-dang-mua`
+**Recommended URL:** `https://shop-ur-sport.vercel.app/blog/set-do-nam-mac-hang-ngay-dang-mua`
 
 **Internal link targets:**
 - `/ao-thun-nam`
 - `/quan-the-thao-nam`
-- `/do-tap-gym-nam`
-- `/collection/best-seller`
+- `/ao-thun-the-thao-nam`
+- `/ao-thun-nam`
 
 **CTA target:** Mua ngay tại URSport  
 **Suggested schema:** `Article` + `FAQPage` + `BreadcrumbList`
@@ -425,13 +425,13 @@
 **Funnel stage:** BOFU  
 **Content silo:** 07 - Buyer / Commercial SEO Content Plan  
 **Priority:** MEDIUM  
-**Recommended URL:** `https://ursport.vn/blog/mua-ao-thun-nam-online-can-luu-y-gi`
+**Recommended URL:** `https://shop-ur-sport.vercel.app/blog/mua-ao-thun-nam-online-can-luu-y-gi`
 
 **Internal link targets:**
 - `/ao-thun-nam`
 - `/quan-the-thao-nam`
-- `/do-tap-gym-nam`
-- `/collection/best-seller`
+- `/ao-thun-the-thao-nam`
+- `/ao-thun-nam`
 
 **CTA target:** Mua ngay tại URSport  
 **Suggested schema:** `Article` + `FAQPage` + `BreadcrumbList`
@@ -459,13 +459,13 @@
 **Funnel stage:** BOFU  
 **Content silo:** 07 - Buyer / Commercial SEO Content Plan  
 **Priority:** MEDIUM  
-**Recommended URL:** `https://ursport.vn/blog/mua-quan-the-thao-nam-online-can-luu-y-gi`
+**Recommended URL:** `https://shop-ur-sport.vercel.app/blog/mua-quan-the-thao-nam-online-can-luu-y-gi`
 
 **Internal link targets:**
 - `/ao-thun-nam`
 - `/quan-the-thao-nam`
-- `/do-tap-gym-nam`
-- `/collection/best-seller`
+- `/ao-thun-the-thao-nam`
+- `/ao-thun-nam`
 
 **CTA target:** Mua ngay tại URSport  
 **Suggested schema:** `Article` + `FAQPage` + `BreadcrumbList`
@@ -493,13 +493,13 @@
 **Funnel stage:** BOFU  
 **Content silo:** 07 - Buyer / Commercial SEO Content Plan  
 **Priority:** MEDIUM  
-**Recommended URL:** `https://ursport.vn/blog/chinh-sach-doi-tra-khi-mua-quan-ao-nam-online`
+**Recommended URL:** `https://shop-ur-sport.vercel.app/blog/chinh-sach-doi-tra-khi-mua-quan-ao-nam-online`
 
 **Internal link targets:**
 - `/ao-thun-nam`
 - `/quan-the-thao-nam`
-- `/do-tap-gym-nam`
-- `/collection/best-seller`
+- `/ao-thun-the-thao-nam`
+- `/ao-thun-nam`
 
 **CTA target:** Mua ngay tại URSport  
 **Suggested schema:** `Article` + `FAQPage` + `BreadcrumbList`
@@ -527,13 +527,13 @@
 **Funnel stage:** BOFU  
 **Content silo:** 07 - Buyer / Commercial SEO Content Plan  
 **Priority:** MEDIUM  
-**Recommended URL:** `https://ursport.vn/blog/cach-kiem-tra-chat-luong-ao-khi-nhan-hang`
+**Recommended URL:** `https://shop-ur-sport.vercel.app/blog/cach-kiem-tra-chat-luong-ao-khi-nhan-hang`
 
 **Internal link targets:**
 - `/ao-thun-nam`
 - `/quan-the-thao-nam`
-- `/do-tap-gym-nam`
-- `/collection/best-seller`
+- `/ao-thun-the-thao-nam`
+- `/ao-thun-nam`
 
 **CTA target:** Mua ngay tại URSport  
 **Suggested schema:** `Article` + `FAQPage` + `BreadcrumbList`
@@ -561,13 +561,13 @@
 **Funnel stage:** BOFU  
 **Content silo:** 07 - Buyer / Commercial SEO Content Plan  
 **Priority:** MEDIUM  
-**Recommended URL:** `https://ursport.vn/blog/ao-thun-nam-gia-re-va-ao-cao-cap-khac-nhau-gi`
+**Recommended URL:** `https://shop-ur-sport.vercel.app/blog/ao-thun-nam-gia-re-va-ao-cao-cap-khac-nhau-gi`
 
 **Internal link targets:**
 - `/ao-thun-nam`
 - `/quan-the-thao-nam`
-- `/do-tap-gym-nam`
-- `/collection/best-seller`
+- `/ao-thun-the-thao-nam`
+- `/ao-thun-nam`
 
 **CTA target:** Mua ngay tại URSport  
 **Suggested schema:** `Article` + `FAQPage` + `BreadcrumbList`
@@ -595,13 +595,13 @@
 **Funnel stage:** BOFU  
 **Content silo:** 07 - Buyer / Commercial SEO Content Plan  
 **Priority:** MEDIUM  
-**Recommended URL:** `https://ursport.vn/blog/quan-the-thao-nam-gia-re-co-nen-mua-khong`
+**Recommended URL:** `https://shop-ur-sport.vercel.app/blog/quan-the-thao-nam-gia-re-co-nen-mua-khong`
 
 **Internal link targets:**
 - `/ao-thun-nam`
 - `/quan-the-thao-nam`
-- `/do-tap-gym-nam`
-- `/collection/best-seller`
+- `/ao-thun-the-thao-nam`
+- `/ao-thun-nam`
 
 **CTA target:** Mua ngay tại URSport  
 **Suggested schema:** `Article` + `FAQPage` + `BreadcrumbList`
@@ -629,13 +629,13 @@
 **Funnel stage:** BOFU  
 **Content silo:** 07 - Buyer / Commercial SEO Content Plan  
 **Priority:** MEDIUM  
-**Recommended URL:** `https://ursport.vn/blog/nen-mua-do-gym-le-hay-theo-set`
+**Recommended URL:** `https://shop-ur-sport.vercel.app/blog/nen-mua-do-gym-le-hay-theo-set`
 
 **Internal link targets:**
 - `/ao-thun-nam`
 - `/quan-the-thao-nam`
-- `/do-tap-gym-nam`
-- `/collection/best-seller`
+- `/ao-thun-the-thao-nam`
+- `/ao-thun-nam`
 
 **CTA target:** Mua ngay tại URSport  
 **Suggested schema:** `Article` + `FAQPage` + `BreadcrumbList`
@@ -663,13 +663,13 @@
 **Funnel stage:** BOFU  
 **Content silo:** 07 - Buyer / Commercial SEO Content Plan  
 **Priority:** MEDIUM  
-**Recommended URL:** `https://ursport.vn/blog/review-thuong-hieu-thoi-trang-nam-ursport`
+**Recommended URL:** `https://shop-ur-sport.vercel.app/blog/review-thuong-hieu-thoi-trang-nam-ursport`
 
 **Internal link targets:**
 - `/ao-thun-nam`
 - `/quan-the-thao-nam`
-- `/do-tap-gym-nam`
-- `/collection/best-seller`
+- `/ao-thun-the-thao-nam`
+- `/ao-thun-nam`
 
 **CTA target:** Mua ngay tại URSport  
 **Suggested schema:** `Article` + `FAQPage` + `BreadcrumbList`
@@ -687,3 +687,4 @@
 - Có tiêu chí chọn, lỗi thường gặp, ví dụ ứng dụng thực tế.
 - Chèn CTA tự nhiên về danh mục hoặc sản phẩm URSport.
 - Cuối bài có FAQ và liên kết nội bộ sang bài liên quan.
+

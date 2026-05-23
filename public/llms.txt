@@ -4,10 +4,10 @@ UR Sport is a Vietnamese men's sportswear ecommerce store focused on t-shirts, p
 
 ## Primary URLs
 
-- Homepage: https://ursport.vn/
-- Shop: https://ursport.vn/shop
-- Blog: https://ursport.vn/blog
-- Sitemap: https://ursport.vn/sitemap.xml
+- Homepage: https://shop-ur-sport.vercel.app/
+- Shop: https://shop-ur-sport.vercel.app/shop
+- Blog: https://shop-ur-sport.vercel.app/blog
+- Sitemap: https://shop-ur-sport.vercel.app/sitemap.xml
 
 ## Key Topics
 

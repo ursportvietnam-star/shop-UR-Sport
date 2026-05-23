@@ -3,6 +3,7 @@ import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from './firebase';
 import { PRODUCTS as STATIC_PRODUCTS } from './data';
 import { Product } from './types';
+import { normalizeProductSlug } from './lib/productUrls';
 
 interface ProductsContextType {
   products: Product[];
@@ -10,6 +11,11 @@ interface ProductsContextType {
 }
 
 const ProductsContext = createContext<ProductsContextType | undefined>(undefined);
+
+const normalizeProduct = (product: Product): Product => ({
+  ...product,
+  slug: normalizeProductSlug(product.slug, product.id) || product.id
+});
 
 export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -24,16 +30,16 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const data = snapshot.docs.map(d => ({ 
           id: d.id, 
           ...d.data() 
-        })) as Product[];
+        } as Product)).map(normalizeProduct);
         setProducts(data);
       } else {
         // Nếu Firestore trống, dùng dữ liệu mẫu
-        setProducts(STATIC_PRODUCTS);
+        setProducts(STATIC_PRODUCTS.map(normalizeProduct));
       }
       setLoading(false);
     }, (error) => {
       console.error('Error fetching products:', error);
-      setProducts(STATIC_PRODUCTS);
+      setProducts(STATIC_PRODUCTS.map(normalizeProduct));
       setLoading(false);
     });
 

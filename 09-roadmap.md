@@ -9,7 +9,7 @@
 ### Tháng 1
 - Hoàn thiện technical SEO: sitemap, robots, canonical, schema cơ bản.
 - Publish 20 bài: áo thun nam + chất liệu.
-- Tối ưu category `/ao-thun-nam`, `/quan-the-thao-nam`, `/do-tap-gym-nam`.
+- Tối ưu category `/ao-thun-nam`, `/quan-the-thao-nam`, `/ao-thun-the-thao-nam`.
 
 ### Tháng 2
 - Publish 25 bài: quần thể thao + đồ gym.
@@ -47,3 +47,4 @@
 - Indexed pages
 - Revenue từ organic traffic
 - Add to cart từ organic landing pages
+

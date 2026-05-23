@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { CATEGORY_METADATA, PRODUCTS, STATIC_BLOG_POSTS } from '../src/data';
+import { normalizeProductSlug } from '../src/lib/productUrls';
 
 type SitemapImage = {
   loc: string;
@@ -17,7 +18,7 @@ type SitemapRoute = {
 };
 
 const sitemapPath = path.join(process.cwd(), 'public', 'sitemap.xml');
-const baseUrl = (process.env.SITE_URL || process.env.VITE_SITE_URL || 'https://ursport.vn').replace(/\/+$/, '');
+const baseUrl = (process.env.SITE_URL || process.env.VITE_SITE_URL || 'https://shop-ur-sport.vercel.app').replace(/\/+$/, '');
 const vietnamTimezoneOffset = 7 * 60 * 60 * 1000;
 const today = new Date(Date.now() + vietnamTimezoneOffset).toISOString().slice(0, 10);
 
@@ -130,9 +131,9 @@ const loadFirestoreRoutes = async (): Promise<{ productRoutes: SitemapRoute[]; b
 
     const productRoutes = productsSnap.docs
       .map(doc => ({ id: doc.id, ...doc.data() }) as any)
-      .filter(item => item.slug)
+      .filter(item => normalizeProductSlug(item.slug, item.id))
       .map(item => ({
-        path: `/${item.slug}`,
+        path: `/${normalizeProductSlug(item.slug, item.id)}`,
         priority: '0.7',
         changefreq: 'weekly',
         lastmod: toDateString(item.updatedAt || item.createdAt),
@@ -173,9 +174,9 @@ const categoryRoutes: SitemapRoute[] = CATEGORY_METADATA.map(category => ({
 }));
 
 const staticProductRoutes: SitemapRoute[] = PRODUCTS
-  .filter(product => product.slug)
+  .filter(product => normalizeProductSlug(product.slug, product.id))
   .map(product => ({
-    path: `/${product.slug}`,
+    path: `/${normalizeProductSlug(product.slug, product.id)}`,
     priority: '0.7',
     changefreq: 'weekly',
     images: imageList(product.images || [], product.name, product.metaDescription || product.description)
@@ -191,12 +192,21 @@ const staticBlogRoutes: SitemapRoute[] = STATIC_BLOG_POSTS
     images: imageList([post.image, ...(post.images || [])], post.title, post.excerpt || post.metaDescription)
   }));
 
+const staticBlogCategoryRoutes: SitemapRoute[] = Array.from(
+  new Set(STATIC_BLOG_POSTS.map(post => slugify(post.category || '')).filter(Boolean))
+).map(categorySlug => ({
+  path: `/blog/category/${categorySlug}`,
+  priority: '0.55',
+  changefreq: 'monthly'
+}));
+
 const routes: SitemapRoute[] = [
   { path: '/', priority: '1.0', changefreq: 'daily', images: imageList(['/images/og-ursport.svg'], 'UR Sport') },
   { path: '/shop', priority: '0.9', changefreq: 'daily', images: imageList(PRODUCTS.slice(0, 6).map(product => product.images?.[0]), 'Shop đồ thể thao nam UR Sport') },
   { path: '/blog', priority: '0.7', changefreq: 'weekly', images: imageList(STATIC_BLOG_POSTS.slice(0, 6).map(post => post.image), 'Blog UR Sport') },
   ...categoryRoutes,
   ...seoSubcategoryRoutes,
+  ...staticBlogCategoryRoutes,
   ...(firestoreRoutes?.productRoutes?.length ? firestoreRoutes.productRoutes : staticProductRoutes),
   ...(firestoreRoutes?.blogRoutes?.length ? firestoreRoutes.blogRoutes : staticBlogRoutes)
 ];

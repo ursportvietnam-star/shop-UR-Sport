@@ -7,6 +7,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { cn } from '@/lib/utils';
 import { LazyImage } from './LazyImage';
+import { getProductPath } from '../lib/productUrls';
 
 interface FlashSaleProps {
   products: Product[];
@@ -165,7 +166,7 @@ export function FlashSale({ products }: FlashSaleProps) {
                 className="min-w-[155px] sm:min-w-[200px] lg:min-w-[220px] snap-start group flex flex-col bg-white hover:shadow-xl transition-all duration-500 rounded-lg overflow-hidden border border-zinc-50"
               >
                 <div 
-                  onClick={() => navigate(`/${product.slug || product.id}`)}
+                  onClick={() => navigate(getProductPath(product))}
                   className="relative aspect-square cursor-pointer overflow-hidden"
                 >
                   <LazyImage 
@@ -238,4 +239,3 @@ export function FlashSale({ products }: FlashSaleProps) {
     </section>
   );
 }
-

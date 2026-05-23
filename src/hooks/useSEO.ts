@@ -112,11 +112,23 @@ export function useSEO({
       injectMeta('name', 'twitter:description', cleanDescription);
       injectMeta('name', 'twitter:image', finalImage);
       injectMeta('name', 'twitter:image:alt', cleanTitle || SITE_NAME);
+      injectMeta('name', 'twitter:site', '@ursportvietnam');
+      injectMeta('name', 'twitter:creator', '@ursportvietnam');
 
       // --- Language alternates ---
-      injectLink('alternate', absoluteUrl('/'));
-      const alternate = document.head.querySelector('link[rel="alternate"]') as HTMLLinkElement | null;
-      if (alternate) alternate.setAttribute('hreflang', 'vi');
+      const setAlternate = (href: string, hreflang: string) => {
+        if (!href) return;
+        let el = document.head.querySelector(`link[rel="alternate"][hreflang="${hreflang}"]`) as HTMLLinkElement | null;
+        if (!el) {
+          el = document.createElement('link');
+          el.setAttribute('rel', 'alternate');
+          el.setAttribute('hreflang', hreflang);
+          document.head.appendChild(el);
+        }
+        el.setAttribute('href', href);
+      };
+      setAlternate(finalCanonical, 'vi');
+      setAlternate(finalCanonical, 'x-default');
 
       // Product/article-only tags should not leak between route changes.
       if (type !== 'article') {

@@ -1,5 +1,6 @@
 import { SEO_GUIDE_CONTEXT } from './seoGuide';
 import PRODUCT_SEO_GUIDE_CONTEXT from '../../PRODUCT_SKILL.md?raw';
+import { auth } from '../firebase';
 
 export interface AIProductData {
   name: string;
@@ -26,10 +27,46 @@ export interface AIBlogData {
   metaTitle: string;
   metaDescription: string;
   internalLinkMap: string[];
+  imagePrompts?: Array<{
+    filename: string;
+    alt: string;
+    title: string;
+    caption: string;
+    prompt: string;
+  }>;
   cta: string;
   faqSchema: string;
   socialCaption: string;
 }
+
+const normalizeStringArray = (value: unknown): string[] => {
+  if (Array.isArray(value)) return value.map(item => String(item || '').trim()).filter(Boolean);
+  if (typeof value === 'string') return value.split(',').map(item => item.trim()).filter(Boolean);
+  return [];
+};
+
+const normalizeAIBlogData = (data: any): AIBlogData => ({
+  ...data,
+  title: String(data?.title || data?.blogTitle || data?.headline || '').trim(),
+  slug: String(data?.slug || data?.urlSlug || '').trim(),
+  contentHtml: String(
+    data?.contentHtml ||
+    data?.content ||
+    data?.html ||
+    data?.body ||
+    data?.articleHtml ||
+    data?.article ||
+    ''
+  ).trim(),
+  keywordCluster: normalizeStringArray(data?.keywordCluster || data?.keywords),
+  metaTitle: String(data?.metaTitle || data?.seoTitle || data?.title || '').trim(),
+  metaDescription: String(data?.metaDescription || data?.seoDescription || data?.description || data?.excerpt || '').trim(),
+  internalLinkMap: normalizeStringArray(data?.internalLinkMap || data?.internalLinks),
+  imagePrompts: Array.isArray(data?.imagePrompts) ? data.imagePrompts : [],
+  cta: String(data?.cta || '').trim(),
+  faqSchema: String(data?.faqSchema || data?.schema || '').trim(),
+  socialCaption: String(data?.socialCaption || '').trim(),
+});
 
 export interface AIProductSeoFix {
   seoTitle: string;
@@ -40,8 +77,60 @@ export interface AIProductSeoFix {
   features: string[];
 }
 
+export interface AISeoActionPlan {
+  page: string;
+  query: string;
+  problem: string;
+  action: string;
+  priority: 'Critical' | 'High' | 'Medium' | 'Low';
+  suggestedTitle: string;
+  suggestedMeta: string;
+  suggestedH2: string[];
+  suggestedFaq: Array<{
+    question: string;
+    answer: string;
+  }>;
+  internalLinks: Array<{
+    anchor: string;
+    href: string;
+    reason: string;
+  }>;
+  imageSeo: Array<{
+    filename: string;
+    alt: string;
+    title: string;
+  }>;
+  schemaType: string;
+  schemaJsonLd: string;
+  blogIdea: {
+    needed: boolean;
+    title: string;
+    slug: string;
+    outline: string[];
+  };
+  landingPageIdea: {
+    needed: boolean;
+    title: string;
+    slug: string;
+    sections: string[];
+  };
+  checklist: string[];
+}
+
+export interface AISeoContentDraft {
+  page: string;
+  slug: string;
+  query: string;
+  seoTitle: string;
+  seoDescription: string;
+  heading: string;
+  contentHtml: string;
+  changeSummary: string[];
+  reviewChecklist: string[];
+}
+
 export const getGeminiApiKey = () => {
-  return (import.meta as any).env?.VITE_GEMINI_API_KEY || localStorage.getItem('gemini_api_key') || '';
+  return localStorage.getItem('gemini_api_key') || '';
 };
 
 export const setGeminiApiKey = (key: string) => {
@@ -118,6 +207,155 @@ Trả về đúng JSON, không markdown:
   }
 }
 
+export async function generateSeoActionPlan(prompt: string): Promise<AISeoActionPlan> {
+  const systemPrompt = `You are an ecommerce SEO strategist for URSport Vietnam.
+Create a practical AI Action Generator output from Google Search Console data.
+
+Rules:
+- Do not auto-publish anything.
+- Focus on mens sportswear ecommerce: ao thun nam, quick dry, cotton, ao gym, quan the thao.
+- Prefer category/product revenue keywords over pure informational keywords.
+- Do not invent impossible stock, prices, guarantees, or technical material claims.
+- Write Vietnamese copy naturally.
+- Return valid JSON only, no markdown.
+- suggestedTitle should be 45-65 characters when possible.
+- suggestedMeta should be 120-165 characters when possible.
+- Use internal links with site-relative hrefs.
+- schemaJsonLd must be a JSON string, not an object.
+
+Return exactly this shape:
+{
+  "page": "URL",
+  "query": "keyword",
+  "problem": "short diagnosis",
+  "action": "rewrite_title | rewrite_meta | add_faq | expand_content | internal_link | new_blog | merge_pages | canonical_fix | refresh_content | commercial_boost",
+  "priority": "Critical | High | Medium | Low",
+  "suggestedTitle": "SEO title",
+  "suggestedMeta": "SEO meta description",
+  "suggestedH2": ["H2 suggestion 1", "H2 suggestion 2"],
+  "suggestedFaq": [
+    { "question": "Question", "answer": "Answer" }
+  ],
+  "internalLinks": [
+    { "anchor": "Anchor text", "href": "/duong-dan", "reason": "Why this link helps" }
+  ],
+  "imageSeo": [
+    { "filename": "ten-file.webp", "alt": "Natural image alt", "title": "Short image title" }
+  ],
+  "schemaType": "Product | CollectionPage | Article | FAQPage | BreadcrumbList",
+  "schemaJsonLd": "{\\"@context\\":\\"https://schema.org\\"}",
+  "blogIdea": {
+    "needed": false,
+    "title": "",
+    "slug": "",
+    "outline": []
+  },
+  "landingPageIdea": {
+    "needed": false,
+    "title": "",
+    "slug": "",
+    "sections": []
+  },
+  "checklist": ["Task 1", "Task 2", "Task 3"]
+}`;
+
+  try {
+    const data = await callGemini(systemPrompt, prompt);
+    return {
+      page: String(data?.page || '').trim(),
+      query: String(data?.query || '').trim(),
+      problem: String(data?.problem || '').trim(),
+      action: String(data?.action || '').trim(),
+      priority: String(data?.priority || 'Medium').trim() as AISeoActionPlan['priority'],
+      suggestedTitle: String(data?.suggestedTitle || '').trim(),
+      suggestedMeta: String(data?.suggestedMeta || '').trim(),
+      suggestedH2: normalizeStringArray(data?.suggestedH2),
+      suggestedFaq: Array.isArray(data?.suggestedFaq) ? data.suggestedFaq.map((item: any) => ({
+        question: String(item?.question || '').trim(),
+        answer: String(item?.answer || '').trim(),
+      })).filter((item: { question: string; answer: string }) => item.question && item.answer) : [],
+      internalLinks: Array.isArray(data?.internalLinks) ? data.internalLinks.map((item: any) => ({
+        anchor: String(item?.anchor || '').trim(),
+        href: String(item?.href || '').trim(),
+        reason: String(item?.reason || '').trim(),
+      })).filter((item: { anchor: string; href: string }) => item.anchor && item.href) : [],
+      imageSeo: Array.isArray(data?.imageSeo) ? data.imageSeo.map((item: any) => ({
+        filename: String(item?.filename || '').trim(),
+        alt: String(item?.alt || '').trim(),
+        title: String(item?.title || '').trim(),
+      })).filter((item: { filename: string; alt: string }) => item.filename && item.alt) : [],
+      schemaType: String(data?.schemaType || '').trim(),
+      schemaJsonLd: typeof data?.schemaJsonLd === 'string' ? data.schemaJsonLd.trim() : JSON.stringify(data?.schemaJsonLd || {}),
+      blogIdea: {
+        needed: Boolean(data?.blogIdea?.needed),
+        title: String(data?.blogIdea?.title || '').trim(),
+        slug: String(data?.blogIdea?.slug || '').trim(),
+        outline: normalizeStringArray(data?.blogIdea?.outline),
+      },
+      landingPageIdea: {
+        needed: Boolean(data?.landingPageIdea?.needed),
+        title: String(data?.landingPageIdea?.title || '').trim(),
+        slug: String(data?.landingPageIdea?.slug || '').trim(),
+        sections: normalizeStringArray(data?.landingPageIdea?.sections),
+      },
+      checklist: normalizeStringArray(data?.checklist),
+    };
+  } catch (error: any) {
+    if (error.message.includes('API Key') || error.message.includes('not valid')) {
+      throw new Error('API Key AI chua dung hoac chua duoc cau hinh.');
+    }
+    throw error;
+  }
+}
+
+export async function generateSeoContentDraft(prompt: string): Promise<AISeoContentDraft> {
+  const systemPrompt = `You are the Auto Content Optimizer for URSport.
+Create an optimized draft for admin review. Never publish automatically.
+
+Rules:
+- Return valid JSON only, no markdown.
+- Optimize ecommerce category/landing content for Vietnamese mens sportswear.
+- Keep claims realistic. Do not invent prices, stock, medical claims, or guarantees.
+- Preserve the page intent and URL.
+- contentHtml must be clean HTML, no <script>, no inline <style>.
+- Include useful H2/H3, FAQ, CTA, and internal links when relevant.
+- seoTitle should be 45-65 characters when possible.
+- seoDescription should be 120-165 characters when possible.
+
+Return exactly:
+{
+  "page": "URL",
+  "slug": "page-slug",
+  "query": "primary keyword",
+  "seoTitle": "SEO title",
+  "seoDescription": "Meta description",
+  "heading": "H1/heading",
+  "contentHtml": "<section>...</section>",
+  "changeSummary": ["Change 1", "Change 2"],
+  "reviewChecklist": ["Check 1", "Check 2"]
+}`;
+
+  try {
+    const data = await callGemini(systemPrompt, prompt);
+    return {
+      page: String(data?.page || '').trim(),
+      slug: String(data?.slug || '').trim(),
+      query: String(data?.query || '').trim(),
+      seoTitle: String(data?.seoTitle || data?.suggestedTitle || '').trim(),
+      seoDescription: String(data?.seoDescription || data?.suggestedMeta || '').trim(),
+      heading: String(data?.heading || '').trim(),
+      contentHtml: String(data?.contentHtml || data?.html || data?.content || '').trim(),
+      changeSummary: normalizeStringArray(data?.changeSummary),
+      reviewChecklist: normalizeStringArray(data?.reviewChecklist),
+    };
+  } catch (error: any) {
+    if (error.message.includes('API Key') || error.message.includes('not valid')) {
+      throw new Error('API Key AI chua dung hoac chua duoc cau hinh.');
+    }
+    throw error;
+  }
+}
+
 export async function generateBlogSEO(prompt: string): Promise<AIBlogData> {
   const systemPrompt = `Bạn là một Content Strategist SEO cho URSport, chuyên thời trang nam thể thao/casual tại Việt Nam.
 Viết 1 bài blog chuyên sâu, hữu ích và có khả năng chuyển đổi mềm cho URSport. Nội dung phải bám đúng brief, không viết hàng loạt, không tự đổi chủ đề.
@@ -129,6 +367,11 @@ Yêu cầu bắt buộc:
 - Nếu prompt có primary keyword, intent, funnel, internal links, outline H2/H3 thì phải bám sát các dữ liệu đó.
 - SEO title nên 45-65 ký tự. Meta description nên 120-165 ký tự.
 - contentHtml dài khoảng 900-1400 từ, không mỏng nội dung, không lặp ý.
+- Bắt buộc chèn đúng 3 block ảnh trong contentHtml theo cấu trúc:
+  <figure><img src="CLOUDINARY_OR_UPLOADED_IMAGE_URL" alt="Mô tả ảnh tự nhiên có keyword và ngữ cảnh" height="800" width="1200" title="Title ảnh ngắn gọn"><figcaption>Ghi chú ảnh một câu hữu ích cho người đọc.</figcaption></figure>
+- 3 ảnh phải gồm: 1 ảnh hero/ngữ cảnh đầu bài, 1 ảnh chi tiết sản phẩm/chất liệu/form, 1 ảnh so sánh/checklist/lifestyle theo chủ đề. Không dùng markdown image, không dùng ảnh ngoài domain, không thêm style inline.
+- Không tự bịa đường dẫn /images/blog/. Chỉ dùng URL ảnh đã upload trực tiếp lên Cloudinary/thư viện ảnh, hoặc giữ placeholder CLOUDINARY_OR_UPLOADED_IMAGE_URL để admin thay bằng ảnh upload. Alt dưới 125 ký tự, mô tả đúng ảnh, không nhồi keyword. Title ngắn hơn alt. Figcaption phải bổ sung ý nghĩa thực tế, không lặp y nguyên alt.
+- Trả thêm imagePrompts gồm đúng 3 mục, mỗi mục có filename, alt, title, caption, prompt để tạo ảnh. Prompt tạo ảnh phải yêu cầu ảnh tỉ lệ 3:2, không chữ trên ảnh, phong cách ecommerce/lifestyle nam Việt Nam, sản phẩm rõ.
 - Khi bài có phần so sánh, khác nhau, ưu/nhược điểm, chọn giữa 2-4 lựa chọn hoặc prompt có các từ "so sánh", "vs", "khác gì", phải chèn 1 bảng HTML trong contentHtml theo đúng cấu trúc:
   <div class="table-wrap"><table class="compare-table"><thead><tr><th>Tiêu chí</th><th>Lựa chọn 1</th><th>Lựa chọn 2</th></tr></thead><tbody><tr><td>Tiêu chí cụ thể</td><td><span class="badge-good">Điểm mạnh</span></td><td><span class="badge-normal">Hạn chế</span></td></tr></tbody></table></div>
 - Bảng so sánh phải đặt ngay sau đoạn giới thiệu phần so sánh, dùng class table-wrap, compare-table, badge-good, badge-normal. Không dùng markdown table, không tự thêm thẻ <style>.
@@ -147,13 +390,22 @@ TRẢ VỀ JSON CHUẨN:
   "metaTitle": "Meta title SEO",
   "metaDescription": "Mô tả bài viết hấp dẫn",
   "internalLinkMap": ["Link: Áo polo", "Link: Quần short"],
+  "imagePrompts": [
+    {
+      "filename": "slug-bai-viet-hero.webp",
+      "alt": "Mô tả ảnh tự nhiên, có keyword chính và đúng ngữ cảnh",
+      "title": "Title ảnh ngắn gọn",
+      "caption": "Ghi chú ảnh một câu hữu ích.",
+      "prompt": "Prompt tạo ảnh tỉ lệ 3:2, không chữ trên ảnh, phong cách ecommerce/lifestyle nam Việt Nam, sản phẩm rõ."
+    }
+  ],
   "cta": "Lời kêu gọi mua hàng khéo léo",
   "faqSchema": "FAQ Schema cho bài viết",
   "socialCaption": "Caption chia sẻ lên mạng xã hội"
 }`;
 
   try {
-    return await callGemini(systemPrompt, prompt);
+    return normalizeAIBlogData(await callGemini(systemPrompt, prompt));
   } catch (error: any) {
     if (error.message.includes('API Key') || error.message.includes('not valid')) {
       throw new Error('API Key Gemini chưa chính xác. Hãy lấy Key miễn phí từ Google AI Studio.');
@@ -202,56 +454,41 @@ async function callGemini(systemInstruction: string, userPrompt: string) {
     }
   }
 
-  // --- GEMINI ---
-  const apiKey = getGeminiApiKey();
-  if (!apiKey) throw new Error('Gemini API Key chưa được cấu hình.');
-
-  // Sử dụng bản v1beta để hỗ trợ đầy đủ response_mime_type
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-  
-  const payload = {
-    contents: [
-      { role: 'user', parts: [{ text: `[SYSTEM INSTRUCTION]\n${systemInstruction}\n\n[USER PROMPT]\n${userPrompt}` }] }
-    ],
-    generationConfig: {
-      response_mime_type: "application/json"
-    }
-  };
-
+  // --- GEMINI via server proxy ---
   try {
-    const response = await fetch(url, {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('Ban can dang nhap admin de dung AI.');
+
+    const response = await fetch('/api/gemini-json', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ systemInstruction, userPrompt })
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error("Gemini Raw Error:", errorData);
-      
-      const googleMessage = errorData.error?.message || 'Unknown Google Error';
-      const googleStatus = errorData.error?.status || 'Unknown Status';
-      
-      throw new Error(`Google AI Error: ${googleMessage} (${googleStatus}). Vui lòng kiểm tra lại Key trong phần cài đặt.`);
+      throw new Error(errorData.error || `AI proxy error (${response.status})`);
     }
 
     const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    
-    if (!text) throw new Error('Không nhận được phản hồi từ AI');
-    
-    // Xử lý làm sạch chuỗi JSON nếu AI trả về kèm markdown
+    const text = data.text;
+    if (!text) throw new Error('Khong nhan duoc phan hoi tu AI');
+
     const cleanText = text
       .replace(/```json/g, '')
       .replace(/```/g, '')
       .trim();
-    
+
     return JSON.parse(cleanText);
   } catch (error: any) {
-    console.error('Gemini error:', error);
+    console.error('Gemini proxy error:', error);
     if (error.name === 'SyntaxError') {
-      throw new Error('AI trả về định dạng không hợp lệ. Vui lòng thử lại.');
+      throw new Error('AI tra ve dinh dang khong hop le. Vui long thu lai.');
     }
-    throw new Error(error.message || 'Lỗi xử lý Gemini AI');
+    throw new Error(error.message || 'Loi xu ly Gemini AI');
   }
+
 }

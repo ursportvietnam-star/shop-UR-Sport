@@ -109,6 +109,30 @@
   overflow-wrap: break-word !important;
 }
 
+/* Link styling */
+.product-description-container a {
+  color: #1e4b64 !important;
+  text-decoration: underline !important;
+  text-decoration-color: #1e4b64 !important;
+  text-underline-offset: 2px !important;
+  text-decoration-thickness: 1.5px !important;
+  transition: all 0.2s ease !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+.product-description-container a:hover {
+  color: #153446 !important;
+  text-decoration-color: #153446 !important;
+  background-color: rgba(30, 75, 100, 0.1) !important;
+  padding: 2px 4px !important;
+  border-radius: 2px !important;
+}
+
+.product-description-container a:visited {
+  color: #0f3a52 !important;
+}
+
 /* Block elements (excluding video containers) */
 .product-description-container p,
 .product-description-container li,

@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { showAddToCartToast } from './AddToCartToast';
 import { ProductQuickViewModal } from './ProductQuickViewModal';
 import { ProductVariantPicker } from './ProductVariantPicker';
+import { getProductPath } from '../lib/productUrls';
 
 interface ProductCardProps {
   product: Product;
@@ -76,7 +77,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
     : 0;
 
   const hasOptions = (product.colors && product.colors.length > 0) || (product.sizes && product.sizes.length > 0);
-  const productUrl = `/${product.slug || product.id}`;
+  const productUrl = getProductPath(product);
 
   return (
     <div 

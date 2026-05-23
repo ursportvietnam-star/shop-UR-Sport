@@ -19,15 +19,15 @@ Secondary keywords: cách chọn size áo thun nam URSport, kích thước áo t
 Search intent: Informational
 Funnel: TOFU
 Priority: HIGH
-Canonical URL: https://ursport.vn/blog/bang-size-ao-thun-nam-ursport
+Canonical URL: https://shop-ur-sport.vercel.app/blog/bang-size-ao-thun-nam-ursport
 
 2. INTERNAL LINK MAP
-Category: /bang-size
+Category: /ao-thun-nam
 Subcategory: /ao-thun-nam
-Collection: /collection/mua-he
+Collection: /ao-thun-nam
 Related blog: /blog/cach-chon-size-ao-thun-nam-khi-mua-online
-Commercial page: /danh-muc/ao-thun-nam
-Product target: /san-pham/ao-thun-nam-cotton-compact-ursport
+Commercial page: /ao-thun-nam
+Product target: /san-pham/ao-thun-cotton-starship-premium
 
 3. CONTENT BLUEPRINT
 H2 #1: Bảng size áo thun nam URSport? Chi tiết thông số chuẩn cơ thể đàn ông Việt
@@ -86,15 +86,15 @@ Secondary keywords: mẹo đo size áo thun nam tại nhà, cẩm nang chọn si
 Search intent: Informational
 Funnel: TOFU
 Priority: HIGH
-Canonical URL: https://ursport.vn/blog/cach-chon-size-ao-thun-nam-khi-mua-online
+Canonical URL: https://shop-ur-sport.vercel.app/blog/cach-chon-size-ao-thun-nam-khi-mua-online
 
 2. INTERNAL LINK MAP
-Category: /bang-size
+Category: /ao-thun-nam
 Subcategory: /ao-thun-nam
-Collection: /collection/mua-he
+Collection: /ao-thun-nam
 Related blog: /blog/bang-size-ao-thun-nam-ursport
-Commercial page: /danh-muc/ao-thun-nam
-Product target: /san-pham/ao-thun-nam-cotton-compact-ursport
+Commercial page: /ao-thun-nam
+Product target: /san-pham/ao-thun-cotton-starship-premium
 
 3. CONTENT BLUEPRINT
 H2 #1: Cách chọn size áo thun nam khi mua online? Quy trình 3 bước chuẩn hóa của chuyên gia
@@ -150,15 +150,15 @@ Secondary keywords: size áo thun cho nam 1m70 65kg, quần đùi thể thao cho
 Search intent: Informational
 Funnel: TOFU
 Priority: HIGH
-Canonical URL: https://ursport.vn/blog/nam-1m70-65kg-mac-size-gi
+Canonical URL: https://shop-ur-sport.vercel.app/blog/nam-1m70-65kg-mac-size-gi
 
 2. INTERNAL LINK MAP
-Category: /bang-size
+Category: /ao-thun-nam
 Subcategory: /ao-thun-nam
-Collection: /collection/mua-he
+Collection: /ao-thun-nam
 Related blog: /blog/nam-1m75-70kg-mac-size-gi
-Commercial page: /danh-muc/ao-thun-nam
-Product target: /san-pham/ao-thun-nam-cotton-compact-ursport
+Commercial page: /ao-thun-nam
+Product target: /san-pham/ao-thun-cotton-starship-premium
 
 3. CONTENT BLUEPRINT
 H2 #1: Nam 1m70 65kg mặc size gì? Kích thước size M URSport là sự lựa chọn vàng độc tôn
@@ -213,15 +213,15 @@ Secondary keywords: size áo thun nam cao 1m75 nặng 70kg URSport, kích thư�
 Search intent: Informational
 Funnel: TOFU
 Priority: HIGH
-Canonical URL: https://ursport.vn/blog/nam-1m75-70kg-mac-size-gi
+Canonical URL: https://shop-ur-sport.vercel.app/blog/nam-1m75-70kg-mac-size-gi
 
 2. INTERNAL LINK MAP
-Category: /bang-size
+Category: /ao-thun-nam
 Subcategory: /ao-thun-nam
-Collection: /collection/mua-he
+Collection: /ao-thun-nam
 Related blog: /blog/nam-1m70-65kg-mac-size-gi
-Commercial page: /danh-muc/ao-thun-nam
-Product target: /san-pham/ao-thun-nam-cotton-compact-ursport
+Commercial page: /ao-thun-nam
+Product target: /san-pham/ao-thun-cotton-starship-premium
 
 3. CONTENT BLUEPRINT
 H2 #1: Nam 1m75 70kg mặc size gì? Kích thước size L URSport đo ni đóng giày cho bạn
@@ -277,15 +277,15 @@ Secondary keywords: size áo thun nam cao 1m65 nặng 60kg URSport, áo polo nam
 Search intent: Informational
 Funnel: TOFU
 Priority: HIGH
-Canonical URL: https://ursport.vn/blog/nam-1m65-60kg-mac-size-gi
+Canonical URL: https://shop-ur-sport.vercel.app/blog/nam-1m65-60kg-mac-size-gi
 
 2. INTERNAL LINK MAP
-Category: /bang-size
+Category: /ao-thun-nam
 Subcategory: /ao-thun-nam
-Collection: /collection/mua-he
+Collection: /ao-thun-nam
 Related blog: /blog/nam-1m70-65kg-mac-size-gi
-Commercial page: /danh-muc/ao-thun-nam
-Product target: /san-pham/ao-thun-nam-cotton-compact-ursport
+Commercial page: /ao-thun-nam
+Product target: /san-pham/ao-thun-cotton-starship-premium
 
 3. CONTENT BLUEPRINT
 H2 #1: Nam 1m65 60kg mặc size gì? Vì sao size M URSport ôm phom lịch sự trẻ trung nhất
@@ -341,15 +341,15 @@ Secondary keywords: size áo thun nam cao 1m80 nặng 75kg URSport, áo polo gym
 Search intent: Informational
 Funnel: TOFU
 Priority: HIGH
-Canonical URL: https://ursport.vn/blog/nam-1m80-75kg-mac-size-gi
+Canonical URL: https://shop-ur-sport.vercel.app/blog/nam-1m80-75kg-mac-size-gi
 
 2. INTERNAL LINK MAP
-Category: /bang-size
+Category: /ao-thun-nam
 Subcategory: /ao-thun-nam
-Collection: /collection/mua-he
+Collection: /ao-thun-nam
 Related blog: /blog/nam-1m75-70kg-mac-size-gi
-Commercial page: /danh-muc/ao-thun-nam
-Product target: /san-pham/ao-thun-nam-cotton-compact-ursport
+Commercial page: /ao-thun-nam
+Product target: /san-pham/ao-thun-cotton-starship-premium
 
 3. CONTENT BLUEPRINT
 H2 #1: Nam 1m80 75kg mặc size gì? Kích thước size XL URSport sinh ra dành cho vóc dáng lực sĩ của bạn
@@ -405,15 +405,15 @@ Secondary keywords: hướng dẫn đo kích thước vai áo nam, mẹo tự đ
 Search intent: Informational
 Funnel: TOFU
 Priority: HIGH
-Canonical URL: https://ursport.vn/blog/cach-do-vai-ao-thun-nam
+Canonical URL: https://shop-ur-sport.vercel.app/blog/cach-do-vai-ao-thun-nam
 
 2. INTERNAL LINK MAP
-Category: /bang-size
+Category: /ao-thun-nam
 Subcategory: /ao-thun-nam
-Collection: /collection/mua-he
+Collection: /ao-thun-nam
 Related blog: /blog/cach-do-vong-nguc-ao-thun-nam
-Commercial page: /danh-muc/ao-thun-nam
-Product target: /san-pham/ao-thun-nam-cotton-compact-ursport
+Commercial page: /ao-thun-nam
+Product target: /san-pham/ao-thun-cotton-starship-premium
 
 3. CONTENT BLUEPRINT
 H2 #1: Cách đo vai áo thun nam? Phương pháp trải phẳng áo flatlay đo từ đường chỉ nối vai
@@ -470,15 +470,15 @@ Secondary keywords: hướng dẫn tự đo ngực áo thun nam tại nhà, đo 
 Search intent: Informational
 Funnel: TOFU
 Priority: HIGH
-Canonical URL: https://ursport.vn/blog/cach-do-vong-nguc-ao-thun-nam
+Canonical URL: https://shop-ur-sport.vercel.app/blog/cach-do-vong-nguc-ao-thun-nam
 
 2. INTERNAL LINK MAP
-Category: /bang-size
+Category: /ao-thun-nam
 Subcategory: /ao-thun-nam
-Collection: /collection/mua-he
+Collection: /ao-thun-nam
 Related blog: /blog/cach-do-vai-ao-thun-nam
-Commercial page: /danh-muc/ao-thun-nam
-Product target: /san-pham/ao-thun-nam-cotton-compact-ursport
+Commercial page: /ao-thun-nam
+Product target: /san-pham/ao-thun-cotton-starship-premium
 
 3. CONTENT BLUEPRINT
 H2 #1: Cách đo vòng ngực áo thun nam? Kỹ thuật đo flatlay 2cm dưới nách sườn áo cũ phẳng phiu
@@ -535,15 +535,15 @@ Secondary keywords: hướng dẫn tự đo dài áo thun nam tại nhà, đo fl
 Search intent: Informational
 Funnel: TOFU
 Priority: HIGH
-Canonical URL: https://ursport.vn/blog/cach-do-chieu-dai-ao-thun-nam
+Canonical URL: https://shop-ur-sport.vercel.app/blog/cach-do-chieu-dai-ao-thun-nam
 
 2. INTERNAL LINK MAP
-Category: /bang-size
+Category: /ao-thun-nam
 Subcategory: /ao-thun-nam
-Collection: /collection/mua-he
+Collection: /ao-thun-nam
 Related blog: /blog/cach-do-vong-nguc-ao-thun-nam
-Commercial page: /danh-muc/ao-thun-nam
-Product target: /san-pham/ao-thun-nam-cotton-compact-ursport
+Commercial page: /ao-thun-nam
+Product target: /san-pham/ao-thun-cotton-starship-premium
 
 3. CONTENT BLUEPRINT
 H2 #1: Cách đo chiều dài áo thun nam? Kỹ thuật đo flatlay từ đỉnh vai cổ dọc sát xương cá vạt áo cũ
@@ -600,15 +600,15 @@ Secondary keywords: bảng size quần jogger thể thao nam URSport, kích thư
 Search intent: Informational
 Funnel: TOFU
 Priority: HIGH
-Canonical URL: https://ursport.vn/blog/bang-size-quan-the-thao-nam
+Canonical URL: https://shop-ur-sport.vercel.app/blog/bang-size-quan-the-thao-nam
 
 2. INTERNAL LINK MAP
-Category: /bang-size
+Category: /quan-the-thao-nam
 Subcategory: /quan-the-thao-nam
-Collection: /collection/mua-he
+Collection: /ao-thun-nam
 Related blog: /blog/cach-chon-size-quan-jogger-nam
-Commercial page: /danh-muc/quan-the-thao-nam
-Product target: /san-pham/quan-short-the-thao-ursport
+Commercial page: /quan-the-thao-nam
+Product target: /san-pham/quan-short-boi-urbeach
 
 3. CONTENT BLUEPRINT
 H2 #1: Bảng size quần thể thao nam? Chi tiết số đo bụng mông đùi dài ống quần URSport
@@ -666,15 +666,15 @@ Secondary keywords: size quần jogger nam theo chiều cao cân nặng, cách �
 Search intent: Informational
 Funnel: TOFU
 Priority: MEDIUM
-Canonical URL: https://ursport.vn/blog/cach-chon-size-quan-jogger-nam
+Canonical URL: https://shop-ur-sport.vercel.app/blog/cach-chon-size-quan-jogger-nam
 
 2. INTERNAL LINK MAP
-Category: /bang-size
+Category: /quan-the-thao-nam
 Subcategory: /quan-the-thao-nam
-Collection: /collection/mua-he
+Collection: /ao-thun-nam
 Related blog: /blog/cach-chon-size-quan-short-nam
-Commercial page: /danh-muc/quan-the-thao-nam
-Product target: /san-pham/quan-short-the-thao-ursport
+Commercial page: /quan-the-thao-nam
+Product target: /san-pham/quan-short-boi-urbeach
 
 3. CONTENT BLUEPRINT
 H2 #1: Cách chọn size quần jogger nam? Chi tiết số đo chiều dài ống quần và vòng mông URSport
@@ -732,15 +732,15 @@ Secondary keywords: size quần short thể thao nam theo cân nặng chiều ca
 Search intent: Informational
 Funnel: TOFU
 Priority: MEDIUM
-Canonical URL: https://ursport.vn/blog/cach-chon-size-quan-short-nam
+Canonical URL: https://shop-ur-sport.vercel.app/blog/cach-chon-size-quan-short-nam
 
 2. INTERNAL LINK MAP
-Category: /bang-size
+Category: /quan-the-thao-nam
 Subcategory: /quan-the-thao-nam
-Collection: /collection/mua-he
+Collection: /ao-thun-nam
 Related blog: /blog/cach-chon-size-quan-jogger-nam
-Commercial page: /danh-muc/quan-the-thao-nam
-Product target: /san-pham/quan-short-the-thao-ursport
+Commercial page: /quan-the-thao-nam
+Product target: /san-pham/quan-short-boi-urbeach
 
 3. CONTENT BLUEPRINT
 H2 #1: Cách chọn size quần short nam? Chi tiết thông số đùi mông chiều dài ống URSport
@@ -798,15 +798,15 @@ Secondary keywords: cách chọn size áo thun nam bụng bia URSport, mẹo gi�
 Search intent: Informational
 Funnel: TOFU
 Priority: MEDIUM
-Canonical URL: https://ursport.vn/blog/nam-bung-to-nen-chon-size-ao-the-nao
+Canonical URL: https://shop-ur-sport.vercel.app/blog/nam-bung-to-nen-chon-size-ao-the-nao
 
 2. INTERNAL LINK MAP
-Category: /bang-size
+Category: /ao-thun-nam
 Subcategory: /ao-thun-nam
-Collection: /collection/mua-he
+Collection: /ao-thun-nam
 Related blog: /blog/nam-vai-rong-nen-chon-size-ao-the-nao
-Commercial page: /danh-muc/ao-thun-nam
-Product target: /san-pham/ao-thun-nam-cotton-compact-ursport
+Commercial page: /ao-thun-nam
+Product target: /san-pham/ao-thun-cotton-starship-premium
 
 3. CONTENT BLUEPRINT
 H2 #1: Nam bụng to nên chọn size áo thế nào? Quy tắc vàng "Tăng 1 size & Ưu tiên Regular Fit"
@@ -863,15 +863,15 @@ Secondary keywords: cách chọn size áo thun nam vai u gymer URSport, kích th
 Search intent: Informational
 Funnel: TOFU
 Priority: MEDIUM
-Canonical URL: https://ursport.vn/blog/nam-vai-rong-nen-chon-size-ao-the-nao
+Canonical URL: https://shop-ur-sport.vercel.app/blog/nam-vai-rong-nen-chon-size-ao-the-nao
 
 2. INTERNAL LINK MAP
-Category: /bang-size
+Category: /ao-thun-nam
 Subcategory: /ao-thun-nam
-Collection: /collection/mua-he
+Collection: /ao-thun-nam
 Related blog: /blog/nam-bung-to-nen-chon-size-ao-the-nao
-Commercial page: /danh-muc/ao-thun-nam
-Product target: /san-pham/ao-thun-nam-cotton-compact-ursport
+Commercial page: /ao-thun-nam
+Product target: /san-pham/ao-thun-cotton-starship-premium
 
 3. CONTENT BLUEPRINT
 H2 #1: Nam vai rộng nên chọn size áo thế nào? Kỹ thuật chọn theo số đo vai xương đòn URSport
@@ -928,15 +928,15 @@ Secondary keywords: size áo thun nam gầy URSport, cách chọn form áo regul
 Search intent: Informational
 Funnel: TOFU
 Priority: MEDIUM
-Canonical URL: https://ursport.vn/blog/nam-gay-nen-chon-form-ao-nao
+Canonical URL: https://shop-ur-sport.vercel.app/blog/nam-gay-nen-chon-form-ao-nao
 
 2. INTERNAL LINK MAP
-Category: /bang-size
+Category: /ao-thun-nam
 Subcategory: /ao-thun-nam
-Collection: /collection/mua-he
+Collection: /ao-thun-nam
 Related blog: /blog/nam-beo-nen-chon-form-ao-nao
-Commercial page: /danh-muc/ao-thun-nam
-Product target: /san-pham/ao-thun-nam-cotton-compact-ursport
+Commercial page: /ao-thun-nam
+Product target: /san-pham/ao-thun-cotton-starship-premium
 
 3. CONTENT BLUEPRINT
 H2 #1: Nam gầy nên chọn form áo nào? Vì sao Regular Fit dệt dày dặn là sự cứu rỗi độc tôn
@@ -992,15 +992,15 @@ Secondary keywords: size áo thun nam béo URSport, form áo regular fit giấu 
 Search intent: Informational
 Funnel: TOFU
 Priority: MEDIUM
-Canonical URL: https://ursport.vn/blog/nam-beo-nen-chon-form-ao-nao
+Canonical URL: https://shop-ur-sport.vercel.app/blog/nam-beo-nen-chon-form-ao-nao
 
 2. INTERNAL LINK MAP
-Category: /bang-size
+Category: /ao-thun-nam
 Subcategory: /ao-thun-nam
-Collection: /collection/mua-he
+Collection: /ao-thun-nam
 Related blog: /blog/nam-gay-nen-chon-form-ao-nao
-Commercial page: /danh-muc/ao-thun-nam
-Product target: /san-pham/ao-thun-nam-cotton-compact-ursport
+Commercial page: /ao-thun-nam
+Product target: /san-pham/ao-thun-cotton-starship-premium
 
 3. CONTENT BLUEPRINT
 H2 #1: Nam béo nên chọn form áo nào? Ưu tiên hàng đầu Regular Fit tối màu dệt đao nén dày dặn
@@ -1057,15 +1057,15 @@ Secondary keywords: cách chọn size áo thun nam XXL URSport, phối đồ nam
 Search intent: Informational
 Funnel: TOFU
 Priority: MEDIUM
-Canonical URL: https://ursport.vn/blog/ao-thun-nam-big-size-chon-sao-cho-dep
+Canonical URL: https://shop-ur-sport.vercel.app/blog/ao-thun-nam-big-size-chon-sao-cho-dep
 
 2. INTERNAL LINK MAP
-Category: /bang-size
+Category: /ao-thun-nam
 Subcategory: /ao-thun-nam
-Collection: /collection/mua-he
+Collection: /ao-thun-nam
 Related blog: /blog/nen-tang-size-hay-mac-dung-size
-Commercial page: /danh-muc/ao-thun-nam
-Product target: /san-pham/ao-thun-nam-cotton-compact-ursport
+Commercial page: /ao-thun-nam
+Product target: /san-pham/ao-thun-cotton-starship-premium
 
 3. CONTENT BLUEPRINT
 H2 #1: Áo thun nam big size chọn sao cho đẹp? Chọn chất liệu cotton compact đao nén dày dặn đứng phom
@@ -1121,15 +1121,15 @@ Secondary keywords: mẹo xử lý áo thun online bị rộng tại nhà, cách
 Search intent: Informational
 Funnel: TOFU
 Priority: MEDIUM
-Canonical URL: https://ursport.vn/blog/mua-ao-online-bi-rong-phai-lam-sao
+Canonical URL: https://shop-ur-sport.vercel.app/blog/mua-ao-online-bi-rong-phai-lam-sao
 
 2. INTERNAL LINK MAP
-Category: /bang-size
+Category: /ao-thun-nam
 Subcategory: /ao-thun-nam
-Collection: /collection/mua-he
+Collection: /ao-thun-nam
 Related blog: /blog/mua-ao-online-bi-chat-phai-lam-sao
-Commercial page: /danh-muc/ao-thun-nam
-Product target: /san-pham/ao-thun-nam-cotton-compact-ursport
+Commercial page: /ao-thun-nam
+Product target: /san-pham/ao-thun-cotton-starship-premium
 
 3. CONTENT BLUEPRINT
 H2 #1: Mua áo online bị rộng phải làm sao? Biến tấu ngay thành phom dáng Oversize thời thượng
@@ -1186,15 +1186,15 @@ Secondary keywords: cách kéo giãn áo thun bị chật chật nách nách URS
 Search intent: Informational
 Funnel: TOFU
 Priority: MEDIUM
-Canonical URL: https://ursport.vn/blog/mua-ao-online-bi-chat-phai-lam-sao
+Canonical URL: https://shop-ur-sport.vercel.app/blog/mua-ao-online-bi-chat-phai-lam-sao
 
 2. INTERNAL LINK MAP
-Category: /bang-size
+Category: /ao-thun-nam
 Subcategory: /ao-thun-nam
-Collection: /collection/mua-he
+Collection: /ao-thun-nam
 Related blog: /blog/mua-ao-online-bi-rong-phai-lam-sao
-Commercial page: /danh-muc/ao-thun-nam
-Product target: /san-pham/ao-thun-nam-cotton-compact-ursport
+Commercial page: /ao-thun-nam
+Product target: /san-pham/ao-thun-cotton-starship-premium
 
 3. CONTENT BLUEPRINT
 H2 #1: Mua áo online bị chật phải làm sao? Mẹo ngâm dầu xả tóc trẻ em để giãn lỏng sợi cotton compact
@@ -1250,15 +1250,15 @@ Secondary keywords: cách chọn size áo thun nam chuẩn URSport, mẹo mặc 
 Search intent: Informational
 Funnel: TOFU
 Priority: MEDIUM
-Canonical URL: https://ursport.vn/blog/nen-tang-size-hay-mac-dung-size
+Canonical URL: https://shop-ur-sport.vercel.app/blog/nen-tang-size-hay-mac-dung-size
 
 2. INTERNAL LINK MAP
-Category: /bang-size
+Category: /ao-thun-nam
 Subcategory: /ao-thun-nam
-Collection: /collection/mua-he
+Collection: /ao-thun-nam
 Related blog: /blog/ao-thun-nam-big-size-chon-sao-cho-dep
-Commercial page: /danh-muc/ao-thun-nam
-Product target: /san-pham/ao-thun-nam-cotton-compact-ursport
+Commercial page: /ao-thun-nam
+Product target: /san-pham/ao-thun-cotton-starship-premium
 
 3. CONTENT BLUEPRINT
 H2 #1: Nên tăng size hay mặc đúng size? Dựa trên thể trạng hình thể cơ bắp nam giới Việt Nam
@@ -1312,15 +1312,15 @@ Secondary keywords: cách chọn phom áo thun nam theo cân nặng URSport, kí
 Search intent: Informational
 Funnel: TOFU
 Priority: MEDIUM
-Canonical URL: https://ursport.vn/blog/slim-fit-regular-fit-oversize-chon-theo-can-nang
+Canonical URL: https://shop-ur-sport.vercel.app/blog/slim-fit-regular-fit-oversize-chon-theo-can-nang
 
 2. INTERNAL LINK MAP
-Category: /bang-size
+Category: /ao-thun-nam
 Subcategory: /ao-thun-nam
-Collection: /collection/mua-he
+Collection: /ao-thun-nam
 Related blog: /blog/cach-chon-size-do-gym-nam
-Commercial page: /danh-muc/ao-thun-nam
-Product target: /san-pham/ao-thun-nam-cotton-compact-ursport
+Commercial page: /ao-thun-nam
+Product target: /san-pham/ao-thun-cotton-starship-premium
 
 3. CONTENT BLUEPRINT
 H2 #1: Slim fit, regular fit, oversize chọn theo cân nặng? Giải mã 3 phom dáng kinh điển URSport
@@ -1377,15 +1377,15 @@ Secondary keywords: size quần áo tập gym nam theo cân nặng chiều cao U
 Search intent: Informational
 Funnel: TOFU
 Priority: MEDIUM
-Canonical URL: https://ursport.vn/blog/cach-chon-size-do-gym-nam
+Canonical URL: https://shop-ur-sport.vercel.app/blog/cach-chon-size-do-gym-nam
 
 2. INTERNAL LINK MAP
-Category: /bang-size
-Subcategory: /do-tap-gym-nam
-Collection: /collection/mua-he
+Category: /ao-thun-nam
+Subcategory: /ao-thun-the-thao-nam
+Collection: /ao-thun-nam
 Related blog: /blog/slim-fit-regular-fit-oversize-chon-theo-can-nang
-Commercial page: /danh-muc/do-tap-gym-nam
-Product target: /san-pham/bo-do-tap-gym-nam-ursport
+Commercial page: /ao-thun-the-thao-nam
+Product target: /san-pham/quan-dui-tap-gym-2-lop
 
 3. CONTENT BLUEPRINT
 H2 #1: Cách chọn size đồ gym nam? Chi tiết thông số đùi mông chiều ngang vai áo URSport
@@ -1444,15 +1444,15 @@ Secondary keywords: size quần áo mặc hằng ngày nam theo chiều cao cân
 Search intent: Informational
 Funnel: TOFU
 Priority: MEDIUM
-Canonical URL: https://ursport.vn/blog/cach-chon-size-do-mac-hang-ngay
+Canonical URL: https://shop-ur-sport.vercel.app/blog/cach-chon-size-do-mac-hang-ngay
 
 2. INTERNAL LINK MAP
-Category: /bang-size
+Category: /ao-thun-nam
 Subcategory: /ao-thun-nam
-Collection: /collection/mua-he
+Collection: /ao-thun-nam
 Related blog: /blog/checklist-chon-size-truoc-khi-dat-hang
-Commercial page: /danh-muc/ao-thun-nam
-Product target: /san-pham/ao-thun-nam-cotton-compact-ursport
+Commercial page: /ao-thun-nam
+Product target: /san-pham/ao-thun-cotton-starship-premium
 
 3. CONTENT BLUEPRINT
 H2 #1: Cách chọn size đồ mặc hằng ngày? Dựa trên thời gian mặc dài lâu (8 - 12 tiếng liên tục)
@@ -1509,15 +1509,15 @@ Secondary keywords: mẹo đo chọn size quần áo online chuẩn URSport, 5 b
 Search intent: Informational
 Funnel: TOFU
 Priority: MEDIUM
-Canonical URL: https://ursport.vn/blog/checklist-chon-size-truoc-khi-dat-hang
+Canonical URL: https://shop-ur-sport.vercel.app/blog/checklist-chon-size-truoc-khi-dat-hang
 
 2. INTERNAL LINK MAP
-Category: /bang-size
+Category: /ao-thun-nam
 Subcategory: /ao-thun-nam
-Collection: /collection/mua-he
+Collection: /ao-thun-nam
 Related blog: /blog/faq-bang-size-ursport
-Commercial page: /danh-muc/ao-thun-nam
-Product target: /san-pham/ao-thun-nam-cotton-compact-ursport
+Commercial page: /ao-thun-nam
+Product target: /san-pham/ao-thun-cotton-starship-premium
 
 3. CONTENT BLUEPRINT
 H2 #1: Checklist chọn size trước khi đặt hàng? 5 Bước vàng đo chuẩn đét 100% tại nhà
@@ -1575,15 +1575,15 @@ Secondary keywords: giải đáp thắc mắc chọn size đồ nam URSport, ch�
 Search intent: Informational
 Funnel: TOFU
 Priority: MEDIUM
-Canonical URL: https://ursport.vn/blog/faq-bang-size-ursport
+Canonical URL: https://shop-ur-sport.vercel.app/blog/faq-bang-size-ursport
 
 2. INTERNAL LINK MAP
-Category: /bang-size
+Category: /ao-thun-nam
 Subcategory: /ao-thun-nam
-Collection: /collection/mua-he
+Collection: /ao-thun-nam
 Related blog: /blog/slim-fit-regular-fit-oversize-chon-theo-can-nang
-Commercial page: /danh-muc/ao-thun-nam
-Product target: /san-pham/ao-thun-nam-cotton-compact-ursport
+Commercial page: /ao-thun-nam
+Product target: /san-pham/ao-thun-cotton-starship-premium
 
 3. CONTENT BLUEPRINT
 H2 #1: FAQ bảng size URSport? Giải đáp tần suất co rút co cơ lý học và độ dão chảy xệ vạt áo

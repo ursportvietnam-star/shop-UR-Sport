@@ -34,8 +34,10 @@ import { SITE_URL, absoluteUrl, buildBreadcrumbSchema, buildSeoGraph, merchantRe
 import {
   CATEGORY_PRODUCT_MATCH_TERMS,
   belongsToCategory as categoryBelongsTo,
-  DEFAULT_SEO_SUBCATEGORIES
+  DEFAULT_SEO_SUBCATEGORIES,
+  slugifyVietnamese
 } from './lib/categoryConfig';
+import { getProductPath } from './lib/productUrls';
 
 const ProductDetail = React.lazy(() => import('./components/ProductDetail').then(module => ({ default: module.ProductDetail })));
 const Checkout = React.lazy(() => import('./components/Checkout').then(module => ({ default: module.Checkout })));
@@ -47,8 +49,69 @@ const WishlistPage = React.lazy(() => import('./components/WishlistPage').then(m
 const RecentlyViewedPage = React.lazy(() => import('./components/RecentlyViewedPage').then(module => ({ default: module.RecentlyViewedPage })));
 
 const getProductUrl = (product: Product) => {
-  return `/${product.slug || product.id}`;
+  return getProductPath(product);
 };
+
+const COLLECTION_REDIRECTS: Record<string, string> = {
+  'cong-so': '/ao-polo-nam',
+  'basic': '/ao-thun-nam',
+  'cao-cap': '/ao-polo-nam',
+  'the-thao': '/ao-thun-the-thao-nam',
+  'thu-dong': '/ao-thun-nam'
+};
+
+function LegacyCollectionRedirect() {
+  const { collectionSlug } = useParams<{ collectionSlug?: string }>();
+  const navigate = useNavigate();
+
+  React.useEffect(() => {
+    const slug = collectionSlug?.trim().toLowerCase() || '';
+    const fallbackCategory = CATEGORY_METADATA.find(
+      category => category.slug === slug || slugifyVietnamese(category.name) === slug
+    );
+    const target = COLLECTION_REDIRECTS[slug] || (fallbackCategory ? `/${fallbackCategory.slug}` : '/shop');
+    navigate(target, { replace: true });
+  }, [collectionSlug, navigate]);
+
+  return null;
+}
+
+function LegacyBlogRedirect() {
+  const { '*': rest } = useParams<{ '*': string }>();
+  const navigate = useNavigate();
+
+  React.useEffect(() => {
+    if (!rest) {
+      navigate('/blog', { replace: true });
+      return;
+    }
+
+    const segments = rest.split('/').filter(Boolean);
+    while (segments.length > 0 && segments[0].toLowerCase() === 'blog') {
+      segments.shift();
+    }
+
+    if (segments.length === 0) {
+      navigate('/blog', { replace: true });
+      return;
+    }
+
+    const normalized = segments.join('/');
+    if (normalized.startsWith('category/')) {
+      navigate(`/blog/${normalized}`, { replace: true });
+      return;
+    }
+
+    if (segments.length === 1) {
+      navigate(`/blog/${segments[0]}`, { replace: true });
+      return;
+    }
+
+    navigate(`/blog/${segments[segments.length - 1]}`, { replace: true });
+  }, [rest, navigate]);
+
+  return null;
+}
 
 const TRUST_BADGES = [
   { icon: Truck, title: 'Miễn phí vận chuyển', desc: 'Cho đơn hàng từ 500k', detailHref: '/chinh-sach-giao-hang' },
@@ -236,7 +299,7 @@ function ProductComparisonPage() {
                     <td key={product.id} className="p-4 align-top">
                       <button onClick={() => removeCompare(product.id)} className="mb-3 text-xs font-black text-red-500">Bỏ so sánh</button>
                       <img src={product.images?.[0]} alt={product.name} className="mb-3 aspect-square w-32 rounded-2xl object-cover" />
-                      <Link to={`/${product.slug || product.id}`} className="block text-sm font-black text-zinc-950 hover:text-[#1e4b64]">{product.name}</Link>
+                      <Link to={getProductPath(product)} className="block text-sm font-black text-zinc-950 hover:text-[#1e4b64]">{product.name}</Link>
                     </td>
                   ))}
                 </tr>
@@ -477,6 +540,38 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
   const navigate = useNavigate();
   const [featuredFilter, setFeaturedFilter] = useState('Most Popular');
   const { products } = useProducts();
+  const [homeSeo, setHomeSeo] = useState({
+    heading: 'UR Sport - Thương Hiệu Thời Trang Chất Lượng Từ Việt Nam',
+    title: 'UR Sport - Phong Cách Thể Thao Đẳng Cấp | Áo Thun, Áo Polo Nam',
+    description: 'Khám phá bộ sưu tập thời trang thể thao nam cao cấp tại UR Sport. Chuyên cung cấp áo thun, áo polo nam chất lượng, phong cách và bền bỉ. Miễn phí vận chuyển toàn quốc.',
+    keywords: 'ur sport, thời trang thể thao nam, áo thun nam, áo polo nam, đồ tập gym',
+    canonical: '/',
+    robots: 'index, follow'
+  });
+
+  useEffect(() => {
+    const fetchHomeSeo = async () => {
+      try {
+        const seoDoc = await getDoc(doc(db, 'categorySeo', 'homepage'));
+        if (seoDoc.exists()) {
+          const data = seoDoc.data();
+          setHomeSeo(prev => ({
+            heading: data.heading || prev.heading,
+            title: data.seoTitle || prev.title,
+            description: data.seoDescription || prev.description,
+            keywords: data.seoKeywords || prev.keywords,
+            canonical: data.seoCanonical || prev.canonical,
+            robots: data.seoRobots || prev.robots
+          }));
+        }
+      } catch (error) {
+        console.error('Error loading homepage SEO:', error);
+      }
+    };
+
+    fetchHomeSeo();
+  }, []);
+
   const homeSchema = React.useMemo(() => buildSeoGraph({
     '@type': 'CollectionPage',
     '@id': `${SITE_URL}/#homepage`,
@@ -490,23 +585,24 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
       itemListElement: products.slice(0, 12).map((product, index) => ({
         '@type': 'ListItem',
         position: index + 1,
-        url: absoluteUrl(`/${product.slug || product.id}`),
+        url: absoluteUrl(getProductPath(product)),
         name: product.name
       }))
     }
   }), [products]);
 
   useSEO({
-    title: "UR Sport - Phong Cách Thể Thao Đẳng Cấp | Áo Thun, Áo Polo Nam",
-    description: "Khám phá bộ sưu tập thời trang thể thao nam cao cấp tại UR Sport. Chuyên cung cấp áo thun, áo polo nam chất lượng, phong cách và bền bỉ. Miễn phí vận chuyển toàn quốc.",
-    keywords: "ur sport, thời trang thể thao nam, áo thun nam, áo polo nam, đồ tập gym",
-    canonical: '/',
+    title: homeSeo.title,
+    description: homeSeo.description,
+    keywords: homeSeo.keywords,
+    canonical: homeSeo.canonical,
+    robots: homeSeo.robots,
     schema: homeSchema
   });
 
   return (
     <>
-      <Hero onShopClick={() => navigate('/shop')} />
+      <Hero headingOverride={homeSeo.heading} onShopClick={() => navigate('/shop')} />
 
       <StorefrontVoucherBanner />
 
@@ -1190,6 +1286,7 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
   const sizeFilter = searchParams.get('size');
   const sortFilter = searchParams.get('sort') || 'newest';
   const searchQuery = searchParams.get('q')?.trim() || '';
+  const [searchInput, setSearchInput] = React.useState(searchQuery);
   const showLoading = isLoading || productsLoading;
 
   // Derive current category from URL params, prop or state instantly during render
@@ -1239,6 +1336,12 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
     setOpenFilterMenu(null);
   };
 
+  React.useEffect(() => {
+    if (searchInput !== searchQuery) {
+      setSearchInput(searchQuery);
+    }
+  }, [searchQuery]);
+
   const dropdownClass = (menuId: string, align: 'left' | 'right' = 'left') => cn(
     "absolute top-full mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-zinc-100 z-[80] transition-all duration-200 transform max-h-80 overflow-y-auto",
     align === 'right' ? "right-0 origin-top-right" : "left-0 origin-top-left",
@@ -1270,6 +1373,7 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
   }, []);
 
   React.useEffect(() => {
+    setSearchInput(searchQuery);
     if (currentSlug) {
       const catMetadata = CATEGORY_METADATA.find(c => c.slug === currentSlug);
       if (catMetadata && catMetadata.name !== activeCategory) {
@@ -1284,6 +1388,18 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
     }
     window.scrollTo(0, 0);
   }, [currentSlug, categoryFilter, setActiveCategory, activeCategory, brandFilter, priceFilter, colorFilter, sizeFilter]);
+
+  const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const params = new URLSearchParams(searchParams);
+    const trimmedValue = searchInput.trim();
+    if (trimmedValue) {
+      params.set('q', trimmedValue);
+    } else {
+      params.delete('q');
+    }
+    setSearchParams(params);
+  };
 
   React.useEffect(() => {
     const fetchSeo = async () => {
@@ -1509,7 +1625,7 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
         '@type': 'ItemList',
         numberOfItems: filteredProducts.length,
         itemListElement: filteredProducts.slice(0, 24).map((product, index) => {
-          const productUrl = absoluteUrl(`/${product.slug || product.id}`);
+          const productUrl = absoluteUrl(getProductPath(product));
           return {
             '@type': 'ListItem',
             position: index + 1,
@@ -1612,6 +1728,37 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
               {categoryIntro}
             </p>
           )}
+          <form onSubmit={handleSearchSubmit} className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center">
+            <label htmlFor="shop-search" className="sr-only">Tìm kiếm sản phẩm</label>
+            <div className="relative w-full sm:max-w-xl">
+              <input
+                id="shop-search"
+                type="search"
+                value={searchInput}
+                onChange={e => setSearchInput(e.target.value)}
+                placeholder="Tìm sản phẩm, danh mục, thương hiệu..."
+                className="w-full rounded-full border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+              <button
+                type="submit"
+                className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-[#1e4b64] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#153a4d]"
+              >
+                Tìm
+              </button>
+            </div>
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchInput('');
+                  updateFilter('q', null);
+                }}
+                className="inline-flex h-11 items-center justify-center rounded-full border border-zinc-200 bg-white px-4 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
+              >
+                Xóa tìm kiếm
+              </button>
+            )}
+          </form>
           
           <div ref={filtersRef} className="flex flex-col gap-3 pt-4 border-t border-zinc-100 lg:flex-row lg:items-center lg:justify-between">
             <div className="relative z-30 grid w-full grid-cols-2 gap-2 overflow-visible pb-1 sm:flex sm:flex-wrap sm:items-center">
@@ -2031,9 +2178,14 @@ function AppContent() {
               <Route path="/blog" element={<NewsPage />} />
               <Route path="/blog/category/:categorySlug" element={<NewsPage />} />
               <Route path="/blog/:slug" element={<NewsPage />} />
+              <Route path="/blog/*" element={<LegacyBlogRedirect />} />
+              <Route path="/san-pham/:productSlug" element={<ProductDetail />} />
+              <Route path="/danh-muc/:categorySlug" element={<ShopPage {...commonShopProps} />} />
+              <Route path="/collection/:collectionSlug" element={<LegacyCollectionRedirect />} />
               <Route path="/quan-tri" element={<AdminPanel />} />
               <Route path="/quantri" element={<AdminPanel />} />
               <Route path="/admin" element={<AdminPanel />} />
+              <Route path="/admin/seo" element={<AdminPanel initialTab="ai-seo-report" />} />
               <Route path="/ao-thun-nam-the-thao" element={<Navigate to="/ao-thun-the-thao-nam" replace />} />
               <Route path="/ao-thun-nam-cotton" element={<Navigate to="/ao-thun-cotton-nam" replace />} />
               {/* Clean Category URLs at root */}

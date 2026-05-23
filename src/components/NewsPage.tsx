@@ -13,6 +13,7 @@ import { db } from '../firebase';
 import { STATIC_BLOG_POSTS as POSTS } from '../data';
 import { useProducts } from '../ProductsContext';
 import { LazyImage } from './LazyImage';
+import { getProductPath } from '../lib/productUrls';
 
 interface TocHeading {
   id: string;
@@ -1072,10 +1073,7 @@ export function NewsPage() {
                 <div
                   key={product.id}
                   onClick={() => {
-                    const catSlug = product.category
-                      ? product.category.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')
-                      : 'san-pham';
-                    navigate(`/apparel/${catSlug}/${product.slug}`);
+                    navigate(getProductPath(product));
                   }}
                   className="group cursor-pointer"
                 >

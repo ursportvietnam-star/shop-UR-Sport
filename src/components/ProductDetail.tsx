@@ -53,6 +53,7 @@ import { formatFaqContentHtml } from '../lib/faqHtml';
 import { sanitizeRichHtml } from '../lib/htmlContent';
 import { showAddToCartToast } from './AddToCartToast';
 import { ProductCard } from './ProductCard';
+import { getProductPath, normalizeProductSlug } from '../lib/productUrls';
 
 export const ProductDetail: React.FC = () => {
   const { categorySlug, productSlug } = useParams<{ categorySlug?: string, productSlug: string }>();
@@ -60,7 +61,8 @@ export const ProductDetail: React.FC = () => {
   const { isAdmin } = useAuth();
   const { products, loading } = useProducts();
 
-  const product = products.find(p => p.slug === productSlug);
+  const normalizedRouteSlug = normalizeProductSlug(productSlug);
+  const product = products.find(p => normalizeProductSlug(p.slug, p.id) === normalizedRouteSlug);
 
   const catMetadata = CATEGORY_METADATA.find(c => c.slug === categorySlug);
   const productCategoryMeta = catMetadata || CATEGORY_METADATA.find(c => c.name === product?.category);
@@ -102,7 +104,7 @@ export const ProductDetail: React.FC = () => {
   const [flashSaleSettings, setFlashSaleSettings] = useState<any>(null);
   const [flashSaleCountdown, setFlashSaleCountdown] = useState({ h: '00', m: '00', s: '00', active: false });
   const [showStickyBar, setShowStickyBar] = useState(false);
-  const productCanonical = product ? `/${product.slug || product.id}` : '/shop';
+  const productCanonical = product ? getProductPath(product) : '/shop';
   const recentlyViewedProducts = React.useMemo(() => {
     const productMap = new Map(products.map((item) => [item.id, item]));
     return recentProductIds
@@ -1030,6 +1032,10 @@ export const ProductDetail: React.FC = () => {
                       .replace(/&nbsp;/g, ' ')
                       .replace(/\u00a0/g, ' ')
                     }
+                    fallbackImages={[
+                      ...(product.colorImages || []).map(item => ({ url: item.image, label: item.name })),
+                      ...(product.images || []).map(url => ({ url }))
+                    ]}
                   />
 
                   {/* Gradient fade khi thu gọn */}
@@ -1060,7 +1066,7 @@ export const ProductDetail: React.FC = () => {
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
                 {categoryProducts.filter(p => p.id !== product.id).slice(0, 5).map(p => (
-                  <Link to={`/apparel/${categorySlug || 'all'}/${p.slug}`} key={p.id} className="block group">
+                  <Link to={getProductPath(p)} key={p.id} className="block group">
                     <div className="aspect-[4/5] w-full overflow-hidden bg-zinc-50 mb-4 relative rounded-2xl border border-zinc-100 shadow-sm group-hover:shadow-md transition-all">
                       <img
                         src={p.images?.[0]}
@@ -1434,15 +1440,106 @@ const FeatureLine = ({ label, value, opacity = "" }: { label: string; value: str
   </div>
 );
 
-const ProductDescriptionHtml = React.memo(({ html, className }: { html: string; className?: string }) => {
+type DescriptionFallbackImage = string | { url: string; label?: string };
+
+const normalizeFallbackKey = (value: string) => value
+  .toLowerCase()
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .replace(/đ/g, 'd');
+
+const isLocalDescriptionImage = (src: string) => {
+  const value = src.trim();
+  if (!value) return false;
+  if (value.startsWith('/images/')) return true;
+
+  try {
+    const parsed = new URL(value);
+    return ['shop-ur-sport.vercel.app', 'ursport.vn', 'www.ursport.vn', 'localhost', '127.0.0.1'].includes(parsed.hostname)
+      && parsed.pathname.startsWith('/images/');
+  } catch {
+    return false;
+  }
+};
+
+const getDescriptionFallbackImage = (
+  img: HTMLImageElement,
+  index: number,
+  fallbackImages: Array<{ url: string; label?: string }>
+) => {
+  const imageText = normalizeFallbackKey([
+    img.getAttribute('src') || '',
+    img.getAttribute('alt') || '',
+    img.getAttribute('title') || ''
+  ].join(' '));
+  const matchedFallback = fallbackImages.find(item => {
+    const label = normalizeFallbackKey(item.label || '');
+    return label && imageText.includes(label);
+  });
+
+  return matchedFallback?.url || fallbackImages[index % fallbackImages.length]?.url;
+};
+
+const ProductDescriptionHtml = React.memo(({ html, className, fallbackImages = [] }: { html: string; className?: string; fallbackImages?: DescriptionFallbackImage[] }) => {
   const containerRef = React.useRef<HTMLDivElement>(null);
-  const formattedHtml = React.useMemo(() => sanitizeRichHtml(formatFaqContentHtml(html)), [html]);
+  const normalizedFallbackImages = React.useMemo(
+    () => {
+      const seen = new Set<string>();
+      return fallbackImages
+        .map(item => typeof item === 'string' ? { url: item, label: '' } : item)
+        .filter(item => item.url)
+        .filter(item => {
+          if (seen.has(item.url)) return false;
+          seen.add(item.url);
+          return true;
+        });
+    },
+    [fallbackImages]
+  );
+  const formattedHtml = React.useMemo(() => {
+    const safeHtml = sanitizeRichHtml(formatFaqContentHtml(html));
+    if (!safeHtml || normalizedFallbackImages.length === 0 || typeof DOMParser === 'undefined') {
+      return safeHtml;
+    }
+
+    const parser = new DOMParser();
+    const parsed = parser.parseFromString(`<div>${safeHtml}</div>`, 'text/html');
+    const wrapper = parsed.body.firstElementChild as HTMLElement | null;
+    if (!wrapper) return safeHtml;
+
+    Array.from(wrapper.querySelectorAll('img')).forEach((img, index) => {
+      const src = img.getAttribute('src') || '';
+      if (!isLocalDescriptionImage(src)) return;
+
+      const fallback = getDescriptionFallbackImage(img, index, normalizedFallbackImages);
+      if (fallback) {
+        img.setAttribute('src', fallback);
+      }
+    });
+
+    return wrapper.innerHTML;
+  }, [html, normalizedFallbackImages]);
 
   React.useEffect(() => {
     if (containerRef.current && containerRef.current.innerHTML !== formattedHtml) {
       containerRef.current.innerHTML = formattedHtml;
     }
   }, [formattedHtml]);
+
+  React.useEffect(() => {
+    const container = containerRef.current;
+    if (!container || normalizedFallbackImages.length === 0) return;
+
+    const images = Array.from(container.querySelectorAll('img'));
+    images.forEach((img, index) => {
+      img.onerror = () => {
+        const fallback = getDescriptionFallbackImage(img, index, normalizedFallbackImages);
+        if (!fallback || img.src === fallback) return;
+        img.onerror = null;
+        img.src = fallback;
+      };
+    });
+  }, [formattedHtml, normalizedFallbackImages]);
 
   return <div ref={containerRef} className={className} />;
 });

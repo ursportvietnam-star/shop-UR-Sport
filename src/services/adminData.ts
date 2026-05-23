@@ -18,11 +18,18 @@ import { db } from '../firebase';
 
 export type AdminCollection =
   | 'blogPosts'
+  | 'categorySeo'
   | 'media'
   | 'newsletterSubscribers'
   | 'orders'
   | 'products'
   | 'reviews'
+  | 'seoGscData'
+  | 'seoGscImports'
+  | 'seoAiActions'
+  | 'seoDrafts'
+  | 'seoOpportunities'
+  | 'seoReports'
   | 'vouchers';
 
 export type AdminSetting =
@@ -56,6 +63,11 @@ export const subscribeAdminCollection = <T extends { id: string }>(
 
 export const getAdminSetting = async <T = DocumentData>(settingId: AdminSetting) => {
   const snapshot = await getDoc(doc(db, 'settings', settingId));
+  return snapshot.exists() ? (snapshot.data() as T) : null;
+};
+
+export const getAdminDocument = async <T = DocumentData>(collectionName: AdminCollection, id: string) => {
+  const snapshot = await getDoc(doc(db, collectionName, id));
   return snapshot.exists() ? (snapshot.data() as T) : null;
 };
 

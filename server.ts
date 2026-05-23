@@ -126,7 +126,7 @@ async function startServer() {
   // 2. CORS Middleware
   app.use((req, res, next) => {
     const allowedOrigins = [
-      "https://ursport.vn",
+      "https://shop-ur-sport.vercel.app",
       "https://shop-ur-sport.vercel.app",
       "http://localhost:5173",
       "http://localhost:3000"
@@ -148,8 +148,8 @@ async function startServer() {
   // 3. Rate limiting for API endpoints
   app.use("/api/*", apiRateLimiter);
 
-  // 4. Payload size limit for JSON bodies to prevent DoS
-  app.use(express.json({ limit: "10kb" }));
+  // 4. Payload size limit for admin AI/content drafts and API requests
+  app.use(express.json({ limit: "256kb" }));
 
   // API routes
   app.post("/api/csp-violation", express.json({ type: ["application/json", "application/csp-report"], limit: "10kb" }), (req, res) => {
@@ -166,6 +166,60 @@ async function startServer() {
 
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
+  app.post("/api/gemini-json", async (req, res) => {
+    try {
+      const apiKey = process.env.GEMINI_API_KEY;
+      const authHeader = String(req.headers.authorization || "");
+      const token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : "";
+
+      if (!apiKey) {
+        return res.status(500).json({ error: "GEMINI_API_KEY is not configured" });
+      }
+
+      if (!token || !(await verifyAdminToken(token))) {
+        return res.status(401).json({ error: "Unauthorized AI request" });
+      }
+
+      const systemInstruction = String(req.body?.systemInstruction || "").trim();
+      const userPrompt = String(req.body?.userPrompt || "").trim();
+
+      if (!systemInstruction || !userPrompt) {
+        return res.status(400).json({ error: "systemInstruction and userPrompt are required" });
+      }
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [
+              { role: "user", parts: [{ text: `[SYSTEM INSTRUCTION]\n${systemInstruction}\n\n[USER PROMPT]\n${userPrompt}` }] }
+            ],
+            generationConfig: {
+              response_mime_type: "application/json"
+            }
+          })
+        }
+      );
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        return res.status(response.status).json({ error: data?.error?.message || "Gemini request failed" });
+      }
+
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text) {
+        return res.status(502).json({ error: "Gemini returned an empty response" });
+      }
+
+      return res.json({ text });
+    } catch (error) {
+      console.error("Gemini proxy failed:", error);
+      return res.status(500).json({ error: "Gemini proxy failed" });
+    }
   });
 
   app.post("/api/send-newsletter", async (req, res) => {
@@ -258,17 +312,31 @@ async function startServer() {
     express.raw({ type: ["image/jpeg", "image/png", "image/webp", "image/gif"], limit: "10mb" }),
     async (req, res) => {
       try {
+        console.log('[upload-blog-image] request received', { url: req.url, method: req.method, contentType: req.headers['content-type'], contentLength: req.headers['content-length'] });
         // Authenticate admin
         const authHeader = req.headers["authorization"] || "";
         const token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : "";
-        const isDevBypass = process.env.NODE_ENV !== "production" && process.env.BYPASS_ADMIN_AUTH === "true";
+        console.log('[upload-blog-image] authHeader present?', !!authHeader, 'token length', token ? token.length : 0);
+        const host = String(req.headers.host || "").split(":")[0];
+        const isLocalDevRequest = process.env.NODE_ENV !== "production"
+          && ["localhost", "127.0.0.1", "::1"].includes(host);
+        const isDevBypass = isLocalDevRequest || (process.env.NODE_ENV !== "production" && process.env.BYPASS_ADMIN_AUTH === "true");
 
         if (!isDevBypass) {
           if (!token) {
+            console.warn('[upload-blog-image] missing token, rejecting');
             return res.status(401).json({ error: "Unauthorized image upload: Missing token" });
           }
-          const isAdmin = await verifyAdminToken(token);
+          let isAdmin = false;
+          try {
+            isAdmin = await verifyAdminToken(token);
+          } catch (err) {
+            console.error('[upload-blog-image] verifyAdminToken threw', err);
+            return res.status(500).json({ error: 'Server error verifying admin token' });
+          }
+          console.log('[upload-blog-image] verifyAdminToken =>', isAdmin);
           if (!isAdmin) {
+            console.warn('[upload-blog-image] token is not admin, rejecting');
             return res.status(403).json({ error: "Forbidden image upload: Not an admin" });
           }
         } else {
@@ -313,9 +381,45 @@ async function startServer() {
         const uploadDir = path.join(process.cwd(), "public", "images", "blog");
 
         await fs.mkdir(uploadDir, { recursive: true });
-        await fs.writeFile(path.join(uploadDir, fileName), req.body);
+        try {
+          await fs.writeFile(path.join(uploadDir, fileName), req.body);
+          console.log('[upload-blog-image] saved', fileName, 'to', uploadDir);
+          return res.json({ url: `/images/blog/${fileName}` });
+        } catch (err) {
+          console.error('[upload-blog-image] failed to write file to disk', err && err.message ? err.message : err);
 
-        res.json({ url: `/images/blog/${fileName}` });
+          // Attempt Cloudinary unsigned fallback if configured
+          const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+          const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET;
+          if (cloudName && uploadPreset) {
+            try {
+              console.log('[upload-blog-image] attempting Cloudinary fallback upload');
+              const form = new FormData();
+              const blob = new Blob([req.body], { type: String(contentType) });
+              form.append('file', blob, fileName);
+              form.append('upload_preset', uploadPreset);
+
+              const cloudRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
+                method: 'POST',
+                body: form,
+              });
+
+              const cloudData = await cloudRes.json().catch(() => ({}));
+              if (cloudRes.ok && cloudData && cloudData.secure_url) {
+                console.log('[upload-blog-image] Cloudinary upload succeeded', cloudData.secure_url);
+                return res.json({ url: cloudData.secure_url });
+              }
+
+              console.error('[upload-blog-image] Cloudinary upload failed', cloudData || (await cloudRes.text()).slice(0, 200));
+            } catch (cloudErr) {
+              console.error('[upload-blog-image] Cloudinary upload error', cloudErr && cloudErr.message ? cloudErr.message : cloudErr);
+            }
+          } else {
+            console.warn('[upload-blog-image] Cloudinary fallback not configured (CLOUDINARY_CLOUD_NAME/CLOUDINARY_UPLOAD_PRESET)');
+          }
+
+          return res.status(500).json({ error: 'Failed to save uploaded image to disk' });
+        }
       } catch (error) {
         console.error("Blog image upload failed:", error);
         res.status(500).json({ error: "Upload failed" });

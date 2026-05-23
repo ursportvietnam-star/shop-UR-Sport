@@ -32,6 +32,13 @@ const defaultSeoData: SeoData = {
 };
 
 const buildSeoCategoryOptions = (navigationItems: NavigationItem[] = []) => [
+  {
+    name: 'Trang chủ',
+    slug: 'homepage',
+    key: 'homepage',
+    type: 'homepage' as const,
+    parentName: ''
+  },
   ...CATEGORY_METADATA.map(cat => ({
     ...cat,
     name: cat.name as string,
@@ -205,10 +212,10 @@ export function CategorySeoManager() {
         <div>
           <h2 className="text-xl font-black text-white flex items-center gap-2">
             <Search className="h-5 w-5 text-[#1e4b64]" />
-            SEO Danh Mục
+            SEO Danh Mục & Trang Chủ
           </h2>
           <p className="text-white/40 text-sm mt-1">
-            Quản lý thẻ SEO và nội dung bài viết hiển thị ở cuối trang danh mục sản phẩm.
+            Quản lý thẻ SEO và nội dung bài viết hiển thị ở cuối trang danh mục sản phẩm hoặc trang chủ.
           </p>
         </div>
       </div>
@@ -233,6 +240,11 @@ export function CategorySeoManager() {
                 {cat.type === 'subcategory' && (
                   <span className="mt-1 block text-[10px] font-medium text-white/35">
                     Trang con của {cat.parentName}
+                  </span>
+                )}
+                {cat.type === 'homepage' && (
+                  <span className="mt-1 block text-[10px] font-medium text-white/35">
+                    SEO trang chủ
                   </span>
                 )}
               </button>
@@ -358,7 +370,7 @@ export function CategorySeoManager() {
                       type="text"
                       value={seoData.seoCanonical}
                       onChange={e => updateField('seoCanonical', e.target.value)}
-                      placeholder="VD: https://ursport.vn/apparel/ao-thun-nam"
+                      placeholder="VD: https://shop-ur-sport.vercel.app/apparel/ao-thun-nam"
                       className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm outline-none focus:border-[#1e4b64] transition-colors placeholder:text-white/20"
                     />
                   </div>

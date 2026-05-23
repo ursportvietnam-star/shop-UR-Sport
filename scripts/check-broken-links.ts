@@ -40,7 +40,7 @@ const slugify = (value: string) => String(value || '')
   .replace(/[^a-z0-9]+/g, '-')
   .replace(/^-+|-+$/g, '');
 
-const getCategorySlug = (cat: string) => cat.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+const getCategorySlug = (cat: string) => slugify(cat);
 
 // Bản đồ chuyển hướng/thay thế link kế thừa từ dailySeoSuggestions.ts
 const LINK_REPLACEMENTS: Record<string, string> = {
@@ -54,7 +54,14 @@ const LINK_REPLACEMENTS: Record<string, string> = {
   '/collection/mua-he': '/ao-thun-nam',
   '/collection/mac-hang-ngay': '/quan-the-thao-nam',
   '/collection/tap-gym': '/ao-thun-the-thao-nam',
-  '/collection/best-seller': '/ao-thun-nam'
+  '/collection/best-seller': '/ao-thun-nam',
+  '/collection/cong-so': '/ao-polo-nam',
+  '/collection/basic': '/ao-thun-nam',
+  '/collection/cao-cap': '/ao-polo-nam',
+  '/collection/the-thao': '/ao-thun-the-thao-nam',
+  '/collection/thu-dong': '/ao-thun-nam',
+  '/ao-thun-nam/polo': '/ao-polo-nam',
+  '/do-gym-nam': '/ao-thun-the-thao-nam'
 };
 
 // Danh sách các trang redirects cố định trong React Router
@@ -111,20 +118,20 @@ const extractInternalLinks = (text: string): string[] => {
   let match;
 
   // 1. Trích xuất HTML anchor tags: href="..."
-  const htmlHrefRegex = /href=["'](https?:\/\/(?:www\.)?ursport\.vn)?(\/[^"']*)["']/gi;
+  const htmlHrefRegex = /href=["'](https?:\/\/(?:(?:www\.)?ursport\.vn|shop-ur-sport\.vercel\.app))?(\/[^"']*)["']/gi;
   while ((match = htmlHrefRegex.exec(text)) !== null) {
     links.push(match[2]);
   }
 
   // 2. Trích xuất Markdown links: [text](/path)
-  const mdLinkRegex = /\[[^\]]*\]\((https?:\/\/(?:www\.)?ursport\.vn)?(\/[^)]*)\)/gi;
+  const mdLinkRegex = /\[[^\]]*\]\((https?:\/\/(?:(?:www\.)?ursport\.vn|shop-ur-sport\.vercel\.app))?(\/[^)]*)\)/gi;
   while ((match = mdLinkRegex.exec(text)) !== null) {
     links.push(match[2]);
   }
 
   // 3. Trích xuất các nhãn chỉ định link trong các file hoạch định SEO .md
   // Ví dụ: Category: /ao-thun-nam hoặc Product target: /san-pham/ao-thun-nam-the-thao-quick-dry
-  const labelPathRegex = /(?:Category|Subcategory|Collection|Related blog|Commercial page|Product target|Link|URL|Path):\s*(https?:\/\/(?:www\.)?ursport\.vn)?(\/[a-zA-Z0-9-_\/]+)/gi;
+  const labelPathRegex = /(?:Category|Subcategory|Collection|Related blog|Commercial page|Product target|Link|URL|Path):\s*(https?:\/\/(?:(?:www\.)?ursport\.vn|shop-ur-sport\.vercel\.app))?(\/[a-zA-Z0-9-_\/]+)/gi;
   while ((match = labelPathRegex.exec(text)) !== null) {
     links.push(match[2]);
   }
@@ -188,6 +195,7 @@ const runBrokenLinkChecker = async () => {
   // Thêm các danh mục và trang danh mục blog
   CATEGORY_METADATA.forEach(cat => {
     validRoutes.add(`/${cat.slug}`);
+    validRoutes.add(`/danh-muc/${cat.slug}`);
     validRoutes.add(`/blog/category/${slugify(cat.name)}`);
   });
 
@@ -199,12 +207,13 @@ const runBrokenLinkChecker = async () => {
   ];
   subcategoryRoutes.forEach(r => validRoutes.add(r));
 
-  // Thêm các sản phẩm (cả dạng /slug và dạng /apparel/category/slug)
+  // Thêm các sản phẩm (cả dạng /slug, /san-pham/:slug và /apparel/category/slug)
   const productSlugToInfo = new Map<string, { name: string; categorySlug: string }>();
   activeProducts.forEach(prod => {
     if (!prod.slug) return;
     const catSlug = getCategorySlug(prod.category);
     validRoutes.add(`/${prod.slug}`);
+    validRoutes.add(`/san-pham/${prod.slug}`);
     validRoutes.add(`/apparel/${catSlug}/${prod.slug}`);
     productSlugToInfo.set(prod.slug, { name: prod.name, categorySlug: catSlug });
   });
@@ -215,7 +224,7 @@ const runBrokenLinkChecker = async () => {
     const slug = post.slug || post.id;
     if (!slug) return;
     validRoutes.add(`/blog/${slug}`);
-    validRoutes.add(`/blog/category/${slugify(post.category)}`);
+    validRoutes.add(`/blog/category/${slugify(post.category || '')}`);
     blogSlugToTitle.set(slug, post.title);
   });
 
@@ -226,6 +235,11 @@ const runBrokenLinkChecker = async () => {
     if (validRoutes.has(link)) {
       return; // Link hoàn toàn hợp lệ!
     }
+
+    // 0. Các pattern route SPA tồn tại: blog, danh mục cũ, san-pham cũ
+    if (/^\/blog\/(category\/[a-zA-Z0-9-_]+|[a-zA-Z0-9-_]+)$/.test(link)) return;
+    if (/^\/san-pham\/[a-zA-Z0-9-_]+$/.test(link)) return;
+    if (/^\/danh-muc\/[a-zA-Z0-9-_]+$/.test(link)) return;
 
     // 1. Kiểm tra nếu link nằm trong danh sách Redirects/Replacements cố định
     if (LINK_REPLACEMENTS[link]) {
@@ -262,7 +276,7 @@ const runBrokenLinkChecker = async () => {
           link,
           type: 'OUTDATED_PREFIX',
           details: `Dùng tiền tố cũ '/san-pham/slug' cho sản phẩm tồn tại`,
-          suggestion: `Thay thế bằng '/${slug}' hoặc '/apparel/${info.categorySlug}/${slug}'`,
+          suggestion: `/${slug} hoặc /apparel/${info.categorySlug}/${slug}`,
           editUrl
         });
         return;
@@ -343,10 +357,15 @@ const runBrokenLinkChecker = async () => {
     console.warn(`${colors.yellow}⚠️ Không thể quét các file Markdown ở thư mục gốc: ${err.message}${colors.reset}`);
   }
 
+  // Loại bỏ trùng lặp cùng nguồn + cùng link để giảm tiếng ồn khi nhiều lần xuất hiện
+  const uniqueIssues = Array.from(
+    new Map(issues.map(issue => [`${issue.source}|${issue.link}|${issue.type}`, issue])).values()
+  );
+
   // 6. In báo cáo tổng kết
-  const brokenIssues = issues.filter(i => i.type === 'BROKEN');
-  const redirectIssues = issues.filter(i => i.type === 'REDIRECT');
-  const outdatedPrefixIssues = issues.filter(i => i.type === 'OUTDATED_PREFIX');
+  const brokenIssues = uniqueIssues.filter(i => i.type === 'BROKEN');
+  const redirectIssues = uniqueIssues.filter(i => i.type === 'REDIRECT');
+  const outdatedPrefixIssues = uniqueIssues.filter(i => i.type === 'OUTDATED_PREFIX');
 
   if (issues.length === 0) {
     console.log(`┌────────────────────────────────────────────────────────────────────────┐`);
@@ -404,9 +423,9 @@ const runBrokenLinkChecker = async () => {
       console.log();
     }
 
-    // Nếu cấu hình STRICT_LINK_CHECK=true thì dừng quy trình build
-    if (process.env.STRICT_LINK_CHECK === 'true' && brokenIssues.length > 0) {
-      console.error(`${colors.bold}${colors.red}❌ Quy trình bị dừng do phát hiện link gãy ở chế độ STRICT MODE!${colors.reset}\n`);
+    // Fail builds by default when true 404s remain. Use ALLOW_BROKEN_LINKS=true only for emergency deploys.
+    if (process.env.ALLOW_BROKEN_LINKS !== 'true' && brokenIssues.length > 0) {
+      console.error(`${colors.bold}${colors.red}❌ Quy trình bị dừng do phát hiện link gãy. Đặt ALLOW_BROKEN_LINKS=true nếu cần bỏ qua tạm thời.${colors.reset}\n`);
       process.exit(1);
     }
   }

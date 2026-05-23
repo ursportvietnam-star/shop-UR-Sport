@@ -108,6 +108,23 @@ export const SEO: React.FC<SEOProps> = ({
       injectMeta('name', 'twitter:description', cleanDescription);
       injectMeta('name', 'twitter:image', finalImage);
       injectMeta('name', 'twitter:image:alt', cleanTitle || SITE_NAME);
+      injectMeta('name', 'twitter:site', '@ursportvietnam');
+      injectMeta('name', 'twitter:creator', '@ursportvietnam');
+
+      // --- Language alternates ---
+      const setAlternate = (href: string, hreflang: string) => {
+        if (!href) return;
+        let el = document.head.querySelector(`link[rel="alternate"][hreflang="${hreflang}"]`) as HTMLLinkElement | null;
+        if (!el) {
+          el = document.createElement('link');
+          el.setAttribute('rel', 'alternate');
+          el.setAttribute('hreflang', hreflang);
+          document.head.appendChild(el);
+        }
+        el.setAttribute('href', href);
+      };
+      setAlternate(finalCanonical, 'vi');
+      setAlternate(finalCanonical, 'x-default');
 
       // --- Schema / JSON-LD ---
       injectSchema(schema || buildSeoGraph());

@@ -3,6 +3,7 @@ import { Product } from '../types';
 import { ProductCard } from './ProductCard';
 import { ChevronRight, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { getProductPath } from '../lib/productUrls';
 
 interface BestSellerProps {
   products: Product[];
@@ -61,7 +62,7 @@ export function BestSeller({ products }: BestSellerProps) {
           <ProductCard 
             key={product.id} 
             product={product} 
-            onClick={() => navigate(`/${product.slug || product.id}`)}
+            onClick={() => navigate(getProductPath(product))}
           />
         ))}
       </div>

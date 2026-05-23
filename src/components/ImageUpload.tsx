@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { Upload, X, CheckCircle2, Loader2, AlertCircle, Copy } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { CheckCircle2, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { auth } from '../firebase';
@@ -11,22 +11,24 @@ interface ImageUploadProps {
   externalPreview?: string;
   compact?: boolean;
   storage?: 'cloudinary' | 'blog-local';
+  multiple?: boolean;
 }
 
-// ─── Cloudinary config ───────────────────────────────────────────────────────
-// Điền thông tin Cloudinary của bạn vào đây
 const CLOUDINARY_CLOUD_NAME = 'dcj4qhcfh';
 const CLOUDINARY_UPLOAD_PRESET = 'ursport_uploads';
-// ────────────────────────────────────────────────────────────────────────────
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 export const ImageUpload: React.FC<ImageUploadProps> = ({
   onUploadComplete,
   folder = 'products',
-  label = 'Tải ảnh lên',
+  label = 'Tai anh len',
   externalPreview,
   compact = false,
-  storage = 'cloudinary'
+  storage = 'cloudinary',
+  multiple = false
 }) => {
+  const DISABLE_UPLOADS = (import.meta as any).env?.VITE_DISABLE_MEDIA_UPLOADS === 'true';
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -34,87 +36,67 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   const [isDone, setIsDone] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const openFilePicker = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const openFilePicker = (event: React.MouseEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
     if (isUploading) return;
+    if (DISABLE_UPLOADS) {
+      toast.error('Tải ảnh đã bị vô hiệu hoá bởi cấu hình.');
+      return;
+    }
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-    if (!allowedTypes.includes(file.type)) {
-      toast.error('Vui lòng chọn file hình ảnh định dạng JPG, PNG, WebP hoặc GIF!');
-      return;
+  const validateFile = (file: File) => {
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return 'Vui long chon anh dinh dang JPG, PNG, WebP hoac GIF.';
     }
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('File quá lớn! Tối đa 10MB.');
-      return;
+    if (file.size > MAX_FILE_SIZE) {
+      return 'File qua lon. Toi da 10MB.';
     }
-
-    const objectUrl = URL.createObjectURL(file);
-    setPreviewUrl(objectUrl);
-
-    if (storage === 'blog-local') {
-      uploadToBlogFolder(file);
-    } else {
-      uploadToCloudinary(file);
-    }
+    return '';
   };
 
-  const uploadToBlogFolder = async (file: File) => {
-    setIsUploading(true);
-    setProgress(10);
-    setUploadError(null);
-    setIsDone(false);
+  const uploadToBlogFolder = async (file: File, index: number, total: number) => {
+    setProgress(Math.round((index / total) * 100));
+    const token = await auth.currentUser?.getIdToken();
+    const headers: Record<string, string> = {
+      'Content-Type': file.type,
+      'X-File-Name': encodeURIComponent(file.name),
+    };
 
-    try {
-      const token = await auth.currentUser?.getIdToken();
-      const headers: Record<string, string> = {
-        'Content-Type': file.type,
-        'X-File-Name': encodeURIComponent(file.name),
-      };
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
 
-      const response = await fetch('/api/upload-blog-image', {
-        method: 'POST',
-        headers,
-        body: file,
-      });
+    const response = await fetch('/api/upload-blog-image', {
+      method: 'POST',
+      headers,
+      body: file,
+    });
 
-      if (!response.ok) {
+    if (!response.ok) {
+      let errorMsg = `Upload failed (${response.status})`;
+      try {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Upload failed');
+        if (errorData && errorData.error) errorMsg = `${errorMsg}: ${errorData.error}`;
+      } catch (e) {
+        // ignore
       }
-
-      const data = await response.json();
-      onUploadComplete(data.url);
-      setPreviewUrl(data.url);
-      setProgress(100);
-      setIsDone(true);
-      toast.success('Đã lưu ảnh vào /images/blog/');
-    } catch (error: any) {
-      const errMsg = error.message || 'Không thể lưu ảnh vào /images/blog. Kiểm tra server upload.';
-      setUploadError(errMsg);
-      toast.error(errMsg);
-      setProgress(0);
-    } finally {
-      setIsUploading(false);
+      // Provide actionable hints for common causes
+      if (response.status === 401 || response.status === 403) {
+        errorMsg += ' — Unauthorized. Ensure you are signed in as an admin or enable VITE_ALLOW_LOCAL_UPLOAD in development.';
+      }
+      throw new Error(errorMsg);
     }
+
+    const data = await response.json();
+    return data.url as string;
   };
 
-  const uploadToCloudinary = (file: File) => {
-    setIsUploading(true);
-    setProgress(0);
-    setUploadError(null);
-    setIsDone(false);
-
+  const uploadToCloudinary = (file: File, index: number, total: number) => new Promise<string>((resolve, reject) => {
+    const baseProgress = (index / total) * 100;
+    const fileProgressShare = 100 / total;
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
@@ -124,42 +106,76 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
 
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) {
-        const pct = Math.round((event.loaded / event.total) * 100);
-        setProgress(pct);
+        setProgress(Math.round(baseProgress + (event.loaded / event.total) * fileProgressShare));
       }
     };
 
     xhr.onload = () => {
       if (xhr.status === 200) {
         const data = JSON.parse(xhr.responseText);
-        onUploadComplete(data.secure_url);
-        setPreviewUrl(data.secure_url); // Update preview to real URL
-        setIsDone(true);
-        setIsUploading(false);
-        toast.success('Tải ảnh thành công!');
+        resolve(data.secure_url);
       } else {
-        const errMsg = 'Upload thất bại. Kiểm tra lại Cloudinary config.';
-        setUploadError(errMsg);
-        toast.error(errMsg);
-        setIsUploading(false);
-        setProgress(0);
+        reject(new Error('Upload that bai. Kiem tra lai Cloudinary config.'));
       }
     };
 
     xhr.onerror = () => {
-      const errMsg = 'Lỗi kết nối. Vui lòng thử lại.';
-      setUploadError(errMsg);
-      toast.error(errMsg);
-      setIsUploading(false);
-      setProgress(0);
+      reject(new Error('Loi ket noi. Vui long thu lai.'));
     };
 
     xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`);
     xhr.send(formData);
+  });
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (DISABLE_UPLOADS) {
+      toast.error('Tải ảnh đã bị vô hiệu hoá bởi cấu hình.');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
+
+    const invalidMessage = files.map(validateFile).find(Boolean);
+    if (invalidMessage) {
+      toast.error(invalidMessage);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(files[0]);
+    setPreviewUrl(objectUrl);
+    setIsUploading(true);
+    setProgress(0);
+    setUploadError(null);
+    setIsDone(false);
+
+    try {
+      const uploadedUrls: string[] = [];
+      for (let index = 0; index < files.length; index += 1) {
+        const url = storage === 'blog-local'
+          ? await uploadToBlogFolder(files[index], index, files.length)
+          : await uploadToCloudinary(files[index], index, files.length);
+        uploadedUrls.push(url);
+        onUploadComplete(url);
+      }
+
+      setPreviewUrl(uploadedUrls[uploadedUrls.length - 1]);
+      setProgress(100);
+      setIsDone(true);
+      toast.success(files.length > 1 ? `Da tai ${files.length} anh thanh cong!` : 'Tai anh thanh cong!');
+    } catch (error: any) {
+      const errMsg = error.message || 'Upload that bai. Vui long thu lai.';
+      setUploadError(errMsg);
+      setProgress(0);
+      toast.error(errMsg);
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const removeImage = () => {
-    // If previewUrl is an object URL, revoke it to prevent memory leaks
     if (previewUrl?.startsWith('blob:')) {
       URL.revokeObjectURL(previewUrl);
     }
@@ -170,11 +186,11 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleCopyUrl = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleCopyUrl = (event: React.MouseEvent) => {
+    event.stopPropagation();
     if (previewUrl && !previewUrl.startsWith('blob:')) {
       navigator.clipboard.writeText(previewUrl);
-      toast.success('Đã sao chép đường dẫn ảnh!');
+      toast.success('Da copy link anh.');
     }
   };
 
@@ -191,17 +207,18 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
             ? uploadError
               ? "border-red-400 bg-red-50/5"
               : isDone
-              ? "border-emerald-500/50 bg-emerald-500/5"
-              : "border-[#1e4b64] bg-blue-500/5"
+                ? "border-emerald-500/50 bg-emerald-500/5"
+                : "border-[#1e4b64] bg-blue-500/5"
             : "border-white/10 hover:border-[#1e4b64] hover:bg-white/[0.02]",
           isUploading && "pointer-events-none"
         )}
       >
         <input
           type="file"
+          multiple={multiple}
           ref={fileInputRef}
           onChange={handleFileChange}
-          onClick={(e) => e.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
           className="hidden"
           accept="image/*"
         />
@@ -223,7 +240,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                     type="button"
                     onClick={handleCopyUrl}
                     className="p-2 bg-[#0f1117]/80 backdrop-blur-md border border-white/10 rounded-lg text-white hover:bg-[#1e4b64] transition-all"
-                    title="Sao chép link"
+                    title="Copy link"
                   >
                     <CheckCircle2 className="h-4 w-4" />
                   </button>
@@ -246,14 +263,14 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
               <div className="w-full mt-4 space-y-3 text-center">
                 <div className="flex items-center justify-center gap-2 text-emerald-400">
                   <CheckCircle2 className="h-4 w-4" />
-                  <span className="text-sm font-bold">Thành công!</span>
+                  <span className="text-sm font-bold">Thanh cong!</span>
                 </div>
               </div>
             )}
 
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); removeImage(); }}
+              onClick={(event) => { event.stopPropagation(); removeImage(); }}
               className={cn(
                 "absolute bg-[#0f1117] border border-white/10 rounded-full shadow-xl text-white/50 hover:text-red-400 transition-colors",
                 compact ? "-top-2 -right-2 p-1" : "-top-3 -right-3 p-2"
@@ -270,9 +287,9 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
             {!compact && (
               <>
                 <p className="text-sm font-bold text-zinc-500 group-hover:text-zinc-700 text-center">
-                  Kéo thả hoặc click để chọn ảnh
+                  {multiple ? 'Keo tha hoac click de chon nhieu anh' : 'Keo tha hoac click de chon anh'}
                 </p>
-                <p className="text-xs text-zinc-400 mt-1">JPG, PNG, WebP • Tối đa 10MB</p>
+                <p className="text-xs text-zinc-400 mt-1">JPG, PNG, WebP - Toi da 10MB</p>
               </>
             )}
           </>

@@ -51,6 +51,9 @@ Yêu cầu:
 - Không nhồi keyword.
 - Có FAQ 4–6 câu.
 - Có CTA tự nhiên.
+- Có đúng 3 ảnh trong `contentHtml` theo chuẩn `IMAGE_FORMAT_RULES.md`.
+- Mỗi ảnh dùng cấu trúc `<figure><img src="/images/blog/ten-file.webp" alt="..." height="800" width="1200" title="..."><figcaption>...</figcaption></figure>`.
+- Trả thêm `imagePrompts` gồm 3 prompt tạo ảnh: hero/ngữ cảnh, detail/close-up, comparison/checklist/lifestyle.
 - Xuất HTML chuẩn SEO.
 ```
 
@@ -87,6 +90,9 @@ AI kiểm tra mỗi ngày:
 - Bài không có CTA.
 - Bài không có FAQ.
 - Ảnh thiếu alt.
+- Bài thiếu 3 block `<figure>` chuẩn URSport.
+- Ảnh thiếu `title`, `height`, `width` hoặc `figcaption`.
+- `imagePrompts` thiếu 3 prompt tạo ảnh.
 - Broken links.
 - Thin content dưới 800 từ.
 - Schema JSON-LD lỗi.

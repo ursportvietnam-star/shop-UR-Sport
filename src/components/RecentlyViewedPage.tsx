@@ -8,6 +8,7 @@ import { useRecentlyViewed } from '../RecentlyViewedContext';
 import { Product } from '../types';
 import { Button } from '@/components/ui/button';
 import { useSEO } from '../hooks/useSEO';
+import { getProductPath } from '../lib/productUrls';
 
 export const RecentlyViewedPage: React.FC = () => {
   const navigate = useNavigate();
@@ -71,7 +72,7 @@ export const RecentlyViewedPage: React.FC = () => {
               >
                 <ProductCard
                   product={product}
-                  onClick={() => navigate(`/${product.slug || product.id}`)}
+                  onClick={() => navigate(getProductPath(product))}
                 />
               </motion.div>
             ))}

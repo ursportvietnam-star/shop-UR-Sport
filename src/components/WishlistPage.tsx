@@ -7,6 +7,7 @@ import { useProducts } from '../ProductsContext';
 import { useWishlist } from '../WishlistContext';
 import { Button } from '@/components/ui/button';
 import { useSEO } from '../hooks/useSEO';
+import { getProductPath } from '../lib/productUrls';
 
 export const WishlistPage: React.FC = () => {
   const navigate = useNavigate();
@@ -68,7 +69,7 @@ export const WishlistPage: React.FC = () => {
               >
                 <ProductCard
                   product={product}
-                  onClick={() => navigate(`/${product.slug || product.id}`)}
+                  onClick={() => navigate(getProductPath(product))}
                 />
               </motion.div>
             ))}

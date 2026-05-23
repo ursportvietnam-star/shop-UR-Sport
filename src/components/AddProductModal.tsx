@@ -10,6 +10,7 @@ import { Input } from './ui/input';
 import { CATEGORIES } from '../data';
 import ReactQuill, { Quill } from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+import { normalizeProductSlug } from '../lib/productUrls';
 
 const DEFAULT_PRODUCT_SIZES = ['M', 'L', 'XL', 'XXL', '3XL', '4XL'];
 const DEFAULT_PRODUCT_SIZE_TEXT = DEFAULT_PRODUCT_SIZES.join(',');
@@ -735,7 +736,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         stock: Number(formData.stock),
         sizes: parsedSizes.length > 0 ? parsedSizes : DEFAULT_PRODUCT_SIZES,
         sizeGuideUrl: formData.sizeGuideUrl,
-        slug: formData.slug.trim() || formData.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[đĐ]/g, 'd').replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, ''),
+        slug: normalizeProductSlug(formData.slug, formData.name),
         seoTitle: formData.seoTitle,
         metaDescription: formData.metaDescription,
         keywords: formData.keywords,
@@ -1577,6 +1578,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                         folder="products"
                         label="Tải ảnh lên"
                         externalPreview={formData.coverImage || undefined}
+                        multiple
                       />
                     </div>
                   </div>
@@ -1734,14 +1736,14 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                       </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400 text-xs font-medium">
-                          ursport.vn/
+                          shop-ur-sport.vercel.app/
                         </div>
                         <input
                           type="text"
                           value={formData.slug}
-                          onChange={(e) => setFormData(prev => ({...prev, slug: e.target.value}))}
+                          onChange={(e) => setFormData(prev => ({...prev, slug: normalizeProductSlug(e.target.value)}))}
                           placeholder="mac-dinh-theo-ten"
-                          className="w-full pl-[74px] pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-[#1e4b64]/20 focus:border-[#1e4b64] transition-all font-medium"
+                          className="w-full pl-[172px] pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-[#1e4b64]/20 focus:border-[#1e4b64] transition-all font-medium"
                         />
                       </div>
                     </div>

@@ -132,6 +132,31 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+
+    // Private SEO intelligence data: GSC imports and generated reports
+    match /seoGscData/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /seoGscImports/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /seoAiActions/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /seoDrafts/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /seoOpportunities/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /seoReports/{reportId} {
+      allow read, write: if isAdmin();
+    }
     
     // Admins collection
     match /admins/{adminId} {

@@ -16,6 +16,7 @@ import { CategorySeoManager } from './CategorySeoManager';
 import { ContentMapSeoPanel } from './ContentMapSeoPanel';
 import { ProductSeoAutomationPanel, ProductSeoScoreBadge } from './ProductSeoAutomationPanel';
 import { AIProductData, AIBlogData, AIProductSeoFix } from '../lib/gemini';
+import { buildSeoBlogPrompt, SeoSuggestion } from '../lib/dailySeoSuggestions';
 import { useAuth } from '../AuthContext';
 import { Product, BlogPost, Order, Voucher, Review } from '../types';
 import type {
@@ -56,12 +57,16 @@ import {
   subscribeAdminCollection,
   updateAdminDocument,
 } from '../services/adminData';
+import { getProductPath, normalizeProductSlug } from '../lib/productUrls';
 
 const AIProductAssistant = React.lazy(() =>
   import('./AIProductAssistant').then(module => ({ default: module.AIProductAssistant }))
 );
 const AIBlogAssistant = React.lazy(() =>
   import('./AIBlogAssistant').then(module => ({ default: module.AIBlogAssistant }))
+);
+const AISeoReportPanel = React.lazy(() =>
+  import('./admin/seo/AdminSeoPanel').then(module => ({ default: module.AdminSeoPanel }))
 );
 const AdminSettingsTab = React.lazy(() =>
   import('./admin/AdminSettingsTab').then(module => ({ default: module.AdminSettingsTab }))
@@ -72,6 +77,22 @@ const MediaLibraryTab = React.lazy(() =>
 const PolicyPagesManager = React.lazy(() =>
   import('./admin/PolicyPagesManager').then(module => ({ default: module.PolicyPagesManager }))
 );
+
+const SITE_IMAGE_HOSTS = new Set(['shop-ur-sport.vercel.app', 'ursport.vn', 'www.ursport.vn']);
+const normalizeMediaUrlForStorage = (url: string) => {
+  if (url.startsWith('/images/')) return url;
+
+  try {
+    const parsed = new URL(url);
+    if (SITE_IMAGE_HOSTS.has(parsed.hostname) && parsed.pathname.startsWith('/images/')) {
+      return parsed.pathname;
+    }
+  } catch {
+    // Keep non-URL values as-is.
+  }
+
+  return url;
+};
 
 const AdminTabFallback = () => (
   <div className="rounded-2xl border border-white/5 bg-[#13161f] p-10 text-center">
@@ -126,8 +147,8 @@ const NAV_ITEMS: AdminNavigationItem[] = [
     children: [
       { id: 'ai-product', label: 'AI Sản Phẩm', icon: Bot },
       { id: 'ai-blog', label: 'AI Tạo Blog', icon: Sparkles },
+      { id: 'ai-seo-report', label: 'AI SEO Report', icon: BarChart2 },
       { id: 'category-seo', label: 'SEO Danh mục', icon: Search },
-      { id: 'content-map', label: 'Content Map SEO', icon: Network },
     ]
   },
   {
@@ -256,11 +277,15 @@ const cacheBlogCategories = (items: BlogCategoryItem[]) => {
   window.localStorage.setItem(BLOG_CATEGORIES_STORAGE_KEY, JSON.stringify(items));
 };
 
-export const AdminPanel: React.FC = () => {
+type AdminPanelProps = {
+  initialTab?: AdminTab;
+};
+
+export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard' }) => {
   const { user, isAdmin, loading: authLoading, logout, devLogin } = useAuth();
   const isLocalhost = typeof window !== 'undefined' &&
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-  const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
+  const [activeTab, setActiveTab] = useState<AdminTab>(initialTab);
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['sales-group', 'catalog-group']);
   const [products, setProducts] = useState<Product[]>([]);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
@@ -311,6 +336,7 @@ export const AdminPanel: React.FC = () => {
     endTime: '',
   });
   const [showSitemapPreview, setShowSitemapPreview] = useState(false);
+  const [aiBlogSeed, setAiBlogSeed] = useState<{ prompt: string; key: number } | null>(null);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -651,8 +677,9 @@ export const AdminPanel: React.FC = () => {
 
   const handleSaveMedia = async (url: string) => {
     try {
+      const normalizedUrl = normalizeMediaUrlForStorage(url);
       await addAdminDocument('media', {
-        url,
+        url: normalizedUrl,
         createdAt: adminTimestamp()
       });
       toast.success('Đã lưu ảnh vào thư viện!');
@@ -841,13 +868,13 @@ export const AdminPanel: React.FC = () => {
 
   const handleView = (product: Product) => {
     const catSlug = product.category
-      ? product.category.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')
+      ? slugifyVietnamese(product.category)
       : 'san-pham';
-    window.open(`/apparel/${catSlug}/${product.slug}`, '_blank');
+    window.open(`/apparel/${catSlug}/${normalizeProductSlug(product.slug, product.id)}`, '_blank');
   };
 
   const generateSitemapString = () => {
-    const baseUrl = 'https://ursport.vn';
+    const baseUrl = 'https://shop-ur-sport.vercel.app';
     const currentDate = new Date().toISOString().split('T')[0];
     
     const staticRoutes = [
@@ -871,7 +898,7 @@ export const AdminPanel: React.FC = () => {
       }));
 
     const productRoutes = products.map(p => ({
-      path: `/${p.slug}`,
+      path: getProductPath(p),
       priority: '0.7',
       changefreq: 'weekly'
     }));
@@ -948,7 +975,7 @@ Disallow: /checkout
 
 Crawl-delay: 1
 
-Sitemap: https://ursport.vn/sitemap.xml`;
+Sitemap: https://shop-ur-sport.vercel.app/sitemap.xml`;
 
     const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -988,6 +1015,10 @@ Sitemap: https://ursport.vn/sitemap.xml`;
   };
 
   const handleApplyAIBlog = (data: AIBlogData) => {
+    if (!data.contentHtml?.trim()) {
+      toast.error('AI chưa trả nội dung bài viết. Hãy tạo lại trong AI Blog Creator trước khi Apply.');
+      return;
+    }
     const newBlog: Partial<BlogPost> = {
       title: data.title,
       slug: data.slug,
@@ -1071,6 +1102,42 @@ Sitemap: https://ursport.vn/sitemap.xml`;
     setEditingProduct(product);
     setIsAddModalOpen(true);
   };
+
+  const openBlogDraft = (draft: Partial<BlogPost>) => {
+    setEditingBlogPost({
+      id: draft.id || draft.slug || `draft-${Date.now()}`,
+      slug: draft.slug || '',
+      title: draft.title || '',
+      category: draft.category || 'SEO',
+      author: draft.author || 'UR Sport',
+      date: draft.date || new Date().toLocaleDateString('vi-VN'),
+      image: draft.image || '',
+      excerpt: draft.excerpt || draft.metaDescription || '',
+      content: draft.content || '',
+      seoTitle: draft.seoTitle || draft.title || '',
+      metaDescription: draft.metaDescription || draft.excerpt || '',
+      customSchema: draft.customSchema || '',
+      images: draft.images || [],
+      videos: draft.videos || [],
+      createdAt: draft.createdAt,
+    } as BlogPost);
+    setIsBlogModalOpen(true);
+  };
+
+  const openAIBlogFromSeoSuggestion = (suggestion: SeoSuggestion) => {
+    setAiBlogSeed({
+      prompt: buildSeoBlogPrompt(suggestion),
+      key: Date.now(),
+    });
+    setExpandedGroups(prev => prev.includes('seo-ai-group') ? prev : [...prev, 'seo-ai-group']);
+    setActiveTab('ai-blog');
+    toast.success('Đã chuyển gợi ý .md sang AI Tạo Blog.');
+  };
+
+  const openCategorySeo = () => {
+    setActiveTab('category-seo');
+  };
+
   const applyProductSeoFix = async (product: Product, fix: AIProductSeoFix) => {
     const intro = fix.shortDescription?.trim() ? `<p>${fix.shortDescription.trim()}</p>` : '';
     const body = fix.descriptionHtml?.trim() || product.description;
@@ -2582,7 +2649,26 @@ Sitemap: https://ursport.vn/sitemap.xml`;
           {/* ─── AI BLOG ASSISTANT ─── */}
           {activeTab === 'ai-blog' && (
             <React.Suspense fallback={<AdminTabFallback />}>
-              <AIBlogAssistant onApply={handleApplyAIBlog} blogPosts={blogPosts} />
+              <AIBlogAssistant
+                onApply={handleApplyAIBlog}
+                blogPosts={blogPosts}
+                initialPrompt={aiBlogSeed?.prompt || ''}
+                initialPromptKey={aiBlogSeed?.key || 0}
+              />
+            </React.Suspense>
+          )}
+
+          {activeTab === 'ai-seo-report' && (
+            <React.Suspense fallback={<AdminTabFallback />}>
+              <AISeoReportPanel
+                products={products}
+                blogPosts={blogPosts}
+                orders={orders}
+                onCreateBlogDraft={openBlogDraft}
+                onUseBlogSuggestion={openAIBlogFromSeoSuggestion}
+                onOpenProduct={openProductEditor}
+                onOpenCategory={openCategorySeo}
+              />
             </React.Suspense>
           )}
 

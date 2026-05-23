@@ -1,0 +1,103 @@
+// Proposed PostgreSQL/Prisma schema for the URSport SEO automation module.
+// The current production app uses Firebase/Firestore. Keep this file as the
+// migration target when moving SEO intelligence to Postgres.
+
+model GscImport {
+  id                 String           @id @default(uuid())
+  sourceName         String           @default("manual-json")
+  dateRange          String?
+  totalRows          Int              @default(0)
+  opportunitiesCount Int              @default(0)
+  summary            Json?
+  createdAt          DateTime         @default(now())
+
+  keywords           GscKeyword[]
+  opportunities      SeoOpportunity[]
+}
+
+model GscKeyword {
+  id          String    @id @default(uuid())
+  importId    String
+  page        String
+  query       String
+  clicks      Int       @default(0)
+  impressions Int       @default(0)
+  ctr         Decimal   @db.Decimal(8, 4)
+  position    Decimal   @db.Decimal(8, 2)
+  createdAt   DateTime  @default(now())
+
+  import      GscImport @relation(fields: [importId], references: [id], onDelete: Cascade)
+
+  @@index([query])
+  @@index([page])
+  @@index([importId])
+}
+
+model SeoOpportunity {
+  id             String     @id @default(uuid())
+  importId       String?
+  page           String
+  query          String
+  type           String
+  priority       String
+  problem        String
+  suggestedAction String
+  actionType     String
+  clicks         Int        @default(0)
+  impressions    Int        @default(0)
+  ctr            Decimal    @db.Decimal(8, 4)
+  position       Decimal    @db.Decimal(8, 2)
+  moneyScore     Int        @default(0)
+  impactScore    Int        @default(0)
+  status         String     @default("pending")
+  payload        Json?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  import         GscImport? @relation(fields: [importId], references: [id], onDelete: SetNull)
+  drafts         SeoDraft[]
+
+  @@index([type, priority])
+  @@index([status])
+  @@index([query])
+}
+
+model SeoDraft {
+  id             String          @id @default(uuid())
+  opportunityId  String?
+  page           String
+  slug           String
+  query          String
+  oldTitle       String?
+  oldDescription String?
+  oldHeading     String?
+  oldContent     String?
+  newTitle       String?
+  newDescription String?
+  newHeading     String?
+  newContent     String
+  changeSummary  Json?
+  reviewChecklist Json?
+  status         String          @default("pending")
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  appliedAt      DateTime?
+
+  opportunity    SeoOpportunity? @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([slug])
+}
+
+model SeoAuditLog {
+  id        String   @id @default(uuid())
+  action    String
+  entity    String
+  entityId  String?
+  actorId   String?
+  payload   Json?
+  createdAt DateTime @default(now())
+
+  @@index([action])
+  @@index([entity, entityId])
+}

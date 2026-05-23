@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { getDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 
-export const Hero: React.FC<{ onShopClick: () => void }> = ({ onShopClick }) => {
+export const Hero: React.FC<{ onShopClick: () => void; headingOverride?: string }> = ({ onShopClick, headingOverride }) => {
   const navigate = useNavigate();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [activeBanners, setActiveBanners] = useState<any[]>([]);
@@ -69,7 +69,9 @@ export const Hero: React.FC<{ onShopClick: () => void }> = ({ onShopClick }) => 
   if (activeBanners.length === 0) return (
     <div className="relative h-[500px] w-full flex items-center justify-center bg-zinc-950 text-center px-4">
       <div className="max-w-2xl">
-        <h2 className="text-white text-3xl font-black mb-4 uppercase tracking-tighter">Chào mừng đến với UR SPORT</h2>
+        <h1 className="text-white text-3xl font-black mb-4 uppercase tracking-tighter">
+          {headingOverride || 'Chào mừng đến với UR SPORT'}
+        </h1>
         <p className="text-white/40 mb-8">Hãy cập nhật Banner trong trang quản trị để bắt đầu.</p>
         <Button onClick={onShopClick} className="bg-white text-black hover:bg-zinc-200 font-bold px-8 py-6 rounded-2xl">
           KHÁM PHÁ CỬA HÀNG
@@ -91,7 +93,7 @@ export const Hero: React.FC<{ onShopClick: () => void }> = ({ onShopClick }) => 
         >
           <img
             src={activeBanners[currentIndex]?.image}
-            alt={activeBanners[currentIndex]?.title}
+            alt={activeBanners[currentIndex]?.title || activeBanners[currentIndex]?.subtitle || 'UR Sport banner'}
             className="h-full w-full object-cover object-center sm:object-contain"
             loading={currentIndex === 0 ? 'eager' : 'lazy'}
             decoding="async"
@@ -141,7 +143,7 @@ export const Hero: React.FC<{ onShopClick: () => void }> = ({ onShopClick }) => 
                   transition={{ duration: 0.6, ease: "easeOut" }}
                   className="max-w-[13ch] text-[30px] font-black uppercase leading-[0.92] tracking-tight text-white drop-shadow-xl sm:text-[42px] lg:text-[50px]"
                 >
-                  {(activeBanners[currentIndex]?.title || "UR Sport").split('\n').slice(0, 2).map((line: string, i: number) => (
+                  {(headingOverride || activeBanners[currentIndex]?.title || "UR Sport").split('\n').slice(0, 2).map((line: string, i: number) => (
                     <React.Fragment key={i}>
                       {i === 1 ? <span className="text-white/80">{line}</span> : line}
                       {i === 0 && <br />}
@@ -157,7 +159,7 @@ export const Hero: React.FC<{ onShopClick: () => void }> = ({ onShopClick }) => 
               transition={{ delay: 0.8, duration: 0.8 }}
               className="mb-6 max-w-sm text-[13px] font-semibold leading-relaxed text-white/85 drop-shadow-sm sm:text-[16px]"
             >
-              {activeBanners[currentIndex]?.subtitle || 'Hiệu suất tối đa, phong cách vượt trội cho mọi hành trình.'}
+              {activeBanners[currentIndex]?.subtitle || 'Hiá»‡u suáº¥t tá»‘i Ä‘a, phong cÃ¡ch vÆ°á»£t trá»™i cho má»i hÃ nh trÃ¬nh.'}
             </motion.p>
             
             <div className="flex flex-wrap gap-4">
@@ -165,7 +167,7 @@ export const Hero: React.FC<{ onShopClick: () => void }> = ({ onShopClick }) => 
                 onClick={handleButtonClick}
                 className="group relative flex items-center gap-3 overflow-hidden rounded-full bg-white px-8 py-4 text-[12px] font-black uppercase tracking-widest text-black shadow-2xl transition-all hover:bg-[#1e4b64] hover:text-white active:scale-95 sm:px-10"
               >
-                <span className="relative z-10">Khám phá ngay</span>
+                <span className="relative z-10">KhÃ¡m phÃ¡ ngay</span>
                 <ArrowRight className="h-4 w-4 relative z-10 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>

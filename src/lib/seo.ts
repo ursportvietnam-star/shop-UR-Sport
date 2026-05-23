@@ -1,9 +1,18 @@
 import { stripHtml } from './utils';
 
-export const SITE_URL = 'https://ursport.vn';
+const siteUrlFromEnv = (import.meta as ImportMeta & { env?: { VITE_SITE_URL?: string } }).env?.VITE_SITE_URL;
+
+export const SITE_URL = (siteUrlFromEnv || 'https://shop-ur-sport.vercel.app').replace(/\/+$/, '');
 export const SITE_NAME = 'UR Sport';
 export const DEFAULT_OG_IMAGE = `${SITE_URL}/images/og-ursport.svg`;
 export const BRAND_PHONE = '+84917722425';
+const CANONICAL_HOSTS = new Set([
+  'shop-ur-sport.vercel.app',
+  'ursport.vn',
+  'www.ursport.vn',
+  'localhost',
+  '127.0.0.1'
+]);
 
 export const cleanSeoText = (value?: string, maxLength = 160) => {
   return stripHtml(String(value || ''))
@@ -25,8 +34,8 @@ export const canonicalUrl = (canonical?: string) => {
   if (canonical) {
     try {
       const url = new URL(canonical, SITE_URL);
-      if (url.hostname === 'shop-ur-sport.vercel.app' || url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
-        return `${SITE_URL}${url.pathname}`;
+      if (CANONICAL_HOSTS.has(url.hostname)) {
+        return `${SITE_URL}${url.pathname}${url.search}`;
       }
       return url.toString();
     } catch {

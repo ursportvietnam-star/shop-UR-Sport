@@ -27,6 +27,7 @@ export type AdminTab =
   | 'policy-pages'
   | 'ai-product'
   | 'ai-blog'
+  | 'ai-seo-report'
   | 'flash-sale'
   | 'category-seo'
   | 'content-map';

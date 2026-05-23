@@ -10,6 +10,7 @@ import { useProducts } from '../ProductsContext';
 import { MobileSidebar } from './MobileSidebar';
 import { AuthModal } from './AuthModal';
 import { Category, Product } from '../types';
+import { getProductPath } from '../lib/productUrls';
 
 interface NavbarProps {
   onCartClick: () => void;
@@ -97,7 +98,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
   }, [products, trimmedSearchQuery]);
 
   const goToProduct = (product: Product) => {
-    navigate(`/${product.slug || product.id}`);
+    navigate(getProductPath(product));
     setSearchQuery('');
     setIsSearchFocused(false);
     setIsMobileSearchOpen(false);

@@ -12,6 +12,7 @@ import {
   offerShippingDetailsSchema,
   localBusinessSchema
 } from '../src/lib/seo';
+import { getProductPath } from '../src/lib/productUrls';
 
 type Snapshot = {
   route: string;
@@ -124,6 +125,8 @@ const injectSeo = (html: string, snapshot: Snapshot) => {
     `<meta name="twitter:title" content="${escapeHtml(title)}" />`,
     `<meta name="twitter:description" content="${escapeHtml(description)}" />`,
     `<meta name="twitter:image" content="${escapeHtml(image)}" />`,
+    `<link rel="alternate" hreflang="vi" href="${escapeHtml(canonical)}" />`,
+    `<link rel="alternate" hreflang="x-default" href="${escapeHtml(canonical)}" />`,
     `<script type="application/ld+json" data-seo-snapshot="true">${safeJson(schema)}</script>`
   ].filter(Boolean).join('\n    ');
 
@@ -134,6 +137,7 @@ const injectSeo = (html: string, snapshot: Snapshot) => {
     .replace(/\s*<meta\s+name=["']keywords["'][^>]*>\s*/gi, '')
     .replace(/\s*<meta\s+name=["']robots["'][^>]*>\s*/gi, '')
     .replace(/\s*<link\s+rel=["']canonical["'][^>]*>\s*/gi, '')
+    .replace(/\s*<link\s+rel=["']alternate["'][^>]*>\s*/gi, '')
     .replace(/\s*<meta\s+property=["']og:[^"']+["'][^>]*>\s*/gi, '')
     .replace(/\s*<meta\s+name=["']twitter:[^"']+["'][^>]*>\s*/gi, '')
     .replace(/\s*<script\s+type=["']application\/ld\+json["'][\s\S]*?<\/script>\s*/gi, '');
@@ -142,7 +146,7 @@ const injectSeo = (html: string, snapshot: Snapshot) => {
 };
 
 const faqSchemaForProduct = (product: (typeof PRODUCTS)[number]) => {
-  const route = `/${product.slug}`;
+  const route = getProductPath(product);
   const returnDays = merchantReturnPolicySchema.merchantReturnDays || 7;
   return {
     '@type': 'FAQPage',
@@ -177,7 +181,7 @@ const faqSchemaForProduct = (product: (typeof PRODUCTS)[number]) => {
 };
 
 const productSnapshot = (product: (typeof PRODUCTS)[number]): Snapshot => {
-  const route = `/${product.slug}`;
+  const route = getProductPath(product);
   const productUrl = absoluteUrl(route);
   const category = CATEGORY_METADATA.find(item => item.name === product.category);
   const categoryUrl = category ? `/${category.slug}` : '/shop';
@@ -268,7 +272,7 @@ const categorySnapshot = (category: (typeof CATEGORY_METADATA)[number]): Snapsho
         itemListElement: categoryProducts.map((product, index) => ({
           '@type': 'ListItem',
           position: index + 1,
-          url: absoluteUrl(`/${product.slug}`),
+          url: absoluteUrl(getProductPath(product)),
           name: product.name
         }))
       },

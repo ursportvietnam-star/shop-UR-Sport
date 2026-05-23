@@ -12,9 +12,11 @@ import { analyzeInternalLinks, injectInternalLinks } from '../lib/autoLinker';
 interface AIBlogAssistantProps {
   onApply: (data: AIBlogData) => void;
   blogPosts?: BlogPost[];
+  initialPrompt?: string;
+  initialPromptKey?: number;
 }
 
-export function AIBlogAssistant({ onApply, blogPosts = [] }: AIBlogAssistantProps) {
+export function AIBlogAssistant({ onApply, blogPosts = [], initialPrompt = '', initialPromptKey = 0 }: AIBlogAssistantProps) {
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AIBlogData | null>(null);
@@ -23,6 +25,13 @@ export function AIBlogAssistant({ onApply, blogPosts = [] }: AIBlogAssistantProp
   const [showSettings, setShowSettings] = useState(!getGeminiApiKey() && provider === 'gemini');
   const [activeSuggestionSlug, setActiveSuggestionSlug] = useState<string | undefined>();
   const safeContentHtml = React.useMemo(() => sanitizeRichHtml(result?.contentHtml || ''), [result?.contentHtml]);
+
+  React.useEffect(() => {
+    if (!initialPrompt.trim()) return;
+    setPrompt(initialPrompt);
+    setResult(null);
+    toast.success('Đã nhận gợi ý SEO từ AI SEO Report vào AI Blog Creator.');
+  }, [initialPrompt, initialPromptKey]);
 
   const detectedLinks = React.useMemo(() => {
     return analyzeInternalLinks(result?.contentHtml || '', blogPosts);
@@ -91,12 +100,17 @@ export function AIBlogAssistant({ onApply, blogPosts = [] }: AIBlogAssistantProp
     { label: 'Có outline H2/H3', passed: /H2:|H3:/i.test(prompt) }
   ];
 
+  const figureCount = result ? (result.contentHtml.match(/<figure[\s>]/gi) || []).length : 0;
+
   const resultChecklist = result ? [
     { label: 'Title có đủ', passed: Boolean(result.title && result.title.length <= 80) },
     { label: 'Slug có đủ', passed: Boolean(result.slug) },
     { label: 'Meta description chuẩn', passed: Boolean(result.metaDescription && result.metaDescription.length <= 170) },
     { label: 'Có H2/H3', passed: /<h2[\s>]|<h3[\s>]/i.test(result.contentHtml || '') },
     { label: 'Có FAQ', passed: /Câu hỏi thường gặp|FAQ|<h3[\s>].+\?/i.test(result.contentHtml || '') },
+    { label: 'Có 3 ảnh figure', passed: figureCount >= 3 },
+    { label: 'Có alt/title/caption ảnh', passed: /<img[^>]+alt="[^"]+"[^>]+title="[^"]+"/i.test(result.contentHtml || '') && /<figcaption>/i.test(result.contentHtml || '') },
+    { label: 'Có prompt tạo ảnh', passed: Boolean(result.imagePrompts?.length && result.imagePrompts.length >= 3) },
     { label: 'Có internal links', passed: /href="\//i.test(result.contentHtml || '') || result.internalLinkMap.length > 0 },
     { label: 'Có bảng so sánh', passed: !/so sánh| vs |khác gì/i.test(result.contentHtml || prompt) || /class="table-wrap"|class="compare-table"/i.test(result.contentHtml || '') }
   ] : [];
