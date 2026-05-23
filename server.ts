@@ -85,6 +85,62 @@ async function verifyAdminToken(token: string): Promise<boolean> {
   }
 }
 
+async function canWriteLocalMedia(req: express.Request) {
+  const authHeader = String(req.headers.authorization || "");
+  const token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : "";
+  const host = String(req.headers.host || "").split(":")[0];
+  const isLocalDevRequest = process.env.NODE_ENV !== "production"
+    && ["localhost", "127.0.0.1", "::1"].includes(host);
+  const isDevBypass = isLocalDevRequest || (process.env.NODE_ENV !== "production" && process.env.BYPASS_ADMIN_AUTH === "true");
+
+  if (isDevBypass) return true;
+  if (!token) return false;
+
+  return verifyAdminToken(token);
+}
+
+function normalizeLocalMediaFolder(folderParam: string) {
+  const folderMap: Record<string, string> = {
+    blog: "blog",
+    products: "products",
+    "product-descriptions": "products/descriptions",
+    "size-guides": "products/size-guides",
+  };
+
+  return folderMap[folderParam] || null;
+}
+
+function getImageFileName(req: express.Request, fallbackName: string) {
+  const mimeToExt: Record<string, string> = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/gif": "gif",
+  };
+  const contentType = String(req.headers["content-type"] || "");
+  const ext = mimeToExt[contentType];
+  if (!ext) return null;
+
+  const encodedOriginalName = Array.isArray(req.headers["x-file-name"])
+    ? req.headers["x-file-name"][0]
+    : req.headers["x-file-name"];
+  const originalName = encodedOriginalName ? decodeURIComponent(encodedOriginalName) : "";
+  const baseName = (originalName || fallbackName)
+    .split(/[\\/]/)
+    .pop()
+    ?.trim()
+    .replace(/\.[a-z0-9]+$/i, "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80) || fallbackName;
+
+  return `${baseName}-${Date.now()}.${ext}`;
+}
+
 async function startServer() {
   const app = express();
   app.set("trust proxy", 1);
@@ -167,6 +223,41 @@ async function startServer() {
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
+
+  app.post(
+    "/api/upload-local-image/:folder",
+    express.raw({ type: ["image/jpeg", "image/png", "image/webp", "image/gif"], limit: "10mb" }),
+    async (req, res) => {
+      try {
+        if (!(await canWriteLocalMedia(req))) {
+          return res.status(401).json({ error: "Unauthorized image upload" });
+        }
+
+        if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
+          return res.status(400).json({ error: "No image file received" });
+        }
+
+        const mediaFolder = normalizeLocalMediaFolder(req.params.folder);
+        if (!mediaFolder) {
+          return res.status(400).json({ error: "Unsupported local image folder" });
+        }
+
+        const fileName = getImageFileName(req, "local-image");
+        if (!fileName) {
+          return res.status(400).json({ error: "Unsupported image format. Allowed formats: JPG, PNG, WebP, GIF" });
+        }
+
+        const uploadDir = path.join(process.cwd(), "public", "images", mediaFolder);
+        await fs.mkdir(uploadDir, { recursive: true });
+        await fs.writeFile(path.join(uploadDir, fileName), req.body);
+
+        return res.json({ url: `/images/${mediaFolder}/${fileName}` });
+      } catch (error) {
+        console.error("Local image upload failed:", error);
+        return res.status(500).json({ error: "Failed to save uploaded image locally" });
+      }
+    }
+  );
 
   app.post("/api/gemini-json", async (req, res) => {
     try {

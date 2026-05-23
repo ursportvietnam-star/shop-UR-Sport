@@ -1509,7 +1509,7 @@ const ProductDescriptionHtml = React.memo(({ html, className, fallbackImages = [
 
     Array.from(wrapper.querySelectorAll('img')).forEach((img, index) => {
       const src = img.getAttribute('src') || '';
-      if (!isLocalDescriptionImage(src)) return;
+      if (isLocalDescriptionImage(src)) return;
 
       const fallback = getDescriptionFallbackImage(img, index, normalizedFallbackImages);
       if (fallback) {

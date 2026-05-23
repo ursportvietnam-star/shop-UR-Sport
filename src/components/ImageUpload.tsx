@@ -3,6 +3,7 @@ import { CheckCircle2, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { auth } from '../firebase';
+import { uploadLocalImage } from '../lib/localMediaUpload';
 
 interface ImageUploadProps {
   onUploadComplete: (url: string) => void;
@@ -10,7 +11,7 @@ interface ImageUploadProps {
   label?: string;
   externalPreview?: string;
   compact?: boolean;
-  storage?: 'cloudinary' | 'blog-local';
+  storage?: 'cloudinary' | 'blog-local' | 'local';
   multiple?: boolean;
 }
 
@@ -25,7 +26,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   label = 'Tai anh len',
   externalPreview,
   compact = false,
-  storage = 'cloudinary',
+  storage = 'local',
   multiple = false
 }) => {
   const DISABLE_UPLOADS = (import.meta as any).env?.VITE_DISABLE_MEDIA_UPLOADS === 'true';
@@ -94,6 +95,25 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     return data.url as string;
   };
 
+  const uploadToLocalFolder = async (file: File, index: number, total: number) => {
+    setProgress(Math.round((index / total) * 100));
+    // Normalise any folder alias → the API's accepted folder key
+    const folderAliasMap: Record<string, string> = {
+      // product description images (underscore OR dash variant)
+      'product_descriptions': 'product-descriptions',
+      'product-descriptions': 'product-descriptions',
+      // size guide images
+      'size_guides': 'size-guides',
+      'size-guides': 'size-guides',
+      // blog images
+      'blog': 'blog',
+      // product hero / gallery images
+      'products': 'products',
+    };
+    const localFolder = folderAliasMap[folder] ?? 'products';
+    return uploadLocalImage(file, localFolder);
+  };
+
   const uploadToCloudinary = (file: File, index: number, total: number) => new Promise<string>((resolve, reject) => {
     const baseProgress = (index / total) * 100;
     const fileProgressShare = 100 / total;
@@ -153,8 +173,8 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     try {
       const uploadedUrls: string[] = [];
       for (let index = 0; index < files.length; index += 1) {
-        const url = storage === 'blog-local'
-          ? await uploadToBlogFolder(files[index], index, files.length)
+        const url = storage === 'blog-local' || storage === 'local'
+          ? await uploadToLocalFolder(files[index], index, files.length)
           : await uploadToCloudinary(files[index], index, files.length);
         uploadedUrls.push(url);
         onUploadComplete(url);

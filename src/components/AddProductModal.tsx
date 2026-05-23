@@ -11,6 +11,7 @@ import { CATEGORIES } from '../data';
 import ReactQuill, { Quill } from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { normalizeProductSlug } from '../lib/productUrls';
+import { uploadLocalImage } from '../lib/localMediaUpload';
 
 const DEFAULT_PRODUCT_SIZES = ['M', 'L', 'XL', 'XXL', '3XL', '4XL'];
 const DEFAULT_PRODUCT_SIZE_TEXT = DEFAULT_PRODUCT_SIZES.join(',');
@@ -376,21 +377,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
       throw new Error('File qua lon! Toi da 10MB.');
     }
 
-    const uploadData = new FormData();
-    uploadData.append('file', file);
-    uploadData.append('upload_preset', 'ursport_uploads');
-    uploadData.append('folder', 'product_descriptions');
-
-    const res = await fetch(`https://api.cloudinary.com/v1_1/dcj4qhcfh/image/upload`, {
-      method: 'POST',
-      body: uploadData
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.secure_url) {
-      throw new Error(data.error?.message || 'Upload failed');
-    }
-
-    return data.secure_url as string;
+    return uploadLocalImage(file, 'product-descriptions');
   };
 
   const handleProductDescriptionImageInsert = React.useCallback(async () => {
@@ -564,20 +551,8 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
             if (!file) return;
 
             const toastId = toast.loading('Đang tải ảnh lên mô tả...');
-            const uploadData = new FormData();
-            uploadData.append('file', file);
-            uploadData.append('upload_preset', 'ursport_uploads');
-            uploadData.append('folder', 'product_descriptions');
-
             try {
-              const res = await fetch(`https://api.cloudinary.com/v1_1/dcj4qhcfh/image/upload`, {
-                method: 'POST',
-                body: uploadData
-              });
-              const data = await res.json();
-              if (!res.ok) {
-                throw new Error(data.error?.message || 'Upload failed');
-              }
+              const imageUrl = await uploadLocalImage(file, 'product-descriptions');
               
               const quill = quillRef.current?.getEditor();
               if (quill) {
@@ -585,7 +560,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                 const insertIndex = range?.index ?? quill.getLength();
                 quill.clipboard.dangerouslyPasteHTML(
                   insertIndex,
-                  `<p><img src="${escapeHtmlAttr(data.secure_url)}" alt="" title="" data-align="center" style="${getImageAlignStyle('center')}" /></p><p><br></p>`,
+                  `<p><img src="${escapeHtmlAttr(imageUrl)}" alt="" title="" data-align="center" style="${getImageAlignStyle('center')}" /></p><p><br></p>`,
                   'user'
                 );
                 quill.setSelection(insertIndex + 1);
@@ -1514,6 +1489,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                               }}
                               folder="products"
                               label="Ảnh"
+                              storage="local"
                             />
                           )}
                         </div>
@@ -1578,6 +1554,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                         folder="products"
                         label="Tải ảnh lên"
                         externalPreview={formData.coverImage || undefined}
+                        storage="local"
                         multiple
                       />
                     </div>
@@ -1629,9 +1606,10 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                     <div className="h-[120px]">
                       <ImageUpload 
                         onUploadComplete={(url) => setFormData(prev => ({...prev, sizeGuideUrl: url}))}
-                        folder="products"
+                        folder="size-guides"
                         label="Tải ảnh bảng size"
                         externalPreview={formData.sizeGuideUrl || undefined}
+                        storage="local"
                       />
                     </div>
                   </div>

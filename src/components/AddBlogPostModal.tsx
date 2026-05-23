@@ -11,6 +11,7 @@ import 'react-quill-new/dist/quill.snow.css';
 import { BlogPost } from '../types';
 import beautify from 'js-beautify';
 import { removeEmptyMedia, sanitizeRichHtml } from '../lib/htmlContent';
+import { uploadLocalImage } from '../lib/localMediaUpload';
 
 // ── Đăng ký blots cho <figure> và <figcaption> để Quill không strip các thẻ này ──
 const BlockEmbedClass = Quill.import('blots/block/embed') as any;
@@ -188,6 +189,11 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
     setUploading(true);
     setUploadProgress(10);
     try {
+      if (resourceType === 'image') {
+        setUploadProgress(90);
+        return await uploadLocalImage(file, 'blog');
+      }
+
       const formData = new FormData();
       formData.append('file', file);
       formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
@@ -1394,7 +1400,7 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
                       <Upload className="h-8 w-8 text-blue-500" />
                     </div>
                     <p className="text-sm font-bold text-blue-600">Thả ảnh vào đây để upload</p>
-                    <p className="text-xs text-blue-400">Ảnh sẽ tự động upload lên Cloudinary và chèn vào bài viết</p>
+                    <p className="text-xs text-blue-400">Ảnh sẽ tự động lưu vào local và chèn vào bài viết</p>
                   </div>
                 )}
                 {selectedEditorImage && !isHtmlMode && (

@@ -1728,42 +1728,16 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
               {categoryIntro}
             </p>
           )}
-          <form onSubmit={handleSearchSubmit} className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center">
-            <label htmlFor="shop-search" className="sr-only">Tìm kiếm sản phẩm</label>
-            <div className="relative w-full sm:max-w-xl">
-              <input
-                id="shop-search"
-                type="search"
-                value={searchInput}
-                onChange={e => setSearchInput(e.target.value)}
-                placeholder="Tìm sản phẩm, danh mục, thương hiệu..."
-                className="w-full rounded-full border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              />
-              <button
-                type="submit"
-                className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-[#1e4b64] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#153a4d]"
-              >
-                Tìm
-              </button>
-            </div>
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSearchInput('');
-                  updateFilter('q', null);
-                }}
-                className="inline-flex h-11 items-center justify-center rounded-full border border-zinc-200 bg-white px-4 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
-              >
-                Xóa tìm kiếm
-              </button>
-            )}
-          </form>
           
-          <div ref={filtersRef} className="flex flex-col gap-3 pt-4 border-t border-zinc-100 lg:flex-row lg:items-center lg:justify-between">
-            <div className="relative z-30 grid w-full grid-cols-2 gap-2 overflow-visible pb-1 sm:flex sm:flex-wrap sm:items-center">
-              <div className="relative min-w-0">
-                <Button type="button" variant="outline" onClick={() => toggleFilterMenu('all')} className="h-10 w-full justify-between rounded-full border-zinc-200 px-3 text-[12px] font-bold text-zinc-900 hover:bg-zinc-50 sm:h-11 sm:w-auto sm:justify-center sm:px-5 sm:text-sm">
+          {landingConfig && (
+            <CategoryLandingBlocks config={landingConfig} productCount={filteredProducts.length} />
+          )}
+
+          <div ref={filtersRef} className="flex flex-col gap-4 pt-4 border-t border-zinc-100">
+            <div className="relative z-30 flex items-center gap-2 w-full overflow-x-auto pb-4 xl:pb-0 xl:flex-wrap xl:overflow-visible [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              
+              <div className="relative min-w-0 shrink-0">
+                <Button type="button" variant="outline" onClick={() => toggleFilterMenu('all')} className="flex h-9 w-auto items-center justify-center gap-1.5 rounded-full border-zinc-200 px-4 text-[12px] font-bold text-zinc-900 hover:bg-zinc-50 sm:h-10 sm:px-5">
                   <SlidersHorizontal className="h-4 w-4" /> Bộ lọc <ChevronDown className="h-3 w-3 opacity-50" />
                 </Button>
                 <div className={cn(dropdownClass('all'), 'py-3')}>
@@ -1772,15 +1746,13 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
                     <button onClick={() => { setSearchParams({}); setOpenFilterMenu(null); }} className="text-[10px] text-blue-600 font-bold hover:underline">Xóa tất cả</button>
                   </div>
                   <div className="px-2 space-y-1">
-                    {/* Compact quick filters can go here */}
                     <div className="p-2 text-xs text-zinc-400 italic">Chọn các tùy chọn bên cạnh để lọc sản phẩm</div>
                   </div>
                 </div>
               </div>
 
-              {/* Price Filter */}
-              <div className="relative min-w-0">
-                <Button type="button" variant="outline" onClick={() => toggleFilterMenu('price')} className={cn("flex h-10 w-full justify-between rounded-full border-zinc-200 px-3 text-[12px] font-bold text-zinc-900 hover:bg-zinc-50 sm:h-11 sm:w-auto sm:justify-center sm:px-5 sm:text-sm", priceFilter && "border-[#1e4b64] bg-blue-50/50 text-[#1e4b64]")}>
+              <div className="relative min-w-0 shrink-0">
+                <Button type="button" variant="outline" onClick={() => toggleFilterMenu('price')} className={cn("flex h-9 w-auto items-center justify-center gap-1.5 rounded-full border-zinc-200 px-4 text-[12px] font-bold text-zinc-900 hover:bg-zinc-50 sm:h-10 sm:px-5", priceFilter && "border-[#1e4b64] bg-blue-50/50 text-[#1e4b64]")}>
                   Giá {priceFilter && <span className="h-1.5 w-1.5 rounded-full bg-[#1e4b64]" />} <ChevronDown className="h-3 w-3 opacity-50" />
                 </Button>
                 <div className={cn(dropdownClass('price'), 'py-2')}>
@@ -1799,9 +1771,8 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
                 </div>
               </div>
 
-              {/* Brand Filter */}
-              <div className="relative min-w-0">
-                <Button type="button" variant="outline" onClick={() => toggleFilterMenu('brand')} className={cn("flex h-10 w-full justify-between rounded-full border-zinc-200 px-3 text-[12px] font-bold text-zinc-900 hover:bg-zinc-50 sm:h-11 sm:w-auto sm:justify-center sm:px-5 sm:text-sm", brandFilter && "border-[#1e4b64] bg-blue-50/50 text-[#1e4b64]")}>
+              <div className="relative min-w-0 shrink-0">
+                <Button type="button" variant="outline" onClick={() => toggleFilterMenu('brand')} className={cn("flex h-9 w-auto items-center justify-center gap-1.5 rounded-full border-zinc-200 px-4 text-[12px] font-bold text-zinc-900 hover:bg-zinc-50 sm:h-10 sm:px-5", brandFilter && "border-[#1e4b64] bg-blue-50/50 text-[#1e4b64]")}>
                   Thương hiệu {brandFilter && <span className="h-1.5 w-1.5 rounded-full bg-[#1e4b64]" />} <ChevronDown className="h-3 w-3 opacity-50" />
                 </Button>
                 <div className={cn(dropdownClass('brand'), 'py-2')}>
@@ -1821,9 +1792,8 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
                 </div>
               </div>
 
-              {/* Color Filter */}
-              <div className="relative min-w-0">
-                <Button type="button" variant="outline" onClick={() => toggleFilterMenu('color')} className={cn("flex h-10 w-full justify-between rounded-full border-zinc-200 px-3 text-[12px] font-bold text-zinc-900 hover:bg-zinc-50 sm:h-11 sm:w-auto sm:justify-center sm:px-5 sm:text-sm", colorFilter && "border-[#1e4b64] bg-blue-50/50 text-[#1e4b64]")}>
+              <div className="relative min-w-0 shrink-0">
+                <Button type="button" variant="outline" onClick={() => toggleFilterMenu('color')} className={cn("flex h-9 w-auto items-center justify-center gap-1.5 rounded-full border-zinc-200 px-4 text-[12px] font-bold text-zinc-900 hover:bg-zinc-50 sm:h-10 sm:px-5", colorFilter && "border-[#1e4b64] bg-blue-50/50 text-[#1e4b64]")}>
                   Màu sắc {colorFilter && <span className="h-1.5 w-1.5 rounded-full bg-[#1e4b64]" />} <ChevronDown className="h-3 w-3 opacity-50" />
                 </Button>
                 <div className={cn(dropdownClass('color'), 'py-2')}>
@@ -1843,9 +1813,8 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
                 </div>
               </div>
 
-              {/* Size Filter */}
-              <div className="relative min-w-0">
-                <Button type="button" variant="outline" onClick={() => toggleFilterMenu('size')} className={cn("flex h-10 w-full justify-between rounded-full border-zinc-200 px-3 text-[12px] font-bold text-zinc-900 hover:bg-zinc-50 sm:h-11 sm:w-auto sm:justify-center sm:px-5 sm:text-sm", sizeFilter && "border-[#1e4b64] bg-blue-50/50 text-[#1e4b64]")}>
+              <div className="relative min-w-0 shrink-0">
+                <Button type="button" variant="outline" onClick={() => toggleFilterMenu('size')} className={cn("flex h-9 w-auto items-center justify-center gap-1.5 rounded-full border-zinc-200 px-4 text-[12px] font-bold text-zinc-900 hover:bg-zinc-50 sm:h-10 sm:px-5", sizeFilter && "border-[#1e4b64] bg-blue-50/50 text-[#1e4b64]")}>
                   Kích cỡ {sizeFilter && <span className="h-1.5 w-1.5 rounded-full bg-[#1e4b64]" />} <ChevronDown className="h-3 w-3 opacity-50" />
                 </Button>
                 <div className={cn(dropdownClass('size'), 'py-2')}>
@@ -1865,86 +1834,83 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
                 </div>
               </div>
 
-              <div className="relative min-w-0">
-              <Button type="button" variant="outline" onClick={() => toggleFilterMenu('category')} className="h-10 w-full justify-between rounded-full border-zinc-200 px-3 text-[12px] font-bold text-zinc-900 hover:bg-zinc-50 sm:h-11 sm:w-auto sm:justify-center sm:px-5 sm:text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="flex flex-col gap-0.5">
-                    <div className="w-4 h-0.5 bg-zinc-900 rounded-full" />
-                    <div className="w-3 h-0.5 bg-zinc-900 rounded-full ml-auto" />
+              <div className="relative min-w-0 shrink-0">
+                <Button type="button" variant="outline" onClick={() => toggleFilterMenu('category')} className="flex h-9 w-auto items-center justify-center gap-1.5 rounded-full border-zinc-200 px-4 text-[12px] font-bold text-zinc-900 hover:bg-zinc-50 sm:h-10 sm:px-5">
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex flex-col gap-[3px]">
+                      <div className="w-3.5 h-[2px] bg-zinc-900 rounded-full" />
+                      <div className="w-2.5 h-[2px] bg-zinc-900 rounded-full ml-auto" />
+                    </div>
+                    Danh mục
                   </div>
-                  Danh mục
-                </div>
-                <ChevronDown className="h-3 w-3 opacity-50" />
-              </Button>
-              
-              <div className={cn(dropdownClass('category', 'right'), 'py-3')}>
-                <div className="px-4 pb-2 mb-2 border-b border-zinc-50">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Danh mục</span>
-                </div>
-                <button 
-                   onClick={() => selectCategoryFromMenu('All')}
-                   className={cn(
-                     "w-full text-left px-4 py-2 text-sm font-bold transition-colors hover:bg-zinc-50",
-                     currentCategory === 'All' ? "text-[#1e4b64] bg-blue-50/50" : "text-zinc-600"
-                   )}
-                >
-                  Tất cả sản phẩm
-                </button>
-                {CATEGORIES.map(cat => (
+                  <ChevronDown className="h-3 w-3 opacity-50" />
+                </Button>
+                
+                <div className={cn(dropdownClass('category', 'left'), 'py-3 sm:right-0 sm:left-auto')}>
+                  <div className="px-4 pb-2 mb-2 border-b border-zinc-50">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Danh mục</span>
+                  </div>
                   <button 
-                    key={cat}
-                    onClick={() => selectCategoryFromMenu(cat)}
-                    className={cn(
-                      "w-full text-left px-4 py-2 text-sm font-bold transition-colors hover:bg-zinc-50",
-                      currentCategory === cat ? "text-[#1e4b64] bg-blue-50/50" : "text-zinc-600"
-                    )}
+                     onClick={() => selectCategoryFromMenu('All')}
+                     className={cn(
+                       "w-full text-left px-4 py-2 text-sm font-bold transition-colors hover:bg-zinc-50",
+                       currentCategory === 'All' ? "text-[#1e4b64] bg-blue-50/50" : "text-zinc-600"
+                     )}
                   >
-                    {cat}
+                    Tất cả sản phẩm
                   </button>
-                ))}
-              </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-1 flex items-center justify-between gap-3 border-t border-zinc-100 py-3 sm:mt-2 sm:py-4">
-            <div className="min-w-0 text-[12px] font-medium text-zinc-500 sm:text-[13px]">
-              <div className="relative">
-                <button type="button" onClick={() => toggleFilterMenu('sort')} className="flex min-w-0 items-center gap-1.5 cursor-pointer">
-                  <span className="shrink-0">Sắp xếp:</span> <span className="truncate text-[#1e4b64] hover:underline">
-                    {sortFilter === 'newest' ? 'Mới nhất' : 
-                     sortFilter === 'price-asc' ? 'Giá thấp đến cao' :
-                     sortFilter === 'price-desc' ? 'Giá cao đến thấp' :
-                     sortFilter === 'rating' ? 'Đánh giá cao' : 'Nổi bật'}
-                  </span> <ChevronDown className="h-3 w-3" />
-                </button>
-                <div className={cn(dropdownClass('sort'), 'w-56 rounded-xl py-2')}>
-                  <button onClick={() => updateFilter('sort', 'newest')} className="w-full text-left px-4 py-2 text-sm font-bold hover:bg-zinc-50">Mới nhất</button>
-                  <button onClick={() => updateFilter('sort', 'price-asc')} className="w-full text-left px-4 py-2 text-sm font-bold hover:bg-zinc-50">Giá thấp đến cao</button>
-                  <button onClick={() => updateFilter('sort', 'price-desc')} className="w-full text-left px-4 py-2 text-sm font-bold hover:bg-zinc-50">Giá cao đến thấp</button>
-                  <button onClick={() => updateFilter('sort', 'rating')} className="w-full text-left px-4 py-2 text-sm font-bold hover:bg-zinc-50">Đánh giá cao</button>
+                  {CATEGORIES.map(cat => (
+                    <button 
+                      key={cat}
+                      onClick={() => selectCategoryFromMenu(cat)}
+                      className={cn(
+                        "w-full text-left px-4 py-2 text-sm font-bold transition-colors hover:bg-zinc-50",
+                        currentCategory === cat ? "text-[#1e4b64] bg-blue-50/50" : "text-zinc-600"
+                      )}
+                    >
+                      {cat}
+                    </button>
+                  ))}
                 </div>
               </div>
-              <div className="hidden sm:flex items-center gap-1.5">
-                Hiển thị: <span className="text-[#1e4b64] cursor-pointer hover:underline">30</span> <ChevronDown className="h-3 w-3" />
-              </div>
-            </div>
 
-            <div className="flex shrink-0 items-center gap-1 rounded-lg bg-zinc-50 p-1">
-              <button className="h-8 w-8 flex items-center justify-center text-[#1e4b64] bg-blue-50 rounded">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-layout-grid"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
-              </button>
-              <button className="h-8 w-8 flex items-center justify-center text-zinc-400 hover:text-zinc-600">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-list"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>
-              </button>
+              {/* Sort & View Option Group */}
+              <div className="flex items-center gap-6 shrink-0 ml-auto border-l border-zinc-200 pl-4 xl:border-none xl:pl-0">
+                <div className="flex items-center gap-4 text-[12px] font-medium text-zinc-500 sm:text-[13px]">
+                  <div className="relative">
+                    <button type="button" onClick={() => toggleFilterMenu('sort')} className="flex items-center gap-1.5 cursor-pointer">
+                      <span className="shrink-0">Sắp xếp:</span> <span className="font-bold text-[#1e4b64] hover:underline">
+                        {sortFilter === 'newest' ? 'Mới nhất' : 
+                         sortFilter === 'price-asc' ? 'Giá thấp đến cao' :
+                         sortFilter === 'price-desc' ? 'Giá cao đến thấp' :
+                         sortFilter === 'rating' ? 'Đánh giá cao' : 'Nổi bật'}
+                      </span> <ChevronDown className="h-3 w-3" />
+                    </button>
+                    <div className={cn(dropdownClass('sort', 'right'), 'w-56 rounded-xl py-2')}>
+                      <button onClick={() => updateFilter('sort', 'newest')} className="w-full text-left px-4 py-2 text-sm font-bold hover:bg-zinc-50">Mới nhất</button>
+                      <button onClick={() => updateFilter('sort', 'price-asc')} className="w-full text-left px-4 py-2 text-sm font-bold hover:bg-zinc-50">Giá thấp đến cao</button>
+                      <button onClick={() => updateFilter('sort', 'price-desc')} className="w-full text-left px-4 py-2 text-sm font-bold hover:bg-zinc-50">Giá cao đến thấp</button>
+                      <button onClick={() => updateFilter('sort', 'rating')} className="w-full text-left px-4 py-2 text-sm font-bold hover:bg-zinc-50">Đánh giá cao</button>
+                    </div>
+                  </div>
+                  <div className="hidden sm:flex items-center gap-1.5">
+                    Hiển thị: <span className="font-bold text-[#1e4b64] cursor-pointer hover:underline">30</span> <ChevronDown className="h-3 w-3" />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1 rounded-lg bg-zinc-50 p-1">
+                  <button className="h-8 w-8 flex items-center justify-center text-[#1e4b64] bg-white rounded shadow-sm">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+                  </button>
+                  <button className="h-8 w-8 flex items-center justify-center text-zinc-400 hover:text-zinc-600 transition-colors">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </header>
-
-      {landingConfig && (
-        <CategoryLandingBlocks config={landingConfig} productCount={filteredProducts.length} />
-      )}
 
       {showLoading ? (
         <div className="grid grid-cols-2 gap-x-3 gap-y-7 sm:grid-cols-3 sm:gap-x-5 lg:grid-cols-4 xl:gap-x-7">
