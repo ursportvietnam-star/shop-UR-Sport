@@ -418,12 +418,11 @@ async function callGemini(systemInstruction: string, userPrompt: string) {
   const provider = getAIProvider();
 
   if (provider === 'local') {
-    const url = 'http://127.0.0.1:11434/api/generate';
+    const url = '/api/local-ai';
     const payload = {
       model: "qwen2.5",
-      prompt: `[SYSTEM INSTRUCTION]\n${systemInstruction}\n\n[USER PROMPT]\n${userPrompt}`,
-      stream: false,
-      format: "json"
+      systemInstruction,
+      userPrompt,
     };
 
     try {
@@ -434,11 +433,13 @@ async function callGemini(systemInstruction: string, userPrompt: string) {
       });
 
       if (!response.ok) {
-        throw new Error(`Local AI Error (${response.status}). Ollama có đang chạy không?`);
+        const body = await response.json().catch(() => ({}));
+        const message = body?.error || `Local AI proxy error (${response.status})`;
+        throw new Error(message);
       }
 
       const data = await response.json();
-      const text = data.response;
+      const text = data.text;
       if (!text) throw new Error('Không nhận được phản hồi từ Local AI');
 
       return JSON.parse(text);

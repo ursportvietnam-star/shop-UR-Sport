@@ -337,6 +337,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
   });
   const [showSitemapPreview, setShowSitemapPreview] = useState(false);
   const [aiBlogSeed, setAiBlogSeed] = useState<{ prompt: string; key: number } | null>(null);
+  const [gitSyncStatus, setGitSyncStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -890,7 +891,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
     }));
 
     const subcategoryRoutes = DEFAULT_SEO_SUBCATEGORIES
-      .filter(item => item.slug !== 'ao-thun-the-thao-nam')
       .map(item => ({
         path: item.link,
         priority: '0.75',
@@ -1058,20 +1058,23 @@ Sitemap: https://shop-ur-sport.vercel.app/sitemap.xml`;
           <p className="text-white/40 font-medium mb-8 max-w-sm mx-auto">
             {!user ? 'Vui lòng đăng nhập để truy cập trang quản trị.' : 'Tài khoản của bạn không có quyền admin.'}
           </p>
-          <button
-            onClick={() => window.location.href = '/'}
-            className="px-8 py-3 bg-[#1e4b64] hover:bg-[#153446] text-white font-bold rounded-xl transition-all"
-          >
-            Về trang chủ
-          </button>
-          {isLocalhost && (
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
-              onClick={devLogin}
-              className="ml-0 mt-3 sm:ml-3 sm:mt-0 px-8 py-3 bg-amber-400 hover:bg-amber-300 text-amber-950 font-bold rounded-xl transition-all"
+              onClick={() => window.location.href = '/'}
+              className="w-full sm:w-auto px-8 py-3 bg-[#1e4b64] hover:bg-[#153446] text-white font-bold rounded-xl transition-all"
             >
-              Đăng nhập admin nội bộ
+              Về trang chủ
             </button>
-          )}
+            {!user && (
+              <button
+                onClick={() => loginWithGoogle().catch(console.error)}
+                className="w-full sm:w-auto px-8 py-3 bg-white text-gray-900 border border-gray-200 hover:bg-gray-50 font-bold rounded-xl transition-all flex items-center justify-center gap-2"
+              >
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
+                Đăng nhập Admin
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -1153,6 +1156,34 @@ Sitemap: https://shop-ur-sport.vercel.app/sitemap.xml`;
       features: fix.features,
       updatedAt: adminTimestamp()
     });
+  };
+
+  const saveContentMapProductSeo = async (
+    productId: string,
+    data: { seoTitle: string; metaDescription: string; description: string }
+  ) => {
+    await mergeAdminDocument('products', productId, {
+      seoTitle: data.seoTitle,
+      metaDescription: data.metaDescription,
+      description: data.description,
+      specifications: data.description,
+      updatedAt: adminTimestamp()
+    });
+    toast.success('Đã lưu SEO sản phẩm từ SEO Map.');
+  };
+
+  const saveContentMapBlogSeo = async (
+    postId: string,
+    data: { title: string; seoTitle: string; metaDescription: string; excerpt: string }
+  ) => {
+    await mergeAdminDocument('blogPosts', postId, {
+      title: data.title,
+      seoTitle: data.seoTitle,
+      metaDescription: data.metaDescription,
+      excerpt: data.excerpt,
+      updatedAt: adminTimestamp()
+    });
+    toast.success('Đã lưu SEO bài viết từ SEO Map.');
   };
 
   const totalRevenue = products.reduce((sum, p) => sum + p.price, 0);
@@ -1393,6 +1424,34 @@ Sitemap: https://shop-ur-sport.vercel.app/sitemap.xml`;
     </div>
   );
 
+  // ─── Git Sync: đồng bộ ảnh local lên GitHub → Vercel ──────────────────────────
+  const handleGitSync = async () => {
+    if (gitSyncStatus === 'loading') return;
+    setGitSyncStatus('loading');
+    try {
+      const { auth } = await import('../firebase');
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch('/api/git-sync', {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
+      setGitSyncStatus('success');
+      toast.success(data.message || 'Đồng bộ thành công!');
+      if (data.details?.length) {
+        console.log('[git-sync]', data.details.join('\n'));
+      }
+      setTimeout(() => setGitSyncStatus('idle'), 4000);
+    } catch (err: any) {
+      setGitSyncStatus('error');
+      toast.error(err.message || 'Git sync thất bại');
+      setTimeout(() => setGitSyncStatus('idle'), 4000);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#0f1117] flex" style={{ paddingTop: 0 }}>
       {/* Overlay mobile */}
@@ -1542,6 +1601,48 @@ Sitemap: https://shop-ur-sport.vercel.app/sitemap.xml`;
               <Bell className="h-5 w-5" />
               <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-[#1e4b64] rounded-full" />
             </button>
+            {isLocalhost && (
+              <button
+                id="btn-git-sync"
+                onClick={handleGitSync}
+                disabled={gitSyncStatus === 'loading'}
+                title="Đồng bộ ảnh local lên GitHub → Vercel"
+                className={cn(
+                  "flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all duration-200 border",
+                  gitSyncStatus === 'loading'
+                    ? "bg-amber-500/15 border-amber-500/30 text-amber-400 cursor-wait"
+                    : gitSyncStatus === 'success'
+                    ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
+                    : gitSyncStatus === 'error'
+                    ? "bg-red-500/15 border-red-500/30 text-red-400"
+                    : "bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/10 hover:border-white/20"
+                )}
+              >
+                {gitSyncStatus === 'loading' ? (
+                  <>
+                    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="60" strokeDashoffset="20" strokeLinecap="round" />
+                    </svg>
+                    <span className="hidden sm:inline">Syncing...</span>
+                  </>
+                ) : gitSyncStatus === 'success' ? (
+                  <>
+                    <CheckIcon className="h-4 w-4" />
+                    <span className="hidden sm:inline">Đã đồng bộ</span>
+                  </>
+                ) : gitSyncStatus === 'error' ? (
+                  <>
+                    <AlertCircle className="h-4 w-4" />
+                    <span className="hidden sm:inline">Lỗi sync</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4" />
+                    <span className="hidden sm:inline">Đồng bộ ảnh</span>
+                  </>
+                )}
+              </button>
+            )}
             {activeTab === 'products' && (
               <button
                 onClick={() => {
@@ -1896,7 +1997,7 @@ Sitemap: https://shop-ur-sport.vercel.app/sitemap.xml`;
                               </div>
                             </td>
                             <td className="px-6 py-4 hidden md:table-cell">
-                              <span className="px-3 py-1 bg-white/5 border border-white/5 text-white/50 text-[10px] font-black uppercase tracking-wider rounded-lg">
+                              <span className="inline-block px-3 py-1 bg-white/5 border border-white/5 text-white/50 text-[10px] font-black uppercase tracking-wider rounded-lg whitespace-nowrap">
                                 {product.category}
                               </span>
                             </td>
@@ -2026,7 +2127,7 @@ Sitemap: https://shop-ur-sport.vercel.app/sitemap.xml`;
                               <p className="text-white/30 text-[11px] mt-1">{post.excerpt.slice(0, 80)}...</p>
                             </td>
                             <td className="px-6 py-4 hidden md:table-cell">
-                              <span className="px-3 py-1 bg-white/5 border border-white/5 text-white/50 text-[10px] font-black uppercase tracking-wider rounded-lg">
+                              <span className="inline-block px-3 py-1 bg-white/5 border border-white/5 text-white/50 text-[10px] font-black uppercase tracking-wider rounded-lg whitespace-nowrap">
                                 {post.category}
                               </span>
                             </td>
@@ -2667,6 +2768,10 @@ Sitemap: https://shop-ur-sport.vercel.app/sitemap.xml`;
                 onCreateBlogDraft={openBlogDraft}
                 onUseBlogSuggestion={openAIBlogFromSeoSuggestion}
                 onOpenProduct={openProductEditor}
+                onOpenBlogPost={(post) => {
+                  setEditingBlogPost(post);
+                  setIsBlogModalOpen(true);
+                }}
                 onOpenCategory={openCategorySeo}
               />
             </React.Suspense>
@@ -3277,6 +3382,13 @@ Sitemap: https://shop-ur-sport.vercel.app/sitemap.xml`;
               blogPosts={blogPosts}
               navigation={navigation}
               blogCategories={blogCategories}
+              onEditProduct={openProductEditor}
+              onEditBlogPost={(post) => {
+                setEditingBlogPost(post);
+                setIsBlogModalOpen(true);
+              }}
+              onSaveProductSeo={saveContentMapProductSeo}
+              onSaveBlogSeo={saveContentMapBlogSeo}
             />
           )}
 

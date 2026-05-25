@@ -2,8 +2,13 @@ import express from "express";
 import "dotenv/config";
 import fs from "fs/promises";
 import path from "path";
+import { randomUUID } from "crypto";
+import { execFile } from "child_process";
+import { promisify } from "util";
 import { createServer as createViteServer } from "vite";
 import { fileURLToPath } from "url";
+
+const execFileAsync = promisify(execFile);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,6 +17,7 @@ const __dirname = path.dirname(__filename);
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
 const MAX_REQUESTS = 60; // Max 60 requests per minute per IP
+let gitSyncInProgress = false;
 
 function apiRateLimiter(req: express.Request, res: express.Response, next: express.NextFunction) {
   const ip = req.ip || "anonymous";
@@ -99,33 +105,39 @@ async function canWriteLocalMedia(req: express.Request) {
   return verifyAdminToken(token);
 }
 
+function isLocalRequest(req: express.Request) {
+  const host = String(req.headers.host || "").split(":")[0];
+  const ip = req.ip || req.socket?.remoteAddress || "";
+
+  return (
+    ["localhost", "127.0.0.1", "::1"].includes(host) ||
+    ip === "127.0.0.1" ||
+    ip === "::1" ||
+    ip === "::ffff:127.0.0.1"
+  );
+}
+
 function normalizeLocalMediaFolder(folderParam: string) {
   const folderMap: Record<string, string> = {
     blog: "blog",
     products: "products",
     "product-descriptions": "products/descriptions",
     "size-guides": "products/size-guides",
+    banners: "banners",
+    nav: "nav",
+    settings: "settings",
+    "blog-categories": "blog/categories",
   };
 
   return folderMap[folderParam] || null;
 }
 
-function getImageFileName(req: express.Request, fallbackName: string) {
-  const mimeToExt: Record<string, string> = {
-    "image/jpeg": "jpg",
-    "image/png": "png",
-    "image/webp": "webp",
-    "image/gif": "gif",
-  };
-  const contentType = String(req.headers["content-type"] || "");
-  const ext = mimeToExt[contentType];
-  if (!ext) return null;
+function getContentType(req: express.Request) {
+  return String(req.headers["content-type"] || "").split(";")[0].trim().toLowerCase();
+}
 
-  const encodedOriginalName = Array.isArray(req.headers["x-file-name"])
-    ? req.headers["x-file-name"][0]
-    : req.headers["x-file-name"];
-  const originalName = encodedOriginalName ? decodeURIComponent(encodedOriginalName) : "";
-  const baseName = (originalName || fallbackName)
+function slugifyFileBase(value: string, fallbackName: string) {
+  return (value || fallbackName)
     .split(/[\\/]/)
     .pop()
     ?.trim()
@@ -137,14 +149,73 @@ function getImageFileName(req: express.Request, fallbackName: string) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 80) || fallbackName;
+}
 
-  return `${baseName}-${Date.now()}.${ext}`;
+function buildSafeImageFileName(req: express.Request, fallbackName: string) {
+  const mimeToExt: Record<string, string> = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/gif": "gif",
+  };
+  const ext = mimeToExt[getContentType(req)];
+  if (!ext) return null;
+
+  const encodedOriginalName = Array.isArray(req.headers["x-file-name"])
+    ? req.headers["x-file-name"][0]
+    : req.headers["x-file-name"];
+  const originalName = encodedOriginalName ? decodeURIComponent(encodedOriginalName) : "";
+  const baseName = slugifyFileBase(originalName, fallbackName);
+  const uniqueSuffix = `${Date.now()}-${randomUUID().slice(0, 8)}`;
+
+  return `${baseName}-${uniqueSuffix}.${ext}`;
+}
+
+function assertInsideDirectory(parentDir: string, targetPath: string) {
+  const relative = path.relative(parentDir, targetPath);
+  return relative && !relative.startsWith("..") && !path.isAbsolute(relative);
+}
+
+async function saveUploadedImage(req: express.Request, mediaFolder: string, fallbackName: string) {
+  if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
+    throw Object.assign(new Error("No image file received"), { statusCode: 400 });
+  }
+
+  const fileName = buildSafeImageFileName(req, fallbackName);
+  if (!fileName) {
+    throw Object.assign(new Error("Unsupported image format. Allowed formats: JPG, PNG, WebP, GIF"), { statusCode: 400 });
+  }
+
+  const imagesRoot = path.resolve(process.cwd(), "public", "images");
+  const uploadDir = path.resolve(imagesRoot, mediaFolder);
+  const targetPath = path.resolve(uploadDir, fileName);
+
+  if (!assertInsideDirectory(imagesRoot, uploadDir) || !assertInsideDirectory(uploadDir, targetPath)) {
+    throw Object.assign(new Error("Invalid upload path"), { statusCode: 400 });
+  }
+
+  await fs.mkdir(uploadDir, { recursive: true });
+  await fs.writeFile(targetPath, req.body, { flag: "wx" });
+
+  return {
+    fileName,
+    url: `/images/${mediaFolder.replace(/\\/g, "/")}/${fileName}`,
+  };
+}
+
+async function runGit(args: string[], cwd: string) {
+  return execFileAsync("git", args, { cwd, maxBuffer: 1024 * 1024 });
+}
+
+function countPorcelainLines(stdout: string) {
+  return stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).length;
 }
 
 async function startServer() {
   const app = express();
   app.set("trust proxy", 1);
   const PORT = 3000;
+  const OLLAMA_URL = process.env.OLLAMA_URL || 'http://127.0.0.1:11434/api/generate';
 
   // 1. Security Headers Middleware (Enhanced Helmet-like protection with CSP)
   app.use((req, res, next) => {
@@ -224,6 +295,88 @@ async function startServer() {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
+  // ─── Git Sync: Đồng bộ ảnh local lên GitHub → Vercel ───────────────────────
+  app.post("/api/git-sync", async (req, res) => {
+    // Bảo mật: chỉ cho phép từ localhost
+    if (!isLocalRequest(req)) {
+      return res
+        .status(403)
+        .json({ error: "Git sync chỉ khả dụng trên môi trường local." });
+    }
+
+    // Xác thực admin token
+    const authHeader = String(req.headers.authorization || "");
+    const token = authHeader.startsWith("Bearer ")
+      ? authHeader.substring(7)
+      : "";
+    if (!token || !(await verifyAdminToken(token))) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    if (gitSyncInProgress) {
+      return res.status(409).json({ error: "Git sync dang chay. Vui long doi lan hien tai hoan tat." });
+    }
+
+    const cwd = process.cwd();
+    gitSyncInProgress = true;
+
+    try {
+      // Kiểm tra xem có file mới/thay đổi nào trong public/images không
+      const { stdout: statusOut } = await runGit(["status", "--porcelain", "--", "public/images"], cwd);
+
+      if (!statusOut.trim()) {
+        return res.json({
+          success: true,
+          message: "Không có ảnh mới cần đồng bộ. Website đã up to date.",
+          details: [],
+        });
+      }
+
+      const changedFiles = countPorcelainLines(statusOut);
+      const details: string[] = [];
+
+      // Stage toàn bộ thư mục public/images
+      await runGit(["add", "--", "public/images"], cwd);
+      const { stdout: stagedOut } = await runGit(["diff", "--cached", "--name-only", "--", "public/images"], cwd);
+      const stagedFiles = stagedOut.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+      if (stagedFiles.length === 0) {
+        return res.json({
+          success: true,
+          message: "Khong co thay doi anh nao can commit sau khi stage.",
+          details,
+        });
+      }
+      details.push(`✅ Staged ${changedFiles} file(s) từ public/images`);
+
+      // Commit với timestamp
+      const now = new Date()
+        .toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })
+        .replace(/,/g, "");
+      const commitMsg = `sync(images): upload ${stagedFiles.length} file(s) - ${now}`;
+      const { stdout: commitOut } = await runGit(["commit", "-m", commitMsg], cwd);
+      details.push(`✅ ${commitOut.trim().split("\n")[0]}`);
+
+      // Push lên remote
+      const { stdout: pushOut, stderr: pushErr } = await runGit(["push"], cwd);
+      details.push(`✅ Pushed → ${(pushOut || pushErr || "remote").trim().split("\n")[0]}`);
+
+      console.log(`[git-sync] Đồng bộ thành công ${stagedFiles.length} file(s)`);
+      return res.json({
+        success: true,
+        message: `Đã đồng bộ ${stagedFiles.length} ảnh lên GitHub. Vercel đang build lại...`,
+        details,
+      });
+    } catch (err: any) {
+      console.error("[git-sync] Error:", err.message);
+      return res.status(500).json({
+        error: "Git sync thất bại",
+        details: err.stderr || err.message,
+      });
+    } finally {
+      gitSyncInProgress = false;
+    }
+  });
+
   app.post(
     "/api/upload-local-image/:folder",
     express.raw({ type: ["image/jpeg", "image/png", "image/webp", "image/gif"], limit: "10mb" }),
@@ -233,28 +386,18 @@ async function startServer() {
           return res.status(401).json({ error: "Unauthorized image upload" });
         }
 
-        if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
-          return res.status(400).json({ error: "No image file received" });
-        }
-
         const mediaFolder = normalizeLocalMediaFolder(req.params.folder);
         if (!mediaFolder) {
           return res.status(400).json({ error: "Unsupported local image folder" });
         }
 
-        const fileName = getImageFileName(req, "local-image");
-        if (!fileName) {
-          return res.status(400).json({ error: "Unsupported image format. Allowed formats: JPG, PNG, WebP, GIF" });
-        }
-
-        const uploadDir = path.join(process.cwd(), "public", "images", mediaFolder);
-        await fs.mkdir(uploadDir, { recursive: true });
-        await fs.writeFile(path.join(uploadDir, fileName), req.body);
-
-        return res.json({ url: `/images/${mediaFolder}/${fileName}` });
-      } catch (error) {
+        const saved = await saveUploadedImage(req, mediaFolder, "local-image");
+        return res.json(saved);
+      } catch (error: any) {
         console.error("Local image upload failed:", error);
-        return res.status(500).json({ error: "Failed to save uploaded image locally" });
+        return res.status(error.statusCode || 500).json({
+          error: error.message || "Failed to save uploaded image locally",
+        });
       }
     }
   );
@@ -310,6 +453,50 @@ async function startServer() {
     } catch (error) {
       console.error("Gemini proxy failed:", error);
       return res.status(500).json({ error: "Gemini proxy failed" });
+    }
+  });
+
+  // Proxy endpoint for Local AI (Ollama) to avoid CORS in browser
+  app.post("/api/local-ai", async (req, res) => {
+    try {
+      const authHeader = String(req.headers.authorization || "");
+      const token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : "";
+
+      if (!token || !(await verifyAdminToken(token))) {
+        return res.status(401).json({ error: "Unauthorized AI request" });
+      }
+
+      const systemInstruction = String(req.body?.systemInstruction || "").trim();
+      const userPrompt = String(req.body?.userPrompt || "").trim();
+      const model = String(req.body?.model || 'qwen2.5').trim();
+
+      if (!systemInstruction && !userPrompt) {
+        return res.status(400).json({ error: "systemInstruction or userPrompt is required" });
+      }
+
+      const payload = {
+        model,
+        prompt: `[SYSTEM INSTRUCTION]\n${systemInstruction}\n\n[USER PROMPT]\n${userPrompt}`,
+        stream: false,
+        format: "json",
+      };
+
+      const forward = await fetch(OLLAMA_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await forward.json().catch(() => ({}));
+      if (!forward.ok) {
+        return res.status(forward.status).json({ error: data?.error || `Local AI returned ${forward.status}` });
+      }
+
+      // Return the raw response (text under `response`) for client parsing
+      return res.json({ text: data?.response || '' });
+    } catch (error: any) {
+      console.error('/api/local-ai proxy error:', error);
+      return res.status(500).json({ error: error?.message || 'Local AI proxy failed' });
     }
   });
 
@@ -434,86 +621,11 @@ async function startServer() {
           console.warn("⚠️ WARNING: Admin authentication bypassed in development mode!");
         }
 
-        if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
-          return res.status(400).json({ error: "No image file received" });
-        }
-
-        const mimeToExt: Record<string, string> = {
-          "image/jpeg": "jpg",
-          "image/png": "png",
-          "image/webp": "webp",
-          "image/gif": "gif",
-        };
-        const contentType = req.headers["content-type"] || "";
-        if (!mimeToExt[contentType]) {
-          return res.status(400).json({ error: "Unsupported image format. Allowed formats: JPG, PNG, WebP, GIF" });
-        }
-        
-        const ext = mimeToExt[contentType];
-        const encodedOriginalName = Array.isArray(req.headers["x-file-name"])
-          ? req.headers["x-file-name"][0]
-          : req.headers["x-file-name"];
-        const originalName = encodedOriginalName ? decodeURIComponent(encodedOriginalName) : "";
-        const baseName = (originalName || "blog-image")
-          .split(/[\\/]/)
-          .pop()
-          ?.trim()
-          .replace(/\.[a-z0-9]+$/i, "")
-          .toLowerCase()
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .replace(/đ/g, "d")
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-+|-+$/g, "")
-          .slice(0, 80) || "blog-image";
-        
-        // Use clean base name for SEO
-        const fileName = `${baseName}.${ext}`;
-        const uploadDir = path.join(process.cwd(), "public", "images", "blog");
-
-        await fs.mkdir(uploadDir, { recursive: true });
-        try {
-          await fs.writeFile(path.join(uploadDir, fileName), req.body);
-          console.log('[upload-blog-image] saved', fileName, 'to', uploadDir);
-          return res.json({ url: `/images/blog/${fileName}` });
-        } catch (err) {
-          console.error('[upload-blog-image] failed to write file to disk', err && err.message ? err.message : err);
-
-          // Attempt Cloudinary unsigned fallback if configured
-          const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-          const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET;
-          if (cloudName && uploadPreset) {
-            try {
-              console.log('[upload-blog-image] attempting Cloudinary fallback upload');
-              const form = new FormData();
-              const blob = new Blob([req.body], { type: String(contentType) });
-              form.append('file', blob, fileName);
-              form.append('upload_preset', uploadPreset);
-
-              const cloudRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
-                method: 'POST',
-                body: form,
-              });
-
-              const cloudData = await cloudRes.json().catch(() => ({}));
-              if (cloudRes.ok && cloudData && cloudData.secure_url) {
-                console.log('[upload-blog-image] Cloudinary upload succeeded', cloudData.secure_url);
-                return res.json({ url: cloudData.secure_url });
-              }
-
-              console.error('[upload-blog-image] Cloudinary upload failed', cloudData || (await cloudRes.text()).slice(0, 200));
-            } catch (cloudErr) {
-              console.error('[upload-blog-image] Cloudinary upload error', cloudErr && cloudErr.message ? cloudErr.message : cloudErr);
-            }
-          } else {
-            console.warn('[upload-blog-image] Cloudinary fallback not configured (CLOUDINARY_CLOUD_NAME/CLOUDINARY_UPLOAD_PRESET)');
-          }
-
-          return res.status(500).json({ error: 'Failed to save uploaded image to disk' });
-        }
-      } catch (error) {
+        const saved = await saveUploadedImage(req, "blog", "blog-image");
+        return res.json(saved);
+      } catch (error: any) {
         console.error("Blog image upload failed:", error);
-        res.status(500).json({ error: "Upload failed" });
+        res.status(error.statusCode || 500).json({ error: error.message || "Upload failed" });
       }
     }
   );

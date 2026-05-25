@@ -4,8 +4,10 @@ import {
   ArrowUpRight,
   BarChart3,
   CheckCircle2,
+  ChevronDown,
   Clipboard,
   ClipboardList,
+  Edit2,
   FileText,
   Link2,
   PackagePlus,
@@ -13,7 +15,9 @@ import {
   Save,
   Search,
   ShoppingBag,
+  Sparkles,
   Target,
+  X,
 } from 'lucide-react';
 import { BlogPost, Order, Product } from '../types';
 import { buildContentMap, summarizeProductSeo } from '../lib/seoAutomation';
@@ -35,6 +39,7 @@ type AISeoReportPanelProps = {
   onCreateBlogDraft?: (draft: Partial<BlogPost>) => void;
   onUseBlogSuggestion?: (suggestion: SeoSuggestion) => void;
   onOpenProduct?: (product: Product) => void;
+  onOpenBlogPost?: (post: BlogPost) => void;
   onOpenCategory?: (category: string) => void;
 };
 
@@ -69,6 +74,19 @@ type SeoDraftRecord = {
   oldContent: string;
   draft: AISeoContentDraft;
   status: 'pending' | 'applied' | 'rejected';
+};
+
+type ContentMapTarget =
+  | { type: 'blog'; clusterLabel: string; item: BlogPost; suggestions: string[] }
+  | { type: 'product'; clusterLabel: string; item: Product; suggestions: string[] };
+
+type ContentMapEditState = {
+  title: string;
+  seoTitle: string;
+  metaDescription: string;
+  description: string;
+  saving: boolean;
+  saved: boolean;
 };
 
 const priorityTone: Record<ActionPriority, string> = {
@@ -115,6 +133,114 @@ const cleanText = (value: unknown) =>
     .replace(/<[^>]+>/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+
+const wordCount = (value: unknown) => cleanText(value).split(/\s+/).filter(Boolean).length;
+
+const clampText = (value: string, max: number) => value.trim().slice(0, max);
+
+const buildBlogMapSuggestions = (post: BlogPost, clusterLabel: string) => {
+  const suggestions: string[] = [];
+  const bodyWords = wordCount(post.content || post.excerpt);
+  const clusterTerm = normalizeText(clusterLabel);
+  const haystack = normalizeText(`${post.title} ${post.seoTitle} ${post.metaDescription} ${post.content}`);
+
+  if (!post.seoTitle || post.seoTitle.length < 35 || post.seoTitle.length > 65) {
+    suggestions.push(`SEO title cần 35-65 ký tự và chứa "${clusterLabel}" tự nhiên.`);
+  }
+  if (!post.metaDescription || post.metaDescription.length < 110 || post.metaDescription.length > 170) {
+    suggestions.push('Meta description cần 110-170 ký tự, có lợi ích rõ và CTA xem sản phẩm.');
+  }
+  if (!haystack.includes(clusterTerm)) {
+    suggestions.push(`Bài viết chưa phủ rõ cụm "${clusterLabel}" trong title/meta/nội dung.`);
+  }
+  if (bodyWords < 900) {
+    suggestions.push('Nội dung còn ngắn; nên mở rộng lên 900-1,200 từ với H2, FAQ và bảng so sánh.');
+  }
+  if (!/href=["']\//i.test(post.content || '')) {
+    suggestions.push('Thiếu internal link tới category hoặc sản phẩm trong cùng cụm.');
+  }
+
+  return suggestions.length ? suggestions : ['Bài viết đã ổn. Có thể bổ sung FAQ, ảnh WebP và link sang sản phẩm trọng tâm.'];
+};
+
+const buildProductMapSuggestions = (issues: string[]) =>
+  issues.length ? issues : ['Sản phẩm đã ổn. Có thể kiểm tra thêm alt ảnh, schema Product và link từ blog hỗ trợ.'];
+
+const buildMapEditState = (target: ContentMapTarget): ContentMapEditState => {
+  if (target.type === 'blog') {
+    return {
+      title: target.item.title || '',
+      seoTitle: target.item.seoTitle || target.item.title || '',
+      metaDescription: target.item.metaDescription || target.item.excerpt || '',
+      description: target.item.excerpt || cleanText(target.item.content).slice(0, 300),
+      saving: false,
+      saved: false,
+    };
+  }
+
+  return {
+    title: target.item.name || '',
+    seoTitle: target.item.seoTitle || target.item.name || '',
+    metaDescription: target.item.metaDescription || '',
+    description: cleanText(target.item.description).slice(0, 300),
+    saving: false,
+    saved: false,
+  };
+};
+
+const buildMapAiDraft = (target: ContentMapTarget) => {
+  if (target.type === 'blog') {
+    const keyword = target.clusterLabel.toLowerCase();
+    return {
+      title: clampText(`${target.clusterLabel}: hướng dẫn chọn đúng và phối đồ đẹp cho nam`, 65),
+      seoTitle: clampText(`${target.clusterLabel} đẹp, dễ mặc - Hướng dẫn chọn chuẩn URSport`, 65),
+      metaDescription: clampText(`Tìm hiểu cách chọn ${keyword} theo chất liệu, form dáng và nhu cầu sử dụng. Gợi ý phối đồ, chọn size và sản phẩm phù hợp tại URSport.`, 170),
+      description: clampText(`Bài viết giúp bạn chọn ${keyword} đúng nhu cầu: chất liệu, form dáng, cách phối đồ, bảng so sánh và FAQ để mua tự tin hơn.`, 300),
+    };
+  }
+
+  const name = target.item.name || target.clusterLabel;
+  return {
+    title: clampText(name, 65),
+    seoTitle: clampText(`${name} - ${target.clusterLabel} chuẩn form | URSport`, 65),
+    metaDescription: clampText(`${name} chất liệu thoáng mát, form dễ mặc, phù hợp tập luyện và mặc hằng ngày. Xem màu, size và ưu đãi tại URSport.`, 170),
+    description: clampText(`${name} được thiết kế cho nam giới cần sự thoải mái, gọn dáng và dễ phối đồ. Chất liệu mềm thoáng, hỗ trợ vận động, giữ form tốt sau nhiều lần giặt.`, 300),
+  };
+};
+
+function FieldLabel({ label, count, max }: { label: string; count: number; max: number }) {
+  const isTooLong = count > max;
+  return (
+    <div className="mb-1 flex items-center gap-2">
+      <label className="text-xs font-black text-white/55">{label}</label>
+      <span className={cn(
+        "rounded px-2 py-0.5 text-[10px] font-black",
+        isTooLong ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-800"
+      )}>
+        {count}/{max} ký tự
+      </span>
+    </div>
+  );
+}
+
+function SuggestionBox({ value, onApply }: { value: string; onApply: () => void }) {
+  return (
+    <div className="mt-2 rounded-lg border border-white/10 bg-black/15 p-3">
+      <p className="mb-1 flex items-center gap-1 text-xs font-black text-violet-300">
+        <Sparkles className="h-3.5 w-3.5" />
+        Gợi ý AI:
+      </p>
+      <p className="text-sm font-bold italic text-white">{value}</p>
+      <button
+        type="button"
+        onClick={onApply}
+        className="mt-2 rounded-lg border border-white/15 px-3 py-2 text-xs font-black text-white hover:bg-white/10"
+      >
+        Dùng gợi ý này
+      </button>
+    </div>
+  );
+}
 
 const toTime = (value: unknown) => {
   if (!value) return 0;
@@ -163,6 +289,7 @@ export function AISeoReportPanel({
   onCreateBlogDraft,
   onUseBlogSuggestion,
   onOpenProduct,
+  onOpenBlogPost,
   onOpenCategory,
 }: AISeoReportPanelProps) {
   const [gscRows, setGscRows] = React.useState<SeoGscRow[]>([]);
@@ -175,6 +302,9 @@ export function AISeoReportPanel({
   const [gscImportText, setGscImportText] = React.useState('');
   const [isSavingReport, setIsSavingReport] = React.useState(false);
   const [generatingActionId, setGeneratingActionId] = React.useState<string | null>(null);
+  const [activeMapClusterId, setActiveMapClusterId] = React.useState<string | null>(null);
+  const [selectedMapTarget, setSelectedMapTarget] = React.useState<ContentMapTarget | null>(null);
+  const [mapEditState, setMapEditState] = React.useState<ContentMapEditState | null>(null);
   const reportDate = React.useMemo(() => new Date().toISOString().slice(0, 10), []);
 
   React.useEffect(() => {
@@ -629,6 +759,60 @@ export function AISeoReportPanel({
       toast.error(error.message || 'Chua apply duoc SEO draft.');
     } finally {
       setApplyingSeoDraftId(null);
+    }
+  };
+
+  const selectContentMapTarget = (target: ContentMapTarget) => {
+    setSelectedMapTarget(target);
+    setMapEditState(buildMapEditState(target));
+  };
+
+  const updateMapEdit = (patch: Partial<ContentMapEditState>) => {
+    setMapEditState(prev => prev ? { ...prev, ...patch, saved: false } : prev);
+  };
+
+  const applyMapAiDraft = (field?: keyof ReturnType<typeof buildMapAiDraft>) => {
+    if (!selectedMapTarget) return;
+    const draft = buildMapAiDraft(selectedMapTarget);
+    if (field) {
+      updateMapEdit({ [field]: draft[field] } as Partial<ContentMapEditState>);
+      return;
+    }
+    updateMapEdit({
+      title: draft.title,
+      seoTitle: draft.seoTitle,
+      metaDescription: draft.metaDescription,
+      description: draft.description,
+    });
+  };
+
+  const saveContentMapInline = async () => {
+    if (!selectedMapTarget || !mapEditState) return;
+    updateMapEdit({ saving: true });
+    try {
+      if (selectedMapTarget.type === 'blog') {
+        await mergeAdminDocument('blogPosts', selectedMapTarget.item.id, {
+          title: mapEditState.title,
+          seoTitle: mapEditState.seoTitle,
+          metaDescription: mapEditState.metaDescription,
+          excerpt: mapEditState.description,
+          updatedAt: adminTimestamp(),
+        });
+        toast.success('Đã lưu SEO bài viết từ Content Map.');
+      } else {
+        await mergeAdminDocument('products', selectedMapTarget.item.id, {
+          seoTitle: mapEditState.seoTitle,
+          metaDescription: mapEditState.metaDescription,
+          description: mapEditState.description,
+          specifications: mapEditState.description,
+          updatedAt: adminTimestamp(),
+        });
+        toast.success('Đã lưu SEO sản phẩm từ Content Map.');
+      }
+      setMapEditState(prev => prev ? { ...prev, saving: false, saved: true } : prev);
+    } catch (error: any) {
+      setMapEditState(prev => prev ? { ...prev, saving: false } : prev);
+      toast.error(error?.message || 'Không thể lưu chỉnh sửa SEO.');
     }
   };
 
@@ -1197,9 +1381,22 @@ export function AISeoReportPanel({
               <h3 className="text-sm font-black uppercase tracking-widest text-white">Content Map Đồng Bộ</h3>
             </div>
             <div className="space-y-2">
-              {clusters.map(cluster => (
-                <div key={cluster.id} className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
-                  <div className="flex items-start justify-between gap-3">
+              {clusters.map(cluster => {
+                const isOpen = activeMapClusterId === cluster.id;
+
+                return (
+                <div key={cluster.id} className={cn("rounded-xl border bg-white/[0.02] p-3", isOpen ? "border-violet-400/40" : "border-white/5")}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveMapClusterId(isOpen ? null : cluster.id);
+                      if (!isOpen) {
+                        setSelectedMapTarget(null);
+                        setMapEditState(null);
+                      }
+                    }}
+                    className="flex w-full items-start justify-between gap-3 text-left"
+                  >
                     <div className="min-w-0">
                       <p className="truncate text-sm font-black text-white">{cluster.label}</p>
                       <p className="mt-1 text-xs font-medium text-white/40">
@@ -1216,14 +1413,160 @@ export function AISeoReportPanel({
                     )}>
                       {cluster.score}
                     </span>
-                  </div>
-                  {cluster.issues[0] && (
+                    <ChevronDown className={cn("mt-1 h-4 w-4 shrink-0 text-white/35 transition-transform", isOpen && "rotate-180")} />
+                  </button>
+                  {isOpen && cluster.issues[0] && (
                     <p className="mt-2 text-xs font-medium leading-5 text-amber-100/65">
                       {cluster.issues[0].label}: {cluster.issues[0].detail}
                     </p>
                   )}
+
+                  {isOpen && (
+                    <div className="mt-4 space-y-4">
+                      <div className="grid gap-3 xl:grid-cols-2">
+                        <div className="rounded-xl border border-white/5 bg-black/10 p-3">
+                          <div className="mb-3 flex items-center justify-between gap-3">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-white/45">Bài viết blog ({cluster.blogs.length})</p>
+                            <FileText className="h-4 w-4 text-white/30" />
+                          </div>
+                          <div className="space-y-2">
+                            {cluster.blogs.slice(0, 5).map(post => {
+                              const suggestions = buildBlogMapSuggestions(post, cluster.label);
+                              const selected = selectedMapTarget?.type === 'blog' && selectedMapTarget.item.id === post.id;
+                              return (
+                                <button
+                                  key={post.id}
+                                  type="button"
+                                  onClick={() => selectContentMapTarget({ type: 'blog', clusterLabel: cluster.label, item: post, suggestions })}
+                                  className={cn("w-full rounded-lg border p-3 text-left transition-all", selected ? "border-violet-400 bg-violet-500/10" : "border-white/10 bg-white/[0.03] hover:border-violet-400/40")}
+                                >
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                      <p className="line-clamp-1 text-xs font-black text-white">{post.title}</p>
+                                      <p className="mt-1 text-[11px] font-medium text-white/45">
+                                        {post.seoTitle ? 'Có SEO title' : 'Thiếu SEO title'} · {wordCount(post.content || post.excerpt)} từ
+                                      </p>
+                                    </div>
+                                    {suggestions.length > 1 ? <AlertTriangle className="h-4 w-4 shrink-0 text-amber-300" /> : <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-300" />}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                            {cluster.blogs.length === 0 && (
+                              <p className="rounded-lg border border-amber-500/15 bg-amber-500/5 p-3 text-xs font-medium leading-5 text-amber-100/70">Cụm này chưa có bài viết hỗ trợ.</p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="rounded-xl border border-white/5 bg-black/10 p-3">
+                          <div className="mb-3 flex items-center justify-between gap-3">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-white/45">Sản phẩm ({cluster.products.length})</p>
+                            <ShoppingBag className="h-4 w-4 text-white/30" />
+                          </div>
+                          <div className="space-y-2">
+                            {cluster.products.slice(0, 5).map(product => {
+                              const weak = cluster.weakProducts.find(item => item.product.id === product.id);
+                              const suggestions = buildProductMapSuggestions(weak?.audit.quickWins.map(issue => issue.detail) || []);
+                              const selected = selectedMapTarget?.type === 'product' && selectedMapTarget.item.id === product.id;
+                              return (
+                                <button
+                                  key={product.id}
+                                  type="button"
+                                  onClick={() => selectContentMapTarget({ type: 'product', clusterLabel: cluster.label, item: product, suggestions })}
+                                  className={cn("w-full rounded-lg border p-3 text-left transition-all", selected ? "border-violet-400 bg-violet-500/10" : "border-white/10 bg-white/[0.03] hover:border-violet-400/40")}
+                                >
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                      <p className="line-clamp-1 text-xs font-black text-white">{product.name}</p>
+                                      <p className="mt-1 text-[11px] font-medium text-white/45">
+                                        SKU: {product.id} · {weak ? `Score ${weak.audit.score}` : 'Đã tối ưu'}
+                                      </p>
+                                    </div>
+                                    {weak ? <span className="rounded-full bg-red-100 px-2 py-1 text-[10px] font-black text-red-600">SEO yếu</span> : <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-300" />}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                            {cluster.products.length === 0 && (
+                              <p className="rounded-lg border border-red-500/15 bg-red-500/5 p-3 text-xs font-medium leading-5 text-red-100/70">Thiếu sản phẩm trụ cột cho cụm này.</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {selectedMapTarget && mapEditState && (
+                        <div className="overflow-hidden rounded-xl border border-violet-400/40 bg-[#252523]">
+                          <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-violet-100 px-4 py-3 text-zinc-900">
+                            <div className="min-w-0">
+                              <p className="text-[10px] font-black uppercase tracking-widest text-violet-700">{selectedMapTarget.type === 'blog' ? 'Bài viết' : 'Sản phẩm'} · {selectedMapTarget.clusterLabel}</p>
+                              <p className="line-clamp-1 text-sm font-black text-violet-950">{selectedMapTarget.type === 'blog' ? mapEditState.title : selectedMapTarget.item.name}</p>
+                            </div>
+                            <button type="button" onClick={() => { setSelectedMapTarget(null); setMapEditState(null); }} className="flex h-9 w-9 items-center justify-center rounded-lg border border-violet-300/60 text-violet-500 hover:bg-white/50">
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+
+                          <div className="space-y-4 p-4">
+                            <div>
+                              <p className="mb-2 text-xs font-black text-white/50">Vấn đề phát hiện</p>
+                              <div className="space-y-2">
+                                {selectedMapTarget.suggestions.slice(0, 3).map((suggestion, index) => (
+                                  <div key={suggestion} className={cn("flex items-start gap-2 rounded-lg border px-3 py-2 text-xs font-bold leading-5", index < 2 ? "border-red-300/30 bg-red-100 text-red-700" : "border-amber-300/30 bg-amber-100 text-amber-800")}>
+                                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                                    <span>{suggestion}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {selectedMapTarget.type === 'blog' && (
+                              <div>
+                                <FieldLabel label="Tiêu đề bài viết" count={mapEditState.title.length} max={65} />
+                                <input value={mapEditState.title} onChange={(event) => updateMapEdit({ title: event.target.value })} className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-3 text-sm font-bold text-white outline-none focus:border-violet-400" />
+                                <SuggestionBox value={buildMapAiDraft(selectedMapTarget).title} onApply={() => applyMapAiDraft('title')} />
+                              </div>
+                            )}
+
+                            <div>
+                              <FieldLabel label={selectedMapTarget.type === 'blog' ? 'SEO title' : 'Title thẻ sản phẩm'} count={mapEditState.seoTitle.length} max={60} />
+                              <input value={mapEditState.seoTitle} onChange={(event) => updateMapEdit({ seoTitle: event.target.value })} className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-3 text-sm font-bold text-white outline-none focus:border-violet-400" />
+                              <SuggestionBox value={buildMapAiDraft(selectedMapTarget).seoTitle} onApply={() => applyMapAiDraft('seoTitle')} />
+                            </div>
+
+                            <div>
+                              <FieldLabel label="Meta description" count={mapEditState.metaDescription.length} max={160} />
+                              <input value={mapEditState.metaDescription} onChange={(event) => updateMapEdit({ metaDescription: event.target.value })} className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-3 text-sm font-bold text-white outline-none focus:border-violet-400" />
+                              <SuggestionBox value={buildMapAiDraft(selectedMapTarget).metaDescription} onApply={() => applyMapAiDraft('metaDescription')} />
+                            </div>
+
+                            <div>
+                              <FieldLabel label={selectedMapTarget.type === 'blog' ? 'Mô tả ngắn bài viết' : 'Mô tả sản phẩm snippet'} count={mapEditState.description.length} max={300} />
+                              <textarea value={mapEditState.description} onChange={(event) => updateMapEdit({ description: event.target.value })} rows={4} className="w-full resize-y rounded-lg border border-white/10 bg-white/[0.03] px-3 py-3 text-sm font-bold text-white outline-none focus:border-violet-400" />
+                              <SuggestionBox value={buildMapAiDraft(selectedMapTarget).description} onApply={() => applyMapAiDraft('description')} />
+                            </div>
+
+                            <div className="flex flex-wrap gap-2 border-t border-white/10 pt-4">
+                              <button type="button" onClick={saveContentMapInline} disabled={mapEditState.saving} className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2.5 text-sm font-black text-white hover:bg-white/10 disabled:opacity-50">
+                                <Save className="h-4 w-4" />
+                                {mapEditState.saving ? 'Đang lưu...' : mapEditState.saved ? 'Đã lưu' : 'Lưu thay đổi'}
+                              </button>
+                              <button type="button" onClick={() => applyMapAiDraft()} className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2.5 text-sm font-black text-white hover:bg-white/10">
+                                <Sparkles className="h-4 w-4" />
+                                Áp dụng tất cả gợi ý AI
+                              </button>
+                              <button type="button" onClick={() => selectedMapTarget.type === 'product' ? onOpenProduct?.(selectedMapTarget.item) : onOpenBlogPost?.(selectedMapTarget.item)} className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2.5 text-sm font-black text-white/70 hover:bg-white/10">
+                                <Edit2 className="h-4 w-4" />
+                                Mở form đầy đủ
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-              ))}
+              );
+              })}
             </div>
           </div>
 

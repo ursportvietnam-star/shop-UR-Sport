@@ -863,7 +863,6 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
 
 
 const SEO_LANDING_PAGES = DEFAULT_SEO_SUBCATEGORIES
-  .filter(page => page.slug !== 'ao-thun-the-thao-nam')
   .map(page => ({
     slug: page.slug,
     label: page.label,
@@ -1503,11 +1502,6 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
 
   if (seoLanding?.matchTerms?.length) {
     filteredProducts = filteredProducts.filter(product => productMatchesTerms(product, seoLanding.matchTerms));
-  } else if (pageMatchTerms.length > 0) {
-    const matchedProducts = products.filter(product => productMatchesTerms(product, pageMatchTerms));
-    filteredProducts = Array.from(
-      new Map([...filteredProducts, ...matchedProducts].map(product => [product.id, product])).values()
-    );
   }
 
   if (brandFilter) {
@@ -2152,7 +2146,6 @@ function AppContent() {
               <Route path="/quantri" element={<AdminPanel />} />
               <Route path="/admin" element={<AdminPanel />} />
               <Route path="/admin/seo" element={<AdminPanel initialTab="ai-seo-report" />} />
-              <Route path="/ao-thun-nam-the-thao" element={<Navigate to="/ao-thun-the-thao-nam" replace />} />
               <Route path="/ao-thun-nam-cotton" element={<Navigate to="/ao-thun-cotton-nam" replace />} />
               {/* Clean Category URLs at root */}
               {CATEGORY_METADATA.map(cat => (

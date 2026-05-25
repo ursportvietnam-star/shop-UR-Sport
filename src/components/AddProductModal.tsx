@@ -116,7 +116,14 @@ Quill.register(CaptionBlot as any, true);
 // ───────────────────────────────────────────────────────────────────────
 import { Category, Product } from '../types';
 import { cn } from '@/lib/utils';
-import { getProductCategoryOptions, NavigationItem, normalizeMenuLabel, ProductCategoryOption } from '../lib/categoryConfig';
+import {
+  canonicalCategoryLabel,
+  getProductCategoryOptions,
+  isSameCategoryLabel,
+  NavigationItem,
+  normalizeMenuLabel,
+  ProductCategoryOption
+} from '../lib/categoryConfig';
 
 interface AddProductModalProps {
   isOpen: boolean;
@@ -463,7 +470,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         name: product.name || '',
         price: product.price?.toString() || '',
         discountPrice: product.discountPrice?.toString() || '',
-        category: product.category || CATEGORIES[0],
+        category: (canonicalCategoryLabel(product.category) || CATEGORIES[0]) as Category,
         description: product.description || '',
         stock: product.stock?.toString() || '',
         sizes: product.sizes?.join(', ') || '',
@@ -702,7 +709,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
       const payload = {
         name: formData.name,
         description: finalDescription,
-        category: formData.category,
+        category: canonicalCategoryLabel(formData.category) as Category,
         colors: validVariants.map(v => v.name.trim()),
         colorImages: validVariants.map(v => ({ name: v.name.trim(), image: v.image })),
         images: allImages,
@@ -770,8 +777,13 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         });
       }
     } catch (error) {
-      console.error('Error saving product:', error);
-      toast.error('Lỗi khi lưu sản phẩm');
+      const message = error instanceof Error ? error.message : 'Lỗi không xác định';
+      console.error('Error saving product:', error, {
+        productId: product?.id,
+        category: formData.category,
+        canonicalCategory: canonicalCategoryLabel(formData.category)
+      });
+      toast.error(`Lỗi khi lưu sản phẩm: ${message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -966,15 +978,15 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
             type="radio"
             name="category"
             value={cat}
-            checked={formData.category === cat}
-            onChange={(e) => setFormData({ ...formData, category: e.target.value as Category })}
+            checked={isSameCategoryLabel(formData.category, cat)}
+            onChange={(e) => setFormData({ ...formData, category: canonicalCategoryLabel(e.target.value) as Category })}
             className="peer appearance-none w-[18px] h-[18px] border-[1.5px] border-zinc-300 rounded-full checked:border-[#10b981] transition-colors cursor-pointer"
           />
           <div className="absolute w-2.5 h-2.5 rounded-full bg-[#10b981] scale-0 peer-checked:scale-100 transition-transform pointer-events-none" />
         </div>
         <span className={cn(
           "text-[14px] transition-colors",
-          formData.category === cat ? "text-[#10b981] font-bold" : "text-zinc-600 font-medium group-hover:text-zinc-900"
+          isSameCategoryLabel(formData.category, cat) ? "text-[#10b981] font-bold" : "text-zinc-600 font-medium group-hover:text-zinc-900"
         )}>
           {cat}
           {option.parent && (

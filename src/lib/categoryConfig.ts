@@ -19,6 +19,12 @@ export type ProductCategoryOption = {
 
 export const DEFAULT_SEO_SUBCATEGORIES = [
   {
+    label: 'Áo thun nam thể thao',
+    slug: 'ao-thun-nam-the-thao',
+    link: '/ao-thun-nam-the-thao',
+    parentLabel: 'Áo thun nam'
+  },
+  {
     label: 'Áo thun nam cotton',
     slug: 'ao-thun-cotton-nam',
     link: '/ao-thun-cotton-nam',
@@ -29,17 +35,12 @@ export const DEFAULT_SEO_SUBCATEGORIES = [
     slug: 'ao-thun-nam-form-rong',
     link: '/ao-thun-nam-form-rong',
     parentLabel: 'Áo thun nam'
-  },
-  {
-    label: 'Áo thun nam thể thao',
-    slug: 'ao-thun-the-thao-nam',
-    link: '/ao-thun-the-thao-nam',
-    parentLabel: 'Áo thun nam'
   }
 ] as const;
 
 export const PRODUCT_SUBCATEGORY_PARENT: Record<string, string> = {
-  'Áo thun nam thể thao': 'Áo thun thể thao nam',
+  'Áo thun nam thể thao': 'Áo thun nam',
+  'Áo thể thao nam': 'Áo thun thể thao nam',
   'Áo thun nam cotton': 'Áo thun nam',
   'Áo thun nam form rộng': 'Áo thun nam'
 };
@@ -50,7 +51,15 @@ export const CATEGORY_PRODUCT_MATCH_TERMS: Record<string, string[]> = {
   'ao-thun-cotton-nam': ['cotton']
 };
 
-export const normalizeMenuLabel = (value?: string) => String(value || '').trim().toLowerCase();
+export const normalizeMenuLabel = (value?: string) =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'd')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
 
 export const slugifyVietnamese = (value: string) =>
   value
@@ -62,8 +71,27 @@ export const slugifyVietnamese = (value: string) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
+const CATEGORY_LABEL_ALIASES: Record<string, string> = {
+  [normalizeMenuLabel('Áo thể thao nam')]: 'Áo thun thể thao nam',
+  [normalizeMenuLabel('ao the thao nam')]: 'Áo thun thể thao nam'
+};
+
+export const canonicalCategoryLabel = (value?: string) => {
+  const raw = String(value || '').trim();
+  const normalized = normalizeMenuLabel(raw);
+  if (!normalized) return raw;
+
+  const alias = CATEGORY_LABEL_ALIASES[normalized];
+  if (alias) return alias;
+
+  return CATEGORY_METADATA.find(cat => normalizeMenuLabel(cat.name) === normalized)?.name || raw;
+};
+
+export const isSameCategoryLabel = (left?: string, right?: string) =>
+  normalizeMenuLabel(canonicalCategoryLabel(left)) === normalizeMenuLabel(canonicalCategoryLabel(right));
+
 export const categorySlugByName = (name?: string) =>
-  CATEGORY_METADATA.find(cat => normalizeMenuLabel(cat.name) === normalizeMenuLabel(name))?.slug;
+  CATEGORY_METADATA.find(cat => isSameCategoryLabel(cat.name, name))?.slug;
 
 export const linkForCategoryLabel = (label: string) => {
   const slug = categorySlugByName(label);
@@ -71,8 +99,11 @@ export const linkForCategoryLabel = (label: string) => {
 };
 
 export const linkForSubcategoryLabel = (label: string) => {
+  const categorySlug = categorySlugByName(label);
+  if (categorySlug) return `/${categorySlug}`;
+
   const preset = DEFAULT_SEO_SUBCATEGORIES.find(
-    item => normalizeMenuLabel(item.label) === normalizeMenuLabel(label)
+    item => isSameCategoryLabel(item.label, label)
   );
   return preset?.link || `/${slugifyVietnamese(label)}`;
 };
@@ -123,7 +154,10 @@ export const getNavigationSubcategories = (items: NavigationItem[] = []) => {
   const map = new Map<string, NavigationItem | typeof DEFAULT_SEO_SUBCATEGORIES[number]>();
 
   merged.forEach(item => {
-    map.set(normalizeMenuLabel(item.label), item);
+    const canonicalLabel = canonicalCategoryLabel(item.label);
+    const isMainCategory = CATEGORY_METADATA.some(cat => isSameCategoryLabel(cat.name, canonicalLabel));
+    if (isMainCategory) return;
+    map.set(normalizeMenuLabel(canonicalLabel), item);
   });
 
   return Array.from(map.values()).map(item => normalizeNavigationItem({
@@ -152,11 +186,25 @@ export const getProductCategoryOptions = (items: NavigationItem[] = []): Product
 
   const map = new Map<string, ProductCategoryOption>();
   [...mainOptions, ...subOptions].forEach(option => {
-    map.set(normalizeMenuLabel(option.label), option);
+    const canonicalLabel = canonicalCategoryLabel(option.label) as Category;
+    const isMainCategory = CATEGORY_METADATA.some(cat => isSameCategoryLabel(cat.name, canonicalLabel));
+    if (option.parent && isMainCategory) return;
+
+    map.set(normalizeMenuLabel(canonicalLabel), {
+      ...option,
+      label: canonicalLabel
+    });
   });
 
   return Array.from(map.values());
 };
 
-export const belongsToCategory = (productCategory: string, category: string) =>
-  productCategory === category || PRODUCT_SUBCATEGORY_PARENT[productCategory] === category;
+export const belongsToCategory = (productCategory: string, category: string) => {
+  if (isSameCategoryLabel(productCategory, category)) return true;
+
+  const parentCategory = Object.entries(PRODUCT_SUBCATEGORY_PARENT).find(([child]) =>
+    isSameCategoryLabel(child, productCategory)
+  )?.[1];
+
+  return isSameCategoryLabel(parentCategory, category);
+};

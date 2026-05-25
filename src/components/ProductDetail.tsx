@@ -54,6 +54,7 @@ import { sanitizeRichHtml } from '../lib/htmlContent';
 import { showAddToCartToast } from './AddToCartToast';
 import { ProductCard } from './ProductCard';
 import { getProductPath, normalizeProductSlug } from '../lib/productUrls';
+import { canonicalCategoryLabel, isSameCategoryLabel } from '../lib/categoryConfig';
 
 export const ProductDetail: React.FC = () => {
   const { categorySlug, productSlug } = useParams<{ categorySlug?: string, productSlug: string }>();
@@ -64,12 +65,13 @@ export const ProductDetail: React.FC = () => {
   const normalizedRouteSlug = normalizeProductSlug(productSlug);
   const product = products.find(p => normalizeProductSlug(p.slug, p.id) === normalizedRouteSlug);
 
+  const normalizedProductCategory = canonicalCategoryLabel(product?.category);
   const catMetadata = CATEGORY_METADATA.find(c => c.slug === categorySlug);
-  const productCategoryMeta = catMetadata || CATEGORY_METADATA.find(c => c.name === product?.category);
+  const productCategoryMeta = catMetadata || CATEGORY_METADATA.find(c => isSameCategoryLabel(c.name, normalizedProductCategory));
   const productCategorySlug = productCategoryMeta?.slug || categorySlug || 'shop';
   const productCategoryUrl = productCategorySlug === 'shop' ? '/shop' : `/${productCategorySlug}`;
-  const categoryName = catMetadata ? catMetadata.name : product?.category;
-  const categoryProducts = products.filter(p => p.category === categoryName);
+  const categoryName = catMetadata ? catMetadata.name : normalizedProductCategory;
+  const categoryProducts = products.filter(p => isSameCategoryLabel(p.category, categoryName));
   const currentIndex = categoryProducts.findIndex(p => p.slug === productSlug);
 
   const prevProduct = currentIndex > 0 ? categoryProducts[currentIndex - 1] : null;
