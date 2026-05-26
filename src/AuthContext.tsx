@@ -1,5 +1,16 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { onAuthStateChanged, User, signInWithPopup, GoogleAuthProvider, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import {
+  onAuthStateChanged,
+  User,
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
+  GoogleAuthProvider,
+  signOut,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  updateProfile
+} from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { toast } from 'sonner';
 import { auth, db } from './firebase';
@@ -18,6 +29,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const DEV_ADMIN_KEY = 'ursport_dev_admin';
+const GOOGLE_AUTH_ERROR_KEY = 'ursport_google_auth_error';
 
 const fakeAdminUser = {
   uid: 'dev-admin-local',
@@ -25,6 +37,14 @@ const fakeAdminUser = {
   displayName: 'Dev Admin (Local)',
   photoURL: null,
 } as unknown as User;
+
+const googleProvider = () => {
+  const provider = new GoogleAuthProvider();
+  provider.addScope('email');
+  provider.addScope('profile');
+  provider.setCustomParameters({ prompt: 'select_account' });
+  return provider;
+};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isLocalhost = typeof window !== 'undefined' &&
@@ -44,6 +64,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return false;
   });
   const [loading, setLoading] = useState(true);
+
+  const syncSignedInUser = async (authUser: User) => {
+    const userRef = doc(db, 'users', authUser.uid);
+    const snap = await getDoc(userRef);
+    if (snap.exists() && snap.data().status === 'banned') {
+      await signOut(auth);
+      throw new Error('Tài khoản của bạn đã bị khóa.');
+    }
+
+    if (!snap.exists()) {
+      await setDoc(userRef, {
+        uid: authUser.uid,
+        email: authUser.email,
+        displayName: authUser.displayName || 'Người dùng mới',
+        photoURL: authUser.photoURL || null,
+        createdAt: serverTimestamp(),
+        status: 'active',
+        role: 'customer'
+      });
+    }
+  };
 
   useEffect(() => {
     // Nếu đang dùng dev bypass thì không cần chờ Firebase
@@ -100,40 +141,52 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return unsubscribe;
   }, []);
 
+  useEffect(() => {
+    if (isLocalhost && localStorage.getItem(DEV_ADMIN_KEY) === '1') return;
+
+    getRedirectResult(auth)
+      .then(async (result) => {
+        if (!result?.user) return;
+        localStorage.removeItem(GOOGLE_AUTH_ERROR_KEY);
+        await syncSignedInUser(result.user);
+        setUser(result.user);
+      })
+      .catch((error: any) => {
+        console.error('Google redirect login error:', error);
+        const message = `Đăng nhập Google thất bại${error.code ? ` (${error.code})` : ''}: ${error.message || 'Lỗi không xác định'}`;
+        localStorage.setItem(GOOGLE_AUTH_ERROR_KEY, message);
+        toast.error(message);
+      });
+
+    const savedError = localStorage.getItem(GOOGLE_AUTH_ERROR_KEY);
+    if (savedError) {
+      setTimeout(() => toast.error(savedError), 300);
+    }
+  }, []);
+
   const loginWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' });
+    const provider = googleProvider();
     try {
-      const result = await signInWithPopup(auth, provider);
-      
-      // Check if banned
-      const userRef = doc(db, 'users', result.user.uid);
-      const snap = await getDoc(userRef);
-      if (snap.exists() && snap.data().status === 'banned') {
-        await signOut(auth);
-        throw new Error('Tài khoản của bạn đã bị khóa.');
-      } else if (!snap.exists()) {
-        // Sync new user
-        await setDoc(userRef, {
-          uid: result.user.uid,
-          email: result.user.email,
-          displayName: result.user.displayName || 'Người dùng mới',
-          photoURL: result.user.photoURL || null,
-          createdAt: serverTimestamp(),
-          status: 'active',
-          role: 'customer'
-        });
+      if (isLocalhost) {
+        localStorage.removeItem(DEV_ADMIN_KEY);
       }
-      
+
+      const result = await signInWithPopup(auth, provider);
+      await syncSignedInUser(result.user);
       setUser(result.user);
     } catch (error: any) {
       console.error('Login error detail:', error);
-      if (error.code === 'auth/popup-closed-by-user') {
-        toast.error('Bạn đã đóng cửa sổ đăng nhập');
+      if (
+        error.code === 'auth/popup-closed-by-user' ||
+        error.code === 'auth/popup-blocked' ||
+        error.code === 'auth/cancelled-popup-request'
+      ) {
+        toast.message('Popup bị chặn, đang chuyển sang đăng nhập toàn trang...');
+        await signInWithRedirect(auth, googleProvider());
       } else if (error.code === 'auth/unauthorized-domain') {
-        toast.error('Tên miền này chưa được ủy quyền trong Firebase Console!');
+        toast.error('Firebase chưa cho phép domain localhost. Vào Firebase Console > Authentication > Settings > Authorized domains thêm localhost và 127.0.0.1.');
       } else {
-        toast.error('Đăng nhập thất bại: ' + (error.message || 'Lỗi không xác định'));
+        toast.error(`Đăng nhập thất bại${error.code ? ` (${error.code})` : ''}: ${error.message || 'Lỗi không xác định'}`);
       }
       throw error;
     }

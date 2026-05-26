@@ -12,15 +12,28 @@ interface BestSellerProps {
 export function BestSeller({ products }: BestSellerProps) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'new' | 'best_seller'>('new');
+  const [visibleCounts, setVisibleCounts] = useState<Record<'new' | 'best_seller', number>>({
+    new: 8,
+    best_seller: 8
+  });
 
-  const newProducts = products.filter(p => p.isNew).slice(0, 8);
-  const bestSellers = products.filter(p => p.isBestSeller).slice(0, 8);
+  const newProducts = products.filter(p => p.isNew);
+  const bestSellers = products.filter(p => p.isBestSeller);
   
   // Fallback if no specific new/bestseller
-  const displayNew = newProducts.length > 0 ? newProducts : products.slice(0, 8);
-  const displayBest = bestSellers.length > 0 ? bestSellers : products.slice(0, 8);
+  const displayNew = newProducts.length > 0 ? newProducts : products;
+  const displayBest = bestSellers.length > 0 ? bestSellers : products;
 
-  const displayProducts = activeTab === 'new' ? displayNew : displayBest;
+  const sourceProducts = activeTab === 'new' ? displayNew : displayBest;
+  const displayProducts = sourceProducts.slice(0, visibleCounts[activeTab]);
+  const hasMore = visibleCounts[activeTab] < sourceProducts.length;
+
+  const handleShowMore = () => {
+    setVisibleCounts(prev => ({
+      ...prev,
+      [activeTab]: prev[activeTab] + 4
+    }));
+  };
 
   return (
     <section className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8 py-8 sm:py-12 my-6">
@@ -51,9 +64,10 @@ export function BestSeller({ products }: BestSellerProps) {
 
         <button 
           onClick={() => navigate('/shop')}
-          className="hidden sm:inline-flex text-sm font-bold text-zinc-900 underline underline-offset-4 hover:text-[#1e4b64] transition-colors"
+          className="text-[#1e4b64] text-[11px] sm:text-[14px] font-bold flex items-center gap-0.5 sm:gap-1 hover:opacity-80 transition-all group flex-shrink-0 whitespace-nowrap"
         >
-          Xem thêm
+          <span>Xem tất cả</span>
+          <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 group-hover:translate-x-1 transition-transform" />
         </button>
       </div>
 
@@ -67,14 +81,19 @@ export function BestSeller({ products }: BestSellerProps) {
         ))}
       </div>
 
-      <div className="flex justify-center mt-8 sm:hidden">
+      {hasMore && (
+      <div className="flex justify-center mt-8">
         <button 
-          onClick={() => navigate('/shop')}
-          className="inline-flex items-center justify-center w-full py-3.5 border border-zinc-200 rounded-full text-sm font-bold text-zinc-900 active:bg-zinc-50"
+          type="button"
+          onClick={handleShowMore}
+          className="inline-flex h-10 items-center justify-center rounded-full border border-zinc-200 bg-white px-6 text-sm font-bold text-zinc-900 shadow-sm transition-colors hover:border-[#1e4b64] hover:text-[#1e4b64] active:scale-[0.98]"
         >
-          Xem thêm sản phẩm
+          Xem thêm
         </button>
       </div>
+      )}
     </section>
   );
 }
+
+

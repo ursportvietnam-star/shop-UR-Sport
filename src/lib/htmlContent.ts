@@ -85,14 +85,17 @@ const isSafeUrl = (value: string, allowRelative = true) => {
 };
 
 export const removeEmptyMedia = (root: ParentNode) => {
-  root.querySelectorAll('iframe, video').forEach((media) => {
+  root.querySelectorAll('iframe, video, img').forEach((media) => {
     const src = media.getAttribute('src')?.trim() || '';
     if (src) return;
 
     const container = media.closest('.video-container');
+    const figure = media.closest('figure');
     const parent = media.parentElement;
     if (container) {
       container.remove();
+    } else if (figure && figure.textContent?.trim() === '') {
+      figure.remove();
     } else if (parent?.tagName === 'P' && parent.textContent?.trim() === '') {
       parent.remove();
     } else {
@@ -170,6 +173,9 @@ const sanitizeElementAttributes = (element: Element) => {
 
   if (tag === 'IMG') {
     element.setAttribute('loading', element.getAttribute('loading') || 'lazy');
+    element.setAttribute('alt', element.getAttribute('alt') || '');
+    element.setAttribute('width', element.getAttribute('width') || '1200');
+    element.setAttribute('height', element.getAttribute('height') || '800');
   }
 
   if (tag === 'VIDEO') {
@@ -196,6 +202,8 @@ export const sanitizeRichHtml = (html: string) => {
 
     sanitizeElementAttributes(element);
   });
+
+  removeEmptyMedia(wrapper);
 
   return wrapper.innerHTML;
 };

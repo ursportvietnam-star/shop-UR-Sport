@@ -178,12 +178,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
             </Link>
           </h3>
 
-          <div className="flex flex-col gap-0.5 mb-3">
-            <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">
-              Code: <span className="text-zinc-900">{product.slug.substring(0, 8).toUpperCase()}</span>
-            </p>
-          </div>
-
           {/* Price Area and Quick Add */}
           <div className="flex items-end justify-between mt-auto mb-1">
             <div className="flex flex-col gap-0.5">

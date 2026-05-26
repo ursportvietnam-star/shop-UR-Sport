@@ -15,6 +15,60 @@ import { uploadLocalImage } from '../lib/localMediaUpload';
 
 const DEFAULT_PRODUCT_SIZES = ['M', 'L', 'XL', 'XXL', '3XL', '4XL'];
 const DEFAULT_PRODUCT_SIZE_TEXT = DEFAULT_PRODUCT_SIZES.join(',');
+const LOCAL_PRODUCT_COPIES_STORAGE_KEY = 'ursport_local_product_copies_v1';
+const LOCAL_PRODUCTS_UPDATED_EVENT = 'ursport:local-products-updated';
+
+const normalizeProductCode = (value: string) => {
+  const cleaned = String(value || '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9-]/g, '');
+  const withoutPrefix = cleaned.replace(/^UR-?/i, '');
+  return `UR${withoutPrefix ? `-${withoutPrefix}` : ''}`;
+};
+
+const getInitialProductCode = (product?: Product | null) =>
+  normalizeProductCode(product?.productCode || (product?.id ? product.id.slice(0, 8) : ''));
+
+const stripUndefinedValues = <T,>(value: T): T => {
+  if (Array.isArray(value)) {
+    return value
+      .map(item => stripUndefinedValues(item))
+      .filter(item => item !== undefined) as T;
+  }
+
+  if (!value || typeof value !== 'object') return value;
+
+  const proto = Object.getPrototypeOf(value);
+  if (proto !== Object.prototype && proto !== null) return value;
+
+  return Object.entries(value as Record<string, unknown>).reduce((acc, [key, item]) => {
+    if (item !== undefined) {
+      (acc as Record<string, unknown>)[key] = stripUndefinedValues(item);
+    }
+    return acc;
+  }, {} as Record<string, unknown>) as T;
+};
+
+const loadLocalProductCopies = (): Product[] => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const cached = window.localStorage.getItem(LOCAL_PRODUCT_COPIES_STORAGE_KEY);
+    const parsed = cached ? JSON.parse(cached) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveLocalProduct = (product: Product) => {
+  if (typeof window === 'undefined') return;
+  const existing = loadLocalProductCopies().filter(item => item.id !== product.id);
+  window.localStorage.setItem(
+    LOCAL_PRODUCT_COPIES_STORAGE_KEY,
+    JSON.stringify([product, ...existing]),
+  );
+  window.dispatchEvent(new CustomEvent(LOCAL_PRODUCTS_UPDATED_EVENT));
+};
 
 // ── Custom Video Blot ──────────────────────────────────────────────────
 const BlockEmbed = Quill.import('blots/block/embed') as any;
@@ -351,6 +405,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
   };
 
   const [formData, setFormData] = useState({
+    productCode: 'UR',
     name: '',
     price: '',
     discountPrice: '',
@@ -467,6 +522,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
       const coverImage = product.images?.[0] || colorVariants[0]?.image || '';
 
       setFormData({
+        productCode: getInitialProductCode(product),
         name: product.name || '',
         price: product.price?.toString() || '',
         discountPrice: product.discountPrice?.toString() || '',
@@ -515,6 +571,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
       imageAltBySrcRef.current = {};
       imageCaptionBySrcRef.current = {};
       setFormData({
+        productCode: 'UR',
         name: '',
         price: '',
         discountPrice: '',
@@ -680,6 +737,8 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
       return;
     }
 
+    const productCode = normalizeProductCode(formData.productCode);
+
     setIsSubmitting(true);
     try {
       const parsedSizes = formData.sizes.split(',').map(c => c.trim()).filter(Boolean);
@@ -706,7 +765,8 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         setFormData(prev => ({ ...prev, description: finalDescription }));
       }
 
-      const payload = {
+      const payload = stripUndefinedValues({
+        productCode,
         name: formData.name,
         description: finalDescription,
         category: canonicalCategoryLabel(formData.category) as Category,
@@ -730,7 +790,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         material: formData.material,
         fashionStyle: formData.fashionStyle,
         collarType: formData.collarType
-      };
+      });
 
       if (product && product.id && !product.id.startsWith('ai_')) {
         await updateDoc(doc(db, 'products', product.id), payload);
@@ -751,6 +811,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
       if (!product || (product && product.id && product.id.startsWith('ai_'))) {
         onClose();
         setFormData({
+          productCode: 'UR',
           name: '',
           price: '',
           discountPrice: '',
@@ -783,6 +844,55 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         category: formData.category,
         canonicalCategory: canonicalCategoryLabel(formData.category)
       });
+
+      const isLocalhost = typeof window !== 'undefined' &&
+        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+      if (isLocalhost) {
+        const localId = product && product.id && !product.id.startsWith('ai_')
+          ? product.id
+          : `local-product-${Date.now()}`;
+        const localProduct = stripUndefinedValues({
+          ...(product || {}),
+          productCode,
+          name: formData.name,
+          description: isHtmlMode ? htmlSource : getCurrentEditorHtml(),
+          category: canonicalCategoryLabel(formData.category) as Category,
+          colors: formData.colorVariants.filter(v => v.name.trim()).map(v => v.name.trim()),
+          colorImages: formData.colorVariants.filter(v => v.name.trim()).map(v => ({ name: v.name.trim(), image: v.image })),
+          images: [
+            formData.coverImage,
+            ...formData.colorVariants.map(v => v.image),
+            ...formData.extraImages
+          ].filter(Boolean),
+          price: Number(formData.price),
+          discountPrice: formData.discountPrice ? Number(formData.discountPrice) : undefined,
+          stock: Number(formData.stock),
+          sizes: formData.sizes.split(',').map(size => size.trim()).filter(Boolean),
+          sizeGuideUrl: formData.sizeGuideUrl,
+          slug: normalizeProductSlug(formData.slug, formData.name),
+          seoTitle: formData.seoTitle,
+          metaDescription: formData.metaDescription,
+          keywords: formData.keywords,
+          specifications: formData.specifications,
+          careInstructions: formData.careInstructions,
+          brand: formData.brand,
+          origin: formData.origin,
+          style: formData.style,
+          material: formData.material,
+          fashionStyle: formData.fashionStyle,
+          collarType: formData.collarType,
+          id: localId,
+          rating: product?.rating || 0,
+          reviewsCount: product?.reviewsCount || 0,
+          createdAt: product?.createdAt
+        }) as Product;
+        saveLocalProduct(localProduct);
+        toast.success('Đã lưu sản phẩm trên local');
+        onSuccess();
+        if (!product || product.id.startsWith('ai_')) onClose();
+        return;
+      }
+
       toast.error(`Lỗi khi lưu sản phẩm: ${message}`);
     } finally {
       setIsSubmitting(false);
@@ -1386,6 +1496,23 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                     {orphanCategoryOptions.map(option => renderCategoryOption(option, true))}
                   </div>
                 </div>
+
+                <div className="space-y-4 pt-6 border-t border-zinc-200">
+                  <h3 className="text-[11px] font-black uppercase tracking-widest text-zinc-500">Mã sản phẩm</h3>
+                  <div className="bg-white p-1 rounded-md border border-zinc-200 focus-within:border-[#1e4b64] focus-within:ring-1 focus-within:ring-[#1e4b64] transition-all">
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase px-2 pt-1 block">SKU sản phẩm</label>
+                    <input
+                      type="text"
+                      value={formData.productCode}
+                      onChange={(event) => setFormData({ ...formData, productCode: normalizeProductCode(event.target.value) })}
+                      onBlur={() => setFormData(prev => ({ ...prev, productCode: normalizeProductCode(prev.productCode) }))}
+                      className="w-full h-8 px-2 text-[15px] font-bold text-zinc-900 bg-transparent outline-none"
+                      placeholder="UR-S1"
+                    />
+                  </div>
+                  <p className="px-1 text-xs font-medium text-zinc-400">Mã sản phẩm bắt buộc bắt đầu bằng UR.</p>
+                </div>
+
 
                 {/* Giá & Kho */}
                 <div className="space-y-4 pt-6 border-t border-zinc-200">

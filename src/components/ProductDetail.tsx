@@ -126,7 +126,7 @@ export const ProductDetail: React.FC = () => {
       name: product.name,
       image: (product.images || []).map(absoluteUrl),
       description: cleanSeoText(product.metaDescription || product.description, 500),
-      sku: product.id,
+      sku: product.productCode || `UR-${product.id.substring(0, 6).toUpperCase()}`,
       category: product.category,
       color: product.colors,
       size: product.sizes,
@@ -612,7 +612,7 @@ export const ProductDetail: React.FC = () => {
                   </div>
                   <div className="h-4 w-px bg-zinc-200" />
                   <div className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2">
-                    CODE: <span className="text-zinc-900 font-bold">UR-{product.id.substring(0, 6).toUpperCase()}</span>
+                    CODE: <span className="text-zinc-900 font-bold">{product.productCode || `UR-${product.id.substring(0, 6).toUpperCase()}`}</span>
                     <Copy className="h-3.5 w-3.5 cursor-pointer hover:text-black transition-colors" />
                   </div>
                 </div>
@@ -784,14 +784,14 @@ export const ProductDetail: React.FC = () => {
                   Sản phẩm đã xem gần đây
                 </h2>
               </div>
-              <Button
+              <button
                 type="button"
-                variant="outline"
                 onClick={() => navigate('/da-xem')}
-                className="hidden h-10 rounded-full border-zinc-200 px-4 text-[11px] font-black uppercase tracking-widest text-zinc-600 hover:border-[#1e4b64]/30 hover:bg-blue-50 hover:text-[#1e4b64] sm:flex"
+                className="hidden text-[#1e4b64] text-[11px] sm:text-[14px] font-bold items-center gap-0.5 sm:gap-1 hover:opacity-80 transition-all group flex-shrink-0 whitespace-nowrap sm:flex"
               >
-                Xem tất cả
-              </Button>
+                <span>Xem tất cả</span>
+                <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 group-hover:translate-x-1 transition-transform" />
+              </button>
             </div>
             <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4">
               {recentlyViewedProducts.map((recentProduct) => (
@@ -1062,8 +1062,9 @@ export const ProductDetail: React.FC = () => {
             <div className="w-full pt-12 border-t border-zinc-200">
               <div className="flex items-center justify-between mb-10">
                 <h4 className="text-[20px] font-bold text-zinc-900 uppercase tracking-tight">CÓ THỂ BẠN CŨNG THÍCH</h4>
-                <Link to={`/apparel/${categorySlug || 'all'}`} className="text-[#1e4b64] text-sm font-bold hover:underline">
-                  Xem tất cả
+                <Link to={`/apparel/${categorySlug || 'all'}`} className="text-[#1e4b64] text-[11px] sm:text-[14px] font-bold flex items-center gap-0.5 sm:gap-1 hover:opacity-80 transition-all group flex-shrink-0 whitespace-nowrap">
+                  <span>Xem tất cả</span>
+                  <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">

@@ -226,7 +226,9 @@ async function startServer() {
     res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
     res.setHeader("X-DNS-Prefetch-Control", "on");
     res.setHeader("X-Download-Options", "noopen");
-    res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+    // Firebase Auth popup needs access to its opener while it returns from
+    // /__/auth/handler; same-origin breaks that handshake on localhost.
+    res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
     res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), interest-cohort=()");
 
     const projectId = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID || "shop-ur-sport";
@@ -234,15 +236,15 @@ async function startServer() {
 
     const csp = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googleapis.com https://*.firebaseapp.com https://*.google.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googleapis.com https://*.firebaseapp.com https://*.google.com https://*.gstatic.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com data:",
-      `connect-src 'self' https://*.googleapis.com https://*.firebaseapp.com wss://*.firebaseapp.com wss://localhost:* ws://localhost:* ws://127.0.0.1:* http://localhost:* http://127.0.0.1:* https://api.cloudinary.com https://res.cloudinary.com https://images.unsplash.com https://api.resend.com https://identitytoolkit.googleapis.com`,
-      `img-src 'self' data: https://res.cloudinary.com https://images.unsplash.com https://*.firebasestorage.googleapis.com https://firebasestorage.googleapis.com https://*.google.com https://*.googleapis.com`,
-      `frame-src 'self' https://*.firebaseapp.com https://*.google.com`,
+      `connect-src 'self' https://*.googleapis.com https://*.firebaseapp.com https://*.google.com https://*.gstatic.com wss://*.firebaseapp.com wss://localhost:* ws://localhost:* ws://127.0.0.1:* http://localhost:* http://127.0.0.1:* https://api.cloudinary.com https://res.cloudinary.com https://images.unsplash.com https://api.resend.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com`,
+      `img-src 'self' data: https://res.cloudinary.com https://images.unsplash.com https://*.firebasestorage.googleapis.com https://firebasestorage.googleapis.com https://*.google.com https://*.googleapis.com https://*.googleusercontent.com https://*.gstatic.com`,
+      `frame-src 'self' https://*.firebaseapp.com https://*.google.com https://accounts.google.com`,
       "object-src 'none'",
       "base-uri 'self'",
-      "form-action 'self'",
+      "form-action 'self' https://accounts.google.com https://*.google.com https://*.firebaseapp.com",
       "report-uri /api/csp-violation"
     ].join("; ");
 
@@ -631,6 +633,44 @@ async function startServer() {
   );
 
   app.use("/images", express.static(path.join(process.cwd(), "public", "images")));
+
+  app.all("/__/auth/*", async (req, res) => {
+    const projectId = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID || "shop-ursport";
+    const authDomain = process.env.VITE_FIREBASE_AUTH_DOMAIN || `${projectId}.firebaseapp.com`;
+    const targetUrl = `https://${authDomain}${req.originalUrl}`;
+
+    try {
+      const headers = new Headers();
+      Object.entries(req.headers).forEach(([key, value]) => {
+        if (!value || ['host', 'connection', 'content-length'].includes(key.toLowerCase())) return;
+        headers.set(key, Array.isArray(value) ? value.join(', ') : String(value));
+      });
+
+      const response = await fetch(targetUrl, {
+        method: req.method,
+        headers,
+        body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body || {}),
+        redirect: 'manual',
+      });
+
+      response.headers.forEach((value, key) => {
+        if (['content-encoding', 'transfer-encoding', 'connection'].includes(key.toLowerCase())) return;
+        res.setHeader(key, value);
+      });
+
+      const location = response.headers.get('location');
+      if (location) {
+        res.setHeader('location', location.replace(`https://${authDomain}`, `${req.protocol}://${req.get('host')}`));
+      }
+
+      res.status(response.status);
+      const buffer = Buffer.from(await response.arrayBuffer());
+      res.send(buffer);
+    } catch (error) {
+      console.error('Firebase auth proxy failed:', error);
+      res.status(502).send('Firebase auth proxy failed');
+    }
+  });
 
   console.log(`Starting server in ${process.env.NODE_ENV || 'development'} mode`);
   

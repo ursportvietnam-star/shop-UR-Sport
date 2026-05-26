@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Package, ShoppingBag, Users, MessageSquare,
   Image as ImageIcon, Settings, Plus, Trash2, Edit2, LogOut,
   TrendingUp, Eye, DollarSign, BarChart2, Menu, X, Bell,
-  Search, ChevronRight, ChevronDown, Megaphone, Upload, Star, AlertCircle, Copy, ExternalLink, Code2, Check as CheckIcon, Bot, Sparkles, Zap, Timer, Clock, Ticket, Download, Filter, MailCheck, Send, UserPlus, ShieldCheck, Network
+  Search, ChevronRight, ChevronDown, Megaphone, Upload, Star, AlertCircle, Copy, ExternalLink, Code2, Check as CheckIcon, Bot, Sparkles, Zap, Timer, Clock, Ticket, Download, Filter, MailCheck, Send, UserPlus, ShieldCheck, Network, PanelsTopLeft
 } from 'lucide-react';
 import { PRODUCTS as STATIC_PRODUCTS, STATIC_BLOG_POSTS, STATIC_ORDERS, STATIC_CUSTOMERS, CATEGORY_METADATA, STATIC_VOUCHERS } from '../data';
 import { ImageUpload } from './ImageUpload';
@@ -13,6 +13,7 @@ import { AddVoucherModal } from './AddVoucherModal';
 import { OrderDetailModal } from './OrderDetailModal';
 import { CustomerManagementTab } from './admin/CustomerManagementTab';
 import { CategorySeoManager } from './CategorySeoManager';
+import { HomepageConfigManager } from './HomepageConfigManager';
 import { ContentMapSeoPanel } from './ContentMapSeoPanel';
 import { ProductSeoAutomationPanel, ProductSeoScoreBadge } from './ProductSeoAutomationPanel';
 import { AIProductData, AIBlogData, AIProductSeoFix } from '../lib/gemini';
@@ -102,6 +103,8 @@ const AdminTabFallback = () => (
 );
 
 const BLOG_CATEGORIES_STORAGE_KEY = 'ursport_blog_categories_final_v1';
+const LOCAL_PRODUCT_COPIES_STORAGE_KEY = 'ursport_local_product_copies_v1';
+const LOCAL_PRODUCTS_UPDATED_EVENT = 'ursport:local-products-updated';
 
 const NAV_ITEMS: AdminNavigationItem[] = [
   { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },
@@ -124,6 +127,7 @@ const NAV_ITEMS: AdminNavigationItem[] = [
     isGroup: true,
     children: [
       { id: 'products', label: 'Sản phẩm', icon: Package },
+      { id: 'homepage', label: 'Cấu hình trang chủ', icon: PanelsTopLeft },
       { id: 'blog', label: 'Bài viết (Blog)', icon: MessageSquare },
       { id: 'blog-categories', label: 'Danh mục Blog', icon: MessageSquare },
     ]
@@ -277,12 +281,60 @@ const cacheBlogCategories = (items: BlogCategoryItem[]) => {
   window.localStorage.setItem(BLOG_CATEGORIES_STORAGE_KEY, JSON.stringify(items));
 };
 
+const stripUndefinedValues = <T,>(value: T): T => {
+  if (Array.isArray(value)) {
+    return value
+      .map(item => stripUndefinedValues(item))
+      .filter(item => item !== undefined) as T;
+  }
+
+  if (!value || typeof value !== 'object') return value;
+
+  const proto = Object.getPrototypeOf(value);
+  if (proto !== Object.prototype && proto !== null) return value;
+
+  return Object.entries(value as Record<string, unknown>).reduce((acc, [key, item]) => {
+    if (item !== undefined) {
+      (acc as Record<string, unknown>)[key] = stripUndefinedValues(item);
+    }
+    return acc;
+  }, {} as Record<string, unknown>) as T;
+};
+
+const loadLocalProductCopies = (): Product[] => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const cached = window.localStorage.getItem(LOCAL_PRODUCT_COPIES_STORAGE_KEY);
+    const parsed = cached ? JSON.parse(cached) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const cacheLocalProductCopies = (items: Product[]) => {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(LOCAL_PRODUCT_COPIES_STORAGE_KEY, JSON.stringify(items));
+  window.dispatchEvent(new CustomEvent(LOCAL_PRODUCTS_UPDATED_EVENT));
+};
+
+const mergeLocalProductCopies = (baseProducts: Product[]) => {
+  const localCopies = loadLocalProductCopies();
+  if (localCopies.length === 0) return baseProducts;
+
+  const localIds = new Set(localCopies.map(product => product.id));
+  return [
+    ...localCopies,
+    ...baseProducts.filter(product => !localIds.has(product.id)),
+  ];
+};
+
 type AdminPanelProps = {
   initialTab?: AdminTab;
 };
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard' }) => {
-  const { user, isAdmin, loading: authLoading, logout, devLogin } = useAuth();
+  const { user, isAdmin, loading: authLoading, logout, devLogin, loginWithGoogle } = useAuth();
   const isLocalhost = typeof window !== 'undefined' &&
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
   const [activeTab, setActiveTab] = useState<AdminTab>(initialTab);
@@ -342,10 +394,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
   useEffect(() => {
     if (!isAdmin) return;
     const unsubscribe = subscribeAdminCollection<Product>('products', (data) => {
-      setProducts(data.length > 0 ? data : STATIC_PRODUCTS);
+      setProducts(mergeLocalProductCopies(data.length > 0 ? data : STATIC_PRODUCTS));
       setLoading(false);
     }, () => {
-      setProducts(STATIC_PRODUCTS);
+      setProducts(mergeLocalProductCopies(STATIC_PRODUCTS));
       setLoading(false);
     });
     return () => unsubscribe();
@@ -659,19 +711,37 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
   };
 
   const handleCopy = async (product: Product) => {
+    const now = Date.now();
+    const { id: _productId, ...productData } = product;
+    const copyData = stripUndefinedValues({
+      ...productData,
+      name: `${product.name} (Copy)`,
+      slug: `${normalizeProductSlug(product.slug || product.name, product.id)}-copy-${now}`,
+      rating: 5,
+      reviewsCount: 0,
+    });
+
     try {
-      const { id: _productId, ...productData } = product;
-      const copy = {
-        ...productData,
-        name: product.name + ' (Copy)',
-        slug: (product.slug || '') + '-copy-' + Date.now(),
+      await addAdminDocument('products', {
+        ...copyData,
         createdAt: adminTimestamp(),
-        rating: 5,
-        reviewsCount: 0,
-      };
-      await addAdminDocument('products', copy);
+      });
       toast.success('Sản phẩm đã được sao chép thành công!');
-    } catch {
+    } catch (error) {
+      console.error('Copy product failed:', error);
+      if (isLocalhost) {
+        const localCopy = stripUndefinedValues({
+          ...copyData,
+          id: `local-copy-${now}`,
+          createdAt: product.createdAt,
+        }) as Product;
+        const nextCopies = [localCopy, ...loadLocalProductCopies()];
+        cacheLocalProductCopies(nextCopies);
+        setProducts(prev => mergeLocalProductCopies(prev));
+        toast.success('Đã sao chép sản phẩm trên local');
+        return;
+      }
+
       toast.error('Lỗi khi sao chép sản phẩm');
     }
   };
@@ -1667,6 +1737,15 @@ Sitemap: https://shop-ur-sport.vercel.app/sitemap.xml`;
                 <span className="hidden sm:inline">Thêm bài viết</span>
               </button>
             )}
+            {activeTab === 'homepage' && (
+              <button
+                onClick={() => window.open('/', '_blank')}
+                className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-white text-sm font-bold rounded-xl border border-white/10 transition-all"
+              >
+                <ExternalLink className="h-4 w-4" />
+                <span className="hidden sm:inline">Xem trang chủ</span>
+              </button>
+            )}
             {activeTab === 'vouchers' && (
               <button
                 onClick={() => {
@@ -1685,7 +1764,7 @@ Sitemap: https://shop-ur-sport.vercel.app/sitemap.xml`;
         {/* Page content */}
         <main className="flex-1 p-4 sm:p-6 overflow-auto">
 
-          {/* ─── DASHBOARD ─── */}
+          {/* DASHBOARD */}
           {activeTab === 'dashboard' && (
             <div className="space-y-6">
               {/* Stats cards */}
@@ -1694,7 +1773,7 @@ Sitemap: https://shop-ur-sport.vercel.app/sitemap.xml`;
                   { label: 'Tổng sản phẩm', value: products.length, icon: Package, color: 'from-blue-500 to-blue-600', bg: 'bg-blue-500/10', text: 'text-blue-400' },
                   { label: 'Doanh thu ước tính', value: totalRevenue.toLocaleString('vi-VN') + '₫', icon: DollarSign, color: 'from-emerald-500 to-emerald-600', bg: 'bg-emerald-500/10', text: 'text-emerald-400' },
                   { label: 'Đơn hàng', value: orders.length.toString(), icon: ShoppingBag, color: 'from-orange-500 to-orange-600', bg: 'bg-orange-500/10', text: 'text-orange-400' },
-                  { label: 'Đánh giá TB', value: avgRating + ' ★', icon: Star, color: 'from-purple-500 to-purple-600', bg: 'bg-purple-500/10', text: 'text-purple-400' },
+                  { label: 'Đánh giá TB', value: avgRating, icon: Star, color: 'from-purple-500 to-purple-600', bg: 'bg-purple-500/10', text: 'text-purple-400' },
                 ].map((stat, i) => (
                   <div key={i} className="bg-[#13161f] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-all group">
                     <div className="flex items-center justify-between mb-4">
@@ -1767,7 +1846,7 @@ Sitemap: https://shop-ur-sport.vercel.app/sitemap.xml`;
             </div>
           )}
 
-          {/* ─── PRODUCTS ─── */}
+          {/* PRODUCTS */}
           {activeTab === 'strategy' && (
             <div className="space-y-6">
               <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
@@ -1974,6 +2053,7 @@ Sitemap: https://shop-ur-sport.vercel.app/sitemap.xml`;
                           <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Giá</th>
                           <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30 hidden lg:table-cell">Kho</th>
                           <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30 hidden xl:table-cell">SEO</th>
+                          <th className="hidden w-28 min-w-28 px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30 xl:table-cell">Mã SP</th>
                           <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30 hidden lg:table-cell">Đánh giá</th>
                           <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30 text-right">Thao tác</th>
                         </tr>
@@ -1991,8 +2071,7 @@ Sitemap: https://shop-ur-sport.vercel.app/sitemap.xml`;
                                   )}
                                 </div>
                                 <div>
-                                  <p className="text-white text-sm font-bold line-clamp-1">{product.name}</p>
-                                  <p className="text-white/30 text-[11px] font-medium">#{product.id.substring(0, 8)}</p>
+                                  <p className="max-w-[360px] text-white text-sm font-bold line-clamp-1">{product.name}</p>
                                 </div>
                               </div>
                             </td>
@@ -2022,6 +2101,11 @@ Sitemap: https://shop-ur-sport.vercel.app/sitemap.xml`;
                             </td>
                             <td className="px-6 py-4 hidden xl:table-cell">
                               <ProductSeoScoreBadge product={product} />
+                            </td>
+                            <td className="hidden w-28 min-w-28 px-6 py-4 xl:table-cell">
+                              <span className="inline-flex whitespace-nowrap rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 font-mono text-[11px] font-bold text-white/55 [overflow-wrap:normal] [word-break:normal]">
+                                {product.productCode || `UR-${product.id.substring(0, 6).toUpperCase()}`}
+                              </span>
                             </td>
                             <td className="px-6 py-4 hidden lg:table-cell">
                               <div className="flex items-center gap-1">
@@ -2173,6 +2257,10 @@ Sitemap: https://shop-ur-sport.vercel.app/sitemap.xml`;
                 )}
               </div>
             </div>
+          )}
+
+          {activeTab === 'homepage' && (
+            <HomepageConfigManager blogPosts={blogPosts} products={products} navigation={navigation} />
           )}
 
           {activeTab === 'vouchers' && (
@@ -2477,7 +2565,7 @@ Sitemap: https://shop-ur-sport.vercel.app/sitemap.xml`;
             <CustomerManagementTab />
           )}
 
-          {/* ─── NEWSLETTER SUBSCRIBERS ─── */}
+          {/* NEWSLETTER SUBSCRIBERS */}
           {activeTab === 'newsletter' && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -2747,7 +2835,7 @@ Sitemap: https://shop-ur-sport.vercel.app/sitemap.xml`;
             </React.Suspense>
           )}
 
-          {/* ─── AI BLOG ASSISTANT ─── */}
+          {/* AI BLOG ASSISTANT */}
           {activeTab === 'ai-blog' && (
             <React.Suspense fallback={<AdminTabFallback />}>
               <AIBlogAssistant
@@ -2777,7 +2865,7 @@ Sitemap: https://shop-ur-sport.vercel.app/sitemap.xml`;
             </React.Suspense>
           )}
 
-          {/* ─── MEDIA ─── */}
+          {/* MEDIA */}
           {activeTab === 'media' && (
             <React.Suspense fallback={<AdminTabFallback />}>
               <MediaLibraryTab
@@ -2787,7 +2875,7 @@ Sitemap: https://shop-ur-sport.vercel.app/sitemap.xml`;
               />
             </React.Suspense>
           )}
-          {/* ─── SETTINGS ─── */}
+          {/* SETTINGS */}
           {activeTab === 'settings' && (
             <React.Suspense fallback={<AdminTabFallback />}>
               <AdminSettingsTab
@@ -3407,7 +3495,9 @@ Sitemap: https://shop-ur-sport.vercel.app/sitemap.xml`;
           setIsAddModalOpen(false);
           setEditingProduct(null);
         }}
-        onSuccess={() => {}}
+        onSuccess={() => {
+          setProducts(prev => mergeLocalProductCopies(prev));
+        }}
         product={editingProduct}
       />
 

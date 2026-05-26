@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { getDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { readLocalHomepageBanners } from '../lib/homepageConfig';
 
 export const Hero: React.FC<{ onShopClick: () => void; headingOverride?: string }> = ({ onShopClick, headingOverride }) => {
   const navigate = useNavigate();
@@ -14,6 +15,13 @@ export const Hero: React.FC<{ onShopClick: () => void; headingOverride?: string 
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    const localBanners = readLocalHomepageBanners();
+    if (localBanners?.length) {
+      setActiveBanners(localBanners);
+      setIsLoading(false);
+      return;
+    }
+
     getDoc(doc(db, 'settings', 'banners')).then(snap => {
       if (snap.exists() && snap.data().items?.length > 0) {
         setActiveBanners(snap.data().items);
@@ -159,7 +167,7 @@ export const Hero: React.FC<{ onShopClick: () => void; headingOverride?: string 
               transition={{ delay: 0.8, duration: 0.8 }}
               className="mb-6 max-w-sm text-[13px] font-semibold leading-relaxed text-white/85 drop-shadow-sm sm:text-[16px]"
             >
-              {activeBanners[currentIndex]?.subtitle || 'Hiá»‡u suáº¥t tá»‘i Ä‘a, phong cÃ¡ch vÆ°á»£t trá»™i cho má»i hÃ nh trÃ¬nh.'}
+              {activeBanners[currentIndex]?.subtitle || 'Hiệu suất tối đa, phong cách vượt trội cho mọi hành trình.'}
             </motion.p>
             
             <div className="flex flex-wrap gap-4">
@@ -167,7 +175,7 @@ export const Hero: React.FC<{ onShopClick: () => void; headingOverride?: string 
                 onClick={handleButtonClick}
                 className="group relative flex items-center gap-3 overflow-hidden rounded-full bg-white px-8 py-4 text-[12px] font-black uppercase tracking-widest text-black shadow-2xl transition-all hover:bg-[#1e4b64] hover:text-white active:scale-95 sm:px-10"
               >
-                <span className="relative z-10">KhÃ¡m phÃ¡ ngay</span>
+                <span className="relative z-10">Khám phá ngay</span>
                 <ArrowRight className="h-4 w-4 relative z-10 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>

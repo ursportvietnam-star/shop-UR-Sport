@@ -19,6 +19,7 @@ export interface CategoryInfo {
 
 export interface Product {
   id: string;
+  productCode?: string;
   slug: string;
   name: string;
   description: string;

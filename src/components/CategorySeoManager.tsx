@@ -4,6 +4,7 @@ import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
+import { useAuth } from '../AuthContext';
 import { CATEGORY_METADATA } from '../data';
 import { toast } from 'sonner';
 import { Button } from './ui/button';
@@ -29,6 +30,100 @@ const defaultSeoData: SeoData = {
   seoCanonical: '',
   seoRobots: 'index, follow',
   content: '',
+};
+
+type HomepageSectionType =
+  | 'hero'
+  | 'promo'
+  | 'recommend'
+  | 'flashsale'
+  | 'featured'
+  | 'bestseller'
+  | 'sport-products'
+  | 'polo-products'
+  | 'tshirt-products'
+  | 'news'
+  | 'footer'
+  | 'custom';
+
+interface HomepageSection {
+  id: string;
+  type: HomepageSectionType;
+  name: string;
+  enabled: boolean;
+  content?: string;
+}
+
+const HOMEPAGE_SECTION_TYPES: { value: HomepageSectionType; label: string }[] = [
+  { value: 'hero', label: 'Hero Banner' },
+  { value: 'promo', label: 'Siêu ưu đãi / Coupon' },
+  { value: 'recommend', label: 'Gợi ý dành riêng' },
+  { value: 'flashsale', label: 'Flash Sale' },
+  { value: 'featured', label: 'Mua theo nhu cầu' },
+  { value: 'bestseller', label: 'Sản phẩm - bán chạy' },
+  { value: 'sport-products', label: 'Sản phẩm Áo thể thao nổi bật' },
+  { value: 'polo-products', label: 'Bộ sưu tập Áo Polo Nam' },
+  { value: 'tshirt-products', label: 'Áo Thun Nam Thời Trang' },
+  { value: 'news', label: 'Stay updated with UR NEWS' },
+  { value: 'footer', label: 'Chân trang' },
+  { value: 'custom', label: 'Block tùy chỉnh' },
+];
+
+const DEFAULT_HOMEPAGE_SECTIONS: HomepageSection[] = [
+  { id: 'hero', type: 'hero', name: 'Hero Banner', enabled: true },
+  { id: 'promo', type: 'promo', name: 'Siêu ưu đãi / Coupon', enabled: true },
+  { id: 'recommend', type: 'recommend', name: 'Gợi ý dành riêng', enabled: true },
+  { id: 'flashsale', type: 'flashsale', name: 'Flash Sale', enabled: true },
+  { id: 'featured', type: 'featured', name: 'Mua theo nhu cầu', enabled: true },
+  { id: 'bestseller', type: 'bestseller', name: 'Sản phẩm - bán chạy', enabled: true },
+  { id: 'sport-products', type: 'sport-products', name: 'Sản phẩm Áo thể thao nổi bật', enabled: true },
+  { id: 'polo-products', type: 'polo-products', name: 'Bộ sưu tập Áo Polo Nam', enabled: true },
+  { id: 'tshirt-products', type: 'tshirt-products', name: 'Áo Thun Nam Thời Trang', enabled: true },
+  { id: 'news', type: 'news', name: 'Stay updated with UR NEWS', enabled: true },
+  { id: 'footer', type: 'footer', name: 'Chân trang', enabled: true }
+];
+
+const getSectionLabel = (type: HomepageSectionType) => {
+  return HOMEPAGE_SECTION_TYPES.find(section => section.value === type)?.label || 'Mục mới';
+};
+
+const normalizeHomepageSection = (section: Partial<HomepageSection> & { id?: string; type?: string }): HomepageSection => {
+  const inferredType = section.type || (typeof section.id === 'string' ? (
+    section.id.startsWith('hero') ? 'hero' :
+    section.id.startsWith('promo') ? 'promo' :
+    section.id.startsWith('recommend') ? 'recommend' :
+    section.id.startsWith('flashsale') ? 'flashsale' :
+    section.id.startsWith('featured') ? 'featured' :
+    section.id.startsWith('bestseller') ? 'bestseller' :
+    section.id.startsWith('sport-products') ? 'sport-products' :
+    section.id.startsWith('polo-products') ? 'polo-products' :
+    section.id.startsWith('tshirt-products') ? 'tshirt-products' :
+    section.id.startsWith('news') ? 'news' :
+    section.id.startsWith('footer') ? 'footer' :
+    'custom'
+  ) : 'custom');
+  const type = HOMEPAGE_SECTION_TYPES.some(item => item.value === inferredType)
+    ? inferredType as HomepageSectionType
+    : 'custom';
+
+  return {
+    id: section.id || `${type}-${Date.now()}`,
+    type,
+    name: section.name || getSectionLabel(type),
+    enabled: section.enabled !== false,
+    content: section.content || ''
+  };
+};
+
+const mergeHomepageSections = (sections: HomepageSection[]) => {
+  const normalized = sections.map(normalizeHomepageSection);
+  const existingIds = new Set(normalized.map(section => section.id));
+  return [
+    ...normalized,
+    ...DEFAULT_HOMEPAGE_SECTIONS
+      .map(normalizeHomepageSection)
+      .filter(section => !existingIds.has(section.id))
+  ];
 };
 
 const buildSeoCategoryOptions = (navigationItems: NavigationItem[] = []) => [
@@ -66,6 +161,12 @@ export function CategorySeoManager() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isHtmlMode, setIsHtmlMode] = useState(false);
+  const [homepageSections, setHomepageSections] = useState<HomepageSection[]>(DEFAULT_HOMEPAGE_SECTIONS);
+  const [newSectionType, setNewSectionType] = useState<HomepageSectionType>('hero');
+  const dragIndexRef = React.useRef<number | null>(null);
+  const { isAdmin, loading: authLoading } = useAuth();
+  
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
   useEffect(() => {
     getDoc(doc(db, 'settings', 'navigation'))
@@ -115,9 +216,107 @@ export function CategorySeoManager() {
     fetchSeoData();
   }, [selectedCategory]);
 
+  // Load homepage sections config when homepage selected
+  useEffect(() => {
+    if (selectedOption?.type !== 'homepage') return;
+    const fetchSections = async () => {
+      try {
+        const docRef = doc(db, 'settings', 'homepage');
+        const snap = await getDoc(docRef);
+        if (snap.exists()) {
+          const data = snap.data();
+          const sections = (data.sections || DEFAULT_HOMEPAGE_SECTIONS) as HomepageSection[];
+          setHomepageSections(mergeHomepageSections(sections));
+        } else {
+          setHomepageSections(mergeHomepageSections(DEFAULT_HOMEPAGE_SECTIONS));
+        }
+      } catch (err) {
+        console.error('Failed to load homepage sections', err);
+        setHomepageSections(mergeHomepageSections(DEFAULT_HOMEPAGE_SECTIONS));
+      }
+    };
+
+    fetchSections();
+  }, [selectedOption?.type]);
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    dragIndexRef.current = index;
+    try { e.dataTransfer!.setData('text/plain', String(index)); } catch (e) {}
+    e.dataTransfer!.effectAllowed = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    const from = dragIndexRef.current;
+    if (from == null) return;
+    const next = [...homepageSections];
+    const [moved] = next.splice(from, 1);
+    next.splice(index, 0, moved);
+    setHomepageSections(next);
+    dragIndexRef.current = null;
+  };
+
+  const handleToggleSection = (index: number) => {
+    setHomepageSections(prev => {
+      const next = [...prev];
+      next[index] = { ...next[index], enabled: !next[index].enabled };
+      return next;
+    });
+  };
+
+  const addSection = (type: HomepageSectionType, name?: string) => {
+    const id = `${type}-${Date.now()}`;
+    const next: HomepageSection = {
+      id,
+      type,
+      name: name || getSectionLabel(type),
+      enabled: true,
+      content: ''
+    };
+    setHomepageSections(prev => [...prev, next]);
+    setEditingIndex(homepageSections.length);
+  };
+
+  const removeSection = (index: number) => {
+    setHomepageSections(prev => prev.filter((_, i) => i !== index));
+    setEditingIndex(null);
+  };
+
+  const updateSectionField = (index: number, field: keyof HomepageSection, value: string | boolean) => {
+    setHomepageSections(prev => {
+      const next = [...prev];
+      // @ts-ignore
+      next[index] = { ...next[index], [field]: value };
+      return next;
+    });
+  };
+
+  const saveHomepageSections = async () => {
+    if (!isAdmin) {
+      toast.error('Bạn không có quyền thực hiện thao tác này.');
+      return;
+    }
+    setSaving(true);
+    try {
+      await setDoc(doc(db, 'settings', 'homepage'), {
+        sections: homepageSections.map(normalizeHomepageSection),
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+      toast.success('Đã lưu cấu hình Trang chủ');
+    } catch (err) {
+      console.error('Error saving homepage config', err);
+      toast.error('Lưu cấu hình Trang chủ thất bại');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!selectedCategory) return;
-    
+    if (!isAdmin) {
+      toast.error('Bạn không có quyền lưu nội dung SEO.');
+      return;
+    }
     setSaving(true);
     try {
       await setDoc(doc(db, 'categorySeo', selectedCategory), {
@@ -270,7 +469,7 @@ export function CategorySeoManager() {
               </h3>
               <Button
                 onClick={handleSave}
-                disabled={loading || saving}
+                disabled={loading || saving || !isAdmin || authLoading}
                 className="bg-[#1e4b64] hover:bg-[#153446] text-white gap-2 rounded-full px-6"
               >
                 <Save className="h-4 w-4" />

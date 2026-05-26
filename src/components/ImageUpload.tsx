@@ -109,6 +109,8 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
       'blog': 'blog',
       // product hero / gallery images
       'products': 'products',
+      // homepage banners
+      'banners': 'banners',
     };
     const localFolder = folderAliasMap[folder] ?? 'products';
     return uploadLocalImage(file, localFolder);

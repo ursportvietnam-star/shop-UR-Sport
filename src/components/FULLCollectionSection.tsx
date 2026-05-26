@@ -44,12 +44,12 @@ export function FULLCollectionSection({ onCategorySelect }: FULLCollectionSectio
 
   return (
     <section className="mx-auto max-w-[1440px] bg-white px-4 py-12 sm:px-6 lg:px-8">
-      <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
+      <div className="mb-8 flex flex-col items-center gap-4 text-center md:flex-row md:items-end md:justify-between md:text-left">
+        <div className="homepage-heading-copy">
           <span className="mb-2 block text-xs font-black uppercase tracking-widest text-[#1e4b64]">
             Danh mục nổi bật
           </span>
-          <h2 className="text-3xl font-black leading-none tracking-tight text-zinc-900 sm:text-4xl">
+          <h2 className="section-title">
             Mua theo nhu cầu
           </h2>
         </div>

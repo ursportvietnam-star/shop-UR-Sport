@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 
 interface LazyImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
-  src: string;
+  src?: string;
   alt: string;
   placeholderColor?: string;
   /** Distance from viewport to start loading (default: '200px') */
@@ -19,7 +19,14 @@ export const LazyImage: React.FC<LazyImageProps> = ({
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isInView, setIsInView] = useState(false);
+  const [hasError, setHasError] = useState(false);
   const imgRef = useRef<HTMLDivElement>(null);
+  const imageSrc = src?.trim();
+
+  useEffect(() => {
+    setIsLoaded(false);
+    setHasError(false);
+  }, [imageSrc]);
 
   useEffect(() => {
     const el = imgRef.current;
@@ -54,11 +61,12 @@ export const LazyImage: React.FC<LazyImageProps> = ({
         ...style,
       }}
     >
-      {isInView && (
+      {isInView && imageSrc && !hasError && (
         <img
-          src={src}
+          src={imageSrc}
           alt={alt}
           onLoad={handleLoad}
+          onError={() => setHasError(true)}
           className={className}
           style={{
             position: 'absolute',

@@ -13,7 +13,7 @@ import { BestSeller } from './components/BestSeller';
 import { FULLCollectionSection } from './components/FULLCollectionSection';
 import { StorefrontVoucherBanner } from './components/StorefrontVoucherBanner';
 import { PRODUCTS, CATEGORIES, CATEGORY_METADATA, STATIC_BLOG_POSTS } from './data';
-import { Product, Category, Order } from './types';
+import { Product, Category, Order, BlogPost } from './types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AuthProvider } from './AuthContext';
 import { CartProvider, useCart } from './CartContext';
@@ -38,6 +38,7 @@ import {
   slugifyVietnamese
 } from './lib/categoryConfig';
 import { getProductPath } from './lib/productUrls';
+import { readLocalHomepageSections } from './lib/homepageConfig';
 
 const ProductDetail = React.lazy(() => import('./components/ProductDetail').then(module => ({ default: module.ProductDetail })));
 const Checkout = React.lazy(() => import('./components/Checkout').then(module => ({ default: module.Checkout })));
@@ -498,22 +499,21 @@ function PersonalizedRecommendations({ products }: { products: Product[] }) {
 
   return (
     <section className="container-custom section-padding bg-white">
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
+      <div className="mb-8 flex flex-col items-center gap-4 text-center sm:flex-row sm:items-end sm:justify-between sm:text-left">
+        <div className="homepage-heading-copy">
           <span className="section-subtitle">Dựa trên hành vi mua sắm</span>
           <h2 className="section-title">
             Gợi ý <span className="text-[#1e4b64]">dành riêng cho bạn</span>
           </h2>
         </div>
-        <Button
+        <button
           type="button"
-          variant="outline"
           onClick={() => navigate('/da-xem')}
-          className="h-11 rounded-full border-zinc-200 px-5 text-[11px] font-black uppercase tracking-widest text-zinc-600 hover:border-[#1e4b64]/30 hover:bg-blue-50 hover:text-[#1e4b64]"
+          className="text-[#1e4b64] text-[11px] sm:text-[14px] font-bold flex items-center gap-0.5 sm:gap-1 hover:opacity-80 transition-all group flex-shrink-0 whitespace-nowrap"
         >
-          Xem lịch sử
-          <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
+          <span>Xem lịch sử</span>
+          <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 group-hover:translate-x-1 transition-transform" />
+        </button>
       </div>
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3 lg:grid-cols-6">
@@ -536,9 +536,14 @@ function PersonalizedRecommendations({ products }: { products: Product[] }) {
   );
 }
 
-function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: Product) => void, onCategorySelect: (c: Category) => void }) {
+function HomePage({
+  onCategorySelect,
+  onPageChange
+}: {
+  onCategorySelect: (c: Category) => void;
+  onPageChange: (page: string) => void;
+}) {
   const navigate = useNavigate();
-  const [featuredFilter, setFeaturedFilter] = useState('Most Popular');
   const { products } = useProducts();
   const [homeSeo, setHomeSeo] = useState({
     heading: 'UR Sport - Thương Hiệu Thời Trang Chất Lượng Từ Việt Nam',
@@ -548,6 +553,113 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
     canonical: '/',
     robots: 'index, follow'
   });
+
+  type HomepageSectionType =
+    | 'hero'
+    | 'promo'
+    | 'recommend'
+    | 'flashsale'
+    | 'featured'
+    | 'bestseller'
+    | 'sport-products'
+    | 'polo-products'
+    | 'tshirt-products'
+    | 'news'
+    | 'trust-badges'
+    | 'footer'
+    | 'custom';
+  interface HomepageSectionConfig {
+    id: string;
+    type: HomepageSectionType;
+    name?: string;
+    enabled?: boolean;
+    content?: string;
+    settings?: {
+      newsMode?: 'auto' | 'manual';
+      selectedPostIds?: string[];
+      customLayout?: 'html' | 'products';
+      productMode?: 'category' | 'manual';
+      productCategory?: string;
+      selectedProductIds?: string[];
+      productLimit?: number;
+      subtitle?: string;
+      cta?: string;
+      href?: string;
+    };
+  }
+  const DEFAULT_HOMEPAGE_SECTIONS: HomepageSectionConfig[] = [
+    { id: 'hero', type: 'hero', name: 'Hero Banner', enabled: true },
+    { id: 'promo', type: 'promo', name: 'Siêu ưu đãi / Coupon', enabled: true },
+    { id: 'recommend', type: 'recommend', name: 'Gợi ý dành riêng', enabled: true },
+    { id: 'flashsale', type: 'flashsale', name: 'Flash Sale', enabled: true },
+    { id: 'featured', type: 'featured', name: 'Mua theo nhu cầu', enabled: true },
+    { id: 'bestseller', type: 'bestseller', name: 'Sản phẩm - bán chạy', enabled: true },
+    { id: 'sport-products', type: 'sport-products', name: 'Sản phẩm Áo thể thao nổi bật', enabled: true },
+    { id: 'polo-products', type: 'polo-products', name: 'Bộ sưu tập Áo Polo Nam', enabled: true },
+    { id: 'tshirt-products', type: 'tshirt-products', name: 'Áo Thun Nam Thời Trang', enabled: true },
+    { id: 'news', type: 'news', name: 'Stay updated with UR NEWS', enabled: true },
+    { id: 'trust-badges', type: 'trust-badges', name: 'Cam kết dịch vụ', enabled: true },
+    { id: 'footer', type: 'footer', name: 'Chân trang', enabled: true }
+  ];
+
+  const getSectionLabel = (type: HomepageSectionType) => {
+    switch (type) {
+      case 'hero': return 'Hero Banner';
+      case 'promo': return 'Siêu ưu đãi / Coupon';
+      case 'recommend': return 'Gợi ý dành riêng';
+      case 'flashsale': return 'Flash Sale';
+      case 'featured': return 'Danh mục nổi bật';
+      case 'bestseller': return 'Sản phẩm - bán chạy';
+      case 'sport-products': return 'Sản phẩm Áo thể thao nổi bật';
+      case 'polo-products': return 'Bộ sưu tập Áo Polo Nam';
+      case 'tshirt-products': return 'Áo Thun Nam Thời Trang';
+      case 'news': return 'Stay updated with UR NEWS';
+      case 'trust-badges': return 'Cam kết dịch vụ';
+      case 'footer': return 'Chân trang';
+      case 'custom': return 'Block tùy chỉnh';
+      default: return 'Mục mới';
+    }
+  };
+
+  const normalizeSection = (section: any): HomepageSectionConfig => {
+    const defaultType = 'custom' as HomepageSectionType;
+    const type = section.type || (typeof section.id === 'string' ? (
+      section.id.startsWith('hero') ? 'hero' :
+      section.id.startsWith('promo') ? 'promo' :
+      section.id.startsWith('recommend') ? 'recommend' :
+      section.id.startsWith('flashsale') ? 'flashsale' :
+      section.id.startsWith('featured') ? 'featured' :
+      section.id.startsWith('bestseller') ? 'bestseller' :
+      section.id.startsWith('sport-products') ? 'sport-products' :
+      section.id.startsWith('polo-products') ? 'polo-products' :
+      section.id.startsWith('tshirt-products') ? 'tshirt-products' :
+      section.id.startsWith('news') ? 'news' :
+      section.id.startsWith('trust-badges') ? 'trust-badges' :
+      section.id.startsWith('footer') ? 'footer' :
+      defaultType
+    ) : defaultType);
+    return {
+      id: section.id || `${type}-${Date.now()}`,
+      type,
+      name: section.name || getSectionLabel(type),
+      enabled: section.enabled !== false,
+      content: section.content || '',
+      settings: section.settings || {}
+    };
+  };
+
+  const [homepageSections, setHomepageSections] = useState<HomepageSectionConfig[]>(DEFAULT_HOMEPAGE_SECTIONS);
+  const [homeBlogPosts, setHomeBlogPosts] = useState<BlogPost[]>(STATIC_BLOG_POSTS);
+  const [visibleProductCounts, setVisibleProductCounts] = useState<Record<string, number>>({});
+
+  const getVisibleProductCount = (sectionId: string, initialCount = 6) => visibleProductCounts[sectionId] ?? initialCount;
+
+  const showMoreProducts = (sectionId: string, initialCount = 6) => {
+    setVisibleProductCounts(prev => ({
+      ...prev,
+      [sectionId]: (prev[sectionId] ?? initialCount) + 4
+    }));
+  };
 
   useEffect(() => {
     const fetchHomeSeo = async () => {
@@ -570,7 +682,329 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
     };
 
     fetchHomeSeo();
+
+    // load homepage sections config
+    const fetchHomepageConfig = async () => {
+      try {
+        const localSections = readLocalHomepageSections();
+        if (localSections) {
+          setHomepageSections(localSections as HomepageSectionConfig[]);
+          return;
+        }
+
+        const cfgDoc = await getDoc(doc(db, 'settings', 'homepage'));
+        if (cfgDoc.exists()) {
+          const data = cfgDoc.data();
+          const rawSections = (data.sections || DEFAULT_HOMEPAGE_SECTIONS) as any[];
+          const sections = rawSections.map(normalizeSection);
+          const ids = sections.map(s => s.id);
+          const merged = DEFAULT_HOMEPAGE_SECTIONS
+            .map(normalizeSection)
+            .filter(d => !ids.includes(d.id))
+            .reduce((result, defaultSection) => {
+              if (defaultSection.id === 'trust-badges') {
+                const footerIndex = result.findIndex(section => section.id === 'footer');
+                if (footerIndex >= 0) {
+                  result.splice(footerIndex, 0, defaultSection);
+                  return result;
+                }
+              }
+
+              result.push(defaultSection);
+              return result;
+            }, [...sections] as HomepageSectionConfig[]);
+          setHomepageSections(merged);
+        } else {
+          setHomepageSections(DEFAULT_HOMEPAGE_SECTIONS);
+        }
+      } catch (err) {
+        console.error('Error loading homepage config', err);
+        setHomepageSections((readLocalHomepageSections() as HomepageSectionConfig[] | null) || DEFAULT_HOMEPAGE_SECTIONS);
+      }
+    };
+
+    fetchHomepageConfig();
   }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchHomeBlogPosts = async () => {
+      try {
+        const snapshot = await getDocs(collection(db, 'blogPosts'));
+        const posts = snapshot.docs.map(postDoc => ({
+          ...(postDoc.data() as Omit<BlogPost, 'id'>),
+          id: postDoc.id
+        })) as BlogPost[];
+        if (mounted && posts.length > 0) setHomeBlogPosts(posts);
+      } catch (error) {
+        console.error('Error loading homepage blog posts:', error);
+        if (mounted) setHomeBlogPosts(STATIC_BLOG_POSTS);
+      }
+    };
+
+    fetchHomeBlogPosts();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const renderProductCategorySection = ({
+    key,
+    category,
+    subtitle,
+    title,
+    titleAccent,
+    href,
+    cta,
+    compactHeader = false
+  }: {
+    key: string;
+    category: Category;
+    subtitle?: string;
+    title: string;
+    titleAccent: string;
+    href: string;
+    cta: string;
+    compactHeader?: boolean;
+  }) => {
+    const sectionProducts = products.filter(p => p.category === category);
+    const visibleCount = getVisibleProductCount(key, 6);
+    const displayedProducts = sectionProducts.slice(0, visibleCount);
+    const hasMore = visibleCount < sectionProducts.length;
+
+    return (
+    <section key={key} className={cn("container-custom bg-white", compactHeader ? "section-padding-bottom" : "section-padding")}>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        className={cn(
+          compactHeader ? "flex flex-col items-center gap-4 text-center sm:flex-row sm:items-end sm:justify-between sm:text-left mb-8" : "flex flex-col items-center text-center md:flex-row md:items-end md:text-left justify-between mb-10 gap-4"
+        )}
+      >
+        <div className="homepage-heading-copy">
+          {subtitle && <span className="section-subtitle">{subtitle}</span>}
+          <h2 className="section-title">
+            {title} <span className="text-[#1e4b64]">{titleAccent}</span>
+          </h2>
+        </div>
+        <Link
+          to={href}
+          title={cta}
+          className="text-[#1e4b64] text-[11px] sm:text-[14px] font-bold flex items-center gap-0.5 sm:gap-1 hover:opacity-80 transition-all group flex-shrink-0 whitespace-nowrap"
+        >
+          <span>Xem tất cả</span>
+          <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 group-hover:translate-x-1 transition-transform" />
+        </Link>
+      </motion.div>
+
+      <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+        {displayedProducts.map((product, idx) => (
+            <motion.div
+              key={product.id}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: Math.min(idx, 5) * 0.08 }}
+            >
+              <ProductCard
+                product={product}
+                onClick={() => navigate(getProductUrl(product))}
+              />
+            </motion.div>
+          ))}
+      </div>
+      {hasMore && (
+      <div className="flex justify-center mt-12">
+        <button
+          type="button"
+          onClick={() => showMoreProducts(key, 6)}
+          className="inline-flex h-10 items-center justify-center rounded-full border border-zinc-200 bg-white px-6 text-sm font-bold text-zinc-900 shadow-sm transition-colors hover:border-[#1e4b64] hover:text-[#1e4b64] active:scale-[0.98]"
+        >
+          Xem thêm
+        </button>
+      </div>
+      )}
+    </section>
+    );
+  };
+
+  const getCustomProducts = (section: HomepageSectionConfig) => {
+    if (section.settings?.productMode === 'manual') {
+      const selectedIds = section.settings.selectedProductIds || [];
+      return selectedIds
+        .map(id => products.find(product => product.id === id))
+        .filter((product): product is Product => Boolean(product));
+    }
+
+    const category = section.settings?.productCategory;
+    return category
+      ? products.filter(product => categoryBelongsTo(product.category, category))
+      : products;
+  };
+
+  const renderCustomProductSection = (section: HomepageSectionConfig) => {
+    const customProducts = getCustomProducts(section);
+    if (customProducts.length === 0) return null;
+    const href = section.settings?.href;
+    const initialCount = section.settings?.productLimit ? Math.max(1, section.settings.productLimit) : 6;
+    const visibleCount = getVisibleProductCount(section.id, initialCount);
+    const displayedProducts = customProducts.slice(0, visibleCount);
+    const hasMore = visibleCount < customProducts.length;
+
+    return (
+      <section key={section.id} className="container-custom section-padding bg-white">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="flex flex-col items-center text-center md:flex-row md:items-end md:text-left justify-between mb-10 gap-4"
+        >
+          <div className="homepage-heading-copy">
+            {section.settings?.subtitle && <span className="section-subtitle">{section.settings.subtitle}</span>}
+            <h2 className="section-title">{section.name}</h2>
+          </div>
+          {href && (
+            <Link
+              to={href}
+              className="text-[#1e4b64] text-[11px] sm:text-[14px] font-bold flex items-center gap-0.5 sm:gap-1 hover:opacity-80 transition-all group flex-shrink-0 whitespace-nowrap"
+            >
+              <span>Xem tất cả</span>
+              <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          )}
+        </motion.div>
+
+        <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+          {displayedProducts.map((product, idx) => (
+            <motion.div
+              key={product.id}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: Math.min(idx, 5) * 0.08 }}
+            >
+              <ProductCard
+                product={product}
+                onClick={() => navigate(getProductUrl(product))}
+              />
+            </motion.div>
+          ))}
+        </div>
+        {hasMore && (
+          <div className="flex justify-center mt-12">
+            <button
+              type="button"
+              onClick={() => showMoreProducts(section.id, initialCount)}
+              className="inline-flex h-10 items-center justify-center rounded-full border border-zinc-200 bg-white px-6 text-sm font-bold text-zinc-900 shadow-sm transition-colors hover:border-[#1e4b64] hover:text-[#1e4b64] active:scale-[0.98]"
+            >
+              Xem thêm
+            </button>
+          </div>
+        )}
+      </section>
+    );
+  };
+
+  const getBlogPostTime = (post: BlogPost) => {
+    const createdAt = post.createdAt as { toMillis?: () => number; seconds?: number } | undefined;
+    if (createdAt?.toMillis) return createdAt.toMillis();
+    if (typeof createdAt?.seconds === 'number') return createdAt.seconds * 1000;
+    const parsed = Date.parse(post.date || '');
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
+  const getNewsPosts = (section: HomepageSectionConfig) => {
+    const sourcePosts = homeBlogPosts.length > 0 ? homeBlogPosts : STATIC_BLOG_POSTS;
+    if (section.settings?.newsMode === 'manual') {
+      const selectedIds = section.settings.selectedPostIds || [];
+      const selectedPosts = selectedIds
+        .map(id => sourcePosts.find(post => post.id === id || post.slug === id))
+        .filter((post): post is BlogPost => Boolean(post));
+      if (selectedPosts.length > 0) return selectedPosts.slice(0, 5);
+    }
+
+    return [...sourcePosts]
+      .sort((a, b) => getBlogPostTime(b) - getBlogPostTime(a))
+      .slice(0, 5);
+  };
+
+  const renderNewsSection = (key: string, posts: BlogPost[]) => {
+    const [featuredPost, ...sidePosts] = posts;
+    if (!featuredPost) return null;
+
+    return (
+    <section key={key} className="container-custom section-padding border-t border-zinc-100">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        className="flex flex-col items-center text-center mb-16"
+      >
+        <span className="section-subtitle">Tạp chí UR SPORT</span>
+        <h2 className="section-title homepage-heading-center">
+          Stay updated with <span className="text-[#1e4b64]">UR NEWS</span>
+        </h2>
+        <div className="h-1 w-12 bg-[#1e4b64] mt-6 rounded-full" />
+      </motion.div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          className="lg:col-span-5 group cursor-pointer"
+          onClick={() => navigate(`/blog/${featuredPost.slug || featuredPost.id}`)}
+        >
+          <div className="relative aspect-[4/3] sm:aspect-square lg:aspect-auto lg:h-[500px] overflow-hidden rounded-[32px] mb-6 shadow-2xl">
+            <LazyImage
+              src={featuredPost.image}
+              alt={featuredPost.title}
+              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+            />
+            <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
+            <div className="absolute bottom-8 left-8">
+              <div className="bg-[#1e4b64] px-4 py-1.5 rounded-full text-[10px] font-black text-white uppercase tracking-widest mb-3 inline-block">
+                {featuredPost.date}
+              </div>
+              <h3 className="text-2xl sm:text-3xl font-black text-white leading-tight uppercase tracking-tighter">
+                {featuredPost.title}
+              </h3>
+            </div>
+          </div>
+        </motion.div>
+
+        <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-12">
+          {sidePosts.slice(0, 4).map((item, i) => (
+            <motion.div
+              key={item.id || i}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className="group cursor-pointer"
+              onClick={() => navigate(`/blog/${item.slug || item.id}`)}
+            >
+              <div className="relative aspect-[1024/682] overflow-hidden rounded-2xl mb-4 shadow-lg">
+                <LazyImage
+                  src={item.image}
+                  alt={item.title}
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                />
+                <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black text-zinc-900 tracking-widest leading-none">
+                  {item.date}
+                </div>
+              </div>
+              <h4 className="text-[16px] font-black text-zinc-900 group-hover:text-[#1e4b64] transition-colors leading-tight line-clamp-2 uppercase italic tracking-tight">
+                {item.title}
+              </h4>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+    );
+  };
 
   const homeSchema = React.useMemo(() => buildSeoGraph({
     '@type': 'CollectionPage',
@@ -602,260 +1036,82 @@ function HomePage({ onProductSelect, onCategorySelect }: { onProductSelect: (p: 
 
   return (
     <>
-      <Hero headingOverride={homeSeo.heading} onShopClick={() => navigate('/shop')} />
-
-      <StorefrontVoucherBanner />
-
-      <PersonalizedRecommendations products={products} />
-      
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.6 }}
-      >
-        <FlashSale products={products} />
-      </motion.div>
-
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.6, delay: 0.2 }}
-      >
-        <FULLCollectionSection onCategorySelect={onCategorySelect} />
-      </motion.div>
-
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.6 }}
-      >
-        <BestSeller products={products} />
-      </motion.div>
-
-      {/* In Demand Section - Athletic Shirts */}
-      <section className="container-custom section-padding bg-white">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4"
-        >
-          <div>
-            <span className="section-subtitle">Performance Collection</span>
-            <h2 className="section-title">
-              Sản phẩm <span className="text-[#1e4b64]">Áo thể thao</span> nổi bật
-            </h2>
-          </div>
-          <Link 
-             to="/ao-thun-the-thao-nam"
-             className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#1e4b64] hover:translate-x-2 transition-transform group"
-          >
-            Tất cả sản phẩm <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
-          </Link>
-        </motion.div>
-
-        <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-          {products
-            .filter(p => p.category === 'Áo thun thể thao nam')
-            .slice(0, 6)
-            .map((product, idx) => (
-              <motion.div
-                key={product.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.1 }}
-              >
-                <ProductCard 
-                  product={product} 
-                  onClick={() => navigate(getProductUrl(product))}
-                />
+      {homepageSections.map((s, idx) => {
+        if (s.enabled === false) return null;
+        switch (s.type) {
+          case 'hero':
+            return <Hero key={s.id} headingOverride={homeSeo.heading} onShopClick={() => navigate('/shop')} />;
+          case 'promo':
+            return <StorefrontVoucherBanner key={s.id} />;
+          case 'recommend':
+            return <PersonalizedRecommendations key={s.id} products={products} />;
+          case 'flashsale':
+            return (
+              <motion.div key={s.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
+                <FlashSale products={products} />
               </motion.div>
-            ))}
-        </div>
-        <div className="flex justify-center mt-12">
-          <Link 
-             to="/ao-thun-the-thao-nam"
-             className="inline-flex h-12 items-center justify-center rounded-full border border-zinc-200 bg-white px-10 text-[12px] font-bold uppercase tracking-widest text-zinc-900 shadow-md transition-all hover:border-[#1e4b64] hover:bg-[#1e4b64] hover:text-white"
-          >
-             Xem thêm
-          </Link>
-        </div>
-      </section>
-
-      {/* Polo Shirts Section */}
-      <section className="container-custom section-padding-bottom bg-white">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="flex items-center justify-between mb-8"
-        >
-          <h2 className="section-title">
-            Bộ sưu tập <span className="text-[#1e4b64]">Áo Polo Nam</span>
-          </h2>
-          <Link 
-             to="/ao-polo-nam"
-             className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-[#1e4b64] transition-colors"
-          >
-            Khám phá <ChevronRight className="h-4 w-4" />
-          </Link>
-        </motion.div>
-
-        <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-          {products
-            .filter(p => p.category === 'Áo polo nam')
-            .slice(0, 6)
-            .map((product, idx) => (
-              <motion.div
-                key={product.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.1 }}
-              >
-                <ProductCard 
-                  product={product} 
-                  onClick={() => navigate(getProductUrl(product))}
-                />
+            );
+          case 'featured':
+            return (
+              <motion.div key={s.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.2 }}>
+                <FULLCollectionSection onCategorySelect={onCategorySelect} />
               </motion.div>
-            ))}
-        </div>
-        <div className="flex justify-center mt-12">
-          <Link 
-             to="/ao-polo-nam"
-             className="inline-flex h-12 items-center justify-center rounded-full border border-zinc-200 bg-white px-10 text-[12px] font-bold uppercase tracking-widest text-zinc-900 shadow-md transition-all hover:border-[#1e4b64] hover:bg-[#1e4b64] hover:text-white"
-          >
-             Xem thêm
-          </Link>
-        </div>
-      </section>
-
-      {/* Men's T-Shirts Section */}
-      <section className="container-custom section-padding-bottom bg-white">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="flex items-center justify-between mb-8"
-        >
-          <h2 className="section-title">
-            <span className="text-[#1e4b64]">Áo Thun Nam</span> Thời Trang
-          </h2>
-          <Link 
-             to="/ao-thun-nam"
-             className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-[#1e4b64] transition-colors"
-          >
-            Xem ngay <ChevronRight className="h-4 w-4" />
-          </Link>
-        </motion.div>
-
-        <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-          {products
-            .filter(p => p.category === 'Áo thun nam')
-            .slice(0, 6)
-            .map((product, idx) => (
-              <motion.div
-                key={product.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.1 }}
-              >
-                <ProductCard 
-                  product={product} 
-                  onClick={() => navigate(getProductUrl(product))}
-                />
+            );
+          case 'bestseller':
+            return (
+              <motion.div key={s.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
+                <BestSeller products={products} />
               </motion.div>
-            ))}
-        </div>
-        <div className="flex justify-center mt-12">
-          <Link 
-             to="/ao-thun-nam"
-             className="inline-flex h-12 items-center justify-center rounded-full border border-zinc-200 bg-white px-10 text-[12px] font-bold uppercase tracking-widest text-zinc-900 shadow-md transition-all hover:border-[#1e4b64] hover:bg-[#1e4b64] hover:text-white"
-          >
-             Xem thêm
-          </Link>
-        </div>
-      </section>
-
-      {/* Latest News Section */}
-      <section className="container-custom section-padding border-t border-zinc-100">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="flex flex-col items-center text-center mb-16"
-        >
-          <span className="section-subtitle">Tạp chí UR SPORT</span>
-          <h2 className="section-title">
-            Stay updated with <span className="text-[#1e4b64]">UR NEWS</span>
-          </h2>
-          <div className="h-1 w-12 bg-[#1e4b64] mt-6 rounded-full" />
-        </motion.div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-          {/* Large Featured Article */}
-          {STATIC_BLOG_POSTS[0] && (
-            <motion.div 
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="lg:col-span-5 group cursor-pointer" 
-              onClick={() => navigate(`/blog/${STATIC_BLOG_POSTS[0].id}`)}
-            >
-              <div className="relative aspect-[4/3] sm:aspect-square lg:aspect-auto lg:h-[500px] overflow-hidden rounded-[32px] mb-6 shadow-2xl">
-                <LazyImage 
-                  src={STATIC_BLOG_POSTS[0].image} 
-                  alt={STATIC_BLOG_POSTS[0].title} 
-                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
-                <div className="absolute bottom-8 left-8">
-                  <div className="bg-[#1e4b64] px-4 py-1.5 rounded-full text-[10px] font-black text-white uppercase tracking-widest mb-3 inline-block">
-                    {STATIC_BLOG_POSTS[0].date}
-                  </div>
-                  <h3 className="text-2xl sm:text-3xl font-black text-white leading-tight uppercase tracking-tighter">
-                    {STATIC_BLOG_POSTS[0].title}
-                  </h3>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Grid of smaller articles */}
-          <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-12">
-             {STATIC_BLOG_POSTS.slice(1, 5).map((item, i) => (
-               <motion.div 
-                  key={i} 
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="group cursor-pointer" 
-                  onClick={() => navigate(`/blog/${item.id}`)}
-                >
-                  <div className="relative aspect-[1024/682] overflow-hidden rounded-2xl mb-4 shadow-lg">
-                    <LazyImage 
-                      src={item.image} 
-                      alt={item.title} 
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    />
-                    <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black text-zinc-900 tracking-widest leading-none">
-                      {item.date}
-                    </div>
-                  </div>
-                  <h4 className="text-[16px] font-black text-zinc-900 group-hover:text-[#1e4b64] transition-colors leading-tight line-clamp-2 uppercase italic tracking-tight">
-                    {item.title}
-                  </h4>
-               </motion.div>
-             ))}
-          </div>
-        </div>
-      </section>
+            );
+          case 'sport-products':
+            return renderProductCategorySection({
+              key: s.id,
+              category: 'Áo thun thể thao nam',
+              subtitle: 'Performance Collection',
+              title: 'Sản phẩm',
+              titleAccent: 'Áo thể thao nổi bật',
+              href: '/ao-thun-the-thao-nam',
+              cta: 'Tất cả sản phẩm'
+            });
+          case 'polo-products':
+            return renderProductCategorySection({
+              key: s.id,
+              category: 'Áo polo nam',
+              title: 'Bộ sưu tập',
+              titleAccent: 'Áo Polo Nam',
+              href: '/ao-polo-nam',
+              cta: 'Khám phá',
+              compactHeader: true
+            });
+          case 'tshirt-products':
+            return renderProductCategorySection({
+              key: s.id,
+              category: 'Áo thun nam',
+              title: '',
+              titleAccent: 'Áo Thun Nam Thời Trang',
+              href: '/ao-thun-nam',
+              cta: 'Xem ngay',
+              compactHeader: true
+            });
+          case 'news':
+            return renderNewsSection(s.id, getNewsPosts(s));
+          case 'trust-badges':
+            return <TrustBadgesSection key={s.id} />;
+          case 'footer':
+            return <Footer key={s.id} onPageChange={onPageChange} onCategorySelect={onCategorySelect} />;
+          case 'custom':
+            if ((s.settings?.customLayout || 'products') === 'products') {
+              return renderCustomProductSection(s);
+            }
+            return s.content ? (
+              <section key={s.id} className="container-custom section-padding bg-white">
+                <div dangerouslySetInnerHTML={{ __html: s.content }} />
+              </section>
+            ) : null;
+          default:
+            return null;
+        }
+      })}
     </>
   );
 }
@@ -1992,8 +2248,6 @@ function ShopPage({ activeCategory, setActiveCategory, isLoading, onProductSelec
         </div>
       )}
 
-      {seoContent && <TrustBadgesSection className="mt-12" />}
-
     </div>
   );
 }
@@ -2086,42 +2340,7 @@ function AppContent() {
           <main className={!isAdminRoute ? "pt-16" : ""}>
             <React.Suspense fallback={<div className="min-h-[50vh] flex items-center justify-center"><div className="h-10 w-10 rounded-full border-4 border-[#1e4b64] border-t-transparent animate-spin" /></div>}>
             <Routes>
-              <Route path="/" element={
-                <>
-                  <HomePage onProductSelect={() => {}} onCategorySelect={handleCategorySelect} />
-                  
-                  {/* Trust Badges Section - Premium Feel */}
-                  <section className="bg-zinc-50/50 border-y border-zinc-100">
-                    <div className="container-custom py-12">
-                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-                        {[
-                          { icon: Truck, title: 'Miễn phí vận chuyển', desc: 'Cho đơn hàng từ 500k' },
-                          { icon: ShieldCheck, title: 'Thanh toán an toàn', desc: 'Bảo mật thông tin 100%' },
-                          { icon: RefreshCcw, title: 'Đổi trả 30 ngày', desc: 'Dễ dàng và nhanh chóng' },
-                          { icon: Phone, title: 'Hỗ trợ tận tâm', desc: 'Hotline: 0917 722 425' },
-                        ].map((badge, idx) => (
-                          <motion.div 
-                            key={idx} 
-                            initial={{ opacity: 0, y: 10 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: idx * 0.1 }}
-                            className="flex items-center gap-4 group"
-                          >
-                            <div className="h-14 w-14 shrink-0 rounded-2xl bg-white flex items-center justify-center shadow-sm border border-zinc-100 group-hover:bg-[#1e4b64] group-hover:border-[#1e4b64] transition-all duration-500">
-                              <badge.icon className="h-6 w-6 text-[#1e4b64] group-hover:text-white transition-colors duration-500" />
-                            </div>
-                            <div>
-                              <h4 className="text-[11px] sm:text-[12px] font-black uppercase tracking-widest text-zinc-900 mb-1">{badge.title}</h4>
-                              <p className="text-[10px] sm:text-[11px] font-medium text-zinc-400">{badge.desc}</p>
-                            </div>
-                          </motion.div>
-                        ))}
-                      </div>
-                    </div>
-                  </section>
-                </>
-              } />
+              <Route path="/" element={<HomePage onCategorySelect={handleCategorySelect} onPageChange={onPageChange} />} />
               <Route path="/shop" element={<ShopPage {...commonShopProps} />} />
               <Route path="/apparel/:categorySlug" element={<ShopPage {...commonShopProps} />} />
               <Route path="/apparel/:categorySlug/:productSlug" element={<ProductDetail />} />
@@ -2165,8 +2384,9 @@ function AppContent() {
             </React.Suspense>
           </main>
 
-          {!isAdminRoute && (
+          {!isAdminRoute && location.pathname !== '/' && (
             <>
+              <TrustBadgesSection />
               <Footer 
                 onPageChange={onPageChange}
                 onCategorySelect={handleCategorySelect}
@@ -2193,3 +2413,4 @@ function AppContent() {
     </AuthProvider>
   );
 }
+

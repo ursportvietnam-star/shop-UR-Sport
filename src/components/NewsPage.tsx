@@ -674,6 +674,25 @@ export function NewsPage() {
     };
   }, [selectedPost, contentHtml]);
 
+  useEffect(() => {
+    const root = blogContentRef.current;
+    if (!selectedPost || !root) return;
+
+    const cleanupHandlers: Array<() => void> = [];
+    root.querySelectorAll('img').forEach((image) => {
+      const img = image as HTMLImageElement;
+      const handleError = () => {
+        img.style.visibility = 'hidden';
+        img.closest('figure')?.classList.add('blog-media-missing');
+      };
+
+      img.addEventListener('error', handleError);
+      cleanupHandlers.push(() => img.removeEventListener('error', handleError));
+    });
+
+    return () => cleanupHandlers.forEach(cleanup => cleanup());
+  }, [selectedPost, contentHtml]);
+
   const mainBlogCategory = blogCategories.find(item => item.group === 'main') || blogCategories[0] || DEFAULT_BLOG_CATEGORY_ITEMS[0];
   const effectiveCategorySlug = categorySlug || (!selectedPost ? slug : undefined);
   const activeBlogCategory = effectiveCategorySlug
@@ -1062,9 +1081,10 @@ export function NewsPage() {
               <button
                 type="button"
                 onClick={() => navigate('/shop')}
-                className="shrink-0 text-[#1e4b64] text-sm font-bold hover:underline"
+                className="text-[#1e4b64] text-[11px] sm:text-[14px] font-bold flex items-center gap-0.5 sm:gap-1 hover:opacity-80 transition-all group flex-shrink-0 whitespace-nowrap"
               >
-                Xem tất cả
+                <span>Xem tất cả</span>
+                <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
 

@@ -21,6 +21,7 @@ export type AdminTab =
   | 'newsletter'
   | 'vouchers'
   | 'blog'
+  | 'homepage'
   | 'media'
   | 'settings'
   | 'blog-categories'
