@@ -2,7 +2,7 @@ import { stripHtml } from './utils';
 
 const siteUrlFromEnv = (import.meta as ImportMeta & { env?: { VITE_SITE_URL?: string } }).env?.VITE_SITE_URL;
 
-export const SITE_URL = (siteUrlFromEnv || 'https://shop-ur-sport.vercel.app').replace(/\/+$/, '');
+export const SITE_URL = (siteUrlFromEnv || 'https://www.ursport.vn').replace(/\/+$/, '');
 export const SITE_NAME = 'UR Sport';
 export const DEFAULT_OG_IMAGE = `${SITE_URL}/images/og-ursport.svg`;
 export const BRAND_PHONE = '+84917722425';

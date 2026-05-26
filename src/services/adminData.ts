@@ -35,6 +35,7 @@ export type AdminCollection =
 export type AdminSetting =
   | 'banners'
   | 'blogCategories'
+  | 'cheapChampion'
   | 'customCss'
   | 'flashSale'
   | 'floatingMenu'

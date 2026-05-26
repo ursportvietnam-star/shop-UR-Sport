@@ -4,6 +4,7 @@ import type { FirestoreTimestamp } from './firestore';
 import type {
   BannerItem,
   BlogCategoryItem,
+  CheapChampionSettings,
   FlashSaleSettings,
   FloatingMenuSettings,
   NavigationSetting,
@@ -30,6 +31,7 @@ export type AdminTab =
   | 'ai-blog'
   | 'ai-seo-report'
   | 'flash-sale'
+  | 'cheap-champion'
   | 'category-seo'
   | 'content-map';
 
@@ -44,6 +46,7 @@ export interface MediaItem {
 export type {
   BannerItem,
   BlogCategoryItem,
+  CheapChampionSettings,
   FlashSaleSettings,
   FloatingMenuSettings,
   NavigationItem,

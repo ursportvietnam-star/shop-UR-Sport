@@ -6,12 +6,13 @@ import { useCart } from '../CartContext';
 import { useWishlist } from '../WishlistContext';
 import { useComparison } from '../ComparisonContext';
 import { toast } from 'sonner';
-import { Star, ShoppingBag, Heart, Plus, Settings, Eye } from 'lucide-react';
+import { Star, ShoppingBag, Heart, Plus, Settings, Eye, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { showAddToCartToast } from './AddToCartToast';
 import { ProductQuickViewModal } from './ProductQuickViewModal';
 import { ProductVariantPicker } from './ProductVariantPicker';
 import { getProductPath } from '../lib/productUrls';
+import { usePromotionBadges } from '../PromotionContext';
 
 interface ProductCardProps {
   product: Product;
@@ -23,6 +24,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
   const { addToCart } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
   const { isCompared, toggleCompare } = useComparison();
+  const { isCheapChampionProduct, isActiveFlashSaleProduct, getCheapChampionPrice } = usePromotionBadges();
   const [selectedColor, setSelectedColor] = useState(product.colors?.[0] || 'Default');
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -30,6 +32,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
   const [quickViewImage, setQuickViewImage] = useState(product.images?.[0] || '');
   const liked = isWishlisted(product.id);
   const compared = isCompared(product.id);
+  const showCheapChampionBadge = isCheapChampionProduct(product.id);
+  const showFlashSaleBadge = isActiveFlashSaleProduct(product.id);
+  const cheapChampionPrice = getCheapChampionPrice(product);
+  const currentBasePrice = product.discountPrice || product.price;
+  const displayPrice = cheapChampionPrice ?? currentBasePrice;
+  const compareAtPrice = cheapChampionPrice !== null ? currentBasePrice : product.discountPrice ? product.price : null;
+  const effectiveProduct = cheapChampionPrice !== null ? { ...product, discountPrice: cheapChampionPrice } : product;
 
   const addSelectedToCart = (closeQuickView = false) => {
     if (!selectedSize && product.sizes && product.sizes.length > 0) {
@@ -39,7 +48,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
       return;
     }
 
-    addToCart(product, selectedColor, selectedSize || 'Free Size', 1);
+    addToCart(effectiveProduct, selectedColor, selectedSize || 'Free Size', 1);
     showAddToCartToast({
       productName: product.name,
       image: product.images?.[0],
@@ -66,14 +75,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
 
   const handleCompareClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const added = toggleCompare(product);
+    const added = toggleCompare(effectiveProduct);
     toast.success(added ? 'Đã thêm vào bảng so sánh' : 'Đã bỏ khỏi bảng so sánh', {
       position: 'top-center'
     });
   };
 
-  const discountPercent = product.discountPrice 
-    ? Math.round(((product.price - product.discountPrice) / product.price) * 100) 
+  const discountPercent = displayPrice < product.price
+    ? Math.round(((product.price - displayPrice) / product.price) * 100)
     : 0;
 
   const hasOptions = (product.colors && product.colors.length > 0) || (product.sizes && product.sizes.length > 0);
@@ -178,16 +187,34 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
             </Link>
           </h3>
 
+          {(showCheapChampionBadge || showFlashSaleBadge) && (
+            <div className="mb-2 flex min-h-[20px] flex-wrap items-center gap-1.5">
+              {showCheapChampionBadge && (
+                <span className="inline-flex h-5 items-center rounded border border-[#ff4d2d] bg-white px-1.5 text-[10px] font-semibold leading-none text-[#ff4d2d]">
+                  Rẻ Vô Địch
+                </span>
+              )}
+              {showFlashSaleBadge && (
+                <span className="inline-flex h-5 items-center gap-0.5 rounded border border-[#ff4d2d] bg-[#ffd8c9] px-1.5 text-[10px] font-bold leading-none text-white">
+                  <span className="flex h-3.5 w-3.5 items-center justify-center rounded-sm bg-[#ff3b30]">
+                    <Zap className="h-2.5 w-2.5 fill-white text-white" />
+                  </span>
+                  Đang bán chạy
+                </span>
+              )}
+            </div>
+          )}
+
           {/* Price Area and Quick Add */}
           <div className="flex items-end justify-between mt-auto mb-1">
             <div className="flex flex-col gap-0.5">
               <span className="text-[15px] sm:text-[18px] font-black text-black leading-tight whitespace-nowrap">
-                {(product.discountPrice || product.price).toLocaleString('vi-VN')}đ
+                {displayPrice.toLocaleString('vi-VN')}đ
               </span>
-              {product.discountPrice && (
+              {compareAtPrice && compareAtPrice > displayPrice && (
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] text-zinc-300 line-through font-bold whitespace-nowrap">
-                    {product.price.toLocaleString('vi-VN')}đ
+                    {compareAtPrice.toLocaleString('vi-VN')}đ
                   </span>
                   <span className="text-[9px] font-black text-zinc-400 border border-zinc-200 rounded px-1">
                     -{discountPercent}%
@@ -224,7 +251,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
           )}>
             <div className="border-t border-zinc-100 pt-3">
               <ProductVariantPicker
-                product={product}
+                product={effectiveProduct}
                 selectedColor={selectedColor}
                 selectedSize={selectedSize}
                 onColorChange={setSelectedColor}
@@ -238,7 +265,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
         </div>
       </div>
       <ProductQuickViewModal
-        product={product}
+        product={effectiveProduct}
         isOpen={isQuickViewOpen}
         selectedColor={selectedColor}
         selectedSize={selectedSize}

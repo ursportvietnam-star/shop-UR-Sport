@@ -18,7 +18,7 @@ type SitemapRoute = {
 };
 
 const sitemapPath = path.join(process.cwd(), 'public', 'sitemap.xml');
-const baseUrl = (process.env.SITE_URL || process.env.VITE_SITE_URL || 'https://shop-ur-sport.vercel.app').replace(/\/+$/, '');
+const baseUrl = (process.env.SITE_URL || process.env.VITE_SITE_URL || 'https://www.ursport.vn').replace(/\/+$/, '');
 const vietnamTimezoneOffset = 7 * 60 * 60 * 1000;
 const today = new Date(Date.now() + vietnamTimezoneOffset).toISOString().slice(0, 10);
 

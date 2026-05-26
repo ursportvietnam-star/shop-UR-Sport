@@ -26,6 +26,7 @@ import type {
   AdminTab,
   BannerItem,
   BlogCategoryItem,
+  CheapChampionSettings,
   FirestoreTimestamp,
   FlashSaleSettings,
   FloatingMenuSettings,
@@ -139,6 +140,7 @@ const NAV_ITEMS: AdminNavigationItem[] = [
     isGroup: true,
     children: [
       { id: 'flash-sale', label: 'Flash Sale', icon: Zap },
+      { id: 'cheap-champion', label: 'Rẻ vô địch', icon: TrendingUp },
       { id: 'vouchers', label: 'Mã giảm giá', icon: Ticket },
       { id: 'newsletter', label: 'Email đăng ký', icon: MailCheck },
     ]
@@ -329,6 +331,121 @@ const mergeLocalProductCopies = (baseProducts: Product[]) => {
   ];
 };
 
+const padTimePart = (value: number) => value.toString().padStart(2, '0');
+
+const formatDateTimeLocal = (date: Date) => {
+  return [
+    date.getFullYear(),
+    padTimePart(date.getMonth() + 1),
+    padTimePart(date.getDate()),
+  ].join('-') + `T${padTimePart(date.getHours())}:${padTimePart(date.getMinutes())}`;
+};
+
+const getDateTimeParts = (value: string) => {
+  if (!value) return { date: '', time: '' };
+
+  const localMatch = value.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
+  if (localMatch) return { date: localMatch[1], time: localMatch[2] };
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return { date: '', time: '' };
+
+  const normalized = formatDateTimeLocal(parsed);
+  return { date: normalized.slice(0, 10), time: normalized.slice(11, 16) };
+};
+
+const buildDateTimeValue = (date: string, time: string) => {
+  if (!date) return '';
+  return `${date}T${time || '00:00'}`;
+};
+
+const formatDateTimePreview = (value: string) => {
+  const { date, time } = getDateTimeParts(value);
+  if (!date) return 'Chưa chọn thời gian';
+
+  const parsed = new Date(`${date}T${time || '00:00'}`);
+  if (Number.isNaN(parsed.getTime())) return 'Chưa chọn thời gian';
+
+  return parsed.toLocaleString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+type CampaignDateTimePickerProps = {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  quickHour?: number;
+};
+
+const CampaignDateTimePicker: React.FC<CampaignDateTimePickerProps> = ({
+  label,
+  value,
+  onChange,
+  quickHour = 9,
+}) => {
+  const { date, time } = getDateTimeParts(value);
+
+  const applyQuickDate = (daysToAdd: number) => {
+    const next = new Date();
+    next.setDate(next.getDate() + daysToAdd);
+    next.setHours(quickHour, 0, 0, 0);
+    onChange(formatDateTimeLocal(next));
+  };
+
+  const setNow = () => {
+    onChange(formatDateTimeLocal(new Date()));
+  };
+
+  return (
+    <div className="space-y-2">
+      <label className="text-[10px] font-black uppercase text-white/30 block">{label}</label>
+      <div className="rounded-2xl border border-white/10 bg-[#0f1117] p-3 transition-all focus-within:border-[#1e4b64]/70 focus-within:ring-1 focus-within:ring-[#1e4b64]/30">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1.1fr_0.8fr]">
+          <div className="relative">
+            <Clock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/20" />
+            <input
+              type="date"
+              value={date}
+              onChange={(event) => onChange(buildDateTimeValue(event.target.value, time))}
+              className="h-11 w-full rounded-xl border border-white/5 bg-black/20 pl-10 pr-3 text-sm font-bold text-white outline-none [color-scheme:dark] hover:border-white/10 focus:border-[#1e4b64]/70"
+            />
+          </div>
+          <div className="relative">
+            <Clock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/20" />
+            <input
+              type="time"
+              step="300"
+              value={time}
+              onChange={(event) => onChange(buildDateTimeValue(date, event.target.value))}
+              className="h-11 w-full rounded-xl border border-white/5 bg-black/20 pl-10 pr-3 text-sm font-bold text-white outline-none [color-scheme:dark] hover:border-white/10 focus:border-[#1e4b64]/70"
+            />
+          </div>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <button type="button" onClick={setNow} className="rounded-lg bg-white/5 px-2.5 py-1.5 text-[10px] font-black uppercase text-white/55 transition-all hover:bg-white/10 hover:text-white">
+            Bây giờ
+          </button>
+          <button type="button" onClick={() => applyQuickDate(0)} className="rounded-lg bg-white/5 px-2.5 py-1.5 text-[10px] font-black uppercase text-white/55 transition-all hover:bg-white/10 hover:text-white">
+            Hôm nay
+          </button>
+          <button type="button" onClick={() => applyQuickDate(1)} className="rounded-lg bg-white/5 px-2.5 py-1.5 text-[10px] font-black uppercase text-white/55 transition-all hover:bg-white/10 hover:text-white">
+            Ngày mai
+          </button>
+          <button type="button" onClick={() => applyQuickDate(7)} className="rounded-lg bg-white/5 px-2.5 py-1.5 text-[10px] font-black uppercase text-white/55 transition-all hover:bg-white/10 hover:text-white">
+            +7 ngày
+          </button>
+        </div>
+        <p className="mt-3 text-xs font-bold text-white/45">{formatDateTimePreview(value)}</p>
+      </div>
+    </div>
+  );
+};
+
 type AdminPanelProps = {
   initialTab?: AdminTab;
 };
@@ -386,6 +503,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
     products: [] as { id: string; flashSalePrice: number; sold: number }[],
     startTime: '',
     endTime: '',
+  });
+  const [cheapChampionSettings, setCheapChampionSettings] = useState<CheapChampionSettings>({
+    isActive: true,
+    productIds: [],
+    startTime: '',
+    endTime: '',
+    discountType: 'percent',
+    discountValue: 0,
   });
   const [showSitemapPreview, setShowSitemapPreview] = useState(false);
   const [aiBlogSeed, setAiBlogSeed] = useState<{ prompt: string; key: number } | null>(null);
@@ -544,6 +669,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
           ...data,
           // Migration/Compatibility check
           products: data.products || (data.productIds || []).map((id: string) => ({ id, flashSalePrice: 0, sold: 0 }))
+        }));
+      }
+    });
+    getAdminSetting<Partial<CheapChampionSettings>>('cheapChampion').then(data => {
+      if (data) {
+        setCheapChampionSettings(prev => ({
+          ...prev,
+          ...data,
+          productIds: data.productIds || [],
+          startTime: data.startTime || '',
+          endTime: data.endTime || '',
+          discountType: data.discountType || 'percent',
+          discountValue: Number(data.discountValue) || 0,
         }));
       }
     });
@@ -824,6 +962,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
     }
   };
 
+  const handleSaveCheapChampion = async () => {
+    try {
+      await saveAdminSetting('cheapChampion', cheapChampionSettings);
+      toast.success('Đã lưu chương trình Rẻ vô địch!');
+    } catch {
+      toast.error('Lỗi khi lưu Rẻ vô địch');
+    }
+  };
+
   const handleDeleteMedia = async (id: string) => {
     if (!window.confirm('Xóa ảnh này khỏi thư viện?')) return;
     try {
@@ -945,7 +1092,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
   };
 
   const generateSitemapString = () => {
-    const baseUrl = 'https://shop-ur-sport.vercel.app';
+    const baseUrl = 'https://www.ursport.vn';
     const currentDate = new Date().toISOString().split('T')[0];
     
     const staticRoutes = [
@@ -1045,7 +1192,7 @@ Disallow: /checkout
 
 Crawl-delay: 1
 
-Sitemap: https://shop-ur-sport.vercel.app/sitemap.xml`;
+Sitemap: https://www.ursport.vn/sitemap.xml`;
 
     const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -3267,31 +3414,19 @@ Sitemap: https://shop-ur-sport.vercel.app/sitemap.xml`;
                       <Timer className="h-5 w-5 text-[#1e4b64]" />
                       <h4 className="text-white font-bold text-sm uppercase tracking-wider">Thời gian diễn ra</h4>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-[10px] font-black uppercase text-white/30 mb-1.5 block">Thời gian bắt đầu</label>
-                        <div className="relative">
-                          <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20" />
-                          <input 
-                            type="datetime-local"
-                            value={flashSaleSettings.startTime}
-                            onChange={(e) => setFlashSaleSettings(prev => ({ ...prev, startTime: e.target.value }))}
-                            className="w-full bg-[#0f1117] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#1e4b64]/50 transition-all"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-black uppercase text-white/30 mb-1.5 block">Thời gian kết thúc</label>
-                        <div className="relative">
-                          <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20" />
-                          <input 
-                            type="datetime-local"
-                            value={flashSaleSettings.endTime}
-                            onChange={(e) => setFlashSaleSettings(prev => ({ ...prev, endTime: e.target.value }))}
-                            className="w-full bg-[#0f1117] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#1e4b64]/50 transition-all"
-                          />
-                        </div>
-                      </div>
+                    <div className="grid grid-cols-1 gap-4">
+                      <CampaignDateTimePicker
+                        label="Thời gian bắt đầu"
+                        value={flashSaleSettings.startTime}
+                        onChange={(startTime) => setFlashSaleSettings(prev => ({ ...prev, startTime }))}
+                        quickHour={9}
+                      />
+                      <CampaignDateTimePicker
+                        label="Thời gian kết thúc"
+                        value={flashSaleSettings.endTime}
+                        onChange={(endTime) => setFlashSaleSettings(prev => ({ ...prev, endTime }))}
+                        quickHour={23}
+                      />
                     </div>
                   </div>
 
@@ -3454,6 +3589,208 @@ Sitemap: https://shop-ur-sport.vercel.app/sitemap.xml`;
                         </div>
                       );
                     })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'cheap-champion' && (
+            <div className="space-y-6">
+              <div className="bg-[#13161f] border border-white/5 rounded-2xl p-6">
+                <div className="flex flex-col gap-4 mb-8 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <h3 className="text-white font-black text-lg uppercase tracking-tight">Chương trình Rẻ vô địch</h3>
+                    <p className="text-white/30 text-sm mt-1">Chọn sản phẩm sẽ hiển thị nhãn Rẻ Vô Địch trên card sản phẩm.</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-xl border border-white/5">
+                      <span className="text-white/40 text-xs font-bold uppercase tracking-widest">Trạng thái:</span>
+                      <button
+                        type="button"
+                        onClick={() => setCheapChampionSettings(prev => ({ ...prev, isActive: !prev.isActive }))}
+                        className={cn(
+                          "px-3 py-1 rounded-lg text-[10px] font-black uppercase transition-all",
+                          cheapChampionSettings.isActive ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"
+                        )}
+                      >
+                        {cheapChampionSettings.isActive ? 'Đang bật' : 'Đang tắt'}
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleSaveCheapChampion}
+                      className="px-6 py-2 bg-[#1e4b64] hover:bg-[#153446] text-white text-sm font-bold rounded-xl shadow-lg shadow-[#1e4b64]/20 transition-all flex items-center gap-2"
+                    >
+                      Lưu chương trình
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-6 mb-6 lg:grid-cols-2">
+                  <div className="space-y-4 p-6 bg-white/[0.02] border border-white/5 rounded-2xl">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Timer className="h-5 w-5 text-[#1e4b64]" />
+                      <h4 className="text-white font-bold text-sm uppercase tracking-wider">Thời gian diễn ra</h4>
+                    </div>
+                    <div className="grid grid-cols-1 gap-4">
+                      <CampaignDateTimePicker
+                        label="Thời gian bắt đầu"
+                        value={cheapChampionSettings.startTime}
+                        onChange={(startTime) => setCheapChampionSettings(prev => ({ ...prev, startTime }))}
+                        quickHour={9}
+                      />
+                      <CampaignDateTimePicker
+                        label="Thời gian kết thúc"
+                        value={cheapChampionSettings.endTime}
+                        onChange={(endTime) => setCheapChampionSettings(prev => ({ ...prev, endTime }))}
+                        quickHour={23}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 p-6 bg-white/[0.02] border border-white/5 rounded-2xl">
+                    <div className="flex items-center gap-3 mb-2">
+                      <TrendingUp className="h-5 w-5 text-[#1e4b64]" />
+                      <h4 className="text-white font-bold text-sm uppercase tracking-wider">Giảm thêm giá hiện tại</h4>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-[1fr_1.2fr] gap-4">
+                      <div>
+                        <label className="text-[10px] font-black uppercase text-white/30 mb-1.5 block">Kiểu giảm</label>
+                        <div className="grid grid-cols-2 gap-2 rounded-xl bg-[#0f1117] p-1 border border-white/10">
+                          {([
+                            { value: 'percent', label: '%' },
+                            { value: 'fixed', label: '₫' },
+                          ] as const).map(option => (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => setCheapChampionSettings(prev => ({ ...prev, discountType: option.value }))}
+                              className={cn(
+                                "rounded-lg py-2 text-xs font-black transition-all",
+                                cheapChampionSettings.discountType === option.value
+                                  ? "bg-[#1e4b64] text-white"
+                                  : "text-white/35 hover:text-white"
+                              )}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-black uppercase text-white/30 mb-1.5 block">Giá trị giảm thêm</label>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            min="0"
+                            max={cheapChampionSettings.discountType === 'percent' ? 100 : undefined}
+                            value={cheapChampionSettings.discountValue}
+                            onChange={(e) => {
+                              const rawValue = Number(e.target.value) || 0;
+                              const discountValue = cheapChampionSettings.discountType === 'percent'
+                                ? Math.min(100, Math.max(0, rawValue))
+                                : Math.max(0, rawValue);
+                              setCheapChampionSettings(prev => ({ ...prev, discountValue }));
+                            }}
+                            className="w-full bg-[#0f1117] border border-white/10 rounded-xl px-4 py-2.5 pr-12 text-white text-sm font-bold focus:outline-none focus:border-[#1e4b64]/50 transition-all"
+                          />
+                          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-white/35">
+                            {cheapChampionSettings.discountType === 'percent' ? '%' : '₫'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-white/35 text-xs font-medium">
+                      Hệ thống giảm thêm trên giá đang hiển thị hiện tại của sản phẩm.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 mb-6 md:grid-cols-3">
+                  <div className="p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
+                    <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-2">Sản phẩm đã chọn</p>
+                    <p className="text-white font-black text-2xl">{cheapChampionSettings.productIds.length}</p>
+                  </div>
+                  <div className="p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
+                    <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-2">Nhãn hiển thị</p>
+                    <span className="inline-flex h-6 items-center rounded border border-[#ff4d2d] bg-white px-2 text-xs font-semibold text-[#ff4d2d]">Rẻ Vô Địch</span>
+                  </div>
+                  <div className="p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
+                    <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-2">Gợi ý</p>
+                    <p className="text-white/60 text-sm font-medium">Ưu tiên sản phẩm giá tốt, combo hoặc sản phẩm đang có giá khuyến mãi.</p>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex flex-col gap-4 mb-4 sm:flex-row sm:items-center sm:justify-between">
+                    <h4 className="text-white font-bold text-sm uppercase tracking-wider">Chọn sản phẩm tham gia</h4>
+                    <div className="relative w-full sm:w-64">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/20" />
+                      <input
+                        type="text"
+                        placeholder="Tìm sản phẩm..."
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        className="w-full bg-white/5 border border-white/5 rounded-lg pl-9 pr-4 py-1.5 text-xs text-white placeholder:text-white/20 outline-none focus:border-[#1e4b64]/50"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 max-h-[620px] overflow-y-auto pr-2 custom-scrollbar">
+                    {products
+                      .filter(product => product.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                      .sort((a, b) => {
+                        const isSelectedA = cheapChampionSettings.productIds.includes(a.id);
+                        const isSelectedB = cheapChampionSettings.productIds.includes(b.id);
+                        if (isSelectedA === isSelectedB) return 0;
+                        return isSelectedA ? -1 : 1;
+                      })
+                      .map(product => {
+                        const isSelected = cheapChampionSettings.productIds.includes(product.id);
+
+                        return (
+                          <button
+                            type="button"
+                            key={product.id}
+                            onClick={() => {
+                              setCheapChampionSettings(prev => ({
+                                ...prev,
+                                productIds: isSelected
+                                  ? prev.productIds.filter(id => id !== product.id)
+                                  : [...prev.productIds, product.id],
+                              }));
+                            }}
+                            className={cn(
+                              "relative text-left bg-[#0f1117] border rounded-xl p-3 transition-all group",
+                              isSelected
+                                ? "border-[#1e4b64] bg-[#1e4b64]/5 shadow-lg shadow-[#1e4b64]/10"
+                                : "border-white/5 hover:border-white/10"
+                            )}
+                          >
+                            <div className="aspect-square rounded-lg overflow-hidden mb-3 bg-white/5 relative">
+                              <img src={product.images[0]} alt={product.name} loading="lazy" className="w-full h-full object-cover" />
+                              {isSelected && (
+                                <div className="absolute inset-0 bg-[#1e4b64]/20 flex items-center justify-center">
+                                  <div className="h-8 w-8 bg-[#1e4b64] rounded-full flex items-center justify-center shadow-xl">
+                                    <CheckIcon className="h-4 w-4 text-white" />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            <p className="text-white text-[11px] font-bold line-clamp-2 leading-relaxed h-8">{product.name}</p>
+                            <div className="mt-3 flex items-center justify-between gap-2">
+                              <span className="text-white/50 text-xs font-black">{(product.discountPrice || product.price).toLocaleString('vi-VN')}₫</span>
+                              <span className={cn(
+                                "rounded-lg px-2 py-1 text-[10px] font-black uppercase",
+                                isSelected ? "bg-[#1e4b64]/20 text-[#8fd0ee]" : "bg-white/5 text-white/35"
+                              )}>
+                                {isSelected ? 'Đã chọn' : 'Chọn'}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
                   </div>
                 </div>
               </div>

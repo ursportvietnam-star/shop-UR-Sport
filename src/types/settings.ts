@@ -29,6 +29,15 @@ export interface FlashSaleSettings {
   endTime: string;
 }
 
+export interface CheapChampionSettings {
+  isActive: boolean;
+  productIds: string[];
+  startTime: string;
+  endTime: string;
+  discountType: 'fixed' | 'percent';
+  discountValue: number;
+}
+
 export interface BlogCategoryItem {
   id: number | string;
   label: string;

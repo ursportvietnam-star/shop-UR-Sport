@@ -21,6 +21,7 @@ import { WishlistProvider, useWishlist } from './WishlistContext';
 import { RecentlyViewedProvider, useRecentlyViewed } from './RecentlyViewedContext';
 import { ComparisonProvider, useComparison } from './ComparisonContext';
 import { ProductsProvider, useProducts } from './ProductsContext';
+import { PromotionProvider } from './PromotionContext';
 import { Toaster } from 'sonner';
 import { collection, getDoc, getDocs, doc, query, where } from 'firebase/firestore';
 import { db } from './firebase';
@@ -2327,6 +2328,7 @@ function AppContent() {
         <WishlistProvider>
         <RecentlyViewedProvider>
         <ComparisonProvider>
+        <PromotionProvider>
         <div className="min-h-screen bg-white font-sans selection:bg-black selection:text-white w-full overflow-x-hidden relative">
           {!isAdminRoute && (
             <Navbar 
@@ -2405,6 +2407,7 @@ function AppContent() {
           {/* Floating Contact Menu */}
           {!isAdminRoute && <FloatingContactMenu />}
         </div>
+        </PromotionProvider>
         </ComparisonProvider>
         </RecentlyViewedProvider>
         </WishlistProvider>

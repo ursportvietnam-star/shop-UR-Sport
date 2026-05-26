@@ -34,4 +34,4 @@ Disallow: /checkout
 # Crawl-delay (optional, for polite crawling)
 Crawl-delay: 1
 
-Sitemap: https://shop-ur-sport.vercel.app/sitemap.xml
+Sitemap: https://www.ursport.vn/sitemap.xml
