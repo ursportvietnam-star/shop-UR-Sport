@@ -1,8 +1,9 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { ArrowRight, ShoppingBag, X } from 'lucide-react';
 import { Product } from '../types';
-import { cn } from '@/lib/utils';
+import { cn, stripHtml } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ProductVariantPicker } from './ProductVariantPicker';
 
@@ -33,7 +34,11 @@ export function ProductQuickViewModal({
   onAddToCart,
   onViewDetails,
 }: ProductQuickViewModalProps) {
-  return (
+  const cleanDescription = React.useMemo(() => {
+    return stripHtml(product.metaDescription || product.description || '').slice(0, 220);
+  }, [product.description, product.metaDescription]);
+
+  const modal = (
     <AnimatePresence>
       {isOpen && (
         <motion.div
@@ -107,7 +112,11 @@ export function ProductQuickViewModal({
                 </div>
               </div>
 
-              <p className="mb-5 line-clamp-3 text-sm font-medium leading-6 text-zinc-500">{product.description}</p>
+              {cleanDescription && (
+                <p className="mb-5 line-clamp-3 text-sm font-medium leading-6 text-zinc-500">
+                  {cleanDescription}
+                </p>
+              )}
 
               <ProductVariantPicker
                 product={product}
@@ -143,4 +152,7 @@ export function ProductQuickViewModal({
       )}
     </AnimatePresence>
   );
+
+  if (typeof document === 'undefined') return modal;
+  return createPortal(modal, document.body);
 }

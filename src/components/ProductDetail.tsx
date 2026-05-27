@@ -107,6 +107,7 @@ export const ProductDetail: React.FC = () => {
   const [flashSaleCountdown, setFlashSaleCountdown] = useState({ h: '00', m: '00', s: '00', active: false });
   const [showStickyBar, setShowStickyBar] = useState(false);
   const productCanonical = product ? getProductPath(product) : '/shop';
+  const primaryImage = product?.images?.find(image => image?.trim()) || null;
   const recentlyViewedProducts = React.useMemo(() => {
     const productMap = new Map(products.map((item) => [item.id, item]));
     return recentProductIds
@@ -469,7 +470,40 @@ export const ProductDetail: React.FC = () => {
     );
   }
 
+  const hasVariantStock = Boolean(product.variants?.length);
+  const findVariant = (color: string, size: string) =>
+    product.variants?.find(variant => variant.color === color && variant.size === size);
+  const isColorUnavailable = (color: string) => {
+    if (!hasVariantStock) return false;
+    if (selectedSize) {
+      const variant = findVariant(color, selectedSize);
+      return !variant || Number(variant.stock || 0) <= 0;
+    }
+    return !product.variants?.some(variant => variant.color === color && Number(variant.stock || 0) > 0);
+  };
+  const isSizeUnavailable = (size: string) => {
+    if (!hasVariantStock) return false;
+    if (selectedColor) {
+      const variant = findVariant(selectedColor, size);
+      return !variant || Number(variant.stock || 0) <= 0;
+    }
+    return !product.variants?.some(variant => variant.size === size && Number(variant.stock || 0) > 0);
+  };
+  const selectedVariant = selectedColor && selectedSize ? findVariant(selectedColor, selectedSize) : null;
+  const selectedVariantOutOfStock = Boolean(hasVariantStock && selectedColor && selectedSize && (!selectedVariant || Number(selectedVariant.stock || 0) <= 0));
+  const selectedVariantStock = selectedVariant ? Number(selectedVariant.stock || 0) : null;
+
+  const ensureSelectedVariantAvailable = () => {
+    if (!selectedVariantOutOfStock) return true;
+    toast.error('Phân loại này đang hết hàng, vui lòng chọn màu hoặc size khác', {
+      position: 'top-center',
+    });
+    return false;
+  };
+
   const handleAddToCart = () => {
+    if (!ensureSelectedVariantAvailable()) return;
+
     const flashSaleProduct = flashSaleSettings?.products?.find((p: any) => p.id === product.id);
     const finalPrice = (flashSaleCountdown.active && flashSaleProduct) 
       ? flashSaleProduct.flashSalePrice 
@@ -480,13 +514,15 @@ export const ProductDetail: React.FC = () => {
     addToCart(cartProduct, selectedColor, selectedSize, quantity);
     showAddToCartToast({
       productName: product.name,
-      image: product.images?.[0],
+      image: primaryImage || undefined,
       meta: `${selectedColor} / Size ${selectedSize} / SL: ${quantity}`,
       onCheckout: () => navigate('/checkout'),
     });
   };
 
   const handleBuyNow = () => {
+    if (!ensureSelectedVariantAvailable()) return;
+
     const flashSaleProduct = flashSaleSettings?.products?.find((p: any) => p.id === product.id);
     const finalPrice = (flashSaleCountdown.active && flashSaleProduct) 
       ? flashSaleProduct.flashSalePrice 
@@ -504,7 +540,7 @@ export const ProductDetail: React.FC = () => {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="bg-white min-h-screen pt-2 pb-32 font-sans text-zinc-900"
+      className="bg-white min-h-screen pt-2 pb-20 md:pb-24 font-sans text-zinc-900"
     >
       {/* Breadcrumbs & Nav Row */}
       <motion.div
@@ -671,18 +707,27 @@ export const ProductDetail: React.FC = () => {
                   Màu sắc: <span className="text-[#1e4b64] font-bold ml-1">{selectedColor}</span>
                 </p>
                 <div className="flex flex-wrap gap-3">
-                  {(product.colors || []).map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => setSelectedColor(color)}
-                      className={cn(
-                        "px-6 h-12 rounded-xl border-2 transition-all font-bold uppercase text-[13px] tracking-wide",
-                        selectedColor === color ? "border-[#1e4b64] bg-blue-50/30 text-[#1e4b64]" : "border-zinc-100 text-zinc-600 hover:border-zinc-300"
-                      )}
-                    >
-                      {color}
-                    </button>
-                  ))}
+                  {(product.colors || []).map((color) => {
+                    const unavailable = isColorUnavailable(color);
+                    return (
+                      <button
+                        key={color}
+                        disabled={unavailable}
+                        onClick={() => {
+                          if (unavailable) return;
+                          setSelectedColor(color);
+                        }}
+                        className={cn(
+                          "relative px-6 h-12 rounded-xl border-2 transition-all font-bold uppercase text-[13px] tracking-wide overflow-hidden",
+                          selectedColor === color ? "border-[#1e4b64] bg-blue-50/30 text-[#1e4b64]" : "border-zinc-100 text-zinc-600 hover:border-zinc-300",
+                          unavailable && "cursor-not-allowed border-zinc-100 bg-zinc-50 text-zinc-300 opacity-55 hover:border-zinc-100 after:absolute after:left-3 after:right-3 after:top-1/2 after:h-px after:-rotate-12 after:bg-zinc-300 after:content-['']"
+                        )}
+                        title={unavailable ? `${color} hết hàng với size đang chọn` : color}
+                      >
+                        {color}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -690,24 +735,38 @@ export const ProductDetail: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <p className="text-[14px] font-bold text-zinc-900 uppercase tracking-wider">
                     Kích cỡ: <span className="text-[#1e4b64] font-bold ml-1">{selectedSize}</span>
+                    {selectedVariantStock !== null && !selectedVariantOutOfStock && (
+                      <span className="ml-2 text-[11px] font-bold normal-case tracking-normal text-zinc-400">
+                        Còn {selectedVariantStock}
+                      </span>
+                    )}
                   </p>
                   <button onClick={() => setIsSizeGuideOpen(true)} className="text-[12px] font-bold text-[#0068c9] hover:underline uppercase tracking-widest italic">
                     Size Guide
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-3">
-                  {(product.sizes || []).map(size => (
-                    <button
-                      key={size}
-                      onClick={() => setSelectedSize(size)}
-                      className={cn(
-                        "min-w-[70px] h-12 rounded-xl text-[14px] font-bold transition-all border-2 flex items-center justify-center",
-                        selectedSize === size ? "border-[#1e4b64] text-[#1e4b64] bg-blue-50/30" : "border-zinc-100 text-zinc-600 hover:border-zinc-300"
-                      )}
-                    >
-                      {size}
-                    </button>
-                  ))}
+                  {(product.sizes || []).map(size => {
+                    const unavailable = isSizeUnavailable(size);
+                    return (
+                      <button
+                        key={size}
+                        disabled={unavailable}
+                        onClick={() => {
+                          if (unavailable) return;
+                          setSelectedSize(size);
+                        }}
+                        className={cn(
+                          "relative min-w-[70px] h-12 rounded-xl text-[14px] font-bold transition-all border-2 flex items-center justify-center overflow-hidden",
+                          selectedSize === size ? "border-[#1e4b64] text-[#1e4b64] bg-blue-50/30" : "border-zinc-100 text-zinc-600 hover:border-zinc-300",
+                          unavailable && "cursor-not-allowed border-zinc-100 bg-zinc-50 text-zinc-300 opacity-55 hover:border-zinc-100 after:absolute after:left-2 after:right-2 after:top-1/2 after:h-px after:-rotate-12 after:bg-zinc-300 after:content-['']"
+                        )}
+                        title={unavailable ? `Size ${size} hết hàng với màu đang chọn` : `Size ${size}`}
+                      >
+                        {size}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -721,49 +780,57 @@ export const ProductDetail: React.FC = () => {
                     <Plus className="h-4 w-4" />
                   </button>
                 </div>
-                <button onClick={handleAddToCart} className="flex-1 h-full bg-[#f0f9ff] border-2 border-[#1e4b64] text-[#1e4b64] font-bold rounded-2xl text-[14px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-blue-100 transition-all active:scale-[0.98]">
+                <button
+                  onClick={handleAddToCart}
+                  disabled={selectedVariantOutOfStock}
+                  className="flex-1 h-full bg-[#f0f9ff] border-2 border-[#1e4b64] text-[#1e4b64] font-bold rounded-2xl text-[14px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-blue-100 transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-400"
+                >
                   <ShoppingCart className="h-5 w-5" /> Thêm vào giỏ
                 </button>
-                <button onClick={handleBuyNow} className="flex-1 h-full bg-[#1e4b64] text-white font-bold rounded-2xl text-[14px] uppercase tracking-widest hover:bg-[#153a4d] transition-all active:scale-[0.98] shadow-lg">
+                <button
+                  onClick={handleBuyNow}
+                  disabled={selectedVariantOutOfStock}
+                  className="flex-1 h-full bg-[#1e4b64] text-white font-bold rounded-2xl text-[14px] uppercase tracking-widest hover:bg-[#153a4d] transition-all active:scale-[0.98] shadow-lg disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:shadow-none"
+                >
                   Mua Ngay
                 </button>
               </div>
 
               {/* Trust Badges */}
-              <div className="pt-8 border-t border-zinc-100">
-                <div className="bg-zinc-50/50 rounded-2xl p-6 grid grid-cols-1 sm:grid-cols-3 gap-6">
-                  <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-xl bg-white flex items-center justify-center shadow-sm border border-zinc-100">
-                      <ShieldCheck className="h-6 w-6 text-[#1e4b64]" />
+              <div className="pt-5 sm:pt-8 border-t border-zinc-100">
+                <div className="bg-zinc-50/50 rounded-2xl px-4 py-3 sm:p-6 grid grid-cols-1 sm:grid-cols-3 gap-0 sm:gap-6">
+                  <div className="flex min-w-0 items-center gap-3 py-3 sm:gap-4 sm:py-0">
+                    <div className="h-10 w-10 shrink-0 rounded-xl bg-white flex items-center justify-center shadow-sm border border-zinc-100 sm:h-12 sm:w-12">
+                      <ShieldCheck className="h-5 w-5 text-[#1e4b64] sm:h-6 sm:w-6" />
                     </div>
-                    <div>
-                      <p className="text-[12px] font-black uppercase tracking-tight text-zinc-900">Cam kết chính hãng</p>
-                      <p className="text-[10px] text-zinc-400 font-bold uppercase">Hoàn tiền 200% nếu giả</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4 border-y sm:border-y-0 sm:border-x border-zinc-100 py-4 sm:py-0 sm:px-6">
-                    <div className="h-12 w-12 rounded-xl bg-white flex items-center justify-center shadow-sm border border-zinc-100">
-                      <RefreshCcw className="h-6 w-6 text-[#1e4b64]" />
-                    </div>
-                    <div>
-                      <p className="text-[12px] font-black uppercase tracking-tight text-zinc-900">7 ngày đổi trả</p>
-                      <p className="text-[10px] text-zinc-400 font-bold uppercase">Lỗi là đổi tận nơi</p>
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-black uppercase leading-tight tracking-tight text-zinc-900 sm:text-[12px]">Cam kết chính hãng</p>
+                      <p className="mt-0.5 text-[9px] text-zinc-400 font-bold uppercase leading-tight sm:text-[10px]">Hoàn tiền 200% nếu giả</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-xl bg-white flex items-center justify-center shadow-sm border border-zinc-100">
-                      <Truck className="h-6 w-6 text-[#1e4b64]" />
+                  <div className="flex min-w-0 items-center gap-3 border-y sm:border-y-0 sm:border-x border-zinc-100 py-3 sm:gap-4 sm:py-0 sm:px-6">
+                    <div className="h-10 w-10 shrink-0 rounded-xl bg-white flex items-center justify-center shadow-sm border border-zinc-100 sm:h-12 sm:w-12">
+                      <RefreshCcw className="h-5 w-5 text-[#1e4b64] sm:h-6 sm:w-6" />
                     </div>
-                    <div>
-                      <p className="text-[12px] font-black uppercase tracking-tight text-zinc-900">Giao hàng hỏa tốc</p>
-                      <p className="text-[10px] text-zinc-400 font-bold uppercase">Toàn quốc từ 2-3 ngày</p>
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-black uppercase leading-tight tracking-tight text-zinc-900 sm:text-[12px]">7 ngày đổi trả</p>
+                      <p className="mt-0.5 text-[9px] text-zinc-400 font-bold uppercase leading-tight sm:text-[10px]">Lỗi là đổi tận nơi</p>
+                    </div>
+                  </div>
+                  <div className="flex min-w-0 items-center gap-3 py-3 sm:gap-4 sm:py-0">
+                    <div className="h-10 w-10 shrink-0 rounded-xl bg-white flex items-center justify-center shadow-sm border border-zinc-100 sm:h-12 sm:w-12">
+                      <Truck className="h-5 w-5 text-[#1e4b64] sm:h-6 sm:w-6" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-black uppercase leading-tight tracking-tight text-zinc-900 sm:text-[12px]">Giao hàng hỏa tốc</p>
+                      <p className="mt-0.5 text-[9px] text-zinc-400 font-bold uppercase leading-tight sm:text-[10px]">Toàn quốc từ 2-3 ngày</p>
                     </div>
                   </div>
                 </div>
                 
-                <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 opacity-30 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-500">
+                <div className="mt-4 grid grid-cols-3 items-center justify-items-center gap-x-2 gap-y-2 opacity-40 grayscale transition-all duration-500 hover:grayscale-0 hover:opacity-100 min-[380px]:grid-cols-5 sm:mt-6 sm:flex sm:flex-wrap sm:justify-center sm:gap-x-6 sm:gap-y-2">
                   {["COD", "Bank Transfer", "Momo", "ZaloPay", "ShopeePay"].map((method) => (
-                    <span key={method} className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-900">
+                    <span key={method} className="max-w-full truncate text-[9px] font-black uppercase tracking-[0.16em] text-zinc-900 sm:text-[10px] sm:tracking-[0.2em]">
                       {method}
                     </span>
                   ))}
@@ -774,7 +841,7 @@ export const ProductDetail: React.FC = () => {
         </div>
 
         {recentlyViewedProducts.length > 0 && (
-          <section className="mt-14 border-t border-zinc-100 pt-10">
+          <section className="mt-8 border-t border-zinc-100 pt-6 sm:mt-12 sm:pt-8">
             <div className="mb-6 flex items-end justify-between gap-4">
               <div>
                 <p className="mb-2 text-[11px] font-black uppercase tracking-widest text-[#1e4b64]">
@@ -815,9 +882,11 @@ export const ProductDetail: React.FC = () => {
               className="fixed bottom-0 left-0 right-0 z-[60] bg-white border-t border-zinc-100 p-4 pb-safe-area shadow-[0_-10px_30px_rgba(0,0,0,0.05)] md:hidden"
             >
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-lg bg-zinc-100 overflow-hidden shrink-0">
-                  <img src={mainImage} alt={product.name} loading="lazy" className="w-full h-full object-cover" />
-                </div>
+                {mainImage && (
+                  <div className="w-12 h-12 rounded-lg bg-zinc-100 overflow-hidden shrink-0">
+                    <img src={mainImage} alt={product.name} loading="lazy" className="w-full h-full object-cover" />
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-bold text-zinc-900 truncate">{product.name}</p>
                   <p className="text-[14px] font-black text-[#ff3b30]">
@@ -829,7 +898,8 @@ export const ProductDetail: React.FC = () => {
                 </div>
                 <Button 
                   onClick={handleBuyNow}
-                  className="bg-[#1e4b64] text-white font-black uppercase text-[12px] tracking-widest px-6 h-12 rounded-xl shadow-lg shadow-blue-900/20 active:scale-95 transition-all"
+                  disabled={selectedVariantOutOfStock}
+                  className="bg-[#1e4b64] text-white font-black uppercase text-[12px] tracking-widest px-6 h-12 rounded-xl shadow-lg shadow-blue-900/20 active:scale-95 transition-all disabled:bg-zinc-300 disabled:shadow-none"
                 >
                   Mua ngay
                 </Button>
@@ -839,7 +909,7 @@ export const ProductDetail: React.FC = () => {
         </AnimatePresence>
 
         {/* Bottom: Description & Details */}
-        <div className="mt-12 pt-12 border-t border-zinc-100">
+        <div className="mt-8 pt-8 border-t border-zinc-100 sm:mt-12 sm:pt-10">
           <div className="space-y-12">
             {/* Full Width Content Section */}
             <div className="w-full space-y-8">
@@ -1059,7 +1129,7 @@ export const ProductDetail: React.FC = () => {
             </div>
 
             {/* Suggested Products */}
-            <div className="w-full pt-12 border-t border-zinc-200">
+            <div className="w-full pt-8 border-t border-zinc-200 sm:pt-12">
               <div className="flex items-center justify-between mb-10">
                 <h4 className="text-[20px] font-bold text-zinc-900 uppercase tracking-tight">CÓ THỂ BẠN CŨNG THÍCH</h4>
                 <Link to={`/apparel/${categorySlug || 'all'}`} className="text-[#1e4b64] text-[11px] sm:text-[14px] font-bold flex items-center gap-0.5 sm:gap-1 hover:opacity-80 transition-all group flex-shrink-0 whitespace-nowrap">
@@ -1101,7 +1171,7 @@ export const ProductDetail: React.FC = () => {
         </div>
 
         {/* Reviews Section */}
-        <div id="reviews-section" className="mt-12 bg-zinc-50/50 rounded-[40px] p-6 sm:p-8 border border-zinc-100 shadow-sm">
+        <div id="reviews-section" className="mt-8 bg-zinc-50/50 rounded-[28px] p-4 sm:mt-12 sm:rounded-[40px] sm:p-8 border border-zinc-100 shadow-sm">
           <div className="space-y-6">
             <div className="text-left">
               <h4 className="text-xl font-bold text-zinc-900 tracking-tight">Đánh giá sản phẩm</h4>
@@ -1392,16 +1462,18 @@ export const ProductDetail: React.FC = () => {
       </div>
 
       {/* Mobile Sticky Action Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-zinc-200 p-2.5 pb-safe flex gap-2 shadow-[0_-8px_20px_-10px_rgba(0,0,0,0.1)]">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-zinc-200 px-2.5 py-2 pb-safe flex gap-2 shadow-[0_-8px_20px_-10px_rgba(0,0,0,0.1)]">
         <button
           onClick={handleAddToCart}
-          className="flex-1 h-12 bg-[#f0f9ff] border-2 border-[#1e4b64] text-[#1e4b64] font-black rounded-xl text-[12px] uppercase tracking-wide flex items-center justify-center gap-2 active:scale-95 transition-transform whitespace-nowrap"
+          disabled={selectedVariantOutOfStock}
+          className="flex-1 h-12 bg-[#f0f9ff] border-2 border-[#1e4b64] text-[#1e4b64] font-black rounded-xl text-[12px] uppercase tracking-wide flex items-center justify-center gap-2 active:scale-95 transition-transform whitespace-nowrap disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-400"
         >
           <ShoppingCart className="h-4 w-4" /> Thêm
         </button>
         <button
           onClick={handleBuyNow}
-          className="flex-[1.15] h-12 bg-[#1e4b64] text-white font-black rounded-xl text-[12px] uppercase tracking-wide active:scale-95 transition-transform shadow-lg shadow-blue-500/20 whitespace-nowrap"
+          disabled={selectedVariantOutOfStock}
+          className="flex-[1.15] h-12 bg-[#1e4b64] text-white font-black rounded-xl text-[12px] uppercase tracking-wide active:scale-95 transition-transform shadow-lg shadow-blue-500/20 whitespace-nowrap disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:shadow-none"
         >
           Mua Ngay
         </button>

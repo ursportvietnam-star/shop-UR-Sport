@@ -15,7 +15,13 @@
     "ai:website": "node ai-advisor.mjs --mode=website",
     "ai:blog": "node ai-advisor.mjs --mode=blog",
     "ai:product": "node ai-advisor.mjs --mode=product",
-    "ai:export": "node ai-advisor.mjs --mode=full --export"
+    "ai:export": "node ai-advisor.mjs --mode=full --export",
+    "local-ai": "node scripts/local-ai-runner.mjs --mode=automation",
+    "local-ai:daily": "node scripts/local-ai-runner.mjs --mode=daily",
+    "local-ai:report": "node scripts/local-ai-runner.mjs --mode=automation",
+    "local-ai:weekly": "node scripts/local-ai-runner.mjs --mode=weekly",
+    "local-ai:product": "node scripts/local-ai-runner.mjs --mode=product",
+    "local-ai:all": "node scripts/local-ai-runner.mjs --mode=all"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",

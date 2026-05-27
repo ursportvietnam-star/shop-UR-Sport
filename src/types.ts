@@ -17,6 +17,15 @@ export interface CategoryInfo {
   icon: string;
 }
 
+export interface ProductVariant {
+  id: string;
+  color: string;
+  size: string;
+  price: number;
+  stock: number;
+  sku?: string;
+}
+
 export interface Product {
   id: string;
   productCode?: string;
@@ -30,6 +39,7 @@ export interface Product {
   category: Category;
   colors: string[];
   sizes: string[];
+  variants?: ProductVariant[];
   stock: number;
   rating: number;
   reviewsCount: number;

@@ -5,6 +5,8 @@ import { ChevronRight, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getProductPath } from '../lib/productUrls';
 
+const PRODUCTS_PER_ROW = 6;
+
 interface BestSellerProps {
   products: Product[];
 }
@@ -13,8 +15,8 @@ export function BestSeller({ products }: BestSellerProps) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'new' | 'best_seller'>('new');
   const [visibleCounts, setVisibleCounts] = useState<Record<'new' | 'best_seller', number>>({
-    new: 8,
-    best_seller: 8
+    new: PRODUCTS_PER_ROW,
+    best_seller: PRODUCTS_PER_ROW
   });
 
   const newProducts = products.filter(p => p.isNew);
@@ -31,7 +33,7 @@ export function BestSeller({ products }: BestSellerProps) {
   const handleShowMore = () => {
     setVisibleCounts(prev => ({
       ...prev,
-      [activeTab]: prev[activeTab] + 4
+      [activeTab]: prev[activeTab] + PRODUCTS_PER_ROW
     }));
   };
 
@@ -71,7 +73,7 @@ export function BestSeller({ products }: BestSellerProps) {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-x-2.5 gap-y-6 sm:gap-x-4 sm:gap-y-10 lg:grid-cols-4 lg:gap-x-5 lg:gap-y-12">
+      <div className="grid grid-cols-2 gap-x-2.5 gap-y-6 sm:grid-cols-3 sm:gap-x-4 sm:gap-y-10 lg:grid-cols-5 lg:gap-x-5 lg:gap-y-12 2xl:grid-cols-6">
         {displayProducts.map((product) => (
           <ProductCard 
             key={product.id} 

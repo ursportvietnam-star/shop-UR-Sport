@@ -989,7 +989,7 @@ export function AISeoReportPanel({
           <textarea
             value={gscImportText}
             onChange={event => setGscImportText(event.target.value)}
-            placeholder='[{"page":"https://shop-ur-sport.vercel.app/ao-thun-nam","query":"áo thun nam","clicks":20,"impressions":1200,"ctr":0.016,"position":8.4}]'
+            placeholder='[{"page":"https://www.ursport.vn/ao-thun-nam","query":"áo thun nam","clicks":20,"impressions":1200,"ctr":0.016,"position":8.4}]'
             className="min-h-24 rounded-xl border border-white/10 bg-black/20 px-4 py-3 font-mono text-xs leading-5 text-white outline-none transition placeholder:text-white/20 focus:border-emerald-400/40"
           />
           <button

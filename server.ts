@@ -255,7 +255,8 @@ async function startServer() {
   // 2. CORS Middleware
   app.use((req, res, next) => {
     const allowedOrigins = [
-      "https://shop-ur-sport.vercel.app",
+      "https://www.ursport.vn",
+      "https://ursport.vn",
       "https://shop-ur-sport.vercel.app",
       "http://localhost:5173",
       "http://localhost:3000"

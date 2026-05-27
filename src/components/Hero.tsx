@@ -8,6 +8,31 @@ import { getDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { readLocalHomepageBanners } from '../lib/homepageConfig';
 
+const splitHeroTitle = (title: string) => {
+  const normalized = title.replace(/\s+/g, ' ').trim();
+  if (!normalized) return ['UR Sport'];
+  if (normalized.includes('\n')) return normalized.split('\n').map(line => line.trim()).filter(Boolean).slice(0, 2);
+  if (normalized.length <= 32) return [normalized];
+
+  const separators = [' - ', ' – ', ' — ', ', '];
+  for (const separator of separators) {
+    const index = normalized.indexOf(separator);
+    if (index > 12 && index < normalized.length - 12) {
+      return [
+        normalized.slice(0, index).trim(),
+        normalized.slice(index + separator.length).trim(),
+      ];
+    }
+  }
+
+  const words = normalized.split(' ');
+  const midpoint = Math.ceil(words.length / 2);
+  return [
+    words.slice(0, midpoint).join(' '),
+    words.slice(midpoint).join(' '),
+  ].filter(Boolean);
+};
+
 export const Hero: React.FC<{ onShopClick: () => void; headingOverride?: string }> = ({ onShopClick, headingOverride }) => {
   const navigate = useNavigate();
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -88,6 +113,8 @@ export const Hero: React.FC<{ onShopClick: () => void; headingOverride?: string 
     </div>
   );
 
+  const heroTitleLines = splitHeroTitle(headingOverride || activeBanners[currentIndex]?.title || 'UR Sport');
+
   return (
     <div className="relative h-[560px] sm:h-[clamp(360px,36vw,520px)] w-full overflow-hidden bg-[#dceefa] group/hero">
       <AnimatePresence mode="popLayout">
@@ -131,7 +158,7 @@ export const Hero: React.FC<{ onShopClick: () => void; headingOverride?: string 
       )}
 
       <div className="relative mx-auto flex h-full max-w-[1440px] flex-col justify-end px-6 pb-20 sm:px-12 sm:pb-16 lg:px-20">
-        <div className="relative z-10 max-w-[560px]">
+        <div className="relative z-10 max-w-[860px]">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -149,13 +176,12 @@ export const Hero: React.FC<{ onShopClick: () => void; headingOverride?: string 
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 30 }}
                   transition={{ duration: 0.6, ease: "easeOut" }}
-                  className="max-w-[13ch] text-[30px] font-black uppercase leading-[0.92] tracking-tight text-white drop-shadow-xl sm:text-[42px] lg:text-[50px]"
+                  className="text-balance text-[24px] font-extrabold uppercase leading-[1.08] tracking-[0.01em] text-white drop-shadow-xl sm:text-[34px] sm:leading-[1.04] lg:text-[44px] xl:text-[48px]"
                 >
-                  {(headingOverride || activeBanners[currentIndex]?.title || "UR Sport").split('\n').slice(0, 2).map((line: string, i: number) => (
-                    <React.Fragment key={i}>
-                      {i === 1 ? <span className="text-white/80">{line}</span> : line}
-                      {i === 0 && <br />}
-                    </React.Fragment>
+                  {heroTitleLines.map((line: string, i: number) => (
+                    <span key={i} className={cn("block", i === 1 && "text-white/90")}>
+                      {line}
+                    </span>
                   ))}
                 </motion.h1>
               </AnimatePresence>

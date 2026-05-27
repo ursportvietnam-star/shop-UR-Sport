@@ -39,7 +39,7 @@ export const buildSeoActionPrompt = (
 
   return JSON.stringify({
     brand: 'URSport',
-    site: 'https://shop-ur-sport.vercel.app',
+    site: 'https://www.ursport.vn',
     opportunity,
     relatedProducts,
     relatedBlogs,

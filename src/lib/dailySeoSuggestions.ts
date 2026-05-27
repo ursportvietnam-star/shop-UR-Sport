@@ -201,7 +201,7 @@ const parsePlanFile = (raw: string, sourceFile: string): SeoSuggestion[] => {
       intent: current.intent || 'Informational',
       funnel: current.funnel || 'TOFU',
       secondaryKeywords: current.secondaryKeywords || '',
-      url: current.url || `https://shop-ur-sport.vercel.app/blog/${current.slug}`,
+      url: current.url || `https://www.ursport.vn/blog/${current.slug}`,
       seoTitle: current.seoTitle || `${compactTitle(current.title)} | URSport`,
       seoDescription: current.seoDescription || buildMetaDescription({
         title: current.title,

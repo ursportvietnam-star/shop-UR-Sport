@@ -569,7 +569,7 @@ export function CategorySeoManager() {
                       type="text"
                       value={seoData.seoCanonical}
                       onChange={e => updateField('seoCanonical', e.target.value)}
-                      placeholder="VD: https://shop-ur-sport.vercel.app/apparel/ao-thun-nam"
+                      placeholder="VD: https://www.ursport.vn/ao-thun-nam"
                       className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm outline-none focus:border-[#1e4b64] transition-colors placeholder:text-white/20"
                     />
                   </div>

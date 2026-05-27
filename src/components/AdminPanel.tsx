@@ -1207,28 +1207,38 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
     toast.success('Đã tải xuống robots.txt!');
   };
 
-  const handleApplyAIProduct = (data: AIProductData) => {
+  const handleApplyAIProduct = (data: AIProductData, sourceProduct?: Product | null) => {
     const intro = data.shortDescription?.trim() ? `<p><strong>${data.shortDescription.trim()}</strong></p><p><br></p>` : '';
     const fullDescHtml = `${intro}${data.descriptionHtml || ''}`;
     const newProduct: Partial<Product> = {
-      id: `ai_${Date.now()}`,
-      name: data.name,
-      slug: data.slug,
+      ...(sourceProduct || {}),
+      id: sourceProduct?.id || `ai_${Date.now()}`,
+      name: data.name || sourceProduct?.name,
+      slug: data.slug || sourceProduct?.slug,
       description: fullDescHtml,
       seoTitle: data.metaTitle,
       metaDescription: data.metaDescription,
       keywords: data.seoKeywords,
-      specifications: fullDescHtml,
-      brand: 'UR SPORT',
-      origin: 'Việt Nam',
-      material: 'Cotton Premium',
-      style: 'Slim Fit',
-      fashionStyle: 'Thể thao, Cơ bản',
-      collarType: 'Cổ tròn'
+      specifications: sourceProduct?.specifications || fullDescHtml,
+      features: data.bulletBenefits?.length ? data.bulletBenefits : sourceProduct?.features,
+      brand: sourceProduct?.brand || 'UR SPORT',
+      origin: sourceProduct?.origin || 'Việt Nam',
+      material: sourceProduct?.material || 'Cotton Premium',
+      style: sourceProduct?.style || 'Slim Fit',
+      fashionStyle: sourceProduct?.fashionStyle || 'Thể thao, Cơ bản',
+      collarType: sourceProduct?.collarType || 'Cổ tròn',
+      price: sourceProduct?.price || 0,
+      stock: sourceProduct?.stock || 0,
+      colors: sourceProduct?.colors || [],
+      sizes: sourceProduct?.sizes || [],
+      images: sourceProduct?.images || [],
+      category: sourceProduct?.category || 'Áo thun nam',
+      rating: sourceProduct?.rating || 0,
+      reviewsCount: sourceProduct?.reviewsCount || 0,
     };
     setEditingProduct(newProduct as Product);
     setIsAddModalOpen(true);
-    toast.success('Đã áp dụng nội dung AI vào form sản phẩm!');
+    toast.success(sourceProduct ? 'Đã mở sản phẩm với nội dung AI để bạn duyệt!' : 'Đã áp dụng nội dung AI vào form sản phẩm!');
   };
 
   const handleApplyAIBlog = (data: AIBlogData) => {
@@ -2978,7 +2988,7 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
           {/* ─── AI PRODUCT ASSISTANT ─── */}
           {activeTab === 'ai-product' && (
             <React.Suspense fallback={<AdminTabFallback />}>
-              <AIProductAssistant onApply={handleApplyAIProduct} />
+              <AIProductAssistant products={products} onApply={handleApplyAIProduct} />
             </React.Suspense>
           )}
 

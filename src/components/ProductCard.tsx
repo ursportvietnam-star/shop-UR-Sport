@@ -29,7 +29,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [isHovered, setIsHovered] = useState(false);
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
-  const [quickViewImage, setQuickViewImage] = useState(product.images?.[0] || '');
+  const primaryImage = product.images?.find(image => image?.trim()) || null;
+  const [quickViewImage, setQuickViewImage] = useState(primaryImage || '');
   const liked = isWishlisted(product.id);
   const compared = isCompared(product.id);
   const showCheapChampionBadge = isCheapChampionProduct(product.id);
@@ -39,6 +40,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
   const displayPrice = cheapChampionPrice ?? currentBasePrice;
   const compareAtPrice = cheapChampionPrice !== null ? currentBasePrice : product.discountPrice ? product.price : null;
   const effectiveProduct = cheapChampionPrice !== null ? { ...product, discountPrice: cheapChampionPrice } : product;
+  const selectedVariant = product.variants?.find(variant => variant.color === selectedColor && variant.size === selectedSize);
+  const selectedVariantOutOfStock = Boolean(product.variants?.length && selectedSize && (!selectedVariant || Number(selectedVariant.stock || 0) <= 0));
 
   const addSelectedToCart = (closeQuickView = false) => {
     if (!selectedSize && product.sizes && product.sizes.length > 0) {
@@ -48,10 +51,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
       return;
     }
 
+    if (selectedVariantOutOfStock) {
+      toast.error('Phân loại này đang hết hàng, vui lòng chọn màu hoặc size khác', {
+        position: 'top-center'
+      });
+      return;
+    }
+
     addToCart(effectiveProduct, selectedColor, selectedSize || 'Free Size', 1);
     showAddToCartToast({
       productName: product.name,
-      image: product.images?.[0],
+      image: primaryImage || undefined,
       meta: `Màu: ${selectedColor} / Size: ${selectedSize || 'Free Size'}`,
       onCheckout: () => navigate('/checkout'),
     });
@@ -61,7 +71,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setQuickViewImage(product.images?.[0] || '');
+    setQuickViewImage(primaryImage || '');
     setIsQuickViewOpen(true);
   };
 
@@ -109,9 +119,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
         <div className="relative aspect-[4/5] w-full overflow-hidden rounded-t-2xl bg-[#f8f8f8]">
           <AnimatePresence mode="wait">
             <motion.img
-              key={product.images?.[0]}
+              key={primaryImage || product.id}
               initial={{ opacity: 0.9 }} animate={{ opacity: 1 }} exit={{ opacity: 0.9 }}
-              src={product.images?.[0] || ''}
+              src={primaryImage || '/images/og-ursport.svg'}
               alt={product.name}
               loading="lazy"
               className="h-full w-full scale-[1.06] object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.09]"
@@ -149,7 +159,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              setQuickViewImage(product.images?.[0] || '');
+              setQuickViewImage(primaryImage || '');
               setIsQuickViewOpen(true);
             }}
             className="absolute right-2 top-12 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/85 text-zinc-500 opacity-100 shadow-sm backdrop-blur-md transition-all hover:bg-[#1e4b64] hover:text-white active:scale-90 sm:right-2.5 sm:top-12 sm:opacity-0 sm:group-hover:opacity-100"

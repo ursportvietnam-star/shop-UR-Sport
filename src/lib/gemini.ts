@@ -426,9 +426,15 @@ async function callGemini(systemInstruction: string, userPrompt: string) {
     };
 
     try {
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) throw new Error('Ban can dang nhap admin de dung Local AI.');
+
       const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
         body: JSON.stringify(payload)
       });
 

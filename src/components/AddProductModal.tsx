@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Save, Eye, Settings, Star, Check, AlignLeft, AlignCenter, AlignRight, Type, Tag, Code, TrendingUp, Trash2, Upload, Link as LinkIcon } from 'lucide-react';
+import { X, Save, Eye, Settings, Star, Check, AlignLeft, AlignCenter, AlignRight, Type, Tag, Code, TrendingUp, Trash2, Upload, Link as LinkIcon, CircleCheck, CircleAlert, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { collection, addDoc, serverTimestamp, updateDoc, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -12,6 +12,7 @@ import ReactQuill, { Quill } from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { normalizeProductSlug } from '../lib/productUrls';
 import { uploadLocalImage } from '../lib/localMediaUpload';
+import { generateProductSeoFix } from '../lib/gemini';
 
 const DEFAULT_PRODUCT_SIZES = ['M', 'L', 'XL', 'XXL', '3XL', '4XL'];
 const DEFAULT_PRODUCT_SIZE_TEXT = DEFAULT_PRODUCT_SIZES.join(',');
@@ -168,7 +169,7 @@ class CaptionBlot extends Block {
 }
 Quill.register(CaptionBlot as any, true);
 // ───────────────────────────────────────────────────────────────────────
-import { Category, Product } from '../types';
+import { Category, Product, ProductVariant } from '../types';
 import { cn } from '@/lib/utils';
 import {
   canonicalCategoryLabel,
@@ -186,6 +187,104 @@ interface AddProductModalProps {
   product?: Product | null;
 }
 
+type ColorVariantForm = { name: string; image: string };
+type ProductVariantForm = {
+  id: string;
+  color: string;
+  size: string;
+  price: string;
+  stock: string;
+  sku: string;
+};
+type VariantBulkForm = {
+  price: string;
+  stock: string;
+  sku: string;
+};
+type SeoChecklistFixId =
+  | 'name'
+  | 'description'
+  | 'seoTitle'
+  | 'metaDescription'
+  | 'keywords'
+  | 'brand'
+  | 'attributes'
+  | 'variants'
+  | 'images';
+type SeoChecklistItem = {
+  id: SeoChecklistFixId;
+  label: string;
+  detail: string;
+  passed: boolean;
+  aiFixable: boolean;
+};
+
+const parseSizeList = (value: string) => {
+  const parsed = value.split(',').map(size => size.trim()).filter(Boolean);
+  return parsed.length > 0 ? parsed : DEFAULT_PRODUCT_SIZES;
+};
+
+const getVariantId = (color: string, size: string) =>
+  `${color.trim().toLowerCase()}__${size.trim().toLowerCase()}`;
+
+const buildProductSku = (productCode: string, color: string, size: string) =>
+  [normalizeProductCode(productCode), color, size]
+    .map(part => String(part || '').trim().toUpperCase().replace(/\s+/g, '-').replace(/[^A-Z0-9-]/g, ''))
+    .filter(Boolean)
+    .join('-');
+
+const toVariantForm = (variant: ProductVariant): ProductVariantForm => ({
+  id: variant.id || getVariantId(variant.color, variant.size),
+  color: variant.color,
+  size: variant.size,
+  price: variant.price?.toString() || '',
+  stock: variant.stock?.toString() || '',
+  sku: variant.sku || '',
+});
+
+const buildVariantMatrix = (
+  colorVariants: ColorVariantForm[],
+  sizes: string[],
+  existing: ProductVariantForm[],
+  defaults: { price: string; stock: string; productCode: string },
+) => {
+  const existingById = new Map(existing.map(item => [item.id || getVariantId(item.color, item.size), item]));
+  const colors = colorVariants.map(variant => variant.name.trim()).filter(Boolean);
+
+  return colors.flatMap(color =>
+    sizes.map(size => {
+      const id = getVariantId(color, size);
+      const found = existingById.get(id);
+      return {
+        id,
+        color,
+        size,
+        price: found?.price || defaults.price,
+        stock: found?.stock || defaults.stock,
+        sku: found?.sku || buildProductSku(defaults.productCode, color, size),
+      };
+    }),
+  );
+};
+
+const normalizeVariantPayload = (rows: ProductVariantForm[]): ProductVariant[] =>
+  rows.map(row => ({
+    id: row.id || getVariantId(row.color, row.size),
+    color: row.color,
+    size: row.size,
+    price: Number(row.price || 0),
+    stock: Number(row.stock || 0),
+    sku: row.sku.trim() || undefined,
+  }));
+
+const stripHtmlText = (value = '') =>
+  value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+
+const clampText = (value: string, maxLength: number) => {
+  const trimmed = value.replace(/\s+/g, ' ').trim();
+  return trimmed.length <= maxLength ? trimmed : `${trimmed.slice(0, maxLength - 1).trim()}…`;
+};
+
 interface ImageToolbarState {
   el: HTMLImageElement;
   top: number;
@@ -195,9 +294,13 @@ interface ImageToolbarState {
 
 export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onSuccess, product }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const leftScrollerRef = useRef<HTMLDivElement>(null);
   const quillRef = useRef<any>(null);
   const editorWrapRef = useRef<HTMLDivElement>(null);
+  const salesInfoRef = useRef<HTMLElement>(null);
   const [imageToolbar, setImageToolbar] = useState<ImageToolbarState | null>(null);
+  const [activeQuickTab, setActiveQuickTab] = useState<'description' | 'sales'>('description');
+  const [aiFixingChecklistId, setAiFixingChecklistId] = useState<SeoChecklistFixId | null>(null);
   const [captionDraft, setCaptionDraft] = useState('');
   const [showCaption, setShowCaption] = useState(false);
   const [altDraft, setAltDraft] = useState('');
@@ -418,7 +521,13 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
     seoTitle: '',
     metaDescription: '',
     keywords: '',
-    colorVariants: [] as {name: string, image: string}[],
+    colorVariants: [] as ColorVariantForm[],
+    variants: [] as ProductVariantForm[],
+    variantBulk: {
+      price: '',
+      stock: '',
+      sku: '',
+    } as VariantBulkForm,
     extraImages: [] as string[],
     coverImage: '',
     specifications: '',
@@ -520,6 +629,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
 
       const extraImages = [...(product.images || [])];
       const coverImage = product.images?.[0] || colorVariants[0]?.image || '';
+      const variants = (product.variants || []).map(toVariantForm);
 
       setFormData({
         productCode: getInitialProductCode(product),
@@ -536,6 +646,12 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         metaDescription: product.metaDescription || '',
         keywords: product.keywords || '',
         colorVariants,
+        variants,
+        variantBulk: {
+          price: product.price?.toString() || '',
+          stock: product.stock?.toString() || '',
+          sku: getInitialProductCode(product),
+        },
         extraImages,
         coverImage,
         specifications: product.specifications || '',
@@ -585,6 +701,12 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         metaDescription: '',
         keywords: '',
         colorVariants: [],
+        variants: [],
+        variantBulk: {
+          price: '',
+          stock: '',
+          sku: '',
+        },
         extraImages: [],
         coverImage: '',
         specifications: '',
@@ -743,6 +865,14 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
     try {
       const parsedSizes = formData.sizes.split(',').map(c => c.trim()).filter(Boolean);
       const validVariants = formData.colorVariants.filter(v => v.name.trim() !== '');
+      const finalSizes = parsedSizes.length > 0 ? parsedSizes : DEFAULT_PRODUCT_SIZES;
+      const variantRows = buildVariantMatrix(validVariants, finalSizes, formData.variants, {
+        price: formData.price,
+        stock: formData.stock,
+        productCode,
+      });
+      const productVariants = normalizeVariantPayload(variantRows);
+      const totalVariantStock = productVariants.reduce((sum, variant) => sum + Number(variant.stock || 0), 0);
       
       // Only use extraImages for the main gallery, don't auto-include all variant images
       let allImages = [...formData.extraImages].filter(Boolean);
@@ -775,8 +905,9 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         images: allImages,
         price: Number(formData.price),
         discountPrice: formData.discountPrice ? Number(formData.discountPrice) : null,
-        stock: Number(formData.stock),
-        sizes: parsedSizes.length > 0 ? parsedSizes : DEFAULT_PRODUCT_SIZES,
+        stock: productVariants.length > 0 ? totalVariantStock : Number(formData.stock),
+        sizes: finalSizes,
+        variants: productVariants,
         sizeGuideUrl: formData.sizeGuideUrl,
         slug: normalizeProductSlug(formData.slug, formData.name),
         seoTitle: formData.seoTitle,
@@ -825,6 +956,12 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
           metaDescription: '',
           keywords: '',
           colorVariants: [],
+          variants: [],
+          variantBulk: {
+            price: '',
+            stock: '',
+            sku: '',
+          },
           extraImages: [],
           coverImage: '',
           specifications: '',
@@ -851,6 +988,15 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         const localId = product && product.id && !product.id.startsWith('ai_')
           ? product.id
           : `local-product-${Date.now()}`;
+        const localSizes = parseSizeList(formData.sizes);
+        const localColorVariants = formData.colorVariants.filter(v => v.name.trim());
+        const localVariantRows = buildVariantMatrix(localColorVariants, localSizes, formData.variants, {
+          price: formData.price,
+          stock: formData.stock,
+          productCode,
+        });
+        const localProductVariants = normalizeVariantPayload(localVariantRows);
+        const localTotalStock = localProductVariants.reduce((sum, variant) => sum + Number(variant.stock || 0), 0);
         const localProduct = stripUndefinedValues({
           ...(product || {}),
           productCode,
@@ -866,8 +1012,9 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
           ].filter(Boolean),
           price: Number(formData.price),
           discountPrice: formData.discountPrice ? Number(formData.discountPrice) : undefined,
-          stock: Number(formData.stock),
-          sizes: formData.sizes.split(',').map(size => size.trim()).filter(Boolean),
+          stock: localProductVariants.length > 0 ? localTotalStock : Number(formData.stock),
+          sizes: localSizes,
+          variants: localProductVariants,
           sizeGuideUrl: formData.sizeGuideUrl,
           slug: normalizeProductSlug(formData.slug, formData.name),
           seoTitle: formData.seoTitle,
@@ -1067,6 +1214,53 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
     toast.success(alt ? 'Đã thêm thẻ alt cho ảnh' : 'Đã xóa thẻ alt khỏi ảnh');
   };
 
+  const selectedSizes = React.useMemo(() => parseSizeList(formData.sizes), [formData.sizes]);
+  const variantMatrixRows = React.useMemo(
+    () => buildVariantMatrix(formData.colorVariants, selectedSizes, formData.variants, {
+      price: formData.price,
+      stock: formData.stock,
+      productCode: formData.productCode,
+    }),
+    [formData.colorVariants, formData.sizes, formData.variants, formData.price, formData.stock, formData.productCode, selectedSizes],
+  );
+  const variantStockTotal = variantMatrixRows.reduce((sum, row) => sum + Number(row.stock || 0), 0);
+
+  const updateVariantRow = (id: string, field: keyof Pick<ProductVariantForm, 'price' | 'stock' | 'sku'>, value: string) => {
+    setFormData(prev => {
+      const rows = buildVariantMatrix(prev.colorVariants, parseSizeList(prev.sizes), prev.variants, {
+        price: prev.price,
+        stock: prev.stock,
+        productCode: prev.productCode,
+      });
+      return {
+        ...prev,
+        variants: rows.map(row => row.id === id ? { ...row, [field]: value } : row),
+      };
+    });
+  };
+
+  const applyBulkToVariants = () => {
+    setFormData(prev => {
+      const rows = buildVariantMatrix(prev.colorVariants, parseSizeList(prev.sizes), prev.variants, {
+        price: prev.price,
+        stock: prev.stock,
+        productCode: prev.productCode,
+      });
+      return {
+        ...prev,
+        variants: rows.map(row => ({
+          ...row,
+          price: prev.variantBulk.price || row.price,
+          stock: prev.variantBulk.stock || row.stock,
+          sku: prev.variantBulk.sku
+            ? buildProductSku(prev.variantBulk.sku, row.color, row.size)
+            : row.sku,
+        })),
+      };
+    });
+    toast.success('Da ap dung cho tat ca phan loai');
+  };
+
   const parentCategoryOptions = productCategoryOptions.filter(option => !option.parent);
   const getChildCategoryOptions = (parentLabel: string) => productCategoryOptions.filter(
     option => option.parent && normalizeMenuLabel(option.parent) === normalizeMenuLabel(parentLabel)
@@ -1074,6 +1268,245 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
   const orphanCategoryOptions = productCategoryOptions.filter(option =>
     option.parent && !parentCategoryOptions.some(parent => normalizeMenuLabel(parent.label) === normalizeMenuLabel(option.parent))
   );
+
+  const scrollToQuickSection = (section: 'description' | 'sales') => {
+    setActiveQuickTab(section);
+    const target = section === 'description' ? editorWrapRef.current : salesInfoRef.current;
+    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const handleLeftColumnScroll = () => {
+    const scroller = leftScrollerRef.current;
+    const salesSection = salesInfoRef.current;
+    if (!scroller || !salesSection) return;
+
+    const scrollerTop = scroller.getBoundingClientRect().top;
+    const salesTop = salesSection.getBoundingClientRect().top - scrollerTop;
+    setActiveQuickTab(salesTop <= 120 ? 'sales' : 'description');
+  };
+
+  const currentDescriptionHtml = isHtmlMode ? htmlSource : formData.description;
+  const currentDescriptionText = stripHtmlText(currentDescriptionHtml);
+  const imageCount = React.useMemo(() => {
+    const galleryImages = formData.extraImages.filter(Boolean);
+    const variantImagesNotInGallery = formData.colorVariants
+      .map(variant => variant.image)
+      .filter(image => image && !galleryImages.includes(image));
+    const coverImageCount = formData.coverImage && !galleryImages.includes(formData.coverImage) ? 1 : 0;
+    return galleryImages.length + variantImagesNotInGallery.length + coverImageCount;
+  }, [formData.coverImage, formData.extraImages, formData.colorVariants]);
+  const keywordCount = formData.keywords.split(',').map(keyword => keyword.trim()).filter(Boolean).length;
+  const filledAttributeCount = [
+    formData.brand,
+    formData.origin,
+    formData.style,
+    formData.material,
+    formData.fashionStyle,
+    formData.collarType,
+  ].filter(Boolean).length;
+  const seoChecklistItems: SeoChecklistItem[] = [
+    {
+      id: 'name',
+      label: 'Tên sản phẩm chuẩn SEO',
+      detail: `${formData.name.trim().length}/100 ký tự, nên có 25-100 ký tự`,
+      passed: formData.name.trim().length >= 25 && formData.name.trim().length <= 100,
+      aiFixable: true,
+    },
+    {
+      id: 'images',
+      label: 'Ảnh sản phẩm đầy đủ',
+      detail: `${imageCount}/5 ảnh, nên có ít nhất 5 ảnh rõ sản phẩm`,
+      passed: imageCount >= 5,
+      aiFixable: false,
+    },
+    {
+      id: 'description',
+      label: 'Mô tả đủ nội dung',
+      detail: `${currentDescriptionText.length} ký tự, nên có từ 700 ký tự hoặc hơn`,
+      passed: currentDescriptionText.length >= 700,
+      aiFixable: true,
+    },
+    {
+      id: 'seoTitle',
+      label: 'SEO Title đạt chuẩn',
+      detail: `${formData.seoTitle.trim().length}/65 ký tự, nên có 35-65 ký tự`,
+      passed: formData.seoTitle.trim().length >= 35 && formData.seoTitle.trim().length <= 65,
+      aiFixable: true,
+    },
+    {
+      id: 'metaDescription',
+      label: 'Meta Description đạt chuẩn',
+      detail: `${formData.metaDescription.trim().length}/165 ký tự, nên có 120-165 ký tự`,
+      passed: formData.metaDescription.trim().length >= 120 && formData.metaDescription.trim().length <= 165,
+      aiFixable: true,
+    },
+    {
+      id: 'keywords',
+      label: 'Từ khóa SEO',
+      detail: `${keywordCount}/8 từ khóa, nên có ít nhất 8 cụm từ khóa`,
+      passed: keywordCount >= 8,
+      aiFixable: true,
+    },
+    {
+      id: 'brand',
+      label: 'Thương hiệu và xuất xứ',
+      detail: formData.brand && formData.origin ? `${formData.brand} - ${formData.origin}` : 'Cần đủ thương hiệu và xuất xứ',
+      passed: Boolean(formData.brand && formData.origin),
+      aiFixable: true,
+    },
+    {
+      id: 'attributes',
+      label: 'Thuộc tính sản phẩm',
+      detail: `${filledAttributeCount}/6 trường chi tiết đã nhập`,
+      passed: filledAttributeCount >= 6,
+      aiFixable: true,
+    },
+    {
+      id: 'variants',
+      label: 'Phân loại bán hàng',
+      detail: `${formData.colorVariants.filter(variant => variant.name.trim()).length} màu, ${selectedSizes.length} size, ${variantMatrixRows.length} dòng`,
+      passed: formData.colorVariants.some(variant => variant.name.trim()) && selectedSizes.length >= 3 && variantMatrixRows.length >= 3,
+      aiFixable: true,
+    },
+  ];
+  const passedChecklistCount = seoChecklistItems.filter(item => item.passed).length;
+  const seoChecklistScore = Math.round((passedChecklistCount / seoChecklistItems.length) * 100);
+  const seoChecklistReady = passedChecklistCount === seoChecklistItems.length;
+
+  const buildFallbackDescription = () => {
+    const name = formData.name.trim() || 'Áo thun nam URSport';
+    const material = formData.material.trim() || 'Cotton Premium';
+    const style = formData.style.trim() || 'regular fit';
+    const brand = formData.brand.trim() || 'UR SPORT';
+    return [
+      `<h2>${name} - lựa chọn dễ mặc cho nam giới năng động</h2>`,
+      `<p><strong>${name}</strong> được phát triển cho nhu cầu mặc hằng ngày, đi chơi, tập luyện nhẹ và phối đồ thể thao nam. Sản phẩm tập trung vào cảm giác thoải mái, phom gọn và độ linh hoạt khi vận động.</p>`,
+      `<h2>Chất liệu và form dáng</h2>`,
+      `<p>Chất liệu ${material} cho bề mặt vải mềm, dễ chịu trên da và phù hợp khí hậu nóng ẩm. Form ${style} giúp áo lên dáng gọn, không quá bó và không quá rộng, dễ phối cùng quần short, jogger hoặc quần thể thao.</p>`,
+      `<h2>Điểm nổi bật</h2>`,
+      `<ul><li>Dễ mặc trong nhiều hoàn cảnh: đi làm, đi chơi, tập luyện nhẹ.</li><li>Thiết kế nam tính, tối giản, dễ phối màu.</li><li>Có nhiều lựa chọn màu và size để chọn đúng nhu cầu.</li><li>Phù hợp khách hàng thích phong cách thể thao gọn gàng.</li></ul>`,
+      `<h2>Gợi ý chọn size và bảo quản</h2>`,
+      `<p>Hãy chọn size theo số đo cơ thể và thói quen mặc ôm hoặc rộng. Khi giặt, nên lộn trái sản phẩm, giặt với màu tương đồng và hạn chế sấy nhiệt cao để giữ form vải tốt hơn.</p>`,
+      `<p>${brand} khuyến khích kiểm tra kỹ bảng size, màu sắc và tồn kho phân loại trước khi đặt hàng để chọn đúng sản phẩm phù hợp nhất.</p>`,
+    ].join('');
+  };
+
+  const buildSmartSeoTitle = () =>
+    clampText(`${formData.name.trim() || 'Áo Thun Nam URSport'} | URSport`, 65);
+
+  const buildSmartMetaDescription = () =>
+    clampText(`${formData.name.trim() || 'Áo thun nam URSport'} chất liệu ${formData.material || 'thoáng mát'}, form ${formData.style || 'dễ mặc'}, nhiều màu size. Xem giá và ưu đãi tại URSport.`, 165);
+
+  const applyDescriptionHtml = (html: string) => {
+    if (isHtmlMode) {
+      setHtmlSource(beautifyHtml(html));
+    }
+    setFormData(prev => ({ ...prev, description: html }));
+  };
+
+  const buildChecklistFixPrompt = (item: SeoChecklistItem) => `
+Hay cap nhat noi dung san pham de dat tieu chi: ${item.label}.
+
+Du lieu hien tai:
+- Ten: ${formData.name}
+- Danh muc: ${formData.category}
+- Gia: ${formData.price}
+- Thuong hieu: ${formData.brand || 'UR SPORT'}
+- Xuat xu: ${formData.origin || 'Viet Nam'}
+- Chat lieu: ${formData.material || 'chua nhap'}
+- Form: ${formData.style || 'chua nhap'}
+- Mau: ${formData.colorVariants.map(variant => variant.name).filter(Boolean).join(', ') || 'chua nhap'}
+- Size: ${selectedSizes.join(', ')}
+- SEO title: ${formData.seoTitle}
+- Meta description: ${formData.metaDescription}
+- Keywords: ${formData.keywords}
+- Mo ta hien tai: ${currentDescriptionText.slice(0, 1600) || 'chua co'}
+
+Yeu cau: chi dua tren du lieu co that, khong bia thong so, gia, ton kho, bao hanh.`;
+
+  const handleChecklistAiFix = async (item: SeoChecklistItem) => {
+    if (item.passed || aiFixingChecklistId) return;
+    setAiFixingChecklistId(item.id);
+
+    try {
+      if (item.id === 'name') {
+        setFormData(prev => ({
+          ...prev,
+          name: clampText(`${prev.name || 'Áo Thun Nam'} ${prev.material || 'Cotton'} ${prev.style || 'Form Regular'} URSport`, 100),
+          slug: prev.slug || normalizeProductSlug(prev.name || 'ao-thun-nam-ursport'),
+        }));
+        toast.success('AI đã cập nhật tên sản phẩm');
+        return;
+      }
+
+      if (item.id === 'brand') {
+        setFormData(prev => ({ ...prev, brand: prev.brand || 'UR SPORT', origin: prev.origin || 'Việt Nam' }));
+        toast.success('Đã bổ sung thương hiệu và xuất xứ');
+        return;
+      }
+
+      if (item.id === 'attributes') {
+        setFormData(prev => ({
+          ...prev,
+          brand: prev.brand || 'UR SPORT',
+          origin: prev.origin || 'Việt Nam',
+          style: prev.style || 'Regular Fit',
+          material: prev.material || 'Cotton Premium',
+          fashionStyle: prev.fashionStyle || 'Thể thao, cơ bản, dễ phối',
+          collarType: prev.collarType || 'Cổ tròn',
+        }));
+        toast.success('Đã bổ sung thuộc tính sản phẩm');
+        return;
+      }
+
+      if (item.id === 'variants') {
+        setFormData(prev => ({
+          ...prev,
+          sizes: prev.sizes.trim() ? prev.sizes : DEFAULT_PRODUCT_SIZE_TEXT,
+          colorVariants: prev.colorVariants.length > 0
+            ? prev.colorVariants
+            : [{ name: 'Đen', image: '' }, { name: 'Trắng', image: '' }, { name: 'Xám', image: '' }],
+          stock: prev.stock || '10',
+          variantBulk: {
+            price: prev.variantBulk.price || prev.price,
+            stock: prev.variantBulk.stock || prev.stock || '10',
+            sku: prev.variantBulk.sku || prev.productCode,
+          },
+        }));
+        toast.success('Đã tạo khung phân loại bán hàng');
+        return;
+      }
+
+      const fix = await generateProductSeoFix(buildChecklistFixPrompt(item));
+      setFormData(prev => ({
+        ...prev,
+        seoTitle: fix.seoTitle || prev.seoTitle || buildSmartSeoTitle(),
+        metaDescription: fix.metaDescription || prev.metaDescription || buildSmartMetaDescription(),
+        keywords: fix.keywords || prev.keywords,
+      }));
+      if (item.id === 'description' && fix.descriptionHtml) {
+        applyDescriptionHtml(fix.descriptionHtml);
+      } else if (item.id === 'description') {
+        applyDescriptionHtml(buildFallbackDescription());
+      }
+      toast.success('AI đã cập nhật checklist SEO');
+    } catch (error: any) {
+      if (['description', 'seoTitle', 'metaDescription', 'keywords'].includes(item.id)) {
+        setFormData(prev => ({
+          ...prev,
+          seoTitle: prev.seoTitle || buildSmartSeoTitle(),
+          metaDescription: prev.metaDescription || buildSmartMetaDescription(),
+          keywords: prev.keywords || 'áo thun nam, áo thun thể thao nam, áo cotton nam, áo nam thoáng mát, áo nam form regular, đồ thể thao nam, thời trang nam URSport, áo nam dễ phối',
+        }));
+        if (item.id === 'description') applyDescriptionHtml(buildFallbackDescription());
+        toast.success('Đã dùng bản cập nhật nhanh trong form');
+      } else {
+        toast.error(error.message || 'AI chưa cập nhật được mục này');
+      }
+    } finally {
+      setAiFixingChecklistId(null);
+    }
+  };
 
   const renderCategoryOption = (option: ProductCategoryOption, isChild = false) => {
     const cat = option.label;
@@ -1146,8 +1579,117 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
 
           {/* Main Content */}
           <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+            <aside className="w-full shrink-0 overflow-y-auto border-r border-zinc-200 bg-[#f4f7f6] md:w-[360px] xl:w-[390px]">
+              <div className={cn(
+                "m-4 overflow-hidden rounded-xl border bg-white shadow-sm",
+                seoChecklistReady ? "border-emerald-200" : "border-zinc-200"
+              )}>
+                <div className={cn(
+                  "p-5",
+                  seoChecklistReady ? "bg-emerald-50" : "bg-amber-50"
+                )}>
+                  <p className="text-[13px] font-bold text-zinc-700">Cấp độ Nội dung</p>
+                  <div className="mt-3 flex items-end justify-between gap-3">
+                    <div>
+                      <h3 className={cn(
+                        "text-2xl font-black",
+                        seoChecklistReady ? "text-emerald-600" : "text-amber-600"
+                      )}>
+                        {seoChecklistReady ? 'Đạt chuẩn' : 'Cần tối ưu'}
+                      </h3>
+                      <p className="mt-1 text-[12px] font-bold text-zinc-500">
+                        {passedChecklistCount}/{seoChecklistItems.length} tiêu chí đạt
+                      </p>
+                    </div>
+                    <span className={cn(
+                      "rounded-full px-3 py-1 text-[11px] font-black",
+                      seoChecklistReady ? "bg-emerald-100 text-emerald-700" : "bg-white text-amber-700"
+                    )}>
+                      {seoChecklistScore}%
+                    </span>
+                  </div>
+                  <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-white/80">
+                    <div
+                      className={cn(
+                        "h-full rounded-full transition-all",
+                        seoChecklistReady ? "bg-emerald-500" : "bg-amber-500"
+                      )}
+                      style={{ width: `${seoChecklistScore}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-3 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <h4 className="text-[12px] font-black uppercase tracking-widest text-zinc-500">Checklist chuẩn SEO</h4>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const firstMissing = seoChecklistItems.find(item => !item.passed && item.aiFixable);
+                        if (firstMissing) handleChecklistAiFix(firstMissing);
+                      }}
+                      disabled={seoChecklistReady || Boolean(aiFixingChecklistId) || !seoChecklistItems.some(item => !item.passed && item.aiFixable)}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-zinc-900 px-3 text-[11px] font-black text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <Sparkles className="h-3.5 w-3.5" />
+                      AI sửa mục đầu
+                    </button>
+                  </div>
+
+                  {seoChecklistItems.map(item => (
+                    <div
+                      key={item.id}
+                      className={cn(
+                        "rounded-xl border p-3 transition",
+                        item.passed ? "border-emerald-100 bg-emerald-50/70" : "border-zinc-200 bg-white"
+                      )}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={cn(
+                          "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full",
+                          item.passed ? "bg-emerald-500 text-white" : "bg-zinc-100 text-zinc-400"
+                        )}>
+                          {item.passed ? <CircleCheck className="h-4 w-4" /> : <CircleAlert className="h-4 w-4" />}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className={cn(
+                            "text-[13px] font-black leading-5",
+                            item.passed ? "text-emerald-800" : "text-zinc-800"
+                          )}>
+                            {item.label}
+                          </p>
+                          <p className="mt-0.5 text-[11px] font-medium leading-4 text-zinc-500">{item.detail}</p>
+                          {!item.passed && (
+                            item.aiFixable ? (
+                              <button
+                                type="button"
+                                onClick={() => handleChecklistAiFix(item)}
+                                disabled={Boolean(aiFixingChecklistId)}
+                                className="mt-3 inline-flex h-8 items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-[11px] font-black text-emerald-700 transition hover:border-emerald-400 hover:bg-emerald-100 disabled:cursor-wait disabled:opacity-60"
+                              >
+                                <Sparkles className={cn("h-3.5 w-3.5", aiFixingChecklistId === item.id && "animate-spin")} />
+                                {aiFixingChecklistId === item.id ? 'Đang cập nhật...' : 'AI cập nhật'}
+                              </button>
+                            ) : (
+                              <p className="mt-3 rounded-lg bg-zinc-50 px-3 py-2 text-[11px] font-bold text-zinc-500">
+                                Cần bổ sung thủ công trong khu vực ảnh/video.
+                              </p>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </aside>
+
             {/* Left Editor Column */}
-            <div className="flex-1 overflow-y-auto bg-white border-r border-zinc-200">
+            <div
+              ref={leftScrollerRef}
+              onScroll={handleLeftColumnScroll}
+              className="flex-1 overflow-y-auto bg-white border-r border-zinc-200"
+            >
               <div className="mx-auto w-full max-w-[1040px] p-6 md:p-10 space-y-8">
                 {/* Product Name Input */}
                 <textarea
@@ -1157,9 +1699,32 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                   rows={2}
                   className="min-h-[92px] w-full resize-none overflow-hidden bg-transparent text-3xl font-black leading-tight text-zinc-900 outline-none placeholder:text-zinc-300 placeholder:font-black sm:text-4xl"
                 />
-                
+
+                <div className="sticky top-0 z-30 -mx-2 border-b border-zinc-200 bg-white/95 px-2 py-2 backdrop-blur">
+                  <div className="inline-flex rounded-lg border border-zinc-200 bg-zinc-50 p-1 shadow-sm">
+                    {[
+                      { id: 'description' as const, label: 'Mô tả' },
+                      { id: 'sales' as const, label: 'Thông tin bán hàng' },
+                    ].map(tab => (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => scrollToQuickSection(tab.id)}
+                        className={cn(
+                          'h-9 rounded-md px-4 text-[13px] font-black transition-colors',
+                          activeQuickTab === tab.id
+                            ? 'bg-white text-[#10b981] shadow-sm'
+                            : 'text-zinc-500 hover:text-zinc-900'
+                        )}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                 
                 {/* Rich Text Editor */}
-                <div ref={editorWrapRef} className="w-full product-quill-editor relative">
+                <div ref={editorWrapRef} className="w-full product-quill-editor relative scroll-mt-20">
                   <style dangerouslySetInnerHTML={{__html: `
                     .product-quill-editor .ql-container {
                       font-family: inherit;
@@ -1472,6 +2037,244 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                     </>
                   )}
                 </div>
+
+                <section ref={salesInfoRef} className="scroll-mt-20 rounded-2xl border border-zinc-200 bg-white p-4 shadow-[0_16px_50px_-35px_rgba(15,23,42,0.45)] sm:p-5">
+                  <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-zinc-100 pb-4">
+                    <div>
+                      <h3 className="text-[20px] font-black text-zinc-950">Thông tin bán hàng</h3>
+                      <p className="mt-1 text-[12px] font-medium text-zinc-500">
+                        Quản lý màu sắc, size, giá và số lượng tồn kho theo từng phân loại.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, colorVariants: [...formData.colorVariants, { name: '', image: '' }] })}
+                      className="rounded-lg bg-[#10b981] px-4 py-2.5 text-[12px] font-black uppercase text-white shadow-sm transition hover:bg-[#059669]"
+                    >
+                      + Thêm màu
+                    </button>
+                  </div>
+
+                  <div className="space-y-5">
+                    <div className="rounded-xl border border-zinc-200 bg-zinc-50/50 p-4">
+                      <div className="mb-3 flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 rounded-full bg-[#ff4d30]" />
+                        <h4 className="text-[13px] font-black text-zinc-800">Phân loại màu sắc</h4>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {formData.colorVariants.map((variant, index) => (
+                          <div key={index} className="group flex items-center gap-3 rounded-xl border border-zinc-200 bg-white p-3 transition hover:border-[#10b981]/50 hover:shadow-sm">
+                            <div
+                              className={cn(
+                                "relative h-16 w-16 shrink-0 cursor-pointer overflow-hidden rounded-lg border bg-white",
+                                formData.coverImage === variant.image ? "border-2 border-blue-500" : "border-zinc-200",
+                              )}
+                              onClick={() => variant.image && setFormData({ ...formData, coverImage: variant.image })}
+                            >
+                              {variant.image ? (
+                                <img src={variant.image} alt={variant.name || 'Color variant'} loading="lazy" className="h-full w-full object-cover" />
+                              ) : (
+                                <ImageUpload
+                                  onUploadComplete={(url) => {
+                                    setFormData(prev => {
+                                      const newVariants = [...prev.colorVariants];
+                                      newVariants[index].image = url;
+                                      return {
+                                        ...prev,
+                                        colorVariants: newVariants,
+                                        coverImage: prev.coverImage || url,
+                                      };
+                                    });
+                                  }}
+                                  folder="products"
+                                  label="Ảnh"
+                                  storage="local"
+                                />
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <input
+                                type="text"
+                                value={variant.name}
+                                onChange={(event) => {
+                                  const newVariants = [...formData.colorVariants];
+                                  newVariants[index].name = event.target.value;
+                                  setFormData({ ...formData, colorVariants: newVariants });
+                                }}
+                                className="h-10 w-full border-b border-zinc-200 bg-transparent text-[14px] font-black uppercase text-zinc-950 outline-none focus:border-[#10b981]"
+                                placeholder="Tên màu (VD: Đen)"
+                              />
+                              <div className="mt-2 flex items-center justify-between gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => variant.image && setFormData({ ...formData, coverImage: variant.image })}
+                                  disabled={!variant.image}
+                                  className="text-[11px] font-bold text-[#1e4b64] transition hover:text-[#10b981] disabled:text-zinc-300"
+                                >
+                                  Đặt làm ảnh chính
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const newVariants = [...formData.colorVariants];
+                                    newVariants.splice(index, 1);
+                                    setFormData({ ...formData, colorVariants: newVariants });
+                                  }}
+                                  className="text-[11px] font-black uppercase text-red-500 hover:underline"
+                                >
+                                  Xóa
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        {formData.colorVariants.length === 0 && (
+                          <p className="rounded-lg border border-dashed border-zinc-300 py-6 text-center text-[12px] font-medium text-zinc-400 sm:col-span-2">
+                            Chưa có phân loại màu sắc
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
+                      <div className="rounded-xl border border-zinc-200 bg-white p-4">
+                        <h4 className="mb-3 text-[13px] font-black text-zinc-800">Kích cỡ</h4>
+                        <label className="mb-1 block text-[10px] font-bold uppercase text-zinc-400">Cách nhau bằng dấu phẩy</label>
+                        <input
+                          type="text"
+                          value={formData.sizes}
+                          onChange={(event) => setFormData({ ...formData, sizes: event.target.value })}
+                          className="h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-[14px] font-bold text-zinc-900 outline-none transition focus:border-[#10b981] focus:bg-white"
+                          placeholder={DEFAULT_PRODUCT_SIZE_TEXT}
+                        />
+                      </div>
+
+                      <div className="rounded-xl border border-zinc-200 bg-white p-4">
+                        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                          <div>
+                            <h4 className="text-[13px] font-black text-zinc-800">Phân loại màu / size</h4>
+                            <p className="text-[11px] font-medium text-zinc-400">
+                              {variantMatrixRows.length > 0
+                                ? `${variantMatrixRows.length} phân loại - tổng kho ${variantStockTotal}`
+                                : 'Thêm màu sắc và kích cỡ để tạo bảng phân loại'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-[minmax(120px,1fr)_minmax(120px,1fr)_minmax(180px,1.2fr)] 2xl:grid-cols-[minmax(120px,1fr)_minmax(120px,1fr)_minmax(220px,1.35fr)_auto]">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={formatDisplayPrice(formData.variantBulk.price)}
+                            onChange={(event) => setFormData(prev => ({
+                              ...prev,
+                              variantBulk: { ...prev.variantBulk, price: parsePrice(event.target.value) },
+                            }))}
+                            className="h-10 min-w-0 rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-[13px] font-bold outline-none transition focus:border-[#10b981] focus:bg-white"
+                            placeholder="Giá"
+                          />
+                          <input
+                            type="number"
+                            value={formData.variantBulk.stock}
+                            onChange={(event) => setFormData(prev => ({
+                              ...prev,
+                              variantBulk: { ...prev.variantBulk, stock: event.target.value },
+                            }))}
+                            className="h-10 min-w-0 rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-[13px] font-bold outline-none transition focus:border-[#10b981] focus:bg-white"
+                            placeholder="Kho hàng"
+                          />
+                          <input
+                            type="text"
+                            value={formData.variantBulk.sku}
+                            onChange={(event) => setFormData(prev => ({
+                              ...prev,
+                              variantBulk: { ...prev.variantBulk, sku: normalizeProductCode(event.target.value) },
+                            }))}
+                            className="h-10 min-w-0 rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-[13px] font-bold outline-none transition focus:border-[#10b981] focus:bg-white"
+                            placeholder="SKU phân loại"
+                          />
+                          <button
+                            type="button"
+                            onClick={applyBulkToVariants}
+                            disabled={variantMatrixRows.length === 0}
+                            className="h-10 whitespace-nowrap rounded-lg bg-[#ff8f80] px-5 text-[12px] font-black text-white shadow-sm transition hover:bg-[#ff7462] disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-2 lg:col-span-3 2xl:col-span-1"
+                          >
+                            Áp dụng
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
+                      <div className="flex items-center justify-between gap-3 border-b border-zinc-100 bg-zinc-50/80 px-4 py-3">
+                        <div>
+                          <h4 className="text-[13px] font-black text-zinc-800">Bảng tồn kho phân loại</h4>
+                          <p className="text-[11px] font-medium text-zinc-400">Mỗi dòng là một màu + size riêng biệt.</p>
+                        </div>
+                        <span className="rounded-full bg-white px-3 py-1 text-[11px] font-black text-zinc-500 shadow-sm">
+                          {variantMatrixRows.length} dòng
+                        </span>
+                      </div>
+                      <div className="overflow-x-auto">
+                      <table className="min-w-[820px] w-full border-collapse text-[13px]">
+                        <thead>
+                          <tr className="bg-white text-zinc-500">
+                            <th className="w-[190px] border-b border-r border-zinc-100 px-5 py-3 text-left font-black">Màu sắc</th>
+                            <th className="w-[84px] border-b border-r border-zinc-100 px-4 py-3 text-center font-black">Size</th>
+                            <th className="w-[180px] border-b border-r border-zinc-100 px-4 py-3 text-left font-black">Giá</th>
+                            <th className="w-[150px] border-b border-r border-zinc-100 px-4 py-3 text-left font-black">Kho hàng</th>
+                            <th className="border-b border-zinc-100 px-4 py-3 text-left font-black">SKU phân loại</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {variantMatrixRows.length === 0 ? (
+                            <tr>
+                              <td colSpan={5} className="px-4 py-10 text-center text-[13px] font-medium text-zinc-400">
+                                Chưa có phân loại. Hãy thêm màu sắc và kích cỡ trước.
+                              </td>
+                            </tr>
+                          ) : variantMatrixRows.map((row, index) => {
+                            const colorImage = formData.colorVariants.find(color => color.name.trim() === row.color)?.image;
+                            const isFirstColorRow = index === 0 || variantMatrixRows[index - 1]?.color !== row.color;
+                            return (
+                              <tr key={row.id} className={cn("border-b border-zinc-100 last:border-b-0", Number(row.stock || 0) <= 0 && "bg-red-50/35")}>
+                                <td className="border-r border-zinc-100 px-5 py-3 align-middle">
+                                  {isFirstColorRow && (
+                                    <div className="flex items-center gap-4">
+                                      <div className="h-12 w-12 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50">
+                                        {colorImage ? (
+                                          <img src={colorImage} alt={row.color} loading="lazy" className="h-full w-full object-cover" />
+                                        ) : (
+                                          <div className="h-full w-full bg-zinc-100" />
+                                        )}
+                                      </div>
+                                      <span className="pl-1 font-bold text-zinc-700">{row.color}</span>
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="border-r border-zinc-100 px-4 py-3 text-center font-black text-zinc-800">{row.size}</td>
+                                <td className="border-r border-zinc-100 px-4 py-3">
+                                  <input type="text" inputMode="numeric" value={formatDisplayPrice(row.price)} onChange={(event) => updateVariantRow(row.id, 'price', parsePrice(event.target.value))} className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 font-bold outline-none transition focus:border-[#10b981] focus:ring-2 focus:ring-[#10b981]/10" placeholder="0" />
+                                </td>
+                                <td className="border-r border-zinc-100 px-4 py-3">
+                                  <div className="flex items-center gap-2">
+                                    <input type="number" value={row.stock} onChange={(event) => updateVariantRow(row.id, 'stock', event.target.value)} className={cn("h-10 w-full rounded-lg border bg-white px-3 font-bold outline-none transition focus:ring-2", Number(row.stock || 0) <= 0 ? "border-red-200 text-red-600 focus:border-red-400 focus:ring-red-100" : "border-zinc-200 focus:border-[#10b981] focus:ring-[#10b981]/10")} placeholder="0" />
+                                    {Number(row.stock || 0) <= 0 && (
+                                      <span className="hidden min-w-[44px] shrink-0 items-center justify-center rounded-full bg-red-100 px-2.5 py-1 text-[10px] font-black uppercase leading-none text-red-600 xl:inline-flex">Hết</span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <input type="text" value={row.sku} onChange={(event) => updateVariantRow(row.id, 'sku', event.target.value.toUpperCase())} className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 font-bold outline-none transition focus:border-[#10b981] focus:ring-2 focus:ring-[#10b981]/10" placeholder="SKU" />
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                      </div>
+                    </div>
+                  </div>
+                </section>
               </div>
             </div>
 
@@ -1560,122 +2363,6 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                         placeholder="0"
                       />
                     </div>
-                  </div>
-                </div>
-
-                {/* Phân loại màu sắc */}
-                <div className="space-y-4 pt-6 border-t border-zinc-200">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-[11px] font-black uppercase tracking-widest text-zinc-500">Phân loại màu sắc</h3>
-                    <button 
-                      type="button" 
-                      onClick={() => setFormData({...formData, colorVariants: [...formData.colorVariants, {name: '', image: ''}]})}
-                      className="text-[11px] font-bold text-[#10b981] hover:text-[#0d9488]"
-                    >
-                      + THÊM MÀU
-                    </button>
-                  </div>
-                  <div className="space-y-3">
-                    {formData.colorVariants.map((variant, index) => (
-                      <div key={index} className="bg-white border border-zinc-200 rounded-lg p-2 flex gap-3">
-                        <div 
-                          className={cn(
-                            "w-16 h-16 shrink-0 bg-zinc-50 rounded-md border overflow-hidden relative group cursor-pointer",
-                            formData.coverImage === variant.image ? "border-2 border-blue-500" : "border-zinc-200"
-                          )}
-                          onClick={() => variant.image && setFormData({...formData, coverImage: variant.image})}
-                        >
-                          {variant.image ? (
-                            <>
-                              <img src={variant.image} alt={variant.name || 'Color variant'} loading="lazy" className="w-full h-full object-cover" />
-                              {formData.coverImage === variant.image && (
-                                <div className="absolute top-1 left-1 bg-blue-500 rounded-full p-0.5 z-10 shadow-sm">
-                                  <Check className="w-2.5 h-2.5 text-white stroke-[3px]" />
-                                </div>
-                              )}
-                              <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const newVariants = [...formData.colorVariants];
-                                    newVariants[index].image = '';
-                                    setFormData({
-                                      ...formData, 
-                                      colorVariants: newVariants,
-                                      coverImage: formData.coverImage === variant.image ? '' : formData.coverImage
-                                    });
-                                  }}
-                                  className="text-white hover:text-red-500 transition-colors bg-white/20 p-1.5 rounded-full"
-                                  title="Xóa ảnh"
-                                >
-                                  <X className="h-3.5 w-3.5" />
-                                </button>
-                              </div>
-                            </>
-                          ) : (
-                            <ImageUpload 
-                              onUploadComplete={(url) => {
-                                setFormData(prev => {
-                                  const newVariants = [...prev.colorVariants];
-                                  newVariants[index].image = url;
-                                  return {
-                                    ...prev, 
-                                    colorVariants: newVariants,
-                                    coverImage: prev.coverImage || url
-                                  };
-                                });
-                              }}
-                              folder="products"
-                              label="Ảnh"
-                              storage="local"
-                            />
-                          )}
-                        </div>
-                        <div className="flex-1 flex flex-col justify-center">
-                          <input 
-                            type="text"
-                            value={variant.name}
-                            onChange={(e) => {
-                              const newVariants = [...formData.colorVariants];
-                              newVariants[index].name = e.target.value;
-                              setFormData({...formData, colorVariants: newVariants});
-                            }}
-                            className="w-full text-[13px] font-bold text-zinc-900 bg-transparent border-b border-zinc-200 focus:border-[#10b981] outline-none py-1 mb-1 transition-colors uppercase placeholder:normal-case placeholder:font-normal"
-                            placeholder="Tên màu (VD: Đen)"
-                          />
-                          <button 
-                            type="button"
-                            onClick={() => {
-                              const newVariants = [...formData.colorVariants];
-                              newVariants.splice(index, 1);
-                              setFormData({...formData, colorVariants: newVariants});
-                            }}
-                            className="text-[10px] text-red-500 font-bold self-end mt-1 hover:underline uppercase"
-                          >
-                            Xóa
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                    {formData.colorVariants.length === 0 && (
-                      <p className="text-[12px] text-zinc-400 italic text-center py-2">Chưa có phân loại màu sắc</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Kích cỡ */}
-                <div className="space-y-4 pt-6 border-t border-zinc-200">
-                  <h3 className="text-[11px] font-black uppercase tracking-widest text-zinc-500">Kích cỡ</h3>
-                  <div className="bg-white p-1 rounded-md border border-zinc-200 focus-within:border-[#10b981] focus-within:ring-1 focus-within:ring-[#10b981] transition-all">
-                    <label className="text-[10px] font-bold text-zinc-400 uppercase px-2 pt-1 block">Kích cỡ (cách nhau dấu phẩy)</label>
-                    <input 
-                      type="text"
-                      value={formData.sizes}
-                      onChange={(e) => setFormData({...formData, sizes: e.target.value})}
-                      className="w-full h-8 px-2 text-[14px] font-medium text-zinc-900 bg-transparent outline-none"
-                      placeholder={DEFAULT_PRODUCT_SIZE_TEXT}
-                    />
                   </div>
                 </div>
 
@@ -1853,7 +2540,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                       </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400 text-xs font-medium">
-                          shop-ur-sport.vercel.app/
+                          https://www.ursport.vn/
                         </div>
                         <input
                           type="text"
