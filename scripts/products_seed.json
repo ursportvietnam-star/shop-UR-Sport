@@ -1,0 +1,32 @@
+[
+  {
+    "id": "at-1",
+    "slug": "ao-thun-cotton-starship-premium",
+    "name": "Áo Thun Cotton Starship Premium",
+    "description": "Chất liệu 100% cotton tự nhiên cao cấp, in logo tinh tế. Form dáng hiện đại, thoáng mát. Giữ form tốt nếu giặt đúng cách.",
+    "features": ["Cotton 100%", "Form chuẩn US", "In logo bền màu"],
+    "price": 250000,
+    "rating": 4.8,
+    "reviewsCount": 120
+  },
+  {
+    "id": "at-2",
+    "slug": "ao-thun-graphic-run-fast",
+    "name": "Áo Thun Graphic Run Fast",
+    "description": "Thiết kế graphic năng động, vải nhẹ, phù hợp mặc hằng ngày và tập luyện nhẹ nhàng. Form rộng thoải mái.",
+    "features": ["In lụa cao cấp", "Cotton 4 chiều", "Không xù lông"],
+    "price": 320000,
+    "rating": 4.5,
+    "reviewsCount": 45
+  },
+  {
+    "id": "at-3",
+    "slug": "ao-thun-oversize-urstyle",
+    "name": "Áo Thun Oversize UrStyle",
+    "description": "Phong cách đường phố hiện đại, form oversize thoải mái, phù hợp giới trẻ. Vải dày dặn, giữ form tốt.",
+    "features": ["Vải dày dặn", "Form rộng", "Phong cách streetwear"],
+    "price": 350000,
+    "rating": 4.7,
+    "reviewsCount": 78
+  }
+]
