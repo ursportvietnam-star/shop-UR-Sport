@@ -285,6 +285,14 @@ const clampText = (value: string, maxLength: number) => {
   return trimmed.length <= maxLength ? trimmed : `${trimmed.slice(0, maxLength - 1).trim()}…`;
 };
 
+const cleanGeneratedProductName = (value: string) =>
+  value
+    .replace(/\s*\((copy|bản sao|clone|duplicate)\)\s*/gi, ' ')
+    .replace(/\s+-\s+copy\b/gi, ' ')
+    .replace(/\bcopy\b/gi, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+
 interface ImageToolbarState {
   el: HTMLImageElement;
   top: number;
@@ -1392,10 +1400,39 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
   };
 
   const buildSmartSeoTitle = () =>
-    clampText(`${formData.name.trim() || 'Áo Thun Nam URSport'} | URSport`, 65);
+    clampText(`${cleanGeneratedProductName(formData.name) || 'Áo Thun Nam URSport'} | URSport`, 65);
 
   const buildSmartMetaDescription = () =>
-    clampText(`${formData.name.trim() || 'Áo thun nam URSport'} chất liệu ${formData.material || 'thoáng mát'}, form ${formData.style || 'dễ mặc'}, nhiều màu size. Xem giá và ưu đãi tại URSport.`, 165);
+    clampText(`${cleanGeneratedProductName(formData.name) || 'Áo thun nam URSport'} chất liệu ${formData.material || 'thoáng mát'}, form ${formData.style || 'dễ mặc'}, nhiều màu size. Xem giá và ưu đãi tại URSport.`, 165);
+
+  const buildSmartProductName = () => {
+    const rawName = cleanGeneratedProductName(formData.name);
+    const categoryText = `${formData.category || ''} ${rawName}`.toLowerCase();
+    const isPants = /quần|quan|short|jogger/.test(categoryText);
+    const isPolo = /polo/.test(categoryText);
+    const baseName = rawName || (isPants ? 'Quần thể thao nam' : isPolo ? 'Áo polo nam' : 'Áo thun nam');
+    const normalizedBase = baseName
+      .replace(/\bSlim Fit\b/gi, '')
+      .replace(/\bCotton Premium\b/gi, '')
+      .replace(/\bURSport\b/gi, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+    const material = formData.material && !/chưa|chua/i.test(formData.material)
+      ? formData.material
+      : isPants
+        ? 'vải co giãn'
+        : 'Cotton Premium';
+    const style = formData.style && !/chưa|chua/i.test(formData.style)
+      ? formData.style
+      : isPants
+        ? 'ống suông'
+        : 'form regular';
+    const productTypeName = isPants
+      ? normalizedBase.replace(/áo thun|ao thun|áo polo|ao polo/gi, 'Quần thể thao').trim()
+      : normalizedBase.replace(/quần thể thao|quan the thao|quần short|quan short|jogger/gi, isPolo ? 'Áo polo' : 'Áo thun').trim();
+
+    return clampText(`${productTypeName} ${material} ${style} URSport`, 100);
+  };
 
   const applyDescriptionHtml = (html: string) => {
     if (isHtmlMode) {
@@ -1430,10 +1467,11 @@ Yeu cau: chi dua tren du lieu co that, khong bia thong so, gia, ton kho, bao han
 
     try {
       if (item.id === 'name') {
+        const smartName = buildSmartProductName();
         setFormData(prev => ({
           ...prev,
-          name: clampText(`${prev.name || 'Áo Thun Nam'} ${prev.material || 'Cotton'} ${prev.style || 'Form Regular'} URSport`, 100),
-          slug: prev.slug || normalizeProductSlug(prev.name || 'ao-thun-nam-ursport'),
+          name: smartName,
+          slug: normalizeProductSlug(prev.slug && !/\bcopy\b|\(copy\)/i.test(prev.slug) ? prev.slug : smartName),
         }));
         toast.success('AI đã cập nhật tên sản phẩm');
         return;
