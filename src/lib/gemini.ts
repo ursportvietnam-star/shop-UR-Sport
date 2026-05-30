@@ -245,12 +245,13 @@ ${IMAGE_FORMAT_RULES_CONTEXT}
 
 YÊU CẦU CỤ THỂ:
 1. Trả về định dạng JSON thuần túy (không bọc trong markdown): { "contentHtml": "Nội dung bài viết HTML" }
-2. Mã HTML trả về:
+2. YÊU CẦU ĐỘ DÀI BẮT BUỘC: Bài viết HTML phải chi tiết và đạt độ dài từ 500 đến 800 từ. Nếu tài liệu tham khảo/Brief do người dùng cung cấp ngắn, bạn bắt buộc phải chủ động phân tích sâu rộng, viết chi tiết thêm để đạt độ dài này. Hãy mở rộng bằng cách giải thích sâu về lợi ích của sợi Cotton Premium/Compact, lập luận tại sao công nghệ dệt này giúp giữ form lâu bền và thấm hút mồ hôi, gợi ý chi tiết các cách phối đồ (mix & match), phân tích dáng người mặc (Slim Fit vs Regular Fit), hướng dẫn chăm sóc bảo quản quần áo tỉ mỉ, và đưa ra các cam kết dịch vụ/chất lượng từ UR Sport để thuyết phục khách hàng.
+3. Mã HTML trả về:
    - Phải bám sát CẤU TRÚC BÀI VIẾT chuẩn trong hướng dẫn SEO sản phẩm ở trên. 
-   - Chia thành nhiều phần bằng các thẻ <h2>, <h3> hợp lý (VD: Đặc điểm nổi bật, Chất liệu & Form dáng, Hoàn cảnh sử dụng, Hướng dẫn chọn size).
+   - Chia thành nhiều phần bằng các thẻ <h2>, <h3> hợp lý (VD: Đặc điểm nổi bật, Chất liệu & Form dáng, Hoành cảnh sử dụng, Hướng dẫn chọn size, Cam kết từ UR Sport).
    - Văn phong thu hút, thuyết phục khách hàng, mạnh mẽ và chân thực (dựa trên dữ liệu thực tế, tránh hoa mỹ/sáo rỗng).
    - Sử dụng <ul>, <li> để trình bày danh sách dễ nhìn.
-   - Bắt buộc chèn đúng 3 ảnh minh họa dạng <figure class="image-figure"> trong contentHtml theo cấu trúc chuẩn. Các đường dẫn ảnh (src) phải có định dạng: "/images/products/[slug-ten-san-pham]-hero.webp", "/images/products/[slug-ten-san-pham]-detail.webp", "/images/products/[slug-ten-san-pham]-lifestyle.webp" (viết thường không dấu, phân tách bằng dấu gạch ngang, ví dụ: "/images/products/ao-thun-nam-cotton-compact-hero.webp").
+   - Bắt buộc chèn đúng 3 ảnh minh họa dạng <figure class="image-figure"> trong chi tiết bài viết theo cấu trúc chuẩn. Các đường dẫn ảnh (src) phải có định dạng: "/images/products/[slug-ten-san-pham]-hero.webp", "/images/products/[slug-ten-san-pham]-detail.webp", "/images/products/[slug-ten-san-pham]-lifestyle.webp" (viết thường không dấu, phân tách bằng dấu gạch ngang, ví dụ: "/images/products/ao-thun-nam-cotton-compact-hero.webp").
    - Mỗi ảnh phải có đầy đủ thuộc tính: alt (dưới 125 ký tự, mô tả ảnh tự nhiên chứa từ khóa chính), width="1200", height="800", title (ngắn gọn), và thẻ <figcaption> giải thích lợi ích thực tế cho người đọc.
    - Tuyệt đối KHÔNG dùng markdown (như **bold**) trong nội dung HTML, phải dùng thẻ <strong>. KHÔNG dùng thẻ <style> hay style inline. Không chứa class lạ ngoài class "image-figure" và "image-caption".`;
 
