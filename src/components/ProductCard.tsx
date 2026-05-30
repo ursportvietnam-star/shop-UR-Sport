@@ -124,6 +124,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
               src={primaryImage || '/images/og-ursport.svg'}
               alt={product.name}
               loading="lazy"
+              decoding="async"
               className="h-full w-full scale-[1.06] object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.09]"
             />
           </AnimatePresence>

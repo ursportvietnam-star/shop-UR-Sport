@@ -622,7 +622,7 @@ export const ProductDetail: React.FC = () => {
             <div className="flex gap-3 overflow-x-auto pb-2">
               {(product.images || []).map((img, i) => (
                 <button key={i} onClick={() => setMainImage(img)} className="w-20 h-20 rounded-xl border-2 border-zinc-100 overflow-hidden shrink-0">
-                  <img src={img} alt={`${product.name} - Ảnh ${i + 1}`} loading="lazy" className="w-full h-full object-cover" />
+                  <img src={img} alt={`${product.name} - Ảnh ${i + 1}`} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>
@@ -898,7 +898,7 @@ export const ProductDetail: React.FC = () => {
               <div className="flex items-center gap-3">
                 {mainImage && (
                   <div className="w-12 h-12 rounded-lg bg-zinc-100 overflow-hidden shrink-0">
-                    <img src={mainImage} alt={product.name} loading="lazy" className="w-full h-full object-cover" />
+                    <img src={mainImage} alt={product.name} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
@@ -1158,6 +1158,8 @@ export const ProductDetail: React.FC = () => {
                       <img
                         src={p.images?.[0]}
                         alt={p.name}
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                       />
                       {p.videos && p.videos.length > 0 && (
@@ -1389,7 +1391,7 @@ export const ProductDetail: React.FC = () => {
                             <div className="flex flex-wrap gap-4 pt-2">
                               {review.images?.map((img: string, i: number) => (
                                 <div key={i} className="w-32 h-32 rounded-xl overflow-hidden border border-zinc-100 cursor-pointer hover:scale-105 transition-all shadow-sm">
-                                  <img src={img} alt={`Đánh giá ${product.name} - Ảnh ${i + 1}`} loading="lazy" className="w-full h-full object-cover" />
+                                  <img src={img} alt={`Đánh giá ${product.name} - Ảnh ${i + 1}`} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                                 </div>
                               ))}
                               {review.videos?.map((vid: string, i: number) => (
@@ -1512,7 +1514,7 @@ export const ProductDetail: React.FC = () => {
               <X className="h-5 w-5" />
             </button>
             <div className="max-h-[85vh] overflow-auto">
-              <img src={product.sizeGuideUrl} alt={`Bảng size ${product.name}`} loading="lazy" className="w-full h-auto" />
+              <img src={product.sizeGuideUrl} alt={`Bảng size ${product.name}`} loading="lazy" decoding="async" className="w-full h-auto" />
             </div>
           </motion.div>
         </div>
