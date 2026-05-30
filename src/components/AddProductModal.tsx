@@ -966,10 +966,49 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!formData.name || !formData.price || formData.colorVariants.length === 0) {
-      toast.error('Vui lòng điền thông tin và thêm ít nhất 1 màu sắc!');
+
+    // Tự động lấy giá trị từ biến thể đầu tiên hoặc bulk input nếu giá/kho chính bị trống
+    let currentPrice = formData.price;
+    let currentStock = formData.stock;
+
+    if (!currentPrice || Number(currentPrice) <= 0) {
+      const firstValuedVariant = formData.variants.find(v => v.price && Number(v.price) > 0);
+      if (firstValuedVariant) {
+        currentPrice = firstValuedVariant.price;
+      } else if (formData.variantBulk.price && Number(formData.variantBulk.price) > 0) {
+        currentPrice = formData.variantBulk.price;
+      }
+    }
+
+    if (!currentStock || Number(currentStock) <= 0) {
+      const firstValuedVariant = formData.variants.find(v => v.stock && Number(v.stock) > 0);
+      if (firstValuedVariant) {
+        currentStock = firstValuedVariant.stock;
+      } else if (formData.variantBulk.stock && Number(formData.variantBulk.stock) > 0) {
+        currentStock = formData.variantBulk.stock;
+      }
+    }
+
+    // Kiểm tra và hiển thị thông báo lỗi cụ thể cho từng trường
+    if (!formData.name || !formData.name.trim()) {
+      toast.error('Vui lòng nhập tên sản phẩm!');
       return;
     }
+    if (!currentPrice || Number(currentPrice) <= 0) {
+      toast.error('Vui lòng nhập giá niêm yết (giá bán) của sản phẩm ở cột bên phải!');
+      return;
+    }
+    if (formData.colorVariants.length === 0) {
+      toast.error('Vui lòng thêm ít nhất 1 màu sắc!');
+      return;
+    }
+
+    // Đồng bộ ngược lại state
+    setFormData(prev => ({
+      ...prev,
+      price: currentPrice,
+      stock: currentStock
+    }));
 
     const productCode = normalizeProductCode(formData.productCode);
 
@@ -979,8 +1018,8 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
       const validVariants = formData.colorVariants.filter(v => v.name.trim() !== '');
       const finalSizes = parsedSizes.length > 0 ? parsedSizes : DEFAULT_PRODUCT_SIZES;
       const variantRows = buildVariantMatrix(validVariants, finalSizes, formData.variants, {
-        price: formData.price,
-        stock: formData.stock,
+        price: currentPrice,
+        stock: currentStock,
         productCode,
       });
       const productVariants = normalizeVariantPayload(variantRows);
@@ -1015,9 +1054,9 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         colors: validVariants.map(v => v.name.trim()),
         colorImages: validVariants.map(v => ({ name: v.name.trim(), image: v.image })),
         images: allImages,
-        price: Number(formData.price),
+        price: Number(currentPrice),
         discountPrice: formData.discountPrice ? Number(formData.discountPrice) : null,
-        stock: productVariants.length > 0 ? totalVariantStock : Number(formData.stock),
+        stock: productVariants.length > 0 ? totalVariantStock : Number(currentStock),
         sizes: finalSizes,
         variants: productVariants,
         sizeGuideUrl: formData.sizeGuideUrl,
@@ -1358,8 +1397,15 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         stock: prev.stock,
         productCode: prev.productCode,
       });
+
+      // Tự động đồng bộ giá bán/tồn kho chung từ bulk value nếu giá/kho chung đang trống
+      const nextPrice = prev.price || prev.variantBulk.price;
+      const nextStock = prev.stock || prev.variantBulk.stock;
+
       return {
         ...prev,
+        price: nextPrice,
+        stock: nextStock,
         variants: rows.map(row => ({
           ...row,
           price: prev.variantBulk.price || row.price,
@@ -1370,7 +1416,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         })),
       };
     });
-    toast.success('Da ap dung cho tat ca phan loai');
+    toast.success('Đã áp dụng và đồng bộ cho tất cả phân loại!');
   };
 
   const parentCategoryOptions = productCategoryOptions.filter(option => !option.parent);
