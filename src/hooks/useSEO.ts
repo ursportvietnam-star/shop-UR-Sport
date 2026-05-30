@@ -27,7 +27,7 @@ export function useSEO({
   keywords,
   canonical,
   robots = 'index, follow',
-  image = '/favicon.svg',
+  image = '/images/og-ursport.jpg',
   type = 'website',
   schema,
   customSchema
@@ -101,6 +101,9 @@ export function useSEO({
       injectMeta('property', 'og:description', cleanDescription);
       injectMeta('property', 'og:image', finalImage);
       injectMeta('property', 'og:image:secure_url', finalImage);
+      injectMeta('property', 'og:image:width', '1200');
+      injectMeta('property', 'og:image:height', '630');
+      injectMeta('property', 'og:image:type', 'image/jpeg');
       injectMeta('property', 'og:image:alt', cleanTitle || SITE_NAME);
       injectMeta('property', 'og:site_name', SITE_NAME);
       injectMeta('property', 'og:locale', 'vi_VN');
@@ -162,6 +165,13 @@ export function useSEO({
       };
       
       injectCustomSchema(customSchema || '');
+
+      return () => {
+        const customEl = document.head.querySelector('script[type="application/ld+json"][data-seo-schema="custom"]');
+        if (customEl) customEl.remove();
+        const primaryEl = document.head.querySelector('script[type="application/ld+json"][data-seo-schema="primary"]');
+        if (primaryEl) primaryEl.remove();
+      };
     } catch (error) {
       console.error("SEO Error:", error);
     }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Save, Eye, Settings, Star, Check, AlignLeft, AlignCenter, AlignRight, Type, Tag, Code, TrendingUp, Trash2, Upload, Link as LinkIcon, CircleCheck, CircleAlert, Sparkles } from 'lucide-react';
+import { X, Save, Eye, Settings, Star, Check, AlignLeft, AlignCenter, AlignRight, Type, Tag, Code, TrendingUp, Trash2, Upload, Link as LinkIcon, CircleCheck, CircleAlert, Sparkles, BrainCircuit } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { collection, addDoc, serverTimestamp, updateDoc, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -12,7 +12,7 @@ import ReactQuill, { Quill } from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { normalizeProductSlug } from '../lib/productUrls';
 import { uploadLocalImage } from '../lib/localMediaUpload';
-import { generateProductSeoFix } from '../lib/gemini';
+import { generateProductSeoFix, generateProductDescriptionFromMd } from '../lib/gemini';
 
 const DEFAULT_PRODUCT_SIZES = ['M', 'L', 'XL', 'XXL', '3XL', '4XL'];
 const DEFAULT_PRODUCT_SIZE_TEXT = DEFAULT_PRODUCT_SIZES.join(',');
@@ -106,7 +106,7 @@ class UploadedVideoBlot extends BlockEmbed {
     node.setAttribute('playsinline', 'true');
     node.setAttribute('preload', 'metadata');
     node.setAttribute('data-align', 'right');
-    node.setAttribute('style', 'display:block;margin:2rem 0 2rem auto;max-width:100%;width:min(100%,720px);border-radius:12px;');
+    node.setAttribute('class', 'video-uploaded');
     return node;
   }
 
@@ -160,7 +160,6 @@ class CaptionBlot extends Block {
     const node = super.create(value);
     node.setAttribute('data-caption', '1');
     node.setAttribute('class', 'image-caption');
-    node.setAttribute('style', 'display:block;text-align:center;font-style:italic;font-size:0.75rem;color:#a1a1aa;margin:-1.25rem auto 1.5rem;line-height:1.4;opacity:0.85;width:100%;');
     return node;
   }
   static formats(domNode: HTMLElement) {
@@ -316,6 +315,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
   const [videoModal, setVideoModal] = useState<{ isOpen: boolean; type: 'url' | 'file' | null }>({ isOpen: false, type: null });
   const [videoInput, setVideoInput] = useState('');
   const [isUploadingVideo, setIsUploadingVideo] = useState(false);
+  const [isAiRewriteLoading, setIsAiRewriteLoading] = useState(false);
   const selectedImgRef = useRef<HTMLImageElement | null>(null);
   const imageAltBySrcRef = useRef<Record<string, string>>({});
   const imageCaptionBySrcRef = useRef<Record<string, string>>({});
@@ -323,6 +323,13 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
   const [isHtmlMode, setIsHtmlMode] = useState(false);
   const [htmlSource, setHtmlSource] = useState('');
   const [productCategoryOptions, setProductCategoryOptions] = useState(() => getProductCategoryOptions());
+
+  // AI Writer Modal states
+  const [isAiWriterModalOpen, setIsAiWriterModalOpen] = useState(false);
+  const [aiWriterName, setAiWriterName] = useState('');
+  const [aiWriterKeywords, setAiWriterKeywords] = useState('');
+  const [aiWriterBrief, setAiWriterBrief] = useState('');
+  const [isAiWriterGenerating, setIsAiWriterGenerating] = useState(false);
 
   const escapeHtmlAttr = (value: string) =>
     value ? value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
@@ -373,7 +380,6 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
       if (!figure) {
         figure = doc.createElement('figure');
         figure.setAttribute('class', 'image-figure');
-        figure.setAttribute('style', 'display:block;margin:2rem auto;text-align:center;max-width:100%;');
         const wrapper = legacyParagraph || img.parentElement;
         if (wrapper?.parentNode) {
           wrapper.parentNode.insertBefore(figure, wrapper);
@@ -384,13 +390,11 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         }
       } else {
         figure.setAttribute('class', 'image-figure');
-        figure.setAttribute('style', 'display:block;margin:2rem auto;text-align:center;max-width:100%;');
       }
 
-      img.setAttribute('style', 'display:block;margin:2rem auto;max-width:100%;');
       const dataAlign = img.getAttribute('data-align');
       img.getAttributeNames().forEach(name => {
-        if (!['src', 'alt', 'title', 'style', 'data-align'].includes(name)) {
+        if (!['src', 'alt', 'title', 'class', 'data-align'].includes(name)) {
           img.removeAttribute(name);
         }
       });
@@ -398,7 +402,6 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
       if (caption && figure) {
         const captionEl = doc.createElement('figcaption');
         captionEl.setAttribute('class', 'image-caption');
-        captionEl.setAttribute('style', 'display:block;text-align:center;font-style:italic;font-size:0.75rem;color:#a1a1aa;margin:0.5rem auto 1.5rem;line-height:1.4;opacity:0.85;width:100%;');
         captionEl.textContent = caption;
         figure.appendChild(captionEl);
       }
@@ -425,9 +428,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
   };
 
   const getImageAlignStyle = (align: 'left' | 'center' | 'right') => {
-    if (align === 'left') return 'display:block;margin:2rem auto 2rem 0;max-width:100%;';
-    if (align === 'right') return 'display:block;margin:2rem 0 2rem auto;max-width:100%;';
-    return 'display:block;margin:2rem auto;max-width:100%;';
+    return '';
   };
 
   const syncEditorHtml = () => {
@@ -559,6 +560,53 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
     return uploadLocalImage(file, 'product-descriptions');
   };
 
+  const buildAiRewritePrompt = React.useCallback((currentDescription: string) => {
+    const context = [
+      `Tên sản phẩm: ${formData.name || 'Sản phẩm URSport'}`,
+      `Danh mục: ${formData.category || 'Chưa chọn'}`,
+      `Thương hiệu: ${formData.brand || 'UR SPORT'}`,
+      `Xuất xứ: ${formData.origin || 'Việt Nam'}`,
+      `Chất liệu: ${formData.material || 'Cotton Premium'}`,
+      `Phong cách/Form: ${formData.style || formData.fashionStyle || 'Slim Fit'}`,
+      `Từ khóa SEO hiện tại: ${formData.keywords || 'Không có'}`,
+      `Mô tả hiện tại: ${currentDescription || 'Chưa có mô tả hiện tại'}`,
+      'Yêu cầu: Viết lại toàn bộ phần mô tả sản phẩm theo đúng cấu trúc của PRODUCT_SKILL.md. Nội dung phải có HTML semantic, <h2>, <ul><li>, <strong>, không dùng markdown, và vẫn giữ đúng thông tin sản phẩm hiện có. Trả về đúng JSON thuần: {"seoTitle":"...","metaDescription":"...","keywords":"...","shortDescription":"...","descriptionHtml":"..."}.',
+    ];
+    return context.join('\n');
+  }, [formData.name, formData.category, formData.brand, formData.origin, formData.material, formData.style, formData.fashionStyle, formData.keywords]);
+
+  const applyDescriptionHtml = (html: string) => {
+    if (isHtmlMode) {
+      setHtmlSource(beautifyHtml(html));
+    }
+    setFormData(prev => ({ ...prev, description: html }));
+  };
+
+  const handleAiRewriteDescription = React.useCallback(async () => {
+    if (isAiRewriteLoading) return;
+    const currentDescription = isHtmlMode ? htmlSource : getCurrentEditorHtml();
+    const prompt = buildAiRewritePrompt(stripHtmlText(currentDescription));
+    const toastId = toast.loading('AI đang sửa mô tả sản phẩm theo cấu trúc...');
+    setIsAiRewriteLoading(true);
+    try {
+      const fix = await generateProductSeoFix(prompt);
+      if (fix.descriptionHtml) {
+        applyDescriptionHtml(fix.descriptionHtml);
+      }
+      setFormData(prev => ({
+        ...prev,
+        seoTitle: fix.seoTitle || prev.seoTitle,
+        metaDescription: fix.metaDescription || prev.metaDescription,
+        keywords: fix.keywords || prev.keywords,
+      }));
+      toast.success('AI đã sửa xong mô tả sản phẩm', { id: toastId });
+    } catch (error: any) {
+      toast.error(error.message || 'AI chưa thể sửa mô tả', { id: toastId });
+    } finally {
+      setIsAiRewriteLoading(false);
+    }
+  }, [applyDescriptionHtml, buildAiRewritePrompt, getCurrentEditorHtml, htmlSource, isAiRewriteLoading, isHtmlMode]);
+
   const handleProductDescriptionImageInsert = React.useCallback(async () => {
     if (imagePickerOpenRef.current) return;
     imagePickerOpenRef.current = true;
@@ -581,7 +629,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
       const toastId = toast.loading('Dang tai anh len mo ta...');
       try {
         const imageUrl = await uploadProductDescriptionImage(file);
-        const imageHtml = `<p><img src="${escapeHtmlAttr(imageUrl)}" alt="" title="" data-align="center" style="${getImageAlignStyle('center')}" /></p><p><br></p>`;
+        const imageHtml = `<p><img src="${escapeHtmlAttr(imageUrl)}" alt="" title="" data-align="center" /></p><p><br></p>`;
 
         if (isHtmlMode) {
           setHtmlSource(prev => beautifyHtml(`${prev || ''}\n${imageHtml}`.trim()));
@@ -602,6 +650,62 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
     window.setTimeout(unlockPicker, 15000);
     input.click();
   }, [isHtmlMode]);
+
+  const handleMarkdownAiUpload = React.useCallback(() => {
+    setAiWriterName(formData.name || '');
+    setAiWriterKeywords(formData.keywords || '');
+    setAiWriterBrief('');
+    setIsAiWriterModalOpen(true);
+  }, [formData.name, formData.keywords]);
+
+  const handleLoadMdFile = React.useCallback(() => {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.md, text/markdown';
+    fileInput.onchange = async () => {
+      const file = fileInput.files?.[0];
+      if (!file) return;
+      const text = await file.text();
+      setAiWriterBrief(text);
+      toast.success('Đã tải nội dung file Markdown!');
+    };
+    fileInput.click();
+  }, []);
+
+  const handleAiWriterGenerate = async () => {
+    if (!aiWriterName.trim()) {
+      toast.error('Vui lòng nhập tên sản phẩm');
+      return;
+    }
+    setIsAiWriterGenerating(true);
+    const toastId = toast.loading('AI đang phân tích và viết bài mô tả...');
+    try {
+      const result = await generateProductDescriptionFromMd(
+        aiWriterBrief,
+        aiWriterName,
+        aiWriterKeywords
+      );
+      if (result && result.contentHtml) {
+        applyDescriptionHtml(result.contentHtml);
+        
+        // Also sync name and keywords back to the main form
+        setFormData(prev => ({
+          ...prev,
+          name: aiWriterName,
+          keywords: aiWriterKeywords
+        }));
+
+        setIsAiWriterModalOpen(false);
+        toast.success('AI đã hoàn thiện và chèn mô tả sản phẩm!', { id: toastId });
+      } else {
+        throw new Error('AI không trả về nội dung HTML');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Lỗi khi AI viết bài', { id: toastId });
+    } finally {
+      setIsAiWriterGenerating(false);
+    }
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -754,7 +858,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                 const insertIndex = range?.index ?? quill.getLength();
                 quill.clipboard.dangerouslyPasteHTML(
                   insertIndex,
-                  `<p><img src="${escapeHtmlAttr(imageUrl)}" alt="" title="" data-align="center" style="${getImageAlignStyle('center')}" /></p><p><br></p>`,
+                  `<p><img src="${escapeHtmlAttr(imageUrl)}" alt="" title="" data-align="center" /></p><p><br></p>`,
                   'user'
                 );
                 quill.setSelection(insertIndex + 1);
@@ -1109,10 +1213,10 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
     const blot = Quill.find(img);
     if (blot) {
       (blot as any).format('data-align', align);
-      (blot as any).format('style', getImageAlignStyle(align));
+      (blot as any).format('style', '');
     }
     img.setAttribute('data-align', align);
-    img.setAttribute('style', getImageAlignStyle(align));
+    img.removeAttribute('style');
     const caption = img.closest('p')?.nextElementSibling as HTMLElement | null;
     if (caption?.getAttribute('data-caption') === '1') {
       caption.style.textAlign = 'center';
@@ -1432,13 +1536,6 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
       : normalizedBase.replace(/quần thể thao|quan the thao|quần short|quan short|jogger/gi, isPolo ? 'Áo polo' : 'Áo thun').trim();
 
     return clampText(`${productTypeName} ${material} ${style} URSport`, 100);
-  };
-
-  const applyDescriptionHtml = (html: string) => {
-    if (isHtmlMode) {
-      setHtmlSource(beautifyHtml(html));
-    }
-    setFormData(prev => ({ ...prev, description: html }));
   };
 
   const buildChecklistFixPrompt = (item: SeoChecklistItem) => `
@@ -1884,6 +1981,29 @@ Yeu cau: chi dua tren du lieu co that, khong bia thong so, gia, ton kho, bao han
                       </span>
                       <span className="ql-formats">
                         <button type="button" className="ql-clean" />
+                      </span>
+                      <span className="ql-formats">
+                        <button
+                          type="button"
+                          onClick={handleAiRewriteDescription}
+                          title="AI tự động sửa mô tả theo cấu trúc PRODUCT_SKILL"
+                          className="!inline-flex !items-center !justify-center gap-1 !w-auto !px-2 hover:!text-[#10b981]"
+                          disabled={isAiRewriteLoading}
+                        >
+                          <Sparkles className="h-3.5 w-3.5 text-[#10b981]" />
+                          <span className="text-[11px] font-black text-[#10b981]">AI Sửa</span>
+                        </button>
+                      </span>
+                      <span className="ql-formats">
+                        <button
+                          type="button"
+                          onClick={handleMarkdownAiUpload}
+                          title="Tải file .md để AI viết bài SEO"
+                          className="!inline-flex !items-center !justify-center gap-1 !w-auto !px-2 hover:!text-[#8b5cf6]"
+                        >
+                          <Sparkles className="h-3.5 w-3.5 text-[#8b5cf6]" />
+                          <span className="text-[11px] font-bold text-[#8b5cf6]">AI Markdown</span>
+                        </button>
                       </span>
                     </div>
                     <button
@@ -2583,8 +2703,10 @@ Yeu cau: chi dua tren du lieu co that, khong bia thong so, gia, ton kho, bao han
                         <input
                           type="text"
                           value={formData.slug}
-                          onChange={(e) => setFormData(prev => ({...prev, slug: normalizeProductSlug(e.target.value)}))}
+                          onChange={(e) => setFormData(prev => ({...prev, slug: e.target.value}))}
+                          onBlur={() => setFormData(prev => ({ ...prev, slug: normalizeProductSlug(prev.slug) }))}
                           placeholder="mac-dinh-theo-ten"
+                          autoComplete="off"
                           className="w-full pl-[172px] pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-[#1e4b64]/20 focus:border-[#1e4b64] transition-all font-medium"
                         />
                       </div>
@@ -2738,6 +2860,110 @@ Yeu cau: chi dua tren du lieu co that, khong bia thong so, gia, ton kho, bao han
                     className="bg-[#1e4b64] hover:bg-[#153446] text-white font-black px-8 h-11 rounded-xl shadow-lg shadow-[#1e4b64]/20"
                   >
                     Chèn Video
+                  </Button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+
+          {/* AI Writer Modal (for AI Markdown button) */}
+          {isAiWriterModalOpen && (
+            <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]"
+              >
+                <div className="px-8 py-6 border-b border-zinc-100 flex items-center justify-between shrink-0">
+                  <div>
+                    <h3 className="text-xl font-black text-zinc-900 flex items-center gap-2">
+                      <Sparkles className="h-5 w-5 text-purple-600 animate-pulse" />
+                      AI Writer - Viết bài chuẩn SEO & Chèn ảnh
+                    </h3>
+                    <p className="text-sm text-zinc-500 font-medium mt-1">
+                      Tự động viết bài theo PRODUCT_SKILL và chèn ảnh theo IMAGE_FORMAT_RULES.
+                    </p>
+                  </div>
+                  <button 
+                    type="button"
+                    onClick={() => setIsAiWriterModalOpen(false)} 
+                    className="p-2 hover:bg-zinc-100 rounded-full transition-colors text-zinc-400 hover:text-zinc-600"
+                    disabled={isAiWriterGenerating}
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <div className="p-8 space-y-6 overflow-y-auto flex-1">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-[11px] font-black uppercase tracking-widest text-zinc-400 block mb-2">Tên sản phẩm</label>
+                      <input
+                        type="text"
+                        value={aiWriterName}
+                        onChange={(e) => setAiWriterName(e.target.value)}
+                        placeholder="Ví dụ: Áo Thun Nam Cotton Compact"
+                        className="w-full h-11 px-4 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all font-bold text-zinc-900"
+                        disabled={isAiWriterGenerating}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-black uppercase tracking-widest text-zinc-400 block mb-2">Từ khóa chính (cách nhau bằng dấu phẩy)</label>
+                      <input
+                        type="text"
+                        value={aiWriterKeywords}
+                        onChange={(e) => setAiWriterKeywords(e.target.value)}
+                        placeholder="áo thun nam, áo thun cotton, áo thun đẹp..."
+                        className="w-full h-11 px-4 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all text-zinc-800"
+                        disabled={isAiWriterGenerating}
+                      />
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-[11px] font-black uppercase tracking-widest text-zinc-400">Tài liệu tham khảo / Phác thảo bài viết (Tùy chọn)</label>
+                        <button
+                          type="button"
+                          onClick={handleLoadMdFile}
+                          disabled={isAiWriterGenerating}
+                          className="text-xs font-bold text-purple-600 hover:text-purple-700 flex items-center gap-1.5 transition-colors border border-purple-200 hover:border-purple-300 rounded-lg px-3 py-1.5 bg-purple-50"
+                        >
+                          <Upload className="h-3.5 w-3.5" />
+                          Tải file .md
+                        </button>
+                      </div>
+                      <textarea
+                        value={aiWriterBrief}
+                        onChange={(e) => setAiWriterBrief(e.target.value)}
+                        placeholder="Dán nội dung Markdown, thông số kỹ thuật hoặc brief bài viết tại đây. AI sẽ viết lại theo đúng cấu trúc tiêu chuẩn..."
+                        className="w-full min-h-[160px] p-4 bg-zinc-50 border border-zinc-200 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all resize-y leading-relaxed text-zinc-700"
+                        disabled={isAiWriterGenerating}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="px-8 py-6 bg-zinc-50 flex items-center justify-end gap-3 shrink-0 border-t border-zinc-100">
+                  <button
+                    type="button"
+                    onClick={() => setIsAiWriterModalOpen(false)}
+                    className="px-6 h-11 text-sm font-black text-zinc-600 hover:bg-zinc-100 rounded-xl transition-colors"
+                    disabled={isAiWriterGenerating}
+                  >
+                    Hủy bỏ
+                  </button>
+                  <Button
+                    onClick={handleAiWriterGenerate}
+                    disabled={isAiWriterGenerating || !aiWriterName.trim()}
+                    className="bg-purple-600 hover:bg-purple-700 text-white font-black px-8 h-11 rounded-xl shadow-lg shadow-purple-600/20 flex items-center gap-2 active:scale-95 transition-all"
+                  >
+                    {isAiWriterGenerating ? (
+                      <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                    ) : (
+                      <BrainCircuit className="h-4 w-4" />
+                    )}
+                    {isAiWriterGenerating ? 'Đang viết bài...' : 'AI Viết Mô Tả'}
                   </Button>
                 </div>
               </motion.div>

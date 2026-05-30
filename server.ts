@@ -19,6 +19,14 @@ const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
 const MAX_REQUESTS = 60; // Max 60 requests per minute per IP
 let gitSyncInProgress = false;
 
+// Cleanup expired entries every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, record] of rateLimitMap) {
+    if (now > record.resetTime) rateLimitMap.delete(ip);
+  }
+}, 5 * 60 * 1000);
+
 function apiRateLimiter(req: express.Request, res: express.Response, next: express.NextFunction) {
   const ip = req.ip || "anonymous";
   const now = Date.now();
@@ -91,12 +99,26 @@ async function verifyAdminToken(token: string): Promise<boolean> {
   }
 }
 
+function isLocalRequest(req: express.Request) {
+  const addr = req.socket?.remoteAddress || '';
+  return ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(addr);
+}
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 async function canWriteLocalMedia(req: express.Request) {
   const authHeader = String(req.headers.authorization || "");
   const token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : "";
-  const host = String(req.headers.host || "").split(":")[0];
+  const addr = req.socket?.remoteAddress || '';
   const isLocalDevRequest = process.env.NODE_ENV !== "production"
-    && ["localhost", "127.0.0.1", "::1"].includes(host);
+    && ["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(addr);
   const isDevBypass = isLocalDevRequest || (process.env.NODE_ENV !== "production" && process.env.BYPASS_ADMIN_AUTH === "true");
 
   if (isDevBypass) return true;
@@ -105,16 +127,11 @@ async function canWriteLocalMedia(req: express.Request) {
   return verifyAdminToken(token);
 }
 
-function isLocalRequest(req: express.Request) {
-  const host = String(req.headers.host || "").split(":")[0];
-  const ip = req.ip || req.socket?.remoteAddress || "";
-
-  return (
-    ["localhost", "127.0.0.1", "::1"].includes(host) ||
-    ip === "127.0.0.1" ||
-    ip === "::1" ||
-    ip === "::ffff:127.0.0.1"
-  );
+function isLocalDevAdminRequest(req: express.Request) {
+  const addr = req.socket?.remoteAddress || '';
+  const devHeader = String(req.headers["x-dev-admin"] || "");
+  const isLocalHost = ["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(addr);
+  return process.env.NODE_ENV !== "production" && isLocalHost && devHeader === "1";
 }
 
 function normalizeLocalMediaFolder(folderParam: string) {
@@ -266,7 +283,7 @@ async function startServer() {
       res.setHeader("Access-Control-Allow-Origin", origin);
     }
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, x-newsletter-token, x-file-name");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, x-newsletter-token, x-file-name, x-dev-admin");
     res.setHeader("Access-Control-Allow-Credentials", "true");
 
     if (req.method === "OPTIONS") {
@@ -410,12 +427,13 @@ async function startServer() {
       const apiKey = process.env.GEMINI_API_KEY;
       const authHeader = String(req.headers.authorization || "");
       const token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : "";
+      const bypass = isLocalDevAdminRequest(req);
 
       if (!apiKey) {
         return res.status(500).json({ error: "GEMINI_API_KEY is not configured" });
       }
 
-      if (!token || !(await verifyAdminToken(token))) {
+      if (!bypass && (!token || !(await verifyAdminToken(token)))) {
         return res.status(401).json({ error: "Unauthorized AI request" });
       }
 
@@ -464,8 +482,9 @@ async function startServer() {
     try {
       const authHeader = String(req.headers.authorization || "");
       const token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : "";
+      const bypass = isLocalDevAdminRequest(req);
 
-      if (!token || !(await verifyAdminToken(token))) {
+      if (!bypass && (!token || !(await verifyAdminToken(token)))) {
         return res.status(401).json({ error: "Unauthorized AI request" });
       }
 
@@ -539,16 +558,16 @@ async function startServer() {
       const voucherBlock = voucher?.code
         ? `
           <div style="margin:24px 0;padding:18px;border:1px solid #d9e7ef;border-radius:12px;background:#f4fbff">
-            <p style="margin:0 0 8px;font-weight:700;color:#1e4b64">${voucher.name || "Mã ưu đãi UR Sport"}</p>
-            <p style="margin:0;font-size:24px;font-weight:900;letter-spacing:1px;color:#111827">${voucher.code}</p>
-            <p style="margin:8px 0 0;color:#4b5563">${voucher.description || ""}</p>
+            <p style="margin:0 0 8px;font-weight:700;color:#1e4b64">${escapeHtml(voucher.name || "Mã ưu đãi UR Sport")}</p>
+            <p style="margin:0;font-size:24px;font-weight:900;letter-spacing:1px;color:#111827">${escapeHtml(voucher.code)}</p>
+            <p style="margin:8px 0 0;color:#4b5563">${escapeHtml(voucher.description || "")}</p>
           </div>
         `
         : "";
 
       const html = `
         <div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827">
-          ${cleanMessage.replace(/\n/g, "<br />")}
+          ${escapeHtml(cleanMessage).replace(/\n/g, "<br />")}
           ${voucherBlock}
           <p style="margin-top:28px;color:#4b5563">UR Sport cảm ơn quý khách đã đồng hành.</p>
         </div>
@@ -713,8 +732,9 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+  const bindHost = process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1";
+  app.listen(PORT, bindHost, () => {
+    console.log(`Server running on http://${bindHost}:${PORT}`);
   });
 }
 

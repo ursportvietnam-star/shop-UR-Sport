@@ -12,4 +12,3 @@ coverage/
 .venv/
 chroma_db/
 outputs/
-public/images/products/

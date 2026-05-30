@@ -4,7 +4,7 @@ const siteUrlFromEnv = (import.meta as ImportMeta & { env?: { VITE_SITE_URL?: st
 
 export const SITE_URL = (siteUrlFromEnv || 'https://www.ursport.vn').replace(/\/+$/, '');
 export const SITE_NAME = 'UR Sport';
-export const DEFAULT_OG_IMAGE = `${SITE_URL}/images/og-ursport.svg`;
+export const DEFAULT_OG_IMAGE = `${SITE_URL}/images/og-ursport.jpg`;
 export const BRAND_PHONE = '+84917722425';
 const CANONICAL_HOSTS = new Set([
   'shop-ur-sport.vercel.app',
@@ -106,7 +106,7 @@ export const organizationSchema = {
 };
 
 export const localBusinessSchema = {
-  '@type': 'SportsActivityLocation',
+  '@type': 'SportGoodsStore',
   '@id': `${SITE_URL}/#localbusiness`,
   name: SITE_NAME,
   url: SITE_URL,
@@ -116,16 +116,10 @@ export const localBusinessSchema = {
   priceRange: '$$',
   address: {
     '@type': 'PostalAddress',
-    streetAddress: 'Số 123 Đường Thể Thao, Quận 1',
     addressLocality: 'Thành phố Hồ Chí Minh',
     addressRegion: 'Thành phố Hồ Chí Minh',
     postalCode: '700000',
     addressCountry: 'VN'
-  },
-  geo: {
-    '@type': 'GeoCoordinates',
-    latitude: 10.776889,
-    longitude: 106.700806
   },
   openingHoursSpecification: [
     {
@@ -137,7 +131,8 @@ export const localBusinessSchema = {
   ],
   sameAs: [
     'https://www.facebook.com/ursportvietnam',
-    'https://www.tiktok.com/@ursportvietnam'
+    'https://www.tiktok.com/@ursportvietnam',
+    'https://www.instagram.com/ursportvietnam'
   ]
 };
 
@@ -170,6 +165,7 @@ export const buildSeoGraph = (...nodes: any[]) => ({
   '@context': 'https://schema.org',
   '@graph': [
     organizationSchema,
+    localBusinessSchema,
     websiteSchema,
     ...nodes.filter(Boolean)
   ]

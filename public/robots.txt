@@ -1,4 +1,5 @@
 User-agent: *
+Crawl-delay: 1
 Allow: /
 Disallow: /quan-tri
 Disallow: /admin
@@ -30,8 +31,5 @@ User-agent: ClaudeBot
 Allow: /
 Disallow: /quan-tri
 Disallow: /checkout
-
-# Crawl-delay (optional, for polite crawling)
-Crawl-delay: 1
 
 Sitemap: https://www.ursport.vn/sitemap.xml

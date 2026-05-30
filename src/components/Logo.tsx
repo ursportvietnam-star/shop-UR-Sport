@@ -6,20 +6,28 @@ interface LogoProps {
   inverse?: boolean;
 }
 
-export const Logo: React.FC<LogoProps> = ({ className, inverse }) => {
+export const Logo: React.FC<LogoProps> = ({ className, inverse = false }) => {
   return (
-    <div className={cn("flex flex-col items-start select-none", className)}>
-      <div className="flex items-baseline leading-none">
-        <span className="text-3xl sm:text-4xl font-black italic tracking-tighter text-[#1e4b64]">U</span>
-        <span className="text-3xl sm:text-4xl font-black italic tracking-tighter text-[#1e4b64] relative">
+    <div className={cn("inline-flex flex-col items-center select-none", className)}>
+      <div className="relative flex items-end leading-none">
+        <span className="font-black text-[46px] sm:text-[64px] italic tracking-[-0.08em] text-[#38bdf8]">
+          U
+        </span>
+
+        <span className="relative font-black text-[46px] sm:text-[64px] italic tracking-[-0.08em] text-[#0f172a] -ml-1">
           R
-          <span className="absolute -top-1 -right-4 text-[8px] font-bold border border-current rounded-full w-3 h-3 flex items-center justify-center not-italic">R</span>
+          <span className="absolute -top-3 -right-6 flex h-5 w-5 items-center justify-center rounded-full border-2 border-[#0f172a] bg-white text-[12px] font-bold not-italic leading-none text-[#0f172a]">
+            ®
+          </span>
         </span>
       </div>
-      <div className={cn(
-        "text-[10px] sm:text-[11px] font-bold tracking-[0.2em] uppercase mt-1",
-        inverse ? "text-white/70" : "text-zinc-500"
-      )}>
+
+      <div
+        className={cn(
+          "-mt-1 text-center text-[15px] sm:text-[24px] font-light tracking-[0.08em] uppercase leading-none",
+          inverse ? "text-white/80" : "text-[#4a4a4a]"
+        )}
+      >
         SPORT
       </div>
     </div>

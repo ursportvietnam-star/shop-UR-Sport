@@ -1,5 +1,6 @@
 import { SEO_GUIDE_CONTEXT } from './seoGuide';
 import PRODUCT_SEO_GUIDE_CONTEXT from '../../PRODUCT_SKILL.md?raw';
+import IMAGE_FORMAT_RULES_CONTEXT from '../../IMAGE_FORMAT_RULES.md?raw';
 import { auth } from '../firebase';
 
 export interface AIProductData {
@@ -68,6 +69,32 @@ const normalizeAIBlogData = (data: any): AIBlogData => ({
   socialCaption: String(data?.socialCaption || '').trim(),
 });
 
+const DEV_ADMIN_KEY = 'ursport_dev_admin';
+
+const isLocalDevAdmin = () => {
+  if (typeof window === 'undefined') return false;
+  return window.location.hostname === 'localhost' && window.localStorage.getItem(DEV_ADMIN_KEY) === '1';
+};
+
+const buildAIHeaders = async (initialMessage: string) => {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json'
+  };
+
+  if (isLocalDevAdmin()) {
+    headers['x-dev-admin'] = '1';
+    return headers;
+  }
+
+  const token = await auth.currentUser?.getIdToken();
+  if (!token) {
+    throw new Error(initialMessage);
+  }
+
+  headers.Authorization = `Bearer ${token}`;
+  return headers;
+};
+
 export interface AIProductSeoFix {
   seoTitle: string;
   metaDescription: string;
@@ -129,14 +156,6 @@ export interface AISeoContentDraft {
   reviewChecklist: string[];
 }
 
-export const getGeminiApiKey = () => {
-  return localStorage.getItem('gemini_api_key') || '';
-};
-
-export const setGeminiApiKey = (key: string) => {
-  localStorage.setItem('gemini_api_key', key);
-};
-
 export const getAIProvider = () => {
   return localStorage.getItem('ai_provider') || 'gemini';
 };
@@ -173,8 +192,8 @@ TRẢ VỀ ĐÚNG FORMAT JSON, KHÔNG CÓ MARKDOWN:
   try {
     return await callGemini(systemPrompt, prompt);
   } catch (error: any) {
-    if (error.message.includes('API Key') || error.message.includes('not valid')) {
-      throw new Error('API Key Gemini của bạn chưa đúng hoặc hết hạn. Vui lòng bấm vào bánh răng ⚙️ để cập nhật Key miễn phí.');
+    if (error.message.includes('API Key') || error.message.includes('not valid') || error.message.includes('unauthorized') || error.message.includes('Bearer')) {
+      throw new Error('Lỗi cấu hình AI hoặc chưa đăng nhập Admin. Vui lòng kiểm tra lại.');
     }
     throw error;
   }
@@ -200,8 +219,46 @@ Trả về đúng JSON, không markdown:
   try {
     return await callGemini(systemPrompt, prompt);
   } catch (error: any) {
-    if (error.message.includes('API Key') || error.message.includes('not valid')) {
-      throw new Error('API Key AI chưa đúng hoặc chưa được cấu hình. Vui lòng cập nhật trong mục AI Sản Phẩm.');
+    if (error.message.includes('API Key') || error.message.includes('not valid') || error.message.includes('unauthorized') || error.message.includes('Bearer')) {
+      throw new Error('Lỗi cấu hình AI hoặc chưa đăng nhập Admin. Vui lòng kiểm tra lại.');
+    }
+    throw error;
+  }
+}
+
+export async function generateProductDescriptionFromMd(markdownContent: string, productName: string, keywords: string): Promise<{ contentHtml: string }> {
+  const systemPrompt = `Bạn là một chuyên gia Copywriter và SEO thương mại điện tử hàng đầu tại Việt Nam, chuyên về thời trang nam thể thao & casual cho thương hiệu UR Sport.
+Nhiệm vụ: Dựa vào Tên sản phẩm, Từ khóa SEO và nội dung tài liệu tham khảo (Markdown/Brief), hãy viết một bài mô tả sản phẩm hoàn chỉnh, chuẩn SEO và AEO (tối ưu cho Google, người dùng và các AI tìm kiếm như các mô hình ngôn ngữ lớn ChatGPT, Perplexity, Gemini).
+
+Sản phẩm: ${productName}
+Từ khóa SEO mục tiêu: ${keywords || 'Tự đề xuất từ khóa phù hợp với sản phẩm'}
+Tài liệu tham khảo/Brief:
+${markdownContent || 'Không có tài liệu tham khảo. Hãy tự viết bài mô tả dựa trên Tên sản phẩm và Từ khóa SEO.'}
+
+Bạn phải tuân thủ nghiêm ngặt 2 bộ quy tắc sau:
+
+1. HƯỚNG DẪN SEO SẢN PHẨM (PRODUCT SKILL):
+${PRODUCT_SEO_GUIDE_CONTEXT}
+
+2. QUY TẮC CHÈN ẢNH CHUẨN SEO (IMAGE FORMAT RULES):
+${IMAGE_FORMAT_RULES_CONTEXT}
+
+YÊU CẦU CỤ THỂ:
+1. Trả về định dạng JSON thuần túy (không bọc trong markdown): { "contentHtml": "Nội dung bài viết HTML" }
+2. Mã HTML trả về:
+   - Phải bám sát CẤU TRÚC BÀI VIẾT chuẩn trong hướng dẫn SEO sản phẩm ở trên. 
+   - Chia thành nhiều phần bằng các thẻ <h2>, <h3> hợp lý (VD: Đặc điểm nổi bật, Chất liệu & Form dáng, Hoàn cảnh sử dụng, Hướng dẫn chọn size).
+   - Văn phong thu hút, thuyết phục khách hàng, mạnh mẽ và chân thực (dựa trên dữ liệu thực tế, tránh hoa mỹ/sáo rỗng).
+   - Sử dụng <ul>, <li> để trình bày danh sách dễ nhìn.
+   - Bắt buộc chèn đúng 3 ảnh minh họa dạng <figure class="image-figure"> trong contentHtml theo cấu trúc chuẩn. Các đường dẫn ảnh (src) phải có định dạng: "/images/products/[slug-ten-san-pham]-hero.webp", "/images/products/[slug-ten-san-pham]-detail.webp", "/images/products/[slug-ten-san-pham]-lifestyle.webp" (viết thường không dấu, phân tách bằng dấu gạch ngang, ví dụ: "/images/products/ao-thun-nam-cotton-compact-hero.webp").
+   - Mỗi ảnh phải có đầy đủ thuộc tính: alt (dưới 125 ký tự, mô tả ảnh tự nhiên chứa từ khóa chính), width="1200", height="800", title (ngắn gọn), và thẻ <figcaption> giải thích lợi ích thực tế cho người đọc.
+   - Tuyệt đối KHÔNG dùng markdown (như **bold**) trong nội dung HTML, phải dùng thẻ <strong>. KHÔNG dùng thẻ <style> hay style inline. Không chứa class lạ ngoài class "image-figure" và "image-caption".`;
+
+  try {
+    return await callGemini(systemPrompt, markdownContent);
+  } catch (error: any) {
+    if (error.message.includes('API Key') || error.message.includes('not valid') || error.message.includes('unauthorized') || error.message.includes('Bearer')) {
+      throw new Error('Lỗi cấu hình AI hoặc chưa đăng nhập Admin. Vui lòng kiểm tra lại.');
     }
     throw error;
   }
@@ -301,8 +358,8 @@ Return exactly this shape:
       checklist: normalizeStringArray(data?.checklist),
     };
   } catch (error: any) {
-    if (error.message.includes('API Key') || error.message.includes('not valid')) {
-      throw new Error('API Key AI chua dung hoac chua duoc cau hinh.');
+    if (error.message.includes('API Key') || error.message.includes('not valid') || error.message.includes('unauthorized') || error.message.includes('Bearer')) {
+      throw new Error('Lỗi cấu hình AI hoặc chưa đăng nhập Admin. Vui lòng kiểm tra lại.');
     }
     throw error;
   }
@@ -349,8 +406,8 @@ Return exactly:
       reviewChecklist: normalizeStringArray(data?.reviewChecklist),
     };
   } catch (error: any) {
-    if (error.message.includes('API Key') || error.message.includes('not valid')) {
-      throw new Error('API Key AI chua dung hoac chua duoc cau hinh.');
+    if (error.message.includes('API Key') || error.message.includes('not valid') || error.message.includes('unauthorized') || error.message.includes('Bearer')) {
+      throw new Error('Lỗi cấu hình AI hoặc chưa đăng nhập Admin. Vui lòng kiểm tra lại.');
     }
     throw error;
   }
@@ -407,8 +464,8 @@ TRẢ VỀ JSON CHUẨN:
   try {
     return normalizeAIBlogData(await callGemini(systemPrompt, prompt));
   } catch (error: any) {
-    if (error.message.includes('API Key') || error.message.includes('not valid')) {
-      throw new Error('API Key Gemini chưa chính xác. Hãy lấy Key miễn phí từ Google AI Studio.');
+    if (error.message.includes('API Key') || error.message.includes('not valid') || error.message.includes('unauthorized') || error.message.includes('Bearer')) {
+      throw new Error('Lỗi cấu hình AI hoặc chưa đăng nhập Admin. Vui lòng kiểm tra lại.');
     }
     throw error;
   }
@@ -426,15 +483,11 @@ async function callGemini(systemInstruction: string, userPrompt: string) {
     };
 
     try {
-      const token = await auth.currentUser?.getIdToken();
-      if (!token) throw new Error('Ban can dang nhap admin de dung Local AI.');
+      const headers = await buildAIHeaders('Ban can dang nhap admin de dung Local AI.');
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
+        headers,
         body: JSON.stringify(payload)
       });
 
@@ -463,15 +516,11 @@ async function callGemini(systemInstruction: string, userPrompt: string) {
 
   // --- GEMINI via server proxy ---
   try {
-    const token = await auth.currentUser?.getIdToken();
-    if (!token) throw new Error('Ban can dang nhap admin de dung AI.');
+    const headers = await buildAIHeaders('Ban can dang nhap admin de dung AI.');
 
     const response = await fetch('/api/gemini-json', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
+      headers,
       body: JSON.stringify({ systemInstruction, userPrompt })
     });
 

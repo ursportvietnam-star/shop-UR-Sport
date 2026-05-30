@@ -713,13 +713,17 @@ export function NewsPage() {
       datePublished: selectedPost.createdAt && typeof selectedPost.createdAt.toDate === 'function' 
         ? selectedPost.createdAt.toDate().toISOString() 
         : (selectedPost.createdAt?.seconds ? new Date(selectedPost.createdAt.seconds * 1000).toISOString() : new Date().toISOString()),
+      dateModified: selectedPost.updatedAt && typeof selectedPost.updatedAt.toDate === 'function'
+        ? selectedPost.updatedAt.toDate().toISOString()
+        : (selectedPost.updatedAt?.seconds ? new Date(selectedPost.updatedAt.seconds * 1000).toISOString() : (selectedPost.createdAt && typeof selectedPost.createdAt.toDate === 'function' ? selectedPost.createdAt.toDate().toISOString() : (selectedPost.createdAt?.seconds ? new Date(selectedPost.createdAt.seconds * 1000).toISOString() : new Date().toISOString()))),
       author: {
-        '@type': 'Organization',
+        '@type': 'Person',
         name: selectedPost.author || 'UR Sport',
         url: SITE_URL
       },
       publisher: { '@id': `${SITE_URL}/#organization` },
-      inLanguage: 'vi-VN'
+      inLanguage: 'vi-VN',
+      wordCount: selectedPost.content ? selectedPost.content.split(/\s+/).length : 0
     },
     buildBreadcrumbSchema([
       { name: 'Trang chủ', url: '/' },

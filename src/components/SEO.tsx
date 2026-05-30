@@ -18,6 +18,10 @@ interface SEOProps {
   schema?: any;
 }
 
+/**
+ * @deprecated Use useSEO hook from src/hooks/useSEO.ts instead of this component.
+ * This component is retained for backwards compatibility but is no longer maintained.
+ */
 export const SEO: React.FC<SEOProps> = ({
   title,
   description,

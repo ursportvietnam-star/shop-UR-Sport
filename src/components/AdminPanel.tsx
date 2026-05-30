@@ -7,17 +7,11 @@ import {
 } from 'lucide-react';
 import { PRODUCTS as STATIC_PRODUCTS, STATIC_BLOG_POSTS, STATIC_ORDERS, STATIC_CUSTOMERS, CATEGORY_METADATA, STATIC_VOUCHERS } from '../data';
 import { ImageUpload } from './ImageUpload';
-import { AddProductModal } from './AddProductModal';
-import { AddBlogPostModal } from './AddBlogPostModal';
 import { AddVoucherModal } from './AddVoucherModal';
 import { OrderDetailModal } from './OrderDetailModal';
-import { CustomerManagementTab } from './admin/CustomerManagementTab';
-import { CategorySeoManager } from './CategorySeoManager';
-import { HomepageConfigManager } from './HomepageConfigManager';
-import { ContentMapSeoPanel } from './ContentMapSeoPanel';
-import { ProductSeoAutomationPanel, ProductSeoScoreBadge } from './ProductSeoAutomationPanel';
 import { AIProductData, AIBlogData, AIProductSeoFix } from '../lib/gemini';
 import { buildSeoBlogPrompt, SeoSuggestion } from '../lib/dailySeoSuggestions';
+import { auditProductSeo } from '../lib/seoAutomation';
 import { useAuth } from '../AuthContext';
 import { Product, BlogPost, Order, Voucher, Review } from '../types';
 import type {
@@ -64,6 +58,27 @@ import { getProductPath, normalizeProductSlug } from '../lib/productUrls';
 const AIProductAssistant = React.lazy(() =>
   import('./AIProductAssistant').then(module => ({ default: module.AIProductAssistant }))
 );
+const AddProductModal = React.lazy(() =>
+  import('./AddProductModal').then(module => ({ default: module.AddProductModal }))
+);
+const AddBlogPostModal = React.lazy(() =>
+  import('./AddBlogPostModal').then(module => ({ default: module.AddBlogPostModal }))
+);
+const ProductSeoAutomationPanel = React.lazy(() =>
+  import('./ProductSeoAutomationPanel').then(module => ({ default: module.ProductSeoAutomationPanel }))
+);
+const CategorySeoManager = React.lazy(() =>
+  import('./CategorySeoManager').then(module => ({ default: module.CategorySeoManager }))
+);
+const HomepageConfigManager = React.lazy(() =>
+  import('./HomepageConfigManager').then(module => ({ default: module.HomepageConfigManager }))
+);
+const ContentMapSeoPanel = React.lazy(() =>
+  import('./ContentMapSeoPanel').then(module => ({ default: module.ContentMapSeoPanel }))
+);
+const CustomerManagementTab = React.lazy(() =>
+  import('./admin/CustomerManagementTab').then(module => ({ default: module.CustomerManagementTab }))
+);
 const AIBlogAssistant = React.lazy(() =>
   import('./AIBlogAssistant').then(module => ({ default: module.AIBlogAssistant }))
 );
@@ -103,10 +118,28 @@ const AdminTabFallback = () => (
   </div>
 );
 
-const BLOG_CATEGORIES_STORAGE_KEY = 'ursport_blog_categories_final_v1';
-const LOCAL_PRODUCT_COPIES_STORAGE_KEY = 'ursport_local_product_copies_v1';
-const LOCAL_PRODUCTS_UPDATED_EVENT = 'ursport:local-products-updated';
+const productSeoScoreTone = (score: number) => {
+  if (score >= 85) return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+  if (score >= 65) return 'text-amber-400 bg-amber-500/10 border-amber-500/20';
+  return 'text-red-400 bg-red-500/10 border-red-500/20';
+};
 
+const ProductSeoScoreBadge = ({ product }: { product: Product }) => {
+  const audit = auditProductSeo(product);
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className={cn("inline-flex min-w-12 items-center justify-center rounded-lg border px-2 py-1 text-xs font-black", productSeoScoreTone(audit.score))}>
+        {audit.score}
+      </span>
+      <span className="hidden max-w-40 truncate text-[11px] font-bold text-white/35 xl:inline">
+        {audit.quickWins[0]?.label || 'SEO ổn'}
+      </span>
+    </div>
+  );
+};
+
+const BLOG_CATEGORIES_STORAGE_KEY = 'ursport_blog_categories_final_v1';
 const NAV_ITEMS: AdminNavigationItem[] = [
   { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },
   { id: 'strategy', label: 'Chiến lược', icon: BarChart2 },
@@ -303,34 +336,6 @@ const stripUndefinedValues = <T,>(value: T): T => {
   }, {} as Record<string, unknown>) as T;
 };
 
-const loadLocalProductCopies = (): Product[] => {
-  if (typeof window === 'undefined') return [];
-  try {
-    const cached = window.localStorage.getItem(LOCAL_PRODUCT_COPIES_STORAGE_KEY);
-    const parsed = cached ? JSON.parse(cached) : [];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-};
-
-const cacheLocalProductCopies = (items: Product[]) => {
-  if (typeof window === 'undefined') return;
-  window.localStorage.setItem(LOCAL_PRODUCT_COPIES_STORAGE_KEY, JSON.stringify(items));
-  window.dispatchEvent(new CustomEvent(LOCAL_PRODUCTS_UPDATED_EVENT));
-};
-
-const mergeLocalProductCopies = (baseProducts: Product[]) => {
-  const localCopies = loadLocalProductCopies();
-  if (localCopies.length === 0) return baseProducts;
-
-  const localIds = new Set(localCopies.map(product => product.id));
-  return [
-    ...localCopies,
-    ...baseProducts.filter(product => !localIds.has(product.id)),
-  ];
-};
-
 const padTimePart = (value: number) => value.toString().padStart(2, '0');
 
 const formatDateTimeLocal = (date: Date) => {
@@ -519,10 +524,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
   useEffect(() => {
     if (!isAdmin) return;
     const unsubscribe = subscribeAdminCollection<Product>('products', (data) => {
-      setProducts(mergeLocalProductCopies(data.length > 0 ? data : STATIC_PRODUCTS));
+      setProducts(data.length > 0 ? data : STATIC_PRODUCTS);
       setLoading(false);
     }, () => {
-      setProducts(mergeLocalProductCopies(STATIC_PRODUCTS));
+      setProducts(STATIC_PRODUCTS);
       setLoading(false);
     });
     return () => unsubscribe();
@@ -867,20 +872,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
       toast.success('Sản phẩm đã được sao chép thành công!');
     } catch (error) {
       console.error('Copy product failed:', error);
-      if (isLocalhost) {
-        const localCopy = stripUndefinedValues({
-          ...copyData,
-          id: `local-copy-${now}`,
-          createdAt: product.createdAt,
-        }) as Product;
-        const nextCopies = [localCopy, ...loadLocalProductCopies()];
-        cacheLocalProductCopies(nextCopies);
-        setProducts(prev => mergeLocalProductCopies(prev));
-        toast.success('Đã sao chép sản phẩm trên local');
-        return;
-      }
-
-      toast.error('Lỗi khi sao chép sản phẩm');
+      toast.error('Lỗi khi sao chép sản phẩm lên Firestore');
     }
   };
 
@@ -1833,7 +1825,7 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
                 id="btn-git-sync"
                 onClick={handleGitSync}
                 disabled={gitSyncStatus === 'loading'}
-                title="Đồng bộ ảnh local lên GitHub → Vercel"
+                title="Chỉ đồng bộ ảnh local trong public/images lên GitHub và Vercel. Sản phẩm được đồng bộ qua Firestore."
                 className={cn(
                   "flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all duration-200 border",
                   gitSyncStatus === 'loading'
@@ -2139,11 +2131,13 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
 
           {activeTab === 'products' && (
             <div className="space-y-4">
-              <ProductSeoAutomationPanel
-                products={products}
-                onOptimizeProduct={openProductEditor}
-                onApplySeoFix={applyProductSeoFix}
-              />
+              <React.Suspense fallback={<AdminTabFallback />}>
+                <ProductSeoAutomationPanel
+                  products={products}
+                  onOptimizeProduct={openProductEditor}
+                  onApplySeoFix={applyProductSeoFix}
+                />
+              </React.Suspense>
 
               {/* Search */}
               <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-3">
@@ -2417,7 +2411,9 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
           )}
 
           {activeTab === 'homepage' && (
-            <HomepageConfigManager blogPosts={blogPosts} products={products} navigation={navigation} />
+            <React.Suspense fallback={<AdminTabFallback />}>
+              <HomepageConfigManager blogPosts={blogPosts} products={products} navigation={navigation} />
+            </React.Suspense>
           )}
 
           {activeTab === 'vouchers' && (
@@ -2719,7 +2715,9 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
           )}
 
           {activeTab === 'customers' && (
-            <CustomerManagementTab />
+            <React.Suspense fallback={<AdminTabFallback />}>
+              <CustomerManagementTab />
+            </React.Suspense>
           )}
 
           {/* NEWSLETTER SUBSCRIBERS */}
@@ -3808,23 +3806,27 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
           )}
           
           {activeTab === 'category-seo' && (
-            <CategorySeoManager />
+            <React.Suspense fallback={<AdminTabFallback />}>
+              <CategorySeoManager />
+            </React.Suspense>
           )}
 
           {activeTab === 'content-map' && (
-            <ContentMapSeoPanel
-              products={products}
-              blogPosts={blogPosts}
-              navigation={navigation}
-              blogCategories={blogCategories}
-              onEditProduct={openProductEditor}
-              onEditBlogPost={(post) => {
-                setEditingBlogPost(post);
-                setIsBlogModalOpen(true);
-              }}
-              onSaveProductSeo={saveContentMapProductSeo}
-              onSaveBlogSeo={saveContentMapBlogSeo}
-            />
+            <React.Suspense fallback={<AdminTabFallback />}>
+              <ContentMapSeoPanel
+                products={products}
+                blogPosts={blogPosts}
+                navigation={navigation}
+                blogCategories={blogCategories}
+                onEditProduct={openProductEditor}
+                onEditBlogPost={(post) => {
+                  setEditingBlogPost(post);
+                  setIsBlogModalOpen(true);
+                }}
+                onSaveProductSeo={saveContentMapProductSeo}
+                onSaveBlogSeo={saveContentMapBlogSeo}
+              />
+            </React.Suspense>
           )}
 
           {activeTab === 'policy-pages' && (
@@ -3835,33 +3837,39 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
         </main>
       </div>
 
-      <AddProductModal
-        key={isAddModalOpen ? `product-${editingProduct?.id || editingProduct?.slug || 'new'}` : 'product-closed'}
-        isOpen={isAddModalOpen}
-        onClose={() => {
-          setIsAddModalOpen(false);
-          setEditingProduct(null);
-        }}
-        onSuccess={() => {
-          setProducts(prev => mergeLocalProductCopies(prev));
-        }}
-        product={editingProduct}
-      />
+      {(isAddModalOpen || isBlogModalOpen) && (
+        <React.Suspense fallback={<AdminTabFallback />}>
+          {isAddModalOpen && (
+            <AddProductModal
+              key={`product-${editingProduct?.id || editingProduct?.slug || 'new'}`}
+              isOpen={isAddModalOpen}
+              onClose={() => {
+                setIsAddModalOpen(false);
+                setEditingProduct(null);
+              }}
+              onSuccess={() => {}}
+              product={editingProduct}
+            />
+          )}
 
-      <AddBlogPostModal
-        key={isBlogModalOpen ? `blog-${editingBlogPost?.id || editingBlogPost?.slug || 'new'}` : 'blog-closed'}
-        isOpen={isBlogModalOpen}
-        onClose={() => {
-          setIsBlogModalOpen(false);
-          setEditingBlogPost(null);
-        }}
-        onSuccess={() => {
-          setIsBlogModalOpen(false);
-          setEditingBlogPost(null);
-        }}
-        post={editingBlogPost}
-        blogCategories={blogCategories.filter(item => item.group !== 'main').map(item => item.label)}
-      />
+          {isBlogModalOpen && (
+            <AddBlogPostModal
+              key={`blog-${editingBlogPost?.id || editingBlogPost?.slug || 'new'}`}
+              isOpen={isBlogModalOpen}
+              onClose={() => {
+                setIsBlogModalOpen(false);
+                setEditingBlogPost(null);
+              }}
+              onSuccess={() => {
+                setIsBlogModalOpen(false);
+                setEditingBlogPost(null);
+              }}
+              post={editingBlogPost}
+              blogCategories={blogCategories.filter(item => item.group !== 'main').map(item => item.label)}
+            />
+          )}
+        </React.Suspense>
+      )}
 
       <OrderDetailModal
         isOpen={isOrderDetailModalOpen}

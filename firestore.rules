@@ -74,7 +74,7 @@ service cloud.firestore {
     match /products/{productId} {
       allow read: if true;
       allow create, delete: if isAdmin();
-      allow update: if isAdmin() || isRatingAggregateUpdate();
+      allow update: if isAdmin();
     }
 
     // Orders: Owner read/write, Admin read/write

@@ -8,10 +8,6 @@ export default defineConfig(({mode}) => {
   return {
     plugins: [react(), tailwindcss()],
     base: '/',
-    define: {
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-      'import.meta.env.VITE_GEMINI_API_KEY': JSON.stringify(env.VITE_GEMINI_API_KEY || env.GEMINI_API_KEY),
-    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
@@ -19,13 +15,20 @@ export default defineConfig(({mode}) => {
     },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
+      // Do not modifyâ€”file watching is disabled to prevent flickering during agent edits.
       hmr: false,
     },
     build: {
+      target: 'es2020',
+      cssCodeSplit: true,
+      reportCompressedSize: true,
       rollupOptions: {
         output: {
           manualChunks(id) {
+            if (id.includes('AdminPanel') || id.includes('/admin/')) return 'app-admin';
+            if (id.includes('AddProductModal') || id.includes('AddBlogPostModal')) return 'app-admin-modals';
+            if (id.includes('AISeoReport') || id.includes('ContentMapSeo') || id.includes('DailySeo')) return 'app-admin-seo';
+
             if (!id.includes('node_modules')) return;
 
             if (id.includes('@firebase/firestore') || id.includes('firebase/firestore')) return 'vendor-firebase-firestore';

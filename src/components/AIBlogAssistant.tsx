@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { generateBlogSEO, AIBlogData, getGeminiApiKey, setGeminiApiKey, getAIProvider, setAIProvider } from '../lib/gemini';
+import { generateBlogSEO, AIBlogData, getAIProvider, setAIProvider } from '../lib/gemini';
 import { Sparkles, Send, Settings, Save, AlertCircle, PenTool, BrainCircuit } from 'lucide-react';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
@@ -20,9 +20,8 @@ export function AIBlogAssistant({ onApply, blogPosts = [], initialPrompt = '', i
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AIBlogData | null>(null);
-  const [geminiKey, setGeminiKey] = useState(getGeminiApiKey());
   const [provider, setProvider] = useState<'gemini' | 'local'>(getAIProvider() as 'gemini' | 'local');
-  const [showSettings, setShowSettings] = useState(!getGeminiApiKey() && provider === 'gemini');
+  const [showSettings, setShowSettings] = useState(false);
   const [activeSuggestionSlug, setActiveSuggestionSlug] = useState<string | undefined>();
   const safeContentHtml = React.useMemo(() => sanitizeRichHtml(result?.contentHtml || ''), [result?.contentHtml]);
 
@@ -52,7 +51,6 @@ export function AIBlogAssistant({ onApply, blogPosts = [], initialPrompt = '', i
   };
 
   const handleSaveSettings = () => {
-    setGeminiApiKey(geminiKey);
     setAIProvider(provider);
     toast.success('Đã lưu cấu hình AI!');
     setShowSettings(false);
@@ -85,7 +83,7 @@ export function AIBlogAssistant({ onApply, blogPosts = [], initialPrompt = '', i
       toast.success('Tạo bài viết thành công!');
     } catch (error: any) {
       toast.error(error.message || 'Lỗi khi tạo bài viết');
-      if (error.message.includes('API Key')) setShowSettings(true);
+      if (error.message.includes('API Key') || error.message.includes('xác thực') || error.message.includes('cấu hình')) setShowSettings(true);
     } finally {
       setLoading(false);
       setActiveSuggestionSlug(undefined);
@@ -130,7 +128,7 @@ export function AIBlogAssistant({ onApply, blogPosts = [], initialPrompt = '', i
             <Settings className="h-6 w-6 text-purple-500 shrink-0" />
             <div>
               <h3 className="font-bold text-white">Cấu hình AI Blog Writer</h3>
-              <p className="text-sm text-zinc-400 mt-1">Thiết lập API Key để AI bắt đầu viết bài cho bạn.</p>
+              <p className="text-sm text-zinc-400 mt-1">Thiết lập nguồn AI để bắt đầu viết bài cho bạn.</p>
             </div>
           </div>
           
@@ -142,7 +140,7 @@ export function AIBlogAssistant({ onApply, blogPosts = [], initialPrompt = '', i
                   onClick={() => setProvider('gemini')}
                   className={`flex-1 py-2 px-4 rounded-xl font-bold text-sm transition-all border ${provider === 'gemini' ? 'bg-purple-600 border-purple-500 text-white' : 'bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10'}`}
                 >
-                  Google Gemini (Nhanh)
+                  Google Gemini (Cloud)
                 </button>
                 <button
                   onClick={() => setProvider('local')}
@@ -153,18 +151,6 @@ export function AIBlogAssistant({ onApply, blogPosts = [], initialPrompt = '', i
               </div>
             </div>
             
-            {provider === 'gemini' && (
-              <div>
-                <label className="text-[10px] font-black uppercase text-zinc-500 mb-2 block tracking-widest">Google Gemini Key</label>
-                <input 
-                  type="password" 
-                  value={geminiKey}
-                  onChange={e => setGeminiKey(e.target.value)}
-                  placeholder="AIzaSy..."
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-purple-500"
-                />
-              </div>
-            )}
             {provider === 'local' && (
               <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-xl">
                 <p className="text-sm text-purple-200">

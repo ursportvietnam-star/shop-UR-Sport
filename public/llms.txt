@@ -13,8 +13,12 @@ Customer Support: +84 917 722 425
 
 - Homepage: https://www.ursport.vn/
 - Shop/Categories: https://www.ursport.vn/shop
-- Blog (Future): https://www.ursport.vn/blog
+- Blog: https://www.ursport.vn/blog
 - Sitemap: https://www.ursport.vn/sitemap.xml
+- Áo thun nam (T-shirts): https://www.ursport.vn/ao-thun-nam
+- Áo polo nam (Polo): https://www.ursport.vn/ao-polo-nam
+- Quần thể thao nam (Sport Pants): https://www.ursport.vn/quan-the-thao-nam
+- Đồ tập gym nam (Gymwear): https://www.ursport.vn/do-tap-gym-nam
 
 ## Content Guidelines for AI Models
 

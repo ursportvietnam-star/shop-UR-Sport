@@ -157,6 +157,20 @@ export const ProductDetail: React.FC = () => {
       };
     }
 
+    const relatedProductsList = categoryProducts
+      .filter(p => p.id !== product.id)
+      .slice(0, 4);
+
+    if (relatedProductsList.length > 0) {
+      productNode.isRelatedTo = relatedProductsList.map(rp => ({
+        '@type': 'Product',
+        '@id': `${absoluteUrl(getProductPath(rp))}#product`,
+        name: rp.name,
+        url: absoluteUrl(getProductPath(rp)),
+        image: (rp.images || []).slice(0, 1).map(absoluteUrl)
+      }));
+    }
+
     return buildSeoGraph(
       productNode,
       buildBreadcrumbSchema([
@@ -165,7 +179,7 @@ export const ProductDetail: React.FC = () => {
         { name: product.name, url: productCanonical }
       ])
     );
-  }, [product, productCanonical, categoryName, productCategoryUrl]);
+  }, [product, productCanonical, categoryName, productCategoryUrl, categoryProducts]);
 
   useSEO({
     title: product?.seoTitle || (product ? `${product.name} | UR Sport - Đồ Thể Thao Cao Cấp` : 'UR Sport'),
@@ -860,7 +874,7 @@ export const ProductDetail: React.FC = () => {
                 <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               {recentlyViewedProducts.map((recentProduct) => (
                 <ProductCard
                   key={recentProduct.id}

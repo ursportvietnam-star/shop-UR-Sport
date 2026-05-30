@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { generateProductSEO, AIProductData, getAIProvider, getGeminiApiKey, setAIProvider, setGeminiApiKey } from '../lib/gemini';
+import { generateProductSEO, AIProductData, getAIProvider, setAIProvider } from '../lib/gemini';
 import type { Product } from '../types';
 import { Bot, Sparkles, Send, Settings, Save, AlertCircle, BrainCircuit } from 'lucide-react';
 import { Button } from './ui/button';
@@ -68,10 +68,9 @@ export function AIProductAssistant({ products = [], onApply }: AIProductAssistan
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AIProductData | null>(null);
-  const [geminiKey, setGeminiKey] = useState(getGeminiApiKey());
   const [provider, setProvider] = useState<'gemini' | 'local'>(() => getAIProvider() as 'gemini' | 'local');
   const [selectedProductId, setSelectedProductId] = useState('');
-  const [showSettings, setShowSettings] = useState(!getGeminiApiKey());
+  const [showSettings, setShowSettings] = useState(false);
   const safeDescriptionHtml = React.useMemo(() => sanitizeRichHtml(result?.descriptionHtml || ''), [result?.descriptionHtml]);
   const selectedProduct = React.useMemo(
     () => products.find(product => product.id === selectedProductId) || null,
@@ -79,7 +78,6 @@ export function AIProductAssistant({ products = [], onApply }: AIProductAssistan
   );
 
   const handleSaveSettings = () => {
-    setGeminiApiKey(geminiKey);
     setAIProvider(provider);
     toast.success('Đã lưu cấu hình AI!');
     setShowSettings(false);
@@ -99,7 +97,7 @@ export function AIProductAssistant({ products = [], onApply }: AIProductAssistan
       toast.success('Tạo nội dung thành công!');
     } catch (error: any) {
       toast.error(error.message || 'Lỗi khi tạo nội dung');
-      if (error.message.includes('API Key')) setShowSettings(true);
+      if (error.message.includes('API Key') || error.message.includes('xác thực') || error.message.includes('cấu hình')) setShowSettings(true);
     } finally {
       setLoading(false);
     }
@@ -113,7 +111,7 @@ export function AIProductAssistant({ products = [], onApply }: AIProductAssistan
             <Settings className="h-6 w-6 text-blue-500 shrink-0" />
             <div>
               <h3 className="font-bold text-white">Cấu hình AI Assistant</h3>
-              <p className="text-sm text-zinc-400 mt-1">Chọn Gemini hoặc Ollama local để tạo nội dung sản phẩm.</p>
+              <p className="text-sm text-zinc-400 mt-1">Chọn nguồn AI để tạo nội dung sản phẩm.</p>
             </div>
           </div>
           
@@ -122,7 +120,7 @@ export function AIProductAssistant({ products = [], onApply }: AIProductAssistan
               <label className="text-[10px] font-black uppercase text-zinc-500 mb-2 block tracking-widest">Nhà cung cấp AI</label>
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { id: 'gemini', label: 'Gemini' },
+                  { id: 'gemini', label: 'Gemini (Cloud)' },
                   { id: 'local', label: 'Ollama local' },
                 ].map(option => (
                   <button
@@ -140,16 +138,14 @@ export function AIProductAssistant({ products = [], onApply }: AIProductAssistan
                 ))}
               </div>
             </div>
-            <div>
-              <label className="text-[10px] font-black uppercase text-zinc-500 mb-2 block tracking-widest">Google Gemini Key</label>
-              <input 
-                type="password" 
-                value={geminiKey}
-                onChange={e => setGeminiKey(e.target.value)}
-                placeholder="AIzaSy..."
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-blue-500"
-              />
-            </div>
+            
+            {provider === 'local' && (
+              <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-xl">
+                <p className="text-sm text-purple-200">
+                  <strong className="text-purple-400">Yêu cầu:</strong> Bạn cần cài đặt Ollama và tải model <code>qwen2.5</code> trên máy tính (Cổng mặc định: 11434).
+                </p>
+              </div>
+            )}
             <Button onClick={handleSaveSettings} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-6 rounded-xl gap-2">
               <Save className="h-5 w-5" /> Lưu cấu hình
             </Button>

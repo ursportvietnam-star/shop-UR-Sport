@@ -226,17 +226,17 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
               <Menu className="h-5 w-5" />
             </button>
 
-            <Link to="/" className="flex flex-col items-start active:opacity-70 transition-opacity min-w-0 shrink">
+            <Link to="/" className="flex flex-col items-start active:opacity-70 transition-opacity min-w-fit shrink-0">
               <motion.div
                 animate={{ scale: isScrolled ? 0.92 : 1 }}
-                className="text-[18px] xs:text-[20px] sm:text-[22px] font-black italic tracking-tighter leading-none flex items-baseline origin-left truncate"
+                className="text-[18px] xs:text-[20px] sm:text-[22px] font-black italic tracking-tighter leading-none flex items-baseline origin-left whitespace-nowrap"
               >
                 <span className="text-[#1e4b64]">UR</span>
                 <span className="text-zinc-900">SPORT</span>
               </motion.div>
               <motion.span
                 animate={{ opacity: isScrolled ? 0 : 1 }}
-                className="text-[7px] sm:text-[8px] font-semibold uppercase tracking-widest text-zinc-400 mt-px truncate"
+                className="text-[7px] sm:text-[8px] font-semibold uppercase tracking-widest text-zinc-400 mt-px whitespace-nowrap"
               >
                 Phong Cách Thể Thao
               </motion.span>

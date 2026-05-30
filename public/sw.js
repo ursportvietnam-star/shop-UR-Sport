@@ -1,6 +1,7 @@
-const CACHE_VERSION = 'ursport-v1';
+const CACHE_VERSION = 'ursport-v2'; // Bumped version for clean start
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
+const MAX_RUNTIME_ITEMS = 100;
 
 const APP_SHELL = [
   '/',
@@ -10,6 +11,22 @@ const APP_SHELL = [
   '/robots.txt',
   '/llms.txt',
 ];
+
+// Helper to limit cache size (FIFO)
+async function trimCache(cacheName, maxItems) {
+  try {
+    const cache = await caches.open(cacheName);
+    const keys = await cache.keys();
+    if (keys.length > maxItems) {
+      // Delete the oldest entry (FIFO)
+      await cache.delete(keys[0]);
+      // Recursive call to clean up if needed
+      await trimCache(cacheName, maxItems);
+    }
+  } catch (error) {
+    console.error('Error trimming cache:', error);
+  }
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -26,7 +43,7 @@ self.addEventListener('activate', (event) => {
       .keys()
       .then((keys) => Promise.all(
         keys
-          .filter((key) => ![APP_SHELL_CACHE, RUNTIME_CACHE].includes(key))
+          .filter((key) => key !== APP_SHELL_CACHE && key !== RUNTIME_CACHE)
           .map((key) => caches.delete(key))
       ))
       .then(() => self.clients.claim())
@@ -39,7 +56,13 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
 
   const requestUrl = new URL(request.url);
+  // Only cache origin assets
   if (requestUrl.origin !== self.location.origin) return;
+
+  // Don't cache admin page APIs or pages
+  if (requestUrl.pathname.startsWith('/api') || requestUrl.pathname.startsWith('/admin')) {
+    return;
+  }
 
   if (request.mode === 'navigate') {
     event.respondWith(
@@ -62,7 +85,11 @@ self.addEventListener('fetch', (event) => {
         return fetch(request).then((response) => {
           if (!response || response.status !== 200) return response;
           const copy = response.clone();
-          caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, copy));
+          caches.open(RUNTIME_CACHE).then((cache) => {
+            cache.put(request, copy);
+            // Limit cache sizes
+            trimCache(RUNTIME_CACHE, MAX_RUNTIME_ITEMS);
+          });
           return response;
         });
       })

@@ -19,7 +19,7 @@ interface ProductCardProps {
   onClick: () => void;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
+export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onClick }) => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
@@ -187,6 +187,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
             <span className="text-[11px] font-bold text-zinc-500">{product.rating || '5.0'}</span>
           </div>
 
+          <p className="mb-1 text-[10px] uppercase tracking-[0.08em] text-zinc-400 line-clamp-1">
+            {product.category}
+          </p>
+
           <h3 className="mb-2 h-[2.7em] overflow-hidden text-[12px] font-bold leading-[1.35] sm:text-[14px]">
             <Link
               to={productUrl}
@@ -292,5 +296,5 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
       />
     </div>
   );
-};
+});
 

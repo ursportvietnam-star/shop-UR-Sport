@@ -343,8 +343,8 @@ Dùng Semrush hoặc Ahrefs để tìm:
 <!-- Internal Links -->
 <h2>Bài Viết Liên Quan</h2>
 <ul>
-  <li><a href="/product/cotton-compact">Áo Thun Cotton Compact</a></li>
-  <li><a href="/blog/...">Blog khác</a></li>
+  <li><a href="/ao-thun-the-thao-nam">Áo thun thể thao nam</a></li>
+  <li><a href="/blog">Blog UR Sport</a></li>
 </ul>
 
 <!-- CTA -->
