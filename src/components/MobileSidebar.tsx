@@ -41,6 +41,8 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
   const [expandedCategory, setExpandedCategory] = React.useState<string | null>(null);
 
   useEffect(() => {
+    if (!db) return;
+
     getDoc(doc(db, 'settings', 'navigation')).then(snap => {
       if (snap.exists() && snap.data().items?.length > 0) {
         setNavItems(snap.data().items);

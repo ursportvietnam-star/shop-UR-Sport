@@ -13,7 +13,7 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { toast } from 'sonner';
-import { auth, db } from './firebase';
+import { auth, db, isFirebaseConfigured } from './firebase';
 
 interface AuthContextType {
   user: User | null;
@@ -66,6 +66,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   const syncSignedInUser = async (authUser: User) => {
+    if (!auth || !db) return;
+
     const userRef = doc(db, 'users', authUser.uid);
     const snap = await getDoc(userRef);
     if (snap.exists() && snap.data().status === 'banned') {
@@ -89,6 +91,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Nếu đang dùng dev bypass thì không cần chờ Firebase
     if (isLocalhost && localStorage.getItem(DEV_ADMIN_KEY) === '1') {
+      setLoading(false);
+      return;
+    }
+
+    if (!auth || !db) {
+      setUser(null);
+      setIsAdmin(false);
       setLoading(false);
       return;
     }
@@ -143,6 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     if (isLocalhost && localStorage.getItem(DEV_ADMIN_KEY) === '1') return;
+    if (!auth || !db) return;
 
     getRedirectResult(auth)
       .then(async (result) => {
@@ -165,6 +175,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const loginWithGoogle = async () => {
+    if (!auth || !db || !isFirebaseConfigured) {
+      throw new Error('Firebase chua duoc cau hinh. Vui long them VITE_FIREBASE_* vao GitHub Secrets va build lai.');
+    }
+
     const provider = googleProvider();
     try {
       if (isLocalhost) {
@@ -193,6 +207,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const loginWithEmail = async (email: string, password: string) => {
+    if (!auth || !db || !isFirebaseConfigured) {
+      throw new Error('Firebase chua duoc cau hinh. Vui long them VITE_FIREBASE_* vao GitHub Secrets va build lai.');
+    }
+
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
       
@@ -215,6 +233,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const registerWithEmail = async (email: string, password: string, displayName: string) => {
+    if (!auth || !db || !isFirebaseConfigured) {
+      throw new Error('Firebase chua duoc cau hinh. Vui long them VITE_FIREBASE_* vao GitHub Secrets va build lai.');
+    }
+
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
       if (result.user) {
@@ -256,7 +278,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     localStorage.removeItem(DEV_ADMIN_KEY);
     try {
-      await signOut(auth);
+      if (auth) await signOut(auth);
     } catch (error) {
       console.error('Logout error:', error);
     }

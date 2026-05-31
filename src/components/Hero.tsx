@@ -47,6 +47,11 @@ export const Hero: React.FC<{ onShopClick: () => void; headingOverride?: string 
       return;
     }
 
+    if (!db) {
+      setIsLoading(false);
+      return;
+    }
+
     getDoc(doc(db, 'settings', 'banners')).then(snap => {
       if (snap.exists() && snap.data().items?.length > 0) {
         setActiveBanners(snap.data().items);

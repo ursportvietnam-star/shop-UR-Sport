@@ -48,3 +48,4 @@ if (hasFirebaseConfig) {
 export const db = _db;
 export const auth = _auth;
 export const storage = _storage;
+export const isFirebaseConfigured = hasFirebaseConfig;

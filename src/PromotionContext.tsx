@@ -32,6 +32,8 @@ export const PromotionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [nowTick, setNowTick] = useState(Date.now());
 
   useEffect(() => {
+    if (!db) return;
+
     const unsubscribeCheapChampion = onSnapshot(doc(db, 'settings', 'cheapChampion'), (snapshot) => {
       setCheapChampion(snapshot.exists() ? snapshot.data() as CheapChampionSettings : null);
     });

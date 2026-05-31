@@ -117,6 +117,11 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
   });
 
   useEffect(() => {
+    if (!db) {
+      setLogoSettingsState(logoSettings || null);
+      return;
+    }
+
     if (!logoSettings) {
       getDoc(doc(db, "settings", "logoSettings")).then((snap) => {
         if (snap.exists()) setLogoSettingsState(snap.data());
@@ -154,6 +159,10 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
     event.preventDefault();
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail) return;
+    if (!db) {
+      setSubscribeMessage("Chua the luu email do Firebase chua duoc cau hinh.");
+      return;
+    }
 
     setIsSubscribing(true);
     setSubscribeMessage("");

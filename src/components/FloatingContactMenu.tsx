@@ -18,6 +18,8 @@ export function FloatingContactMenu() {
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!db) return;
+
     getDoc(doc(db, 'settings', 'floatingMenu')).then(snap => {
       if (snap.exists()) {
         setSettings(prev => ({ ...prev, ...snap.data() }));

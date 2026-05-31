@@ -129,6 +129,8 @@ function AppContent() {
 
   // Inject custom CSS từ Firestore vào mọi trang
   useEffect(() => {
+    if (!db) return;
+
     getDoc(doc(db, 'settings', 'customCss')).then(snap => {
       if (!snap.exists()) return;
       const css = snap.data().css || '';

@@ -25,6 +25,12 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     let mounted = true;
 
     const loadProducts = async () => {
+      if (!db) {
+        setProducts(STATIC_PRODUCTS.map(normalizeProduct));
+        setLoading(false);
+        return;
+      }
+
       try {
         const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
         const snapshot = await getDocs(q);
