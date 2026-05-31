@@ -7,7 +7,7 @@ export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   return {
     plugins: [react(), tailwindcss()],
-    base: '/',
+    base: env.VITE_BASE_PATH || './',
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),

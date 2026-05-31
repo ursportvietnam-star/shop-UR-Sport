@@ -95,6 +95,13 @@ const snapshotPath = (route: string) => {
   return cleanRoute ? path.join(distDir, cleanRoute, 'index.html') : indexPath;
 };
 
+const assetPrefixForRoute = (route: string) => {
+  const cleanRoute = route.replace(/^\/+|\/+$/g, '');
+  if (!cleanRoute) return './assets/';
+  const depth = cleanRoute.split('/').filter(Boolean).length;
+  return `${'../'.repeat(depth)}assets/`;
+};
+
 const injectSeo = (html: string, snapshot: Snapshot) => {
   const canonical = absoluteUrl(snapshot.route);
   const title = cleanTitle(snapshot.title);
@@ -142,7 +149,9 @@ const injectSeo = (html: string, snapshot: Snapshot) => {
     .replace(/\s*<meta\s+name=["']twitter:[^"']+["'][^>]*>\s*/gi, '')
     .replace(/\s*<script\s+type=["']application\/ld\+json["'][\s\S]*?<\/script>\s*/gi, '');
 
-  return cleaned.replace(/<head>/i, `<head>\n    ${tags}`);
+  return cleaned
+    .replace(/(src|href)="\.\/assets\//g, `$1="${assetPrefixForRoute(snapshot.route)}`)
+    .replace(/<head>/i, `<head>\n    ${tags}`);
 };
 
 const faqSchemaForProduct = (product: (typeof PRODUCTS)[number]) => {
