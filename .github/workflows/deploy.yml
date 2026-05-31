@@ -30,8 +30,17 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
       
-      - name: Build
-        run: npm run build
+      - name: Check internal links
+        run: npx tsx scripts/check-broken-links.ts
+
+      - name: Generate sitemap
+        run: npx tsx scripts/generate-sitemap.ts
+
+      - name: Build app
+        run: npx vite build
+
+      - name: Generate SEO snapshots
+        run: npx tsx scripts/generate-seo-snapshots.ts
       
       - name: Setup Pages
         uses: actions/configure-pages@v5
