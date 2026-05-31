@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'ursport-v2'; // Bumped version for clean start
+const CACHE_VERSION = 'ursport-v3'; // Bumped version to v3 for clean start and clearing v2 cache
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const MAX_RUNTIME_ITEMS = 100;
@@ -68,8 +68,10 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          const copy = response.clone();
-          caches.open(APP_SHELL_CACHE).then((cache) => cache.put('/index.html', copy));
+          if (response && response.status === 200) {
+            const copy = response.clone();
+            caches.open(APP_SHELL_CACHE).then((cache) => cache.put('/index.html', copy));
+          }
           return response;
         })
         .catch(() => caches.match('/index.html'))
@@ -84,6 +86,13 @@ self.addEventListener('fetch', (event) => {
 
         return fetch(request).then((response) => {
           if (!response || response.status !== 200) return response;
+          
+          // Verify we aren't caching HTML files for JS scripts or CSS styles due to routing rewrites
+          const contentType = response.headers.get('content-type') || '';
+          if ((request.destination === 'script' || request.destination === 'style') && contentType.includes('text/html')) {
+            return response;
+          }
+
           const copy = response.clone();
           caches.open(RUNTIME_CACHE).then((cache) => {
             cache.put(request, copy);
