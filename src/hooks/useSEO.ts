@@ -1,4 +1,6 @@
 import { useEffect } from 'react';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 import {
   SITE_NAME,
   absoluteUrl,
@@ -8,6 +10,36 @@ import {
   normalizeImageUrl
 } from '../lib/seo';
 
+// Global cache variable to avoid multiple Firestore reads
+let cachedSchemaSettings: any = null;
+let isFetchingSchema = false;
+const schemaListeners = new Set<(settings: any) => void>();
+
+const getCachedSchemaSettings = async (): Promise<any> => {
+  if (cachedSchemaSettings) return cachedSchemaSettings;
+  if (isFetchingSchema) {
+    return new Promise((resolve) => {
+      schemaListeners.add(resolve);
+    });
+  }
+
+  isFetchingSchema = true;
+  try {
+    const snap = await getDoc(doc(db, "settings", "schemaSettings"));
+    if (snap.exists()) {
+      cachedSchemaSettings = snap.data();
+    }
+  } catch (e) {
+    console.error("Failed to load schema settings:", e);
+  }
+  isFetchingSchema = false;
+  
+  // Notify listeners
+  schemaListeners.forEach((listener) => listener(cachedSchemaSettings));
+  schemaListeners.clear();
+
+  return cachedSchemaSettings;
+};
 
 interface SEOProps {
   title?: string;
@@ -140,7 +172,63 @@ export function useSEO({
       }
 
       // --- Schema / JSON-LD ---
-      injectSchema(schema || buildSeoGraph());
+      getCachedSchemaSettings().then((customSchemaSettings) => {
+        let finalSchema = schema || buildSeoGraph();
+        if (customSchemaSettings) {
+          const customOrg = {
+            "name": customSchemaSettings.name,
+            "url": customSchemaSettings.url,
+            "logo": customSchemaSettings.logo,
+            "description": customSchemaSettings.description,
+            "contactPoint": {
+              "@type": "ContactPoint",
+              "telephone": customSchemaSettings.phone,
+              "contactType": "customer support",
+              "email": customSchemaSettings.email
+            },
+            "sameAs": [
+              customSchemaSettings.facebook,
+              customSchemaSettings.instagram,
+              customSchemaSettings.tiktok
+            ].filter(Boolean)
+          };
+
+          const customLocal = {
+            "@type": customSchemaSettings.businessType !== 'Organization' ? customSchemaSettings.businessType : 'SportGoodsStore',
+            "name": customSchemaSettings.name,
+            "url": customSchemaSettings.url,
+            "logo": customSchemaSettings.logo,
+            "image": customSchemaSettings.logo,
+            "telephone": customSchemaSettings.phone,
+            "address": {
+              "@type": "PostalAddress",
+              "streetAddress": customSchemaSettings.streetAddress,
+              "addressLocality": customSchemaSettings.addressLocality,
+              "addressRegion": customSchemaSettings.addressRegion,
+              "postalCode": customSchemaSettings.postalCode,
+              "addressCountry": customSchemaSettings.addressCountry
+            },
+            "sameAs": [
+              customSchemaSettings.facebook,
+              customSchemaSettings.instagram,
+              customSchemaSettings.tiktok
+            ].filter(Boolean)
+          };
+
+          if (finalSchema && finalSchema['@graph']) {
+            finalSchema['@graph'] = finalSchema['@graph'].map((node: any) => {
+              if (node['@id']?.endsWith('/#organization') || node['@type'] === 'Organization') {
+                return { ...node, ...customOrg };
+              }
+              if (node['@id']?.endsWith('/#localbusiness') || node['@type'] === 'SportGoodsStore' || node['@type'] === 'LocalBusiness') {
+                return { ...node, ...customLocal };
+              }
+              return node;
+            });
+          }
+        }
+        injectSchema(finalSchema);
+      });
 
       // --- Custom Schema ---
       const injectCustomSchema = (schemaStr: string) => {

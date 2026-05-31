@@ -13,7 +13,7 @@ import {
   ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { doc, serverTimestamp, setDoc } from "firebase/firestore";
+import { doc, serverTimestamp, setDoc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 
 type Category = 'Áo thun nam' | 'Áo thun thể thao nam' | 'Áo polo nam' | 'Quần thể thao nam' | 'Phụ kiện thể thao' | 'All';
@@ -21,6 +21,7 @@ type Category = 'Áo thun nam' | 'Áo thun thể thao nam' | 'Áo polo nam' | 'Q
 interface FooterProps {
   onPageChange: (page: string) => void;
   onCategorySelect: (category: Category) => void;
+  logoSettings?: { logoLight?: string; logoDark?: string; favicon?: string } | null;
 }
 
 const categoryLinks = [
@@ -47,19 +48,29 @@ const socialLinks = [
 
 
 
-const Logo = ({ inverse }: { inverse?: boolean }) => (
-  <div className="flex flex-col items-start mb-2">
-    <div className={`text-4xl font-black italic tracking-tighter uppercase leading-none ${inverse ? 'text-white' : 'text-black'}`}>
-      <span className="text-[#1e4b64]">UR</span>
-      <span>SPORT</span>
+const Logo = ({ inverse, logoSettings }: { inverse?: boolean; logoSettings?: { logoLight?: string; logoDark?: string; favicon?: string } | null }) => {
+  const logoUrl = inverse ? (logoSettings?.logoDark || logoSettings?.logoLight) : (logoSettings?.logoLight || logoSettings?.logoDark);
+  
+  return (
+    <div className="flex flex-col items-start mb-2">
+      {logoUrl ? (
+        <img src={logoUrl} alt="UR Sport" className="h-10 object-contain mb-1" />
+      ) : (
+        <>
+          <div className={`text-4xl font-black italic tracking-tighter uppercase leading-none ${inverse ? 'text-white' : 'text-black'}`}>
+            <span className="text-[#1e4b64]">UR</span>
+            <span>SPORT</span>
+          </div>
+          <span className={`text-xs font-bold italic uppercase tracking-tighter mt-1 ${inverse ? 'text-white/70' : 'text-zinc-500'}`}>
+            Phong Cách Thể Thao
+          </span>
+        </>
+      )}
     </div>
-    <span className={`text-xs font-bold italic uppercase tracking-tighter mt-1 ${inverse ? 'text-white/70' : 'text-zinc-500'}`}>
-      Phong Cách Thể Thao
-    </span>
-  </div>
-);
+  );
+};
 
-export function Footer({ onPageChange, onCategorySelect }: FooterProps) {
+export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterProps) {
   const [email, setEmail] = useState("");
   const [subscribeMessage, setSubscribeMessage] = useState("");
   const [isSubscribing, setIsSubscribing] = useState(false);
@@ -67,6 +78,59 @@ export function Footer({ onPageChange, onCategorySelect }: FooterProps) {
   const [visible, setVisible] = useState(false);
   const [openSection, setOpenSection] = useState("Danh mục sản phẩm");
   const footerRef = useRef<HTMLElement>(null);
+
+  const [logoSettingsState, setLogoSettingsState] = useState(logoSettings || null);
+  const [footerSettings, setFooterSettings] = useState({
+    description: 'Chuyên cung cấp đồ thể thao chất lượng cao, phong cách hiện đại.',
+    address: '72 Nguyễn Trãi, Quận 1, TP. Hồ Chí Minh',
+    phone: '+84 917 722 425',
+    email: 'support@ursport.vn',
+    mapUrl: 'https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d15992569.001833983!2d80.0375699!3d11.8747132!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752f523f5fc0e3%3A0x6654790e867462ee!2sUr%20Sport%20-%20%C3%81o%20thun%20th%E1%BB%83%20thao!5e0!3m2!1svi!2s!4v1778154966090!5m2!1svi!2s',
+    facebook: 'https://facebook.com',
+    instagram: 'https://instagram.com',
+    tiktok: 'https://tiktok.com',
+    copyright: '© 2026 UR SPORT. All rights reserved',
+    customLinks: [
+      {
+        title: "Danh mục sản phẩm",
+        items: [
+          { label: "Áo thun nam", action: "category", value: "Áo thun nam" },
+          { label: "Áo thun thể thao nam", action: "category", value: "Áo thun thể thao nam" },
+          { label: "Áo polo nam", action: "category", value: "Áo polo nam" },
+          { label: "Quần thể thao nam", action: "category", value: "Quần thể thao nam" },
+          { label: "Phụ kiện thể thao", action: "category", value: "Phụ kiện thể thao" }
+        ]
+      },
+      {
+        title: "Hỗ trợ khách hàng",
+        items: [
+          { label: "Blog", action: "page", value: "blog" },
+          { label: "Chính sách đổi trả", action: "page", value: "chinh-sach-doi-tra" },
+          { label: "Chính sách bảo hành", action: "page", value: "chinh-sach-bao-hanh" },
+          { label: "Hướng dẫn mua hàng", action: "page", value: "huong-dan-mua-hang" },
+          { label: "Liên hệ", action: "page", value: "contact" }
+        ]
+      }
+    ],
+    paymentBadges: ["COD", "BANK", "MOMO", "ZALO"],
+    paymentGateways: ["COD", "Bank Transfer", "E-Wallet"]
+  });
+
+  useEffect(() => {
+    if (!logoSettings) {
+      getDoc(doc(db, "settings", "logoSettings")).then((snap) => {
+        if (snap.exists()) setLogoSettingsState(snap.data());
+      }).catch(console.error);
+    } else {
+      setLogoSettingsState(logoSettings);
+    }
+
+    getDoc(doc(db, "settings", "footerSettings")).then((snap) => {
+      if (snap.exists()) {
+        setFooterSettings(prev => ({ ...prev, ...snap.data() }));
+      }
+    }).catch(console.error);
+  }, [logoSettings]);
 
   useEffect(() => {
     const footer = footerRef.current;
@@ -128,10 +192,10 @@ export function Footer({ onPageChange, onCategorySelect }: FooterProps) {
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-[1.3fr_0.9fr_0.95fr_1.15fr_0.85fr] xl:gap-14">
           <div>
             <div onClick={() => onPageChange('home')} className="cursor-pointer">
-              <Logo inverse />
+              <Logo inverse logoSettings={logoSettingsState} />
             </div>
             <p className="mt-5 max-w-xs text-sm leading-7 text-slate-300">
-              Chuyên cung cấp đồ thể thao chất lượng cao, phong cách hiện đại.
+              {footerSettings.description}
             </p>
 
             <form className="mt-6 flex max-w-sm gap-2" onSubmit={subscribe}>
@@ -163,62 +227,52 @@ export function Footer({ onPageChange, onCategorySelect }: FooterProps) {
             )}
           </div>
 
-          <div className="hidden md:block">
-            <h3 className="text-base font-black">Danh mục sản phẩm</h3>
-            <ul className="mt-5 space-y-3">
-              {categoryLinks.map((link) => (
-                <li key={link.value}>
-                  <button
-                    onClick={() => onCategorySelect(link.value)}
-                    className="group/link inline-flex w-fit items-center text-sm font-semibold text-slate-300 transition duration-300 hover:translate-x-1 hover:text-[#1e4b64]"
-                  >
-                    <span className="bg-gradient-to-r from-[#1e4b64] to-[#1e4b64] bg-[length:0%_1px] bg-left-bottom bg-no-repeat transition-[background-size] duration-300 group-hover/link:bg-[length:100%_1px]">
-                      {link.label}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="hidden md:block">
-            <h3 className="text-base font-black">Hỗ trợ khách hàng</h3>
-            <ul className="mt-5 space-y-3">
-              {supportLinks.map((link) => (
-                <li key={link.label}>
-                  <button
-                    onClick={() => link.href !== '#' && onPageChange(link.href)}
-                    className="group/link inline-flex w-fit items-center text-sm font-semibold text-slate-300 transition duration-300 hover:translate-x-1 hover:text-[#1e4b64]"
-                  >
-                    <span className="bg-gradient-to-r from-[#1e4b64] to-[#1e4b64] bg-[length:0%_1px] bg-left-bottom bg-no-repeat transition-[background-size] duration-300 group-hover/link:bg-[length:100%_1px]">
-                      {link.label}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {footerSettings.customLinks?.map((col: any, colIdx: number) => (
+            <div key={colIdx} className="hidden md:block">
+              <h3 className="text-base font-black">{col.title}</h3>
+              <ul className="mt-5 space-y-3">
+                {col.items?.map((item: any, itemIdx: number) => (
+                  <li key={itemIdx}>
+                    <button
+                      onClick={() => {
+                        if (item.action === 'category') {
+                          onCategorySelect(item.value);
+                        } else {
+                          onPageChange(item.value);
+                        }
+                      }}
+                      className="group/link inline-flex w-fit items-center text-sm font-semibold text-slate-300 transition duration-300 hover:translate-x-1 hover:text-[#1e4b64]"
+                    >
+                      <span className="bg-gradient-to-r from-[#1e4b64] to-[#1e4b64] bg-[length:0%_1px] bg-left-bottom bg-no-repeat transition-[background-size] duration-300 group-hover/link:bg-[length:100%_1px]">
+                        {item.label}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
 
           <div>
             <h3 className="text-base font-black">Thông tin liên hệ</h3>
             <ul className="mt-5 space-y-4 text-sm font-semibold text-slate-300">
               <li className="flex gap-3">
                 <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-[#1e4b64]" />
-                <span>72 Nguyễn Trãi, Quận 1, TP. Hồ Chí Minh</span>
+                <span>{footerSettings.address}</span>
               </li>
               <li className="flex gap-3">
                 <Phone className="mt-0.5 h-5 w-5 shrink-0 text-[#1e4b64]" />
-                <a className="transition hover:text-[#1e4b64]" href="tel:+84917722425">
-                  +84 917 722 425
+                <a className="transition hover:text-[#1e4b64]" href={`tel:${footerSettings.phone.replace(/\s+/g, '')}`}>
+                  {footerSettings.phone}
                 </a>
               </li>
               <li className="flex gap-3">
                 <Mail className="mt-0.5 h-5 w-5 shrink-0 text-[#1e4b64]" />
                 <a
                   className="transition hover:text-[#1e4b64]"
-                  href="mailto:support@ursport.vn"
+                  href={`mailto:${footerSettings.email}`}
                 >
-                  support@ursport.vn
+                  {footerSettings.email}
                 </a>
               </li>
             </ul>
@@ -229,7 +283,7 @@ export function Footer({ onPageChange, onCategorySelect }: FooterProps) {
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
                 sandbox="allow-scripts allow-same-origin"
-                src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d15992569.001833983!2d80.0375699!3d11.8747132!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752f523f5fc0e3%3A0x6654790e867462ee!2sUr%20Sport%20-%20%C3%81o%20thun%20th%E1%BB%83%20thao!5e0!3m2!1svi!2s!4v1778154966090!5m2!1svi!2s"
+                src={footerSettings.mapUrl}
                 title="UR SPORT Google Map"
               />
             </div>
@@ -249,7 +303,11 @@ export function Footer({ onPageChange, onCategorySelect }: FooterProps) {
             </div>
 
             <div className="mt-5 flex gap-3">
-              {socialLinks.map((social) => {
+              {[
+                { label: "Facebook", href: footerSettings.facebook, icon: Facebook },
+                { label: "Instagram", href: footerSettings.instagram, icon: Instagram },
+                { label: "TikTok", href: footerSettings.tiktok, icon: Music2 }
+              ].map((social) => {
                 const Icon = social.icon;
                 return (
                   <a
@@ -271,7 +329,7 @@ export function Footer({ onPageChange, onCategorySelect }: FooterProps) {
                 Thanh toán
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
-                {["COD", "BANK", "MOMO", "ZALO"].map((item) => (
+                {(footerSettings.paymentBadges || []).map((item) => (
                   <span
                     className="rounded border border-white/10 bg-white px-2.5 py-1 text-[10px] font-black text-slate-950 uppercase tracking-tighter"
                     key={item}
@@ -285,19 +343,16 @@ export function Footer({ onPageChange, onCategorySelect }: FooterProps) {
         </div>
 
         <div className="mt-8 border-t border-white/10 md:hidden">
-          {[
-            { title: "Danh mục sản phẩm", links: categoryLinks, isCategory: true },
-            { title: "Hỗ trợ khách hàng", links: supportLinks, isCategory: false }
-          ].map((section) => {
-            const isOpen = openSection === section.title;
+          {footerSettings.customLinks?.map((col: any) => {
+            const isOpen = openSection === col.title;
             return (
-              <div className="border-b border-white/10" key={section.title}>
+              <div className="border-b border-white/10" key={col.title}>
                 <button
                   className="flex w-full items-center justify-between py-4 text-left text-sm font-black"
-                  onClick={() => setOpenSection(isOpen ? "" : section.title)}
+                  onClick={() => setOpenSection(isOpen ? "" : col.title)}
                   type="button"
                 >
-                  {section.title}
+                  {col.title}
                   <ChevronDown
                     className={cn(
                       "h-5 w-5 transition-transform duration-300",
@@ -312,10 +367,16 @@ export function Footer({ onPageChange, onCategorySelect }: FooterProps) {
                   )}
                 >
                   <ul className="min-h-0 space-y-3 pb-4">
-                    {section.links.map((link: any) => (
-                      <li key={section.isCategory ? link.value : link.label}>
+                    {col.items?.map((link: any, linkIdx: number) => (
+                      <li key={linkIdx}>
                         <button
-                          onClick={() => section.isCategory ? onCategorySelect(link.value) : (link.href !== '#' && onPageChange(link.href))}
+                          onClick={() => {
+                            if (link.action === 'category') {
+                              onCategorySelect(link.value);
+                            } else {
+                              onPageChange(link.value);
+                            }
+                          }}
                           className="text-sm font-semibold text-slate-300 hover:text-[#1e4b64] transition-colors"
                         >
                           {link.label}
@@ -330,9 +391,9 @@ export function Footer({ onPageChange, onCategorySelect }: FooterProps) {
         </div>
 
         <div className="mt-10 flex flex-col gap-4 border-t border-white/10 pt-6 text-sm font-semibold text-slate-400 sm:flex-row sm:items-center sm:justify-between">
-          <p>© 2026 UR SPORT. All rights reserved</p>
+          <p>{footerSettings.copyright}</p>
           <div className="flex flex-wrap items-center gap-2">
-            {["COD", "Bank Transfer", "E-Wallet"].map((item) => (
+            {(footerSettings.paymentGateways || []).map((item) => (
               <span
                 className="rounded-md border border-white/10 px-3 py-1 text-[10px] font-black text-slate-300 uppercase tracking-widest"
                 key={item}

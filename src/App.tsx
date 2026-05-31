@@ -124,6 +124,7 @@ function AppContent() {
     return cat ? cat.name : 'All';
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [logoSettings, setLogoSettings] = useState<{ logoLight?: string; logoDark?: string; favicon?: string } | null>(null);
   const navigate = useNavigate();
 
   // Inject custom CSS từ Firestore vào mọi trang
@@ -139,6 +140,30 @@ function AppContent() {
         document.head.appendChild(styleEl);
       }
       styleEl.textContent = css;
+    }).catch(() => {});
+
+    // Load Logo & Favicon Settings from Firestore
+    getDoc(doc(db, 'settings', 'logoSettings')).then(snap => {
+      if (!snap.exists()) return;
+      const data = snap.data();
+      setLogoSettings(data);
+      if (data.favicon) {
+        let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement | null;
+        if (!link) {
+          link = document.createElement('link');
+          link.rel = 'icon';
+          document.head.appendChild(link);
+        }
+        link.href = data.favicon;
+
+        let appleLink = document.querySelector("link[rel='apple-touch-icon']") as HTMLLinkElement | null;
+        if (!appleLink) {
+          appleLink = document.createElement('link');
+          appleLink.rel = 'apple-touch-icon';
+          document.head.appendChild(appleLink);
+        }
+        appleLink.href = data.favicon;
+      }
     }).catch(() => {});
   }, []);
 
@@ -190,6 +215,7 @@ function AppContent() {
               onPageChange={onPageChange}
               onCategorySelect={handleCategorySelect}
               activeCategory={activeCategory as any}
+              logoSettings={logoSettings}
             />
           )}
           
@@ -250,6 +276,7 @@ function AppContent() {
               <Footer 
                 onPageChange={onPageChange}
                 onCategorySelect={handleCategorySelect}
+                logoSettings={logoSettings}
               />
             </>
           )}

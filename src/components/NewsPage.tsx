@@ -1,7 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronRight, ChevronDown, Calendar, Share2, MessageCircle, ShoppingBag } from 'lucide-react';
+import { 
+  ChevronRight, 
+  ChevronDown, 
+  Calendar, 
+  Share2, 
+  MessageCircle, 
+  ShoppingBag,
+  Search,
+  Heart,
+  Link,
+  Facebook,
+  ArrowLeft,
+  Clock,
+  User
+} from 'lucide-react';
+import { BlogHero } from './BlogHero';
+import { CategoryTabs } from './CategoryTabs';
+import { FeaturedCarousel } from './FeaturedCarousel';
+import { BlogCard } from './BlogCard';
 import { cn } from '@/lib/utils';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSEO } from '../hooks/useSEO';
@@ -223,6 +241,57 @@ export function NewsPage() {
   const [isTocOpen, setIsTocOpen] = useState(false);
   const blogContentRef = useRef<HTMLDivElement>(null);
   const { products } = useProducts();
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [readProgress, setReadProgress] = useState(0);
+  const [liked, setLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!selectedPost) return;
+    const key = `ursport_blog_liked_${selectedPost.id}`;
+    setLiked(localStorage.getItem(key) === 'true');
+    setLikesCount(Math.floor((selectedPost.title.length * 7) % 40) + 12);
+  }, [selectedPost]);
+
+  const handleLike = () => {
+    if (!selectedPost) return;
+    const key = `ursport_blog_liked_${selectedPost.id}`;
+    if (liked) {
+      localStorage.setItem(key, 'false');
+      setLiked(false);
+      setLikesCount(prev => prev - 1);
+    } else {
+      localStorage.setItem(key, 'true');
+      setLiked(true);
+      setLikesCount(prev => prev + 1);
+    }
+  };
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.href);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  useEffect(() => {
+    if (!selectedPost) {
+      setReadProgress(0);
+      return;
+    }
+    const handleScrollProgress = () => {
+      const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+      if (scrollHeight <= 0) {
+        setReadProgress(100);
+        return;
+      }
+      const progress = Math.min(100, Math.max(0, (window.scrollY / scrollHeight) * 100));
+      setReadProgress(progress);
+    };
+    window.addEventListener('scroll', handleScrollProgress, { passive: true });
+    return () => window.removeEventListener('scroll', handleScrollProgress);
+  }, [selectedPost]);
 
   useEffect(() => {
     setIsExpanded(false);
@@ -749,9 +818,19 @@ export function NewsPage() {
     customSchema: selectedPost?.customSchema || contentSchema
   });
 
-  const filteredPosts = activeCategory === mainBlogCategory.label
-    ? posts
-    : posts.filter(p => slugifyCategory(p.category || '') === slugifyCategory(activeCategory));
+  const filteredPosts = posts.filter(post => {
+    const isInCategory = activeCategory === mainBlogCategory.label || slugifyCategory(post.category || '') === slugifyCategory(activeCategory);
+    if (!isInCategory) return false;
+
+    if (!searchQuery) return true;
+
+    const queryNormalized = normalizeTextForMatch(searchQuery);
+    return (
+      normalizeTextForMatch(post.title || '').includes(queryNormalized) ||
+      normalizeTextForMatch(post.excerpt || '').includes(queryNormalized) ||
+      normalizeTextForMatch(post.category || '').includes(queryNormalized)
+    );
+  });
 
   const scrollToTocHeading = (headingId: string, offset = 100) => {
     setIsExpanded(true);
@@ -771,26 +850,34 @@ export function NewsPage() {
 
     return (
       <div className="mx-auto max-w-[1400px] px-4 py-8 sm:px-6 lg:px-8 xl:px-10">
-        {/* Sticky Section Header TOC */}
+        {/* Scroll Reading Progress Bar */}
+        <div className="fixed top-0 left-0 w-full h-1 bg-zinc-100 z-[70] lg:top-[80px]">
+          <div 
+            className="h-full bg-gradient-to-r from-sky-400 to-[#1e4b64] transition-all duration-100" 
+            style={{ width: `${readProgress}%` }}
+          />
+        </div>
+
+        {/* Sticky Mobile Header TOC */}
         <AnimatePresence>
           {showToc && activeHeadingId && (
             <motion.div 
               initial={{ y: -100 }}
               animate={{ y: 0 }}
               exit={{ y: -100 }}
-              className="fixed top-0 left-0 right-0 z-[60] bg-white border-b border-zinc-100 shadow-sm lg:top-[80px]"
+              className="fixed top-0 left-0 right-0 z-[60] bg-white/90 backdrop-blur-md border-b border-zinc-100 shadow-sm lg:top-[80px]"
             >
               <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
                 <div className="flex-grow min-w-0">
-                  <h3 className="text-[14px] font-bold text-[#0066cc] truncate">
+                  <h3 className="text-[13px] sm:text-[14px] font-black text-[#1e4b64] truncate">
                     {tocHeadings.find(h => h.id === activeHeadingId)?.text || selectedPost?.title}
                   </h3>
                 </div>
                 <button 
                   onClick={() => setInlineTocOpenId(inlineTocOpenId === activeHeadingId ? null : activeHeadingId)}
-                  className="flex-shrink-0 text-[12px] font-medium px-3 py-1.5 rounded-lg bg-[#f0f7ff] text-[#0066cc] hover:bg-[#e0efff] transition-all flex items-center gap-1.5 border border-[#d0e6ff]"
+                  className="flex-shrink-0 text-[11px] font-bold px-3 py-1.5 rounded-lg bg-zinc-50 hover:bg-zinc-100 text-[#1e4b64] transition-all flex items-center gap-1 border border-zinc-200 cursor-pointer"
                 >
-                  {inlineTocOpenId === activeHeadingId ? 'Thu gọn' : 'Xem thêm'}
+                  {inlineTocOpenId === activeHeadingId ? 'Thu gọn' : 'Xem mục lục'}
                   <ChevronDown className={cn("h-3.5 w-3.5 transition-transform duration-300", inlineTocOpenId === activeHeadingId && "rotate-180")} />
                 </button>
               </div>
@@ -804,19 +891,19 @@ export function NewsPage() {
                     exit={{ height: 0, opacity: 0 }}
                     className="bg-transparent px-4 pb-5 overflow-hidden"
                   >
-                    <div className="max-w-[936px] mx-auto rounded-2xl bg-[#f8f9fa] border border-zinc-200 p-6 shadow-sm max-h-[min(70vh,720px)] overflow-y-auto custom-scrollbar">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-[16px] font-bold text-zinc-900">
-                          Mục lục
+                    <div className="max-w-[936px] mx-auto rounded-2xl bg-zinc-50 border border-zinc-200 p-6 shadow-md max-h-[min(70vh,720px)] overflow-y-auto custom-scrollbar">
+                      <div className="flex items-center justify-between border-b border-zinc-150 pb-3 mb-4">
+                        <h4 className="text-sm font-black text-zinc-955 uppercase tracking-wider">
+                          Mục lục bài viết
                         </h4>
                         <button
                           onClick={() => setInlineTocOpenId(null)}
-                          className="text-[14px] text-[#0066cc] flex items-center gap-1 hover:underline font-medium"
+                          className="text-xs text-[#1e4b64] flex items-center gap-1 hover:underline font-bold uppercase tracking-wider cursor-pointer"
                         >
-                          Ẩn <ChevronDown className="h-4 w-4 rotate-180" />
+                          Đóng <ChevronDown className="h-4 w-4 rotate-180" />
                         </button>
                       </div>
-                      <div className="mt-6 space-y-2.5">
+                      <div className="space-y-2.5">
                         {tocHeadings.map((item) => (
                           <button
                             key={`sticky-item-${item.id}`}
@@ -824,11 +911,12 @@ export function NewsPage() {
                               scrollToTocHeading(item.id, 160);
                             }}
                             className={cn(
-                              "block w-full text-left text-[15px] text-[#0066cc] hover:underline transition-colors leading-snug",
-                              item.level !== 2 && "pl-6"
+                              "block w-full text-left text-[14px] text-zinc-600 hover:text-zinc-900 transition-colors leading-snug cursor-pointer",
+                              item.level !== 2 && "pl-6 text-zinc-500",
+                              activeHeadingId === item.id && "text-[#1e4b64] font-black"
                             )}
                           >
-                            <span className="font-medium">{item.number}. {item.text}</span>
+                            <span>{item.number}. {item.text}</span>
                           </button>
                         ))}
                       </div>
@@ -839,69 +927,72 @@ export function NewsPage() {
             </motion.div>
           )}
         </AnimatePresence>
-        <nav className="flex items-center gap-2 text-xs font-medium text-zinc-400 mb-8 pb-4 border-b border-zinc-100">
-          <button onClick={() => navigate("/")} className="hover:text-black transition-colors">Home</button>
+
+        {/* Breadcrumb Navigation */}
+        <nav className="flex items-center gap-2 text-xs font-bold text-zinc-400 mb-8 pb-4 border-b border-zinc-100">
+          <button onClick={() => navigate("/")} className="hover:text-zinc-900 transition-colors cursor-pointer">Trang chủ</button>
           <ChevronRight className="h-3 w-3" />
-          <button onClick={() => navigate("/blog")} className="hover:text-black transition-colors">Blog</button>
+          <button onClick={() => navigate("/blog")} className="hover:text-zinc-900 transition-colors cursor-pointer">Blog</button>
           <ChevronRight className="h-3 w-3" />
-          <span className="truncate max-w-[200px] sm:max-w-md">{selectedPost.title}</span>
+          <span className="text-zinc-600 truncate max-w-[200px] sm:max-w-md">{selectedPost.title}</span>
         </nav>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 lg:gap-16">
+        {/* Post Metadata Hero Block */}
+        <div className="max-w-4xl mb-8">
+          {selectedPost.category && (
+            <span className="inline-flex px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#1e4b64]/10 text-[#1e4b64] mb-4">
+              {selectedPost.category}
+            </span>
+          )}
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-zinc-955 leading-tight tracking-tight mb-6">
+            {selectedPost.title}
+          </h1>
+
+          <div className="flex items-center gap-3.5 pb-6 border-b border-zinc-100">
+            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-[#1e4b64] text-white font-black flex items-center justify-center text-sm uppercase shadow-sm">
+              {(selectedPost.author || 'U').charAt(0)}
+            </div>
+            <div>
+              <span className="block text-sm font-black text-zinc-955 leading-none mb-1.5">{selectedPost.author || 'UR Sport'}</span>
+              <div className="flex items-center gap-2.5 text-zinc-400 text-[10px] font-bold uppercase tracking-wider">
+                <div className="flex items-center gap-1">
+                  <Calendar className="h-3.5 w-3.5" />
+                  <span>{selectedPost.date || 'Gần đây'}</span>
+                </div>
+                <span className="w-1 h-1 rounded-full bg-zinc-300" />
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5 animate-pulse" />
+                  <span>{Math.max(1, Math.ceil((selectedPost.content?.split(/\s+/).length || 0) / 200))} phút đọc</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Large Featured Image */}
+        <div className="blog-hero-image relative aspect-video overflow-hidden rounded-[32px] mb-12 shadow-lg border border-zinc-100">
+          <img 
+            src={selectedPost.image} 
+            alt={selectedPost.title} 
+            loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-700 hover:scale-102"
+          />
+        </div>
+
+        {/* Two-Column Grid Content Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 lg:gap-16 items-start">
           <div className="min-w-0 w-full">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-black leading-tight tracking-tight mb-4">
-              {selectedPost.title}
-            </h1>
-
-            <div className="mb-6 flex flex-wrap items-center gap-2 sm:mb-10">
-              <div className="flex items-center gap-1.5 rounded bg-zinc-100 px-2 py-1 text-[10px] font-bold uppercase text-zinc-500 sm:text-[11px]">
-                <Calendar className="h-3 w-3" />
-                {selectedPost.date}
-              </div>
-              <span className="rounded bg-orange-50 px-2 py-1 text-[10px] font-bold uppercase text-orange-600 sm:text-[11px]">
-                {selectedPost.category}
-              </span>
-            </div>
-
-            <div className="mb-8 flex items-center justify-between gap-4 border-b border-zinc-100 pb-6 sm:mb-12 sm:pb-10">
-              <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-zinc-900 text-base font-black text-white sm:h-12 sm:w-12 sm:text-lg">
-                  {(selectedPost.author || 'U').charAt(0)}
-                </div>
-                <div className="min-w-0">
-                  <div className="truncate text-[14px] font-black leading-tight text-zinc-900 sm:text-base">{selectedPost.author || 'UR Sport'}</div>
-                  <div className="mt-0.5 truncate text-[10px] font-medium uppercase tracking-[0.14em] text-zinc-400 sm:text-xs sm:tracking-widest">UrSport Specialist</div>
-                </div>
-              </div>
-              <div className="flex flex-shrink-0 items-center gap-2">
-                {[Share2, MessageCircle].map((Icon, i) => (
-                  <button key={i} className="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 text-zinc-500 transition-all hover:bg-zinc-50 hover:text-black sm:h-9 sm:w-9">
-                    <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="blog-hero-image relative aspect-[1024/682] overflow-hidden rounded-[32px] mb-12 shadow-2xl w-full">
-              <img 
-                src={selectedPost.image} 
-                alt={selectedPost.title} 
-                loading="lazy"
-                className="h-full w-full object-cover"
-              />
-            </div>
-
             <div className="relative w-full overflow-x-hidden">
-              {/* Static TOC at the top of content */}
+              {/* Static Collapsible TOC for Mobile/Tablet */}
               {tocHeadings.length > 0 && (
-                <div className="mb-12 p-6 rounded-2xl bg-[#f8f9fa] border border-zinc-200 shadow-sm w-full">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-[16px] font-bold text-zinc-900">
+                <div className="mb-10 p-6 rounded-2xl bg-zinc-50 border border-zinc-200/60 shadow-sm w-full lg:hidden">
+                  <div className="flex items-center justify-between border-b border-zinc-150 pb-3 mb-4">
+                    <h4 className="text-sm font-black text-zinc-955 uppercase tracking-wider">
                       Mục lục
                     </h4>
                     <button 
                       onClick={() => setIsStaticTocOpen(!isStaticTocOpen)}
-                      className="text-[14px] text-[#0066cc] flex items-center gap-1 hover:underline font-medium"
+                      className="text-xs text-[#1e4b64] flex items-center gap-1 hover:underline font-bold uppercase tracking-wider cursor-pointer"
                     >
                       {isStaticTocOpen ? 'Ẩn' : 'Hiện'} 
                       <ChevronDown className={cn("h-4 w-4 transition-transform duration-300", isStaticTocOpen ? "rotate-180" : "rotate-0")} />
@@ -912,7 +1003,7 @@ export function NewsPage() {
                     <motion.div 
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
-                      className="mt-6 space-y-2.5 overflow-hidden"
+                      className="space-y-2.5 overflow-hidden"
                     >
                       {tocHeadings.map((item) => (
                         <button
@@ -921,11 +1012,11 @@ export function NewsPage() {
                             scrollToTocHeading(item.id, 100);
                           }}
                           className={cn(
-                            "block w-full text-left text-[15px] text-[#0066cc] hover:underline transition-colors leading-snug",
-                            item.level !== 2 && "pl-6"
+                            "block w-full text-left text-[14px] text-zinc-600 hover:text-zinc-955 transition-colors leading-snug cursor-pointer",
+                            item.level !== 2 && "pl-6 text-zinc-500"
                           )}
                         >
-                          <span className="font-medium">{item.number}. {item.text}</span>
+                          <span>{item.number}. {item.text}</span>
                         </button>
                       ))}
                     </motion.div>
@@ -933,11 +1024,12 @@ export function NewsPage() {
                 </div>
               )}
 
+              {/* Main Content Render */}
               <div 
                 ref={blogContentRef}
                 className={cn(
-                  "blog-content product-description-container notranslate w-full text-zinc-600 transition-[max-height] duration-700 ease-in-out overflow-x-hidden",
-                  !isExpanded ? "max-h-[1000px] overflow-y-hidden" : "max-h-none overflow-y-visible"
+                  "blog-content product-description-container notranslate w-full text-zinc-700 transition-[max-height] duration-700 ease-in-out overflow-x-hidden text-base sm:text-lg leading-relaxed font-medium",
+                  !isExpanded ? "max-h-[1200px] overflow-y-hidden" : "max-h-none overflow-y-visible"
                 )}
               >
                 <div dangerouslySetInnerHTML={{ 
@@ -961,7 +1053,7 @@ export function NewsPage() {
                     {createPortal(
                       <button 
                         onClick={() => setInlineTocOpenId(isThisOpen ? null : heading.id)}
-                        className="text-[12px] font-medium px-3 py-1.5 rounded-lg bg-[#f0f7ff] text-[#0066cc] hover:bg-[#e0efff] transition-all flex items-center gap-1.5 border border-[#d0e6ff]"
+                        className="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-zinc-50 hover:bg-zinc-100 text-[#1e4b64] transition-all flex items-center gap-1 border border-zinc-200 cursor-pointer"
                       >
                         {isThisOpen ? 'Thu gọn' : 'Xem thêm'}
                         <ChevronDown className={cn("h-3.5 w-3.5 transition-transform duration-300", isThisOpen && "rotate-180")} />
@@ -972,15 +1064,15 @@ export function NewsPage() {
                       <motion.div 
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="mt-4 mb-8 p-6 rounded-2xl bg-[#f8f9fa] border border-zinc-200 shadow-sm"
+                        className="mt-4 mb-8 p-6 rounded-2xl bg-zinc-50 border border-zinc-200/60 shadow-md"
                       >
-                        <div className="flex items-center justify-between mb-4">
-                          <h4 className="text-[16px] font-bold text-zinc-900">
+                        <div className="flex items-center justify-between mb-4 pb-2 border-b border-zinc-150">
+                          <h4 className="text-sm font-black text-zinc-955 uppercase tracking-wider">
                             Mục lục
                           </h4>
                           <button 
                             onClick={() => setInlineTocOpenId(null)}
-                            className="text-[13px] text-[#0066cc] flex items-center gap-1 hover:underline"
+                            className="text-xs text-[#1e4b64] flex items-center gap-1 hover:underline font-bold uppercase tracking-wider cursor-pointer"
                           >
                             Ẩn <ChevronDown className="h-4 w-4 rotate-180" />
                           </button>
@@ -993,11 +1085,11 @@ export function NewsPage() {
                                 scrollToTocHeading(item.id, 100);
                               }}
                               className={cn(
-                                "block w-full text-left text-[15px] text-[#0066cc] hover:underline transition-colors leading-snug",
-                                item.level !== 2 && "pl-6"
+                                "block w-full text-left text-[14px] text-zinc-600 hover:text-zinc-955 transition-colors leading-snug cursor-pointer",
+                                item.level !== 2 && "pl-6 text-zinc-500"
                               )}
                             >
-                              <span className="font-medium">{item.number}. {item.text}</span>
+                              <span>{item.number}. {item.text}</span>
                             </button>
                           ))}
                         </div>
@@ -1009,25 +1101,70 @@ export function NewsPage() {
               })}
               
               {!isExpanded && (
-                <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none z-10" />
+                <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-white via-white/95 to-transparent pointer-events-none z-10" />
               )}
             </div>
 
-            <div className="flex justify-center pt-8 mb-12">
+            {/* Read more button wrapper */}
+            <div className="flex justify-center pt-8 mb-6">
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="px-8 py-3 bg-white text-[#1e4b64] border border-zinc-200 text-sm font-bold rounded-full shadow-sm hover:text-[#153446] hover:border-[#1e4b64] hover:-translate-y-1 transition-all flex items-center gap-2 group"
+                className="px-8 py-3.5 bg-white text-[#1e4b64] border border-zinc-200 text-sm font-black uppercase tracking-wider rounded-full shadow-md hover:text-[#153446] hover:border-[#1e4b64] hover:-translate-y-1 transition-all flex items-center gap-2 group cursor-pointer"
               >
-                {isExpanded ? 'Thu gọn' : 'Xem thêm'}
+                <span>{isExpanded ? 'Thu gọn bài viết' : 'Đọc tiếp bài viết'}</span>
                 <ChevronDown className={cn("h-4 w-4 transition-all duration-300", isExpanded && "rotate-180")} />
               </button>
             </div>
 
+            {/* Premium Likes and Shares Engagement Bar */}
+            <div className="my-10 p-6 rounded-3xl bg-zinc-50 border border-zinc-150 flex flex-wrap items-center justify-between gap-6 shadow-sm">
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={handleLike}
+                  className={cn(
+                    "h-12 w-12 rounded-full flex items-center justify-center border shadow-xs transition-all duration-300 transform active:scale-95 cursor-pointer",
+                    liked 
+                      ? "bg-rose-500 border-rose-500 text-white shadow-rose-500/25 hover:bg-rose-600"
+                      : "bg-white border-zinc-200 text-zinc-500 hover:text-zinc-800 hover:border-zinc-300"
+                  )}
+                  aria-label="Yêu thích bài viết"
+                >
+                  <Heart className={cn("h-5 w-5", liked && "fill-current")} />
+                </button>
+                <div>
+                  <span className="block text-sm font-black text-zinc-955 leading-none mb-1.5">Bài viết hữu ích?</span>
+                  <span className="text-xs font-bold text-zinc-500">{likesCount} lượt yêu thích</span>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, '_blank')}
+                  className="h-10 w-10 rounded-full flex items-center justify-center bg-[#1877f2] hover:bg-[#166fe5] text-white transition-colors shadow-xs cursor-pointer"
+                  title="Chia sẻ lên Facebook"
+                >
+                  <Facebook className="h-4 w-4" />
+                </button>
+                <button 
+                  onClick={handleCopyLink}
+                  className={cn(
+                    "h-10 px-4 rounded-full flex items-center gap-2 border text-xs font-black uppercase tracking-wider transition-all shadow-xs cursor-pointer",
+                    copied 
+                      ? "bg-emerald-500 border-emerald-500 text-white" 
+                      : "bg-white border-zinc-200 text-zinc-600 hover:text-zinc-900 hover:border-zinc-300"
+                  )}
+                >
+                  <Link className="h-3.5 w-3.5" />
+                  <span>{copied ? 'Đã sao chép!' : 'Sao chép link'}</span>
+                </button>
+              </div>
+            </div>
+
             {selectedPost.images?.length > 0 && (
-              <div className="grid gap-4 mt-10 sm:grid-cols-2 w-full">
-                {selectedPost.images.map((img: string, index: number) => (
-                  <div key={index} className="overflow-hidden rounded-[28px] bg-zinc-100 shadow-sm w-full">
-                    <img src={img} alt={`${selectedPost.title} - Ảnh ${index + 1}`} loading="lazy" className="h-full w-full object-cover" />
+              <div className="grid gap-6 mt-10 sm:grid-cols-2 w-full">
+                {selectedPost.images.map((img, index) => (
+                  <div key={index} className="overflow-hidden rounded-[24px] bg-zinc-50 border border-zinc-100 shadow-sm w-full aspect-[4/3]">
+                    <img src={img} alt={`${selectedPost.title} - Ảnh ${index + 1}`} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 hover:scale-103" />
                   </div>
                 ))}
               </div>
@@ -1035,164 +1172,212 @@ export function NewsPage() {
 
             {selectedPost.videos?.length > 0 && (
               <div className="mt-10 space-y-6 w-full">
-                {selectedPost.videos.map((video: string, index: number) => (
-                  <div key={index} className="overflow-hidden rounded-[28px] bg-black shadow-lg w-full">
+                {selectedPost.videos.map((video, index) => (
+                  <div key={index} className="overflow-hidden rounded-[24px] bg-black shadow-md w-full">
                     <video controls src={video} className="w-full object-cover" />
                   </div>
                 ))}
               </div>
             )}
-
           </div>
 
-          <aside className="relative w-full lg:w-[320px]">
+          {/* Sticky Sidebar (Desktop only) */}
+          <aside className="hidden lg:block lg:w-[320px] shrink-0">
+            <div className="sticky top-[150px] space-y-8">
+              {/* Dynamic scroll-following TOC */}
+              {tocHeadings.length > 0 && (
+                <div className="p-6 rounded-2xl bg-zinc-50 border border-zinc-200/60 shadow-xs">
+                  <h4 className="text-[11px] font-black text-zinc-455 uppercase tracking-[0.2em] mb-4 pb-2 border-b border-zinc-150">
+                    Mục lục bài viết
+                  </h4>
+                  <nav className="space-y-3">
+                    {tocHeadings.map((heading) => {
+                      const isActive = activeHeadingId === heading.id;
+                      return (
+                        <button
+                          key={heading.id}
+                          onClick={() => scrollToTocHeading(heading.id, 100)}
+                          className={cn(
+                            "block text-left text-[13px] leading-relaxed transition-all duration-200 cursor-pointer w-full font-bold",
+                            heading.level !== 2 ? "pl-3 text-[12px] font-semibold" : "",
+                            isActive 
+                              ? "text-[#1e4b64] font-black translate-x-1" 
+                              : "text-zinc-500 hover:text-zinc-800"
+                          )}
+                        >
+                          {heading.number}. {heading.text}
+                        </button>
+                      );
+                    })}
+                  </nav>
+                </div>
+              )}
 
+              {/* Related Posts */}
+              <div>
+                <h3 className="text-[11px] font-black text-zinc-455 uppercase tracking-[0.2em] mb-5 border-b border-zinc-150 pb-2 truncate">
+                  BÀI VIẾT LIÊN QUAN
+                </h3>
+                <div className="space-y-5">
+                  {relatedPosts.slice(0, 3).map((post) => (
+                    <div 
+                      key={post.id} 
+                      className="flex gap-4 group cursor-pointer"
+                      onClick={() => navigate(getBlogPostPath(post))}
+                    >
+                      <div className="w-16 h-16 flex-shrink-0 overflow-hidden rounded-xl bg-zinc-50 border border-zinc-100 shadow-xs">
+                         <LazyImage 
+                          src={post.image} 
+                          alt={post.title} 
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                         />
+                      </div>
+                      <div className="flex flex-col justify-center min-w-0">
+                         <h4 className="font-bold text-xs text-zinc-900 group-hover:text-[#1e4b64] transition-colors leading-snug line-clamp-2">
+                           {post.title}
+                         </h4>
+                         <span className="text-[10px] font-bold text-zinc-400 mt-1">{post.date}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-            <div>
-              <h3 className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-6 border-b border-zinc-100 pb-2 truncate">
-                BÀI VIẾT LIÊN QUAN
-              </h3>
-              <div className="space-y-6">
-                {relatedPosts.slice(0, 3).map((post) => (
-                  <div 
-                    key={post.id} 
-                    className="flex gap-4 group cursor-pointer"
-                    onClick={() => navigate(getBlogPostPath(post))}
-                  >
-                    <div className="w-20 h-20 flex-shrink-0 overflow-hidden rounded-xl">
-                       <LazyImage 
-                        src={post.image} 
-                        alt={post.title} 
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                       />
-                    </div>
-                    <div className="flex flex-col justify-center">
-                       <h4 className="font-black text-xs text-zinc-900 group-hover:text-orange-600 transition-colors leading-tight line-clamp-2">
-                         {post.title}
-                       </h4>
-                       <span className="text-[10px] font-bold text-zinc-400 mt-1">{post.date}</span>
-                    </div>
-                  </div>
-                ))}
+              {/* Sidebar Brand Banner */}
+              <div className="p-6 rounded-2xl bg-gradient-to-br from-[#1e4b64] to-[#153446] text-white text-center shadow-md relative overflow-hidden">
+                <div className="absolute top-[-20%] left-[-10%] w-[50%] aspect-square rounded-full bg-white/5 blur-2xl pointer-events-none" />
+                <h4 className="text-sm font-black uppercase tracking-wider mb-2">UR SPORT Premium</h4>
+                <p className="text-xs text-zinc-300 mb-4 leading-normal">
+                  Chất liệu tối ưu hoàn hảo cho buổi tập hiệu năng cao. Khám phá bộ sưu tập mới nhất.
+                </p>
+                <button 
+                  onClick={() => navigate('/shop')}
+                  className="w-full py-2.5 rounded-xl bg-white hover:bg-zinc-100 text-zinc-900 font-black text-xs uppercase tracking-widest transition-all cursor-pointer shadow-xs"
+                >
+                  Mua sắm ngay
+                </button>
               </div>
             </div>
           </aside>
+        </div>
 
-          {/* Suggested Products Section */}
-          <div className="lg:col-span-2 w-full mt-10 pt-12 border-t border-zinc-200">
-            <div className="flex items-center justify-between gap-6 mb-10">
-              <h3 className="text-[20px] font-bold text-zinc-900 uppercase tracking-tight">CÓ THỂ BẠN CŨNG THÍCH</h3>
-              <button
-                type="button"
-                onClick={() => navigate('/shop')}
-                className="text-[#1e4b64] text-[11px] sm:text-[14px] font-bold flex items-center gap-0.5 sm:gap-1 hover:opacity-80 transition-all group flex-shrink-0 whitespace-nowrap"
+        {/* Related Products Widget */}
+        <div className="w-full mt-16 pt-12 border-t border-zinc-200">
+          <div className="flex items-center justify-between gap-6 mb-8">
+            <h3 className="text-lg sm:text-xl font-extrabold text-[#1e4b64] uppercase tracking-tight">SẢN PHẨM PHÙ HỢP VỚI BẠN</h3>
+            <button
+              type="button"
+              onClick={() => navigate('/shop')}
+              className="text-[#1e4b64] text-xs sm:text-sm font-black uppercase tracking-wider flex items-center gap-1 hover:opacity-80 transition-all group flex-shrink-0 cursor-pointer"
+            >
+              <span>Xem tất cả</span>
+              <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
+            {products.slice(0, 5).map((product) => (
+              <div
+                key={product.id}
+                onClick={() => {
+                  navigate(getProductPath(product));
+                }}
+                className="group cursor-pointer flex flex-col h-full bg-white border border-zinc-100 rounded-2xl overflow-hidden shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-300"
               >
-                <span>Xem tất cả</span>
-                <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 group-hover:translate-x-1 transition-transform" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
-              {products.slice(0, 5).map((product) => (
-                <div
-                  key={product.id}
-                  onClick={() => {
-                    navigate(getProductPath(product));
-                  }}
-                  className="group cursor-pointer"
-                >
-                  <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-zinc-50 border border-zinc-100 shadow-sm transition-all duration-500 group-hover:shadow-md">
-                    <LazyImage
-                      src={product.images[0]}
-                      alt={product.name}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
-                    <button className="absolute bottom-3 right-3 w-8 h-8 rounded-full bg-white text-zinc-900 shadow-lg flex items-center justify-center opacity-0 translate-y-3 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
-                      <ShoppingBag className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                  <h4 className="mt-4 mb-2 text-[14px] font-bold text-zinc-800 leading-snug line-clamp-2 group-hover:text-[#1e4b64] transition-colors">
+                <div className="relative aspect-[4/5] w-full overflow-hidden bg-zinc-50">
+                  <LazyImage
+                    src={product.images[0]}
+                    alt={product.name}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                  {product.discountPrice && (
+                    <span className="absolute top-2 left-2 px-2 py-1 rounded bg-rose-500 text-white font-black text-[9px] uppercase tracking-wider shadow-sm">
+                      Giảm giá
+                    </span>
+                  )}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/2 transition-colors" />
+                  <button className="absolute bottom-3 right-3 w-8 h-8 rounded-full bg-white text-zinc-955 shadow-md flex items-center justify-center opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 cursor-pointer hover:bg-zinc-50 border border-zinc-100">
+                    <ShoppingBag className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <div className="p-4 flex-grow flex flex-col justify-between">
+                  <h4 className="text-[13px] font-bold text-zinc-800 leading-snug line-clamp-2 group-hover:text-[#1e4b64] transition-colors mb-2">
                     {product.name}
                   </h4>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[16px] font-black text-[#ff3b30]">{(product.discountPrice || product.price).toLocaleString('vi-VN')}đ</span>
+                  <div className="flex items-center gap-2 mt-auto">
+                    <span className="text-[15px] font-black text-[#ff3b30]">{(product.discountPrice || product.price).toLocaleString('vi-VN')}đ</span>
                     {product.discountPrice && (
-                      <span className="text-xs text-zinc-400 line-through">{product.price.toLocaleString('vi-VN')}đ</span>
+                      <span className="text-xs text-zinc-400 line-through font-bold">{(product.price).toLocaleString('vi-VN')}đ</span>
                     )}
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
     );
   }
 
-
   return (
     <div className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-12">
-        <h1 className="text-[32px] sm:text-[40px] font-black text-black leading-tight tracking-tight mb-4">
-          {currentBlogMeta?.h1 || mainBlogCategory.label}
-        </h1>
-        <p className="text-zinc-500 max-w-2xl font-medium text-sm sm:text-base">
-          {currentBlogMeta?.description}
-        </p>
-      </div>
+      {/* Premium Hero section with live search props */}
+      <BlogHero 
+        title={currentBlogMeta?.h1 || mainBlogCategory.label} 
+        subtitle={currentBlogMeta?.description} 
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        onTagClick={setSearchQuery}
+      />
 
-      <div className="flex items-center gap-2 mb-10 overflow-x-auto pb-2 scrollbar-hide">
-        {blogCategories.filter(cat => cat.group !== 'subcategory').map(cat => (
-          <button
-            key={cat.label}
-            onClick={() => {
-              setActiveCategory(cat.label);
-              navigate(cat.link);
-            }}
-            className={cn(
-              "px-6 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap",
-              activeCategory === cat.label
-                ? "bg-[#16a34a] text-white shadow-lg" 
-                : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
-            )}
-          >
-            {cat.label}
-          </button>
-        ))}
-      </div>
+      {/* Categories Tabs filter */}
+      <CategoryTabs
+        categories={blogCategories.filter(cat => cat.group !== 'subcategory').map(c => ({ id: c.id, label: c.label, link: c.link }))}
+        active={activeCategory}
+        onSelect={(c) => { setActiveCategory(c.label); navigate(c.link); }}
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-20">
-        {filteredPosts.map(post => (
-          <article 
-            key={post.id} 
-            className="group cursor-pointer"
-            onClick={() => navigate(getBlogPostPath(post))}
-          >
-            <div className="relative aspect-[1024/682] overflow-hidden rounded-3xl mb-6 shadow-sm">
-              <LazyImage 
-                src={post.image} 
-                alt={post.title} 
-                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-              />
-              <div className="absolute top-4 left-4">
-                <span className="bg-white/90 backdrop-blur-md text-black px-4 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wider shadow-sm">
-                  {post.category}
-                </span>
+      {/* Featured articles grid - hidden during searching to highlight search results */}
+      {!searchQuery && <FeaturedCarousel posts={posts} />}
+
+      {/* Main articles listing */}
+      <div className="w-full">
+        {!searchQuery && (
+          <div className="flex flex-col items-start mb-8">
+            <span className="text-[10px] font-black uppercase text-[#1e4b64] tracking-[0.28em] mb-2">TẤT CẢ BÀI VIẾT</span>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 leading-none">Danh Sách Tin Tức</h2>
+          </div>
+        )}
+        
+        {filteredPosts.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-20">
+            {filteredPosts.map(post => (
+              <div 
+                key={post.id} 
+                className="cursor-pointer"
+                onClick={() => navigate(getBlogPostPath(post))}
+              >
+                <BlogCard post={post} />
               </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center text-center py-20 px-4 rounded-[32px] bg-zinc-50 border border-zinc-150 mb-20 shadow-xs max-w-xl mx-auto">
+            <div className="h-16 w-16 bg-zinc-100 rounded-full flex items-center justify-center text-zinc-400 mb-6 shadow-inner border border-zinc-150">
+              <Search className="h-7 w-7" />
             </div>
-            
-            <h2 className="text-xl sm:text-2xl font-black text-zinc-900 group-hover:text-[#16a34a] transition-colors leading-tight mb-4 line-clamp-2 min-h-[3.5rem]">
-              {post.title}
-            </h2>
-            
-            <p className="text-zinc-500 font-medium line-clamp-2 mb-6">
-              {post.excerpt}
+            <h3 className="text-xl font-extrabold text-zinc-955 mb-2">Không tìm thấy bài viết</h3>
+            <p className="text-zinc-500 text-sm max-w-sm mb-6 font-semibold">
+              Chúng tôi không tìm thấy bài viết nào phù hợp với từ khóa "${searchQuery}". Bạn hãy thử tìm kiếm với từ khóa khác như "size", "chất liệu", "đồ tập"...
             </p>
-
-          </article>
-        ))}
+            <button 
+              onClick={() => setSearchQuery('')}
+              className="px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest bg-zinc-900 hover:bg-[#1e4b64] text-white transition-all shadow-sm cursor-pointer border border-zinc-955 hover:border-[#1e4b64]"
+            >
+              Xóa tìm kiếm
+            </button>
+          </div>
+        )}
       </div>
     </div>
-  );
-}
+  );}

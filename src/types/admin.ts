@@ -25,6 +25,7 @@ export type AdminTab =
   | 'homepage'
   | 'media'
   | 'settings'
+  | 'menu-navigation'
   | 'blog-categories'
   | 'policy-pages'
   | 'ai-product'
@@ -33,7 +34,26 @@ export type AdminTab =
   | 'flash-sale'
   | 'cheap-champion'
   | 'category-seo'
-  | 'content-map';
+  | 'content-map'
+  | 'users-roles'
+  | 'orders-all'
+  | 'orders-pending'
+  | 'orders-shipped'
+  | 'orders-delivered'
+  | 'products-all'
+  | 'products-cat-thun'
+  | 'products-cat-thethao'
+  | 'products-cat-polo'
+  | 'products-cat-quan'
+  | 'products-cat-phukien'
+  | 'settings-logo'
+  | 'settings-footer'
+  | 'settings-css'
+  | 'settings-contact'
+  | 'seo-sitemap'
+  | 'seo-schema'
+  | 'seo-robots'
+  | 'seo-redirects';
 
 export type AdminNavigationItem = AdminNavItem<AdminTab>;
 

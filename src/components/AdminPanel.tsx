@@ -3,7 +3,8 @@ import {
   LayoutDashboard, Package, ShoppingBag, Users, MessageSquare,
   Image as ImageIcon, Settings, Plus, Trash2, Edit2, LogOut,
   TrendingUp, Eye, DollarSign, BarChart2, Menu, X, Bell,
-  Search, ChevronRight, ChevronDown, Megaphone, Upload, Star, AlertCircle, Copy, ExternalLink, Code2, Check as CheckIcon, Bot, Sparkles, Zap, Timer, Clock, Ticket, Download, Filter, MailCheck, Send, UserPlus, ShieldCheck, Network, PanelsTopLeft
+  Search, ChevronRight, ChevronDown, Megaphone, Upload, Star, AlertCircle, Copy, ExternalLink, Code2, Check as CheckIcon, Bot, Sparkles, Zap, Timer, Clock, Ticket, Download, Filter, MailCheck, Send, UserPlus, ShieldCheck, Network, PanelsTopLeft, Phone,
+  FileText, Globe, Rocket
 } from 'lucide-react';
 import { PRODUCTS as STATIC_PRODUCTS, STATIC_BLOG_POSTS, STATIC_ORDERS, STATIC_CUSTOMERS, CATEGORY_METADATA, STATIC_VOUCHERS } from '../data';
 import { ImageUpload } from './ImageUpload';
@@ -54,7 +55,7 @@ import {
   updateAdminDocument,
 } from '../services/adminData';
 import { getProductPath, normalizeProductSlug } from '../lib/productUrls';
-
+ 
 const AIProductAssistant = React.lazy(() =>
   import('./AIProductAssistant').then(module => ({ default: module.AIProductAssistant }))
 );
@@ -88,11 +89,17 @@ const AISeoReportPanel = React.lazy(() =>
 const AdminSettingsTab = React.lazy(() =>
   import('./admin/AdminSettingsTab').then(module => ({ default: module.AdminSettingsTab }))
 );
+const MenuNavigationTab = React.lazy(() =>
+  import('./admin/MenuNavigationTab').then(module => ({ default: module.MenuNavigationTab }))
+);
 const MediaLibraryTab = React.lazy(() =>
   import('./admin/MediaLibraryTab').then(module => ({ default: module.MediaLibraryTab }))
 );
 const PolicyPagesManager = React.lazy(() =>
   import('./admin/PolicyPagesManager').then(module => ({ default: module.PolicyPagesManager }))
+);
+const UsersRolesTab = React.lazy(() =>
+  import('./admin/UsersRolesTab').then(module => ({ default: module.UsersRolesTab }))
 );
 
 const SITE_IMAGE_HOSTS = new Set(['shop-ur-sport.vercel.app', 'ursport.vn', 'www.ursport.vn']);
@@ -142,63 +149,121 @@ const ProductSeoScoreBadge = ({ product }: { product: Product }) => {
 const BLOG_CATEGORIES_STORAGE_KEY = 'ursport_blog_categories_final_v1';
 const NAV_ITEMS: AdminNavigationItem[] = [
   { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },
-  { id: 'strategy', label: 'Chiến lược', icon: BarChart2 },
   {
-    id: 'sales-group',
-    label: 'Quản lý Bán hàng',
+    id: 'orders-group',
+    label: 'Đơn hàng',
     icon: ShoppingBag,
     isGroup: true,
     children: [
-      { id: 'orders', label: 'Đơn hàng', icon: ShoppingBag },
-      { id: 'customers', label: 'Khách hàng', icon: Users },
-      { id: 'reviews', label: 'Quản lý đánh giá', icon: ShieldCheck },
+      { id: 'orders', label: 'Tất cả đơn hàng', icon: ShoppingBag },
+      { id: 'orders-pending', label: 'Chờ xử lý', icon: Clock },
+      { id: 'orders-shipped', label: 'Đang giao hàng', icon: Timer },
+      { id: 'orders-delivered', label: 'Đã hoàn thành', icon: CheckIcon },
     ]
   },
   {
-    id: 'catalog-group',
-    label: 'Nội dung & Sản phẩm',
+    id: 'products-group',
+    label: 'Sản phẩm',
     icon: Package,
     isGroup: true,
     children: [
-      { id: 'products', label: 'Sản phẩm', icon: Package },
-      { id: 'homepage', label: 'Cấu hình trang chủ', icon: PanelsTopLeft },
-      { id: 'blog', label: 'Bài viết (Blog)', icon: MessageSquare },
-      { id: 'blog-categories', label: 'Danh mục Blog', icon: MessageSquare },
+      { id: 'products', label: 'Tất cả sản phẩm', icon: Package },
+      { id: 'products-cat-thun', label: 'Áo thun nam', icon: Package },
+      { id: 'products-cat-thethao', label: 'Áo thể thao nam', icon: Package },
+      { id: 'products-cat-polo', label: 'Áo polo nam', icon: Package },
+      { id: 'products-cat-quan', label: 'Quần thể thao nam', icon: Package },
+      { id: 'products-cat-phukien', label: 'Phụ kiện thể thao', icon: Package },
+      { id: 'reviews', label: 'Đánh giá sản phẩm', icon: Star },
     ]
   },
   {
-    id: 'marketing-group',
-    label: 'Marketing & Khuyến mãi',
-    icon: Megaphone,
+    id: 'customers-group',
+    label: 'Khách hàng',
+    icon: Users,
     isGroup: true,
     children: [
-      { id: 'flash-sale', label: 'Flash Sale', icon: Zap },
-      { id: 'cheap-champion', label: 'Rẻ vô địch', icon: TrendingUp },
-      { id: 'vouchers', label: 'Mã giảm giá', icon: Ticket },
-      { id: 'newsletter', label: 'Email đăng ký', icon: MailCheck },
+      { id: 'customers', label: 'Tất cả khách hàng', icon: Users },
     ]
   },
   {
-    id: 'seo-ai-group',
-    label: 'SEO & Công cụ AI',
+    id: 'content-group',
+    label: 'Nội dung',
+    icon: FileText,
+    isGroup: true,
+    children: [
+      { id: 'blog', label: 'Bài viết Blog', icon: FileText },
+      { id: 'blog-categories', label: 'Danh mục Blog', icon: MessageSquare },
+      { id: 'policy-pages', label: 'Trang nội dung', icon: Code2 },
+      { id: 'media', label: 'Thư viện ảnh', icon: ImageIcon },
+    ]
+  },
+  {
+    id: 'ai-group',
+    label: 'AI Center',
     icon: Bot,
     isGroup: true,
     children: [
-      { id: 'ai-product', label: 'AI Sản Phẩm', icon: Bot },
-      { id: 'ai-blog', label: 'AI Tạo Blog', icon: Sparkles },
-      { id: 'ai-seo-report', label: 'AI SEO Report', icon: BarChart2 },
-      { id: 'category-seo', label: 'SEO Danh mục', icon: Search },
+      { id: 'ai-product', label: 'AI Viết Mô Tả Sản Phẩm', icon: Bot },
+      { id: 'ai-blog', label: 'AI Viết Blog SEO', icon: Sparkles },
+      { id: 'ai-seo-report', label: 'AI Kiểm Tra SEO', icon: BarChart2 },
     ]
   },
   {
-    id: 'system-group',
-    label: 'Hệ thống',
+    id: 'seo-marketing-group',
+    label: 'SEO & Marketing',
+    icon: Rocket,
+    isGroup: true,
+    children: [
+      { id: 'category-seo', label: 'Từ khóa & SEO Danh mục', icon: Search },
+      { id: 'content-map', label: 'Liên kết nội bộ', icon: Network },
+      { id: 'seo-sitemap', label: 'Sitemap Engine', icon: Globe },
+      { id: 'seo-schema', label: 'Schema Structured Data', icon: Code2 },
+      { id: 'seo-robots', label: 'Robots.txt & Indexing API', icon: ShieldCheck },
+      { id: 'seo-redirects', label: 'Redirects & Canonical', icon: ExternalLink },
+      { id: 'vouchers', label: 'Mã giảm giá', icon: Ticket },
+      { id: 'flash-sale', label: 'Chương trình khuyến mãi', icon: Zap },
+      { id: 'cheap-champion', label: 'Chiến dịch Rẻ vô địch', icon: TrendingUp },
+      { id: 'newsletter', label: 'Email Marketing', icon: MailCheck },
+    ]
+  },
+  {
+    id: 'reports-group',
+    label: 'Báo cáo',
+    icon: BarChart2,
+    isGroup: true,
+    children: [
+      { id: 'strategy', label: 'Doanh thu & SEO Audit', icon: TrendingUp },
+    ]
+  },
+  {
+    id: 'website-group',
+    label: 'Website',
+    icon: Globe,
+    isGroup: true,
+    children: [
+      { id: 'homepage', label: 'Trang chủ', icon: PanelsTopLeft },
+      { id: 'menu-navigation', label: 'Menu website', icon: Menu },
+    ]
+  },
+  {
+    id: 'hr-group',
+    label: 'Nhân sự',
+    icon: ShieldCheck,
+    isGroup: true,
+    children: [
+      { id: 'users-roles', label: 'Nhân sự & Phân quyền', icon: Users },
+    ]
+  },
+  {
+    id: 'settings-group',
+    label: 'Cài đặt',
     icon: Settings,
     isGroup: true,
     children: [
-      { id: 'media', label: 'Thư viện ảnh', icon: ImageIcon },
-      { id: 'policy-pages', label: 'Trang chính sách', icon: Code2 },
-      { id: 'settings', label: 'Cài đặt chung', icon: Settings },
+      { id: 'settings-logo', label: 'Cấu hình Logo & Favicon', icon: ImageIcon },
+      { id: 'settings-footer', label: 'Cấu hình Chân trang (Footer)', icon: PanelsTopLeft },
+      { id: 'settings-css', label: 'Tùy biến giao diện (Custom CSS)', icon: Code2 },
+      { id: 'settings-contact', label: 'Cài đặt Menu Liên hệ (Nút nổi)', icon: Phone }
     ]
   },
 ];
@@ -286,6 +351,17 @@ const DEFAULT_BLOG_CATEGORIES: BlogCategoryItem[] = [
   },
   {
     id: 6,
+    label: 'Quần thể thao nam',
+    link: '/blog/quan-the-thao-nam',
+    icon: '',
+    group: 'category',
+    h1: 'Quần thể thao nam',
+    description: 'Hướng dẫn chọn quần thể thao nam thoải mái, co giãn tốt và phù hợp tập luyện cũng như phong cách thể thao hàng ngày.',
+    seoTitle: 'Quần thể thao nam | Blog UR Sport',
+    metaDescription: 'Tìm hiểu cách chọn quần thể thao nam chất lượng, dễ phối và phù hợp với gym, chạy bộ và streetwear.'
+  },
+  {
+    id: 7,
     label: 'Hướng dẫn mua áo',
     link: '/blog/huong-dan-mua-ao',
     icon: '',
@@ -460,7 +536,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
   const isLocalhost = typeof window !== 'undefined' &&
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
   const [activeTab, setActiveTab] = useState<AdminTab>(initialTab);
-  const [expandedGroups, setExpandedGroups] = useState<string[]>(['sales-group', 'catalog-group']);
+  const [expandedGroups, setExpandedGroups] = useState<string[]>(['orders-group', 'products-group', 'content-group', 'ai-group']);
   const [products, setProducts] = useState<Product[]>([]);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -475,6 +551,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [productCategoryFilter, setProductCategoryFilter] = useState('all');
+  const [orderStatusFilter, setOrderStatusFilter] = useState<string>('all');
   const [blogSearchQuery, setBlogSearchQuery] = useState('');
   const [manualNewsletterEmail, setManualNewsletterEmail] = useState('');
   const [selectedNewsletterIds, setSelectedNewsletterIds] = useState<string[]>([]);
@@ -490,13 +567,55 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
   const [blogCategories, setBlogCategories] = useState<BlogCategoryItem[]>(() => loadCachedBlogCategories() || DEFAULT_BLOG_CATEGORIES);
   const blogCategoriesDirtyRef = useRef(false);
   const [expandedBlogCategoryIds, setExpandedBlogCategoryIds] = useState<Array<string | number>>([]);
+  const [draggedBlogCategoryId, setDraggedBlogCategoryId] = useState<string | number | null>(null);
+  const [dragOverBlogCategoryId, setDragOverBlogCategoryId] = useState<string | number | null>(null);
   const [newBlogCategory, setNewBlogCategory] = useState('');
   const [cssSaved, setCssSaved] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isOrderDetailModalOpen, setIsOrderDetailModalOpen] = useState(false);
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
-  const [banners, setBanners] = useState<BannerItem[]>([]);
+
   const [navigation, setNavigation] = useState<NavigationItem[]>([]);
+  const [logoSettings, setLogoSettings] = useState<{ logoLight?: string; logoDark?: string; favicon?: string }>({
+    logoLight: '',
+    logoDark: '',
+    favicon: ''
+  });
+  const [footerSettings, setFooterSettings] = useState({
+    description: 'Chuyên cung cấp đồ thể thao chất lượng cao, phong cách hiện đại.',
+    address: '72 Nguyễn Trãi, Quận 1, TP. Hồ Chí Minh',
+    phone: '+84 917 722 425',
+    email: 'support@ursport.vn',
+    mapUrl: 'https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d15992569.001833983!2d80.0375699!3d11.8747132!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752f523f5fc0e3%3A0x6654790e867462ee!2sUr%20Sport%20-%20%C3%81o%20thun%20th%E1%BB%83%20thao!5e0!3m2!1svi!2s!4v1778154966090!5m2!1svi!2s',
+    facebook: 'https://facebook.com',
+    instagram: 'https://instagram.com',
+    tiktok: 'https://tiktok.com',
+    copyright: '© 2026 UR SPORT. All rights reserved',
+    customLinks: [
+      {
+        title: "Danh mục sản phẩm",
+        items: [
+          { label: "Áo thun nam", action: "category" as "page" | "category", value: "Áo thun nam" },
+          { label: "Áo thun thể thao nam", action: "category" as "page" | "category", value: "Áo thun thể thao nam" },
+          { label: "Áo polo nam", action: "category" as "page" | "category", value: "Áo polo nam" },
+          { label: "Quần thể thao nam", action: "category" as "page" | "category", value: "Quần thể thao nam" },
+          { label: "Phụ kiện thể thao", action: "category" as "page" | "category", value: "Phụ kiện thể thao" }
+        ]
+      },
+      {
+        title: "Hỗ trợ khách hàng",
+        items: [
+          { label: "Blog", action: "page" as "page" | "category", value: "blog" },
+          { label: "Chính sách đổi trả", action: "page" as "page" | "category", value: "chinh-sach-doi-tra" },
+          { label: "Chính sách bảo hành", action: "page" as "page" | "category", value: "chinh-sach-bao-hanh" },
+          { label: "Hướng dẫn mua hàng", action: "page" as "page" | "category", value: "huong-dan-mua-hang" },
+          { label: "Liên hệ", action: "page" as "page" | "category", value: "contact" }
+        ]
+      }
+    ],
+    paymentBadges: ["COD", "BANK", "MOMO", "ZALO"],
+    paymentGateways: ["COD", "Bank Transfer", "E-Wallet"]
+  });
   const [floatingMenu, setFloatingMenu] = useState<FloatingMenuSettings>({
     zaloPhone: '0917722425',
     callPhone: '0917722425',
@@ -654,15 +773,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
         }
       }
     });
-    getAdminSetting<{ items?: BannerItem[] }>('banners').then(data => {
-      if (data) setBanners(data.items || []);
-    });
+
     getAdminSetting<{ items?: NavigationItem[] }>('navigation').then(data => {
       if (data) {
         setNavigation((data.items || []).map(normalizeNavigationItem));
       } else {
         setNavigation(defaultNavigationItems());
       }
+    });
+    getAdminSetting<Partial<typeof logoSettings>>('logoSettings').then(data => {
+      if (data) setLogoSettings(prev => ({ ...prev, ...data }));
+    });
+    getAdminSetting<Partial<typeof footerSettings>>('footerSettings').then(data => {
+      if (data) setFooterSettings(prev => ({ ...prev, ...data }));
     });
     getAdminSetting<Partial<FloatingMenuSettings>>('floatingMenu').then(data => {
       if (data) setFloatingMenu(prev => ({ ...prev, ...data }));
@@ -889,15 +1012,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
     }
   };
 
-  const handleSaveBanners = async (newBanners: BannerItem[]) => {
-    try {
-      await saveAdminSetting('banners', { items: newBanners });
-      setBanners(newBanners);
-      toast.success('Đã lưu cài đặt Banner');
-    } catch (error) {
-      toast.error('Lỗi khi lưu Banner');
-    }
-  };
 
   const handleSaveNavigation = async (newNav: NavigationItem[]) => {
     try {
@@ -942,6 +1056,26 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
       toast.success('Đã cập nhật cài đặt Menu nổi!');
     } catch {
       toast.error('Lỗi khi lưu cài đặt');
+    }
+  };
+
+  const handleSaveLogoSettings = async (settings: typeof logoSettings) => {
+    try {
+      await saveAdminSetting('logoSettings', settings);
+      setLogoSettings(settings);
+      toast.success('Đã lưu cấu hình Logo & Favicon');
+    } catch {
+      toast.error('Lỗi khi lưu cấu hình Logo');
+    }
+  };
+
+  const handleSaveFooterSettings = async (settings: typeof footerSettings) => {
+    try {
+      await saveAdminSetting('footerSettings', settings);
+      setFooterSettings(settings);
+      toast.success('Đã lưu cấu hình chân trang (Footer)');
+    } catch {
+      toast.error('Lỗi khi lưu cấu hình chân trang');
     }
   };
 
@@ -1476,12 +1610,26 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
     const date = value?.toDate?.() || (value?.seconds ? new Date(value.seconds * 1000) : null);
     return date ? date.toLocaleDateString('vi-VN') : 'Chưa rõ';
   };
-  const activeNavLabel = NAV_ITEMS.reduce<{ id: string; label: string }[]>((items, item) => {
-    if (item.children) {
-      return [...items, ...item.children.map(child => ({ id: child.id, label: child.label }))];
+  const activeNavLabel = (() => {
+    if (activeTab === 'products') {
+      if (productCategoryFilter !== 'all') return `Sản phẩm: ${productCategoryFilter}`;
+      return 'Tất cả sản phẩm';
     }
-    return [...items, { id: item.id, label: item.label }];
-  }, []).find(item => item.id === activeTab)?.label || 'Dashboard';
+    if (activeTab === 'orders') {
+      if (orderStatusFilter === 'pending') return 'Đơn hàng: Chờ xử lý';
+      if (orderStatusFilter === 'processing') return 'Đơn hàng: Đang chuẩn bị';
+      if (orderStatusFilter === 'shipped') return 'Đơn hàng: Đang giao';
+      if (orderStatusFilter === 'delivered') return 'Đơn hàng: Đã giao';
+      if (orderStatusFilter === 'cancelled') return 'Đơn hàng: Đã hủy';
+      return 'Tất cả đơn hàng';
+    }
+    return NAV_ITEMS.reduce<{ id: string; label: string }[]>((items, item) => {
+      if (item.children) {
+        return [...items, ...item.children.map(child => ({ id: child.id, label: child.label }))];
+      }
+      return [...items, { id: item.id, label: item.label }];
+    }, []).find(item => item.id === activeTab)?.label || 'Dashboard';
+  })();
   const parentNavigationItems = navigation.filter(nav => nav.group !== 'subcategory');
   const getChildNavigationItems = (parent: NavigationItem) => navigation.filter(
     nav => nav.group === 'subcategory' && normalizeMenuLabel(nav.parentLabel) === normalizeMenuLabel(parent.label)
@@ -1531,6 +1679,40 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
     updated.splice(parentIndex + 1, 0, childItem);
     blogCategoriesDirtyRef.current = true;
     setBlogCategories(updated);
+  };
+
+  const moveBlogCategoryItem = (sourceId: string | number, targetId: string | number) => {
+    if (sourceId === targetId) return;
+    const sourceIndex = blogCategories.findIndex(item => item.id === sourceId);
+    const targetIndex = blogCategories.findIndex(item => item.id === targetId);
+    if (sourceIndex === -1 || targetIndex === -1) return;
+
+    const updated = [...blogCategories];
+    const [movedItem] = updated.splice(sourceIndex, 1);
+    updated.splice(targetIndex, 0, movedItem);
+    blogCategoriesDirtyRef.current = true;
+    setBlogCategories(updated);
+  };
+
+  const handleBlogCategoryDragStart = (itemId: string | number) => {
+    setDraggedBlogCategoryId(itemId);
+  };
+
+  const handleBlogCategoryDragOver = (itemId: string | number, event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setDragOverBlogCategoryId(itemId);
+  };
+
+  const handleBlogCategoryDrop = (itemId: string | number) => {
+    if (draggedBlogCategoryId === null) return;
+    moveBlogCategoryItem(draggedBlogCategoryId, itemId);
+    setDraggedBlogCategoryId(null);
+    setDragOverBlogCategoryId(null);
+  };
+
+  const handleBlogCategoryDragEnd = () => {
+    setDraggedBlogCategoryId(null);
+    setDragOverBlogCategoryId(null);
   };
 
   const renderNavigationCard = (nav: NavigationItem, isChild = false) => (
@@ -1686,13 +1868,17 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
         {/* Logo */}
         <div className="h-16 flex items-center justify-between px-6 border-b border-white/5">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 bg-[#1e4b64] rounded-lg flex items-center justify-center">
-              <BarChart2 className="h-4 w-4 text-white" />
-            </div>
-            <div>
-              <span className="text-white font-black text-base italic tracking-tight">UR<span className="text-[#1e4b64]">SPORT</span></span>
-              <p className="text-[9px] font-bold text-white/30 uppercase tracking-widest -mt-0.5">Admin Panel</p>
-            </div>
+            {logoSettings.logoDark ? (
+              <div className="flex flex-col">
+                <img src={logoSettings.logoDark} alt="UR Sport" className="h-6 object-contain" />
+                <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest mt-0.5">Admin Panel</p>
+              </div>
+            ) : (
+              <div>
+                <span className="text-white font-black text-base italic tracking-tight">UR<span className="text-[#1e4b64]">SPORT</span></span>
+                <p className="text-[9px] font-bold text-white/30 uppercase tracking-widest -mt-0.5">Admin Panel</p>
+              </div>
+            )}
           </div>
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-white/40 hover:text-white">
             <X className="h-5 w-5" />
@@ -1704,7 +1890,24 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
           {NAV_ITEMS.map(item => {
             if (item.isGroup && item.children) {
               const isExpanded = expandedGroups.includes(item.id);
-              const hasActiveChild = item.children.some(child => child.id === activeTab);
+              const hasActiveChild = item.children.some(child => {
+                return activeTab === child.id || 
+                  (activeTab === 'products' && child.id.startsWith('products-cat-') && (
+                    (child.id === 'products-cat-thun' && productCategoryFilter === 'Áo thun nam') ||
+                    (child.id === 'products-cat-thethao' && productCategoryFilter === 'Áo thun thể thao nam') ||
+                    (child.id === 'products-cat-polo' && productCategoryFilter === 'Áo polo nam') ||
+                    (child.id === 'products-cat-quan' && productCategoryFilter === 'Quần thể thao nam') ||
+                    (child.id === 'products-cat-phukien' && productCategoryFilter === 'Phụ kiện thể thao')
+                  )) ||
+                  (activeTab === 'products' && child.id === 'products' && productCategoryFilter === 'all') ||
+                  (activeTab === 'orders' && child.id.startsWith('orders-') && (
+                    (child.id === 'orders-all' && orderStatusFilter === 'all') ||
+                    (child.id === 'orders-pending' && orderStatusFilter === 'pending') ||
+                    (child.id === 'orders-shipped' && orderStatusFilter === 'shipped') ||
+                    (child.id === 'orders-delivered' && orderStatusFilter === 'delivered')
+                  )) ||
+                  (activeTab === 'orders' && child.id === 'orders' && orderStatusFilter === 'all');
+              });
               
               return (
                 <div key={item.id} className="space-y-1">
@@ -1717,7 +1920,7 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
                       );
                     }}
                     className={cn(
-                      "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-200 relative",
+                      "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-left transition-all duration-200 relative",
                       hasActiveChild ? "text-white" : "text-white/60 hover:text-white hover:bg-white/5"
                     )}
                   >
@@ -1728,22 +1931,62 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
                   
                   {isExpanded && (
                     <div className="pl-4 space-y-1 mt-1">
-                      {item.children.map(child => (
-                        <button
-                          key={child.id}
-                          onClick={() => { setActiveTab(child.id as AdminTab); setSidebarOpen(false); }}
-                          className={cn(
-                            "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 relative",
-                            activeTab === child.id
-                              ? "bg-[#1e4b64] text-white shadow-lg shadow-[#1e4b64]/20"
-                              : "text-white/40 hover:text-white hover:bg-white/5"
-                          )}
-                        >
-                          <div className="w-1.5 h-1.5 rounded-full bg-current opacity-50 shrink-0" />
-                          {child.label}
-                          {activeTab === child.id && <ChevronRight className="h-3 w-3 ml-auto" />}
-                        </button>
-                      ))}
+                      {item.children.map(child => {
+                        const handleChildClick = () => {
+                          const id = child.id;
+                          if (id.startsWith('products-cat-')) {
+                            setActiveTab('products');
+                            if (id === 'products-cat-thun') setProductCategoryFilter('Áo thun nam');
+                            else if (id === 'products-cat-thethao') setProductCategoryFilter('Áo thun thể thao nam');
+                            else if (id === 'products-cat-polo') setProductCategoryFilter('Áo polo nam');
+                            else if (id === 'products-cat-quan') setProductCategoryFilter('Quần thể thao nam');
+                            else if (id === 'products-cat-phukien') setProductCategoryFilter('Phụ kiện thể thao');
+                          } else if (id.startsWith('orders-')) {
+                            setActiveTab('orders');
+                            if (id === 'orders-all') setOrderStatusFilter('all');
+                            else if (id === 'orders-pending') setOrderStatusFilter('pending');
+                            else if (id === 'orders-shipped') setOrderStatusFilter('shipped');
+                            else if (id === 'orders-delivered') setOrderStatusFilter('delivered');
+                          } else {
+                            setActiveTab(id as AdminTab);
+                          }
+                          setSidebarOpen(false);
+                        };
+
+                        const isChildActive = activeTab === child.id || 
+                          (activeTab === 'products' && child.id.startsWith('products-cat-') && (
+                            (child.id === 'products-cat-thun' && productCategoryFilter === 'Áo thun nam') ||
+                            (child.id === 'products-cat-thethao' && productCategoryFilter === 'Áo thun thể thao nam') ||
+                            (child.id === 'products-cat-polo' && productCategoryFilter === 'Áo polo nam') ||
+                            (child.id === 'products-cat-quan' && productCategoryFilter === 'Quần thể thao nam') ||
+                            (child.id === 'products-cat-phukien' && productCategoryFilter === 'Phụ kiện thể thao')
+                          )) ||
+                          (activeTab === 'products' && child.id === 'products' && productCategoryFilter === 'all') ||
+                          (activeTab === 'orders' && child.id.startsWith('orders-') && (
+                            (child.id === 'orders-all' && orderStatusFilter === 'all') ||
+                            (child.id === 'orders-pending' && orderStatusFilter === 'pending') ||
+                            (child.id === 'orders-shipped' && orderStatusFilter === 'shipped') ||
+                            (child.id === 'orders-delivered' && orderStatusFilter === 'delivered')
+                          )) ||
+                          (activeTab === 'orders' && child.id === 'orders' && orderStatusFilter === 'all');
+
+                        return (
+                          <button
+                            key={child.id}
+                            onClick={handleChildClick}
+                            className={cn(
+                              "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-left transition-all duration-200 relative",
+                              isChildActive
+                                ? "bg-[#1e4b64] text-white shadow-lg shadow-[#1e4b64]/20"
+                                : "text-white/40 hover:text-white hover:bg-white/5"
+                            )}
+                          >
+                            <div className="w-1.5 h-1.5 rounded-full bg-current opacity-50 shrink-0" />
+                            {child.label}
+                            {isChildActive && <ChevronRight className="h-3 w-3 ml-auto" />}
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -1755,7 +1998,7 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
                 key={item.id}
                 onClick={() => { setActiveTab(item.id as AdminTab); setSidebarOpen(false); }}
                 className={cn(
-                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-200 relative",
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-left transition-all duration-200 relative",
                   activeTab === item.id
                     ? "bg-[#1e4b64] text-white shadow-lg shadow-[#1e4b64]/20"
                     : "text-white/40 hover:text-white hover:bg-white/5"
@@ -2521,130 +2764,160 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
           )}
 
           {/* ─── ORDERS ─── */}
-          {activeTab === 'orders' && (
-            <div className="space-y-4">
-              <div className="bg-[#13161f] border border-white/5 rounded-2xl overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left">
-                    <thead>
-                      <tr className="border-b border-white/5">
-                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Mã đơn / Ngày</th>
-                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Khách hàng</th>
-                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Thanh toán</th>
-                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Tổng cộng</th>
-                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Trạng thái</th>
-                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30 text-right">Thao tác</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/[0.04]">
-                      {orders.length === 0 ? (
-                        <tr>
-                          <td colSpan={5} className="px-6 py-20 text-center">
-                            <ShoppingBag className="h-12 w-12 text-white/10 mx-auto mb-3" />
-                            <p className="text-white/30 font-bold text-sm">Chưa có đơn hàng nào</p>
-                          </td>
+          {activeTab === 'orders' && (() => {
+            const filteredOrders = orders.filter(order => orderStatusFilter === 'all' || order.status === orderStatusFilter);
+            return (
+              <div className="space-y-4">
+                {/* Status Quick Filter Bar inside Orders tab */}
+                <div className="flex gap-2 bg-[#13161f] border border-white/5 rounded-2xl p-3 overflow-x-auto">
+                  {[
+                    { key: 'all', label: 'Tất cả đơn hàng' },
+                    { key: 'pending', label: 'Chờ xử lý' },
+                    { key: 'processing', label: 'Đang chuẩn bị' },
+                    { key: 'shipped', label: 'Đang giao' },
+                    { key: 'delivered', label: 'Đã giao' },
+                    { key: 'cancelled', label: 'Đã hủy' }
+                  ].map(tab => (
+                    <button
+                      key={tab.key}
+                      onClick={() => setOrderStatusFilter(tab.key)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all border",
+                        orderStatusFilter === tab.key
+                          ? "bg-[#1e4b64]/20 border-[#1e4b64]/50 text-white"
+                          : "bg-white/5 border-white/5 text-white/40 hover:text-white hover:bg-white/10"
+                      )}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="bg-[#13161f] border border-white/5 rounded-2xl overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                      <thead>
+                        <tr className="border-b border-white/5">
+                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Mã đơn / Ngày</th>
+                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Khách hàng</th>
+                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Thanh toán</th>
+                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Tổng cộng</th>
+                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Trạng thái</th>
+                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30 text-right">Thao tác</th>
                         </tr>
-                      ) : (
-                        orders.map(order => (
-                          <tr key={order.id} className="hover:bg-white/[0.02] transition-all group">
-                            <td className="px-6 py-4">
-                              <p className="text-white text-sm font-bold">#{order.id.substring(0, 8)}</p>
-                              <p className="text-white/30 text-[11px] font-medium">
-                                {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleString('vi-VN') : String(order.createdAt || '')}
+                      </thead>
+                      <tbody className="divide-y divide-white/[0.04]">
+                        {filteredOrders.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className="px-6 py-20 text-center">
+                              <ShoppingBag className="h-12 w-12 text-white/10 mx-auto mb-3" />
+                              <p className="text-white/30 font-bold text-sm">
+                                {orderStatusFilter === 'all' ? 'Chưa có đơn hàng nào' : 'Không tìm thấy đơn hàng nào ở trạng thái này'}
                               </p>
                             </td>
-                            <td className="px-6 py-4">
-                              <p className="text-white text-sm font-bold">{order.shippingAddress.fullName}</p>
-                              <p className="text-white/30 text-[11px] font-medium">{order.shippingAddress.phone}</p>
-                            </td>
-                            <td className="px-6 py-4">
-                              <span className={cn(
-                                "px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-tighter border",
-                                order.paymentMethod === 'bank_transfer' ? "bg-blue-500/10 text-blue-400 border-blue-500/20" :
-                                order.paymentMethod === 'e_wallet' ? "bg-pink-500/10 text-pink-400 border-pink-500/20" :
-                                "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                              )}>
-                                {order.paymentMethod === 'bank_transfer' ? 'Chuyển khoản' :
-                                 order.paymentMethod === 'e_wallet' ? 'Ví điện tử' : 'COD'}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4">
-                              <p className="text-[#1e4b64] font-black text-sm">{order.total.toLocaleString('vi-VN')}₫</p>
-                              <div className="mt-2 space-y-1">
-                                {order.items.map((item, idx) => (
-                                  <div key={idx} className="flex items-center gap-2 text-[10px] bg-white/[0.03] border border-white/5 rounded px-2 py-1">
-                                    <span className="text-white font-bold truncate max-w-[120px]">{item.name}</span>
-                                    <span className="text-white/40">|</span>
-                                    <span className="text-blue-400 font-bold uppercase">{item.selectedColor}</span>
-                                    <span className="text-white/40">/</span>
-                                    <span className="text-emerald-400 font-bold">{item.selectedSize}</span>
-                                    <span className="text-white/40 ml-auto">x{item.quantity}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <select
-                                value={order.status}
-                                onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value as AdminOrderStatus)}
-                                className={cn(
-                                  "bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-[10px] font-black uppercase tracking-wider focus:outline-none transition-all",
-                                  order.status === 'delivered' ? "text-emerald-400" :
-                                  order.status === 'cancelled' ? "text-red-400" :
-                                  order.status === 'shipped' ? "text-blue-400" : "text-yellow-400"
-                                )}
-                              >
-                                <option value="pending" className="bg-[#13161f]">Chờ xử lý</option>
-                                <option value="processing" className="bg-[#13161f]">Đang chuẩn bị</option>
-                                <option value="shipped" className="bg-[#13161f]">Đang giao</option>
-                                <option value="delivered" className="bg-[#13161f]">Đã giao</option>
-                                <option value="cancelled" className="bg-[#13161f]">Đã hủy</option>
-                              </select>
-                              <div className="mt-2 grid gap-1">
-                                <input
-                                  defaultValue={order.trackingNumber || ''}
-                                  onBlur={event => handleUpdateTracking(order, 'trackingNumber', event.target.value)}
-                                  placeholder="Mã vận đơn"
-                                  className="w-36 rounded-lg border border-white/5 bg-white/5 px-2 py-1 text-[10px] font-bold text-white outline-none focus:border-[#1e4b64]"
-                                />
-                                <input
-                                  defaultValue={order.trackingUrl || ''}
-                                  onBlur={event => handleUpdateTracking(order, 'trackingUrl', event.target.value)}
-                                  placeholder="Link tra cứu"
-                                  className="w-36 rounded-lg border border-white/5 bg-white/5 px-2 py-1 text-[10px] font-bold text-white outline-none focus:border-[#1e4b64]"
-                                />
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="flex items-center justify-end gap-1">
-                                <button
-                                  onClick={() => {
-                                    setSelectedOrder(order);
-                                    setIsOrderDetailModalOpen(true);
-                                  }}
-                                  title="Xem chi tiết"
-                                  className="h-8 w-8 flex items-center justify-center rounded-lg text-white/30 hover:text-blue-400 hover:bg-blue-500/10 transition-all"
-                                >
-                                  <Eye className="h-3.5 w-3.5" />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteOrder(order.id)}
-                                  title="Xóa"
-                                  className="h-8 w-8 flex items-center justify-center rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all"
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </button>
-                              </div>
-                            </td>
                           </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
+                        ) : (
+                          filteredOrders.map(order => (
+                            <tr key={order.id} className="hover:bg-white/[0.02] transition-all group">
+                              <td className="px-6 py-4">
+                                <p className="text-white text-sm font-bold">#{order.id.substring(0, 8)}</p>
+                                <p className="text-white/30 text-[11px] font-medium">
+                                  {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleString('vi-VN') : String(order.createdAt || '')}
+                                </p>
+                              </td>
+                              <td className="px-6 py-4">
+                                <p className="text-white text-sm font-bold">{order.shippingAddress.fullName}</p>
+                                <p className="text-white/30 text-[11px] font-medium">{order.shippingAddress.phone}</p>
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className={cn(
+                                  "px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-tighter border",
+                                  order.paymentMethod === 'bank_transfer' ? "bg-blue-500/10 text-blue-400 border-blue-500/20" :
+                                  order.paymentMethod === 'e_wallet' ? "bg-pink-500/10 text-pink-400 border-pink-500/20" :
+                                  "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                                )}>
+                                  {order.paymentMethod === 'bank_transfer' ? 'Chuyển khoản' :
+                                   order.paymentMethod === 'e_wallet' ? 'Ví điện tử' : 'COD'}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4">
+                                <p className="text-[#1e4b64] font-black text-sm">{order.total.toLocaleString('vi-VN')}₫</p>
+                                <div className="mt-2 space-y-1">
+                                  {order.items.map((item, idx) => (
+                                    <div key={idx} className="flex items-center gap-2 text-[10px] bg-white/[0.03] border border-white/5 rounded px-2 py-1">
+                                      <span className="text-white font-bold truncate max-w-[120px]">{item.name}</span>
+                                      <span className="text-white/40">|</span>
+                                      <span className="text-blue-400 font-bold uppercase">{item.selectedColor}</span>
+                                      <span className="text-white/40">/</span>
+                                      <span className="text-emerald-400 font-bold">{item.selectedSize}</span>
+                                      <span className="text-white/40 ml-auto">x{item.quantity}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4">
+                                <select
+                                  value={order.status}
+                                  onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value as AdminOrderStatus)}
+                                  className={cn(
+                                    "bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-[10px] font-black uppercase tracking-wider focus:outline-none transition-all",
+                                    order.status === 'delivered' ? "text-emerald-400" :
+                                    order.status === 'cancelled' ? "text-red-400" :
+                                    order.status === 'shipped' ? "text-blue-400" : "text-yellow-400"
+                                  )}
+                                >
+                                  <option value="pending" className="bg-[#13161f]">Chờ xử lý</option>
+                                  <option value="processing" className="bg-[#13161f]">Đang chuẩn bị</option>
+                                  <option value="shipped" className="bg-[#13161f]">Đang giao</option>
+                                  <option value="delivered" className="bg-[#13161f]">Đã giao</option>
+                                  <option value="cancelled" className="bg-[#13161f]">Đã hủy</option>
+                                </select>
+                                <div className="mt-2 grid gap-1">
+                                  <input
+                                    defaultValue={order.trackingNumber || ''}
+                                    onBlur={event => handleUpdateTracking(order, 'trackingNumber', event.target.value)}
+                                    placeholder="Mã vận đơn"
+                                    className="w-36 rounded-lg border border-white/5 bg-white/5 px-2 py-1 text-[10px] font-bold text-white outline-none focus:border-[#1e4b64]"
+                                  />
+                                  <input
+                                    defaultValue={order.trackingUrl || ''}
+                                    onBlur={event => handleUpdateTracking(order, 'trackingUrl', event.target.value)}
+                                    placeholder="Link tra cứu"
+                                    className="w-36 rounded-lg border border-white/5 bg-white/5 px-2 py-1 text-[10px] font-bold text-white outline-none focus:border-[#1e4b64]"
+                                  />
+                                </div>
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="flex items-center justify-end gap-1">
+                                  <button
+                                    onClick={() => {
+                                      setSelectedOrder(order);
+                                      setIsOrderDetailModalOpen(true);
+                                    }}
+                                    title="Xem chi tiết"
+                                    className="h-8 w-8 flex items-center justify-center rounded-lg text-white/30 hover:text-blue-400 hover:bg-blue-500/10 transition-all"
+                                  >
+                                    <Eye className="h-3.5 w-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteOrder(order.id)}
+                                    title="Xóa"
+                                    className="h-8 w-8 flex items-center justify-center rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* ─── CUSTOMERS ─── */}
           {activeTab === 'reviews' && (
@@ -3030,35 +3303,54 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
               />
             </React.Suspense>
           )}
-          {/* SETTINGS */}
-          {activeTab === 'settings' && (
+          {(activeTab === 'settings' || activeTab === 'settings-logo' || activeTab === 'settings-footer' || activeTab === 'settings-css' || activeTab === 'settings-contact' || activeTab === 'seo-sitemap' || activeTab === 'seo-schema' || activeTab === 'seo-robots' || activeTab === 'seo-redirects') && (
             <React.Suspense fallback={<AdminTabFallback />}>
               <AdminSettingsTab
-                addChildNavigationItem={addChildNavigationItem}
-                banners={banners}
+                activeSection={activeTab}
                 blogPosts={blogPosts}
                 cssSaved={cssSaved}
                 customCss={customCss}
                 floatingMenu={floatingMenu}
                 generateSitemapString={generateSitemapString}
-                getChildNavigationItems={getChildNavigationItems}
                 handleDeleteCss={handleDeleteCss}
                 handleGenerateRobots={handleGenerateRobots}
                 handleGenerateSitemap={handleGenerateSitemap}
-                handleSaveBanners={handleSaveBanners}
                 handleSaveCss={handleSaveCss}
                 handleSaveFloatingMenu={handleSaveFloatingMenu}
+                products={products}
+                setCustomCss={setCustomCss}
+                setFloatingMenu={setFloatingMenu}
+                setShowSitemapPreview={setShowSitemapPreview}
+                showSitemapPreview={showSitemapPreview}
+                logoSettings={logoSettings}
+                setLogoSettings={setLogoSettings}
+                handleSaveLogoSettings={handleSaveLogoSettings}
+                footerSettings={footerSettings}
+                setFooterSettings={setFooterSettings}
+                handleSaveFooterSettings={handleSaveFooterSettings}
+                onOpenProductEdit={(prod) => {
+                  setEditingProduct(prod);
+                  setIsAddModalOpen(true);
+                }}
+                onOpenBlogPostEdit={(post) => {
+                  setEditingBlogPost(post);
+                  setIsBlogModalOpen(true);
+                }}
+              />
+            </React.Suspense>
+          )}
+
+          {/* MENU NAVIGATION */}
+          {activeTab === 'menu-navigation' && (
+            <React.Suspense fallback={<AdminTabFallback />}>
+              <MenuNavigationTab
+                addChildNavigationItem={addChildNavigationItem}
+                getChildNavigationItems={getChildNavigationItems}
                 handleSaveNavigation={handleSaveNavigation}
                 navigation={navigation}
                 parentNavigationItems={parentNavigationItems}
-                products={products}
                 renderNavigationCard={renderNavigationCard}
-                setBanners={setBanners}
-                setCustomCss={setCustomCss}
-                setFloatingMenu={setFloatingMenu}
                 setNavigation={setNavigation}
-                setShowSitemapPreview={setShowSitemapPreview}
-                showSitemapPreview={showSitemapPreview}
               />
             </React.Suspense>
           )}
@@ -3116,7 +3408,17 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
                       const expanded = isBlogCategoryExpanded(category.id);
                       return (
                         <div key={category.id} className="space-y-3">
-                          <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex gap-4">
+                          <div
+                            draggable
+                            onDragStart={() => handleBlogCategoryDragStart(category.id)}
+                            onDragOver={(e) => handleBlogCategoryDragOver(category.id, e)}
+                            onDrop={() => handleBlogCategoryDrop(category.id)}
+                            onDragEnd={handleBlogCategoryDragEnd}
+                            className={cn(
+                              "bg-white/[0.02] border rounded-2xl p-4 flex gap-4",
+                              dragOverBlogCategoryId === category.id && "border-emerald-400 ring-2 ring-emerald-500/20"
+                            )}
+                          >
                             <div className="w-20 shrink-0">
                               <ImageUpload
                                 folder="blog-categories"
@@ -3264,7 +3566,18 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
                             const childUsedCount = blogPosts.filter(post => normalizeMenuLabel(post.category) === normalizeMenuLabel(child.label)).length;
                             const childExpanded = isBlogCategoryExpanded(child.id);
                             return (
-                              <div key={child.id} className="ml-8 bg-[#1e4b64]/5 border border-[#1e4b64]/30 rounded-2xl p-4 flex gap-4">
+                              <div
+                              key={child.id}
+                              draggable
+                              onDragStart={() => handleBlogCategoryDragStart(child.id)}
+                              onDragOver={(e) => handleBlogCategoryDragOver(child.id, e)}
+                              onDrop={() => handleBlogCategoryDrop(child.id)}
+                              onDragEnd={handleBlogCategoryDragEnd}
+                              className={cn(
+                                "ml-8 bg-[#1e4b64]/5 border border-[#1e4b64]/30 rounded-2xl p-4 flex gap-4",
+                                dragOverBlogCategoryId === child.id && "border-emerald-400 ring-2 ring-emerald-500/20"
+                              )}
+                            >
                                 <div className="w-16 shrink-0">
                                   <ImageUpload
                                     folder="blog-categories"
@@ -3832,6 +4145,12 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
           {activeTab === 'policy-pages' && (
             <React.Suspense fallback={<AdminTabFallback />}>
               <PolicyPagesManager />
+            </React.Suspense>
+          )}
+
+          {activeTab === 'users-roles' && (
+            <React.Suspense fallback={<AdminTabFallback />}>
+              <UsersRolesTab />
             </React.Suspense>
           )}
         </main>

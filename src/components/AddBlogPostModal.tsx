@@ -93,7 +93,7 @@ interface AddBlogPostModalProps {
   blogCategories?: string[];
 }
 
-const DEFAULT_BLOG_CATEGORIES = ['Kiến thức', 'Chất liệu', 'Dáng người', 'Thể thao', 'Hướng dẫn'];
+const DEFAULT_BLOG_CATEGORIES = ['Kiến thức', 'Chất liệu', 'Dáng người', 'Thể thao', 'Quần thể thao nam', 'Hướng dẫn'];
 
 export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onClose, onSuccess, post, blogCategories = DEFAULT_BLOG_CATEGORIES }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);

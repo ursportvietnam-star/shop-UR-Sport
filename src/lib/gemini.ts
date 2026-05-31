@@ -167,7 +167,7 @@ export async function generateProductSEO(prompt: string): Promise<AIProductData>
 Nhiệm vụ: Tạo nội dung sản phẩm cho shop đồ thể thao nam UR Sport. Văn phong cần mạnh mẽ, chuyên nghiệp, tập trung vào lợi ích người dùng.
 
 Tuân thủ hướng dẫn chuẩn SEO của URSport (Product Skill File):
-${PRODUCT_SEO_GUIDE_CONTEXT}
+${SEO_GUIDE_CONTEXT}
 
 TRẢ VỀ ĐÚNG FORMAT JSON, KHÔNG CÓ MARKDOWN:
 {
@@ -202,7 +202,7 @@ export async function generateProductSeoFix(prompt: string): Promise<AIProductSe
 Nhiệm vụ: Tối ưu lại SEO cho một sản phẩm đang có sẵn, KHÔNG đổi giá, KHÔNG bịa tồn kho, KHÔNG đổi thương hiệu.
 
 Tuân thủ hướng dẫn chuẩn SEO của URSport (Product Skill File):
-${PRODUCT_SEO_GUIDE_CONTEXT}
+${SEO_GUIDE_CONTEXT}
 
 Trả về đúng JSON, không markdown:
 {

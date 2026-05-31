@@ -17,9 +17,10 @@ interface NavbarProps {
   onPageChange: (page: string) => void;
   onCategorySelect: (category: Category) => void;
   activeCategory: Category;
+  logoSettings?: { logoLight?: string; logoDark?: string; favicon?: string } | null;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCategorySelect, activeCategory }) => {
+export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCategorySelect, activeCategory, logoSettings }) => {
   const { user, loading, logout } = useAuth();
   const { cart } = useCart();
   const { wishlistCount } = useWishlist();
@@ -226,20 +227,31 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
               <Menu className="h-5 w-5" />
             </button>
 
-            <Link to="/" className="flex flex-col items-start active:opacity-70 transition-opacity min-w-fit shrink-0">
-              <motion.div
-                animate={{ scale: isScrolled ? 0.92 : 1 }}
-                className="text-[18px] xs:text-[20px] sm:text-[22px] font-black italic tracking-tighter leading-none flex items-baseline origin-left whitespace-nowrap"
-              >
-                <span className="text-[#1e4b64]">UR</span>
-                <span className="text-zinc-900">SPORT</span>
-              </motion.div>
-              <motion.span
-                animate={{ opacity: isScrolled ? 0 : 1 }}
-                className="text-[7px] sm:text-[8px] font-semibold uppercase tracking-widest text-zinc-400 mt-px whitespace-nowrap"
-              >
-                Phong Cách Thể Thao
-              </motion.span>
+            <Link to="/" className="flex items-center active:opacity-70 transition-opacity min-w-fit shrink-0">
+              {logoSettings?.logoLight ? (
+                <motion.img
+                  animate={{ scale: isScrolled ? 0.92 : 1 }}
+                  src={logoSettings.logoLight}
+                  alt="UR Sport"
+                  className="h-9 sm:h-10 object-contain origin-left"
+                />
+              ) : (
+                <div className="flex flex-col items-start">
+                  <motion.div
+                    animate={{ scale: isScrolled ? 0.92 : 1 }}
+                    className="text-[18px] xs:text-[20px] sm:text-[22px] font-black italic tracking-tighter leading-none flex items-baseline origin-left whitespace-nowrap"
+                  >
+                    <span className="text-[#1e4b64]">UR</span>
+                    <span className="text-zinc-900">SPORT</span>
+                  </motion.div>
+                  <motion.span
+                    animate={{ opacity: isScrolled ? 0 : 1 }}
+                    className="text-[7px] sm:text-[8px] font-semibold uppercase tracking-widest text-zinc-400 mt-px whitespace-nowrap"
+                  >
+                    Phong Cách Thể Thao
+                  </motion.span>
+                </div>
+              )}
             </Link>
           </div>
 

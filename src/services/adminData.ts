@@ -40,7 +40,13 @@ export type AdminSetting =
   | 'flashSale'
   | 'floatingMenu'
   | 'navigation'
-  | 'supportPolicies';
+  | 'supportPolicies'
+  | 'logoSettings'
+  | 'footerSettings'
+  | 'schemaSettings'
+  | 'robotsSettings'
+  | 'redirectSettings'
+  | 'canonicalSettings';
 
 export const adminTimestamp = serverTimestamp;
 
