@@ -18,3 +18,13 @@ outputs/
 **/*.md
 !README.md
 !**/README.md
+!01-ao-thun-nam.md
+!02-quan-the-thao.md
+!03-do-gym.md
+!04-chat-lieu.md
+!05-size.md
+!06-phoi-do.md
+!07-buyer.md
+!08-keyword-master.md
+!09-roadmap.md
+!10-ai-automation.md
