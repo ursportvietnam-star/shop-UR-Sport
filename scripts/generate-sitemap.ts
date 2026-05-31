@@ -238,5 +238,9 @@ const xml = [
   ''
 ].join('\n');
 
+if (fs.existsSync(sitemapPath)) {
+  fs.chmodSync(sitemapPath, 0o666);
+}
+
 fs.writeFileSync(sitemapPath, xml);
 console.log(`Generated ${uniqueRoutes.length} sitemap URLs with ${imageCount} images at ${sitemapPath}`);
