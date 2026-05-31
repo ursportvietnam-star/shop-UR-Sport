@@ -1,15 +1,15 @@
 import { BlogPost } from '../types';
 
-import aoThunPlan from '../../01-ao-thun-nam.md?raw';
-import quanTheThaoPlan from '../../02-quan-the-thao.md?raw';
-import doGymPlan from '../../03-do-gym.md?raw';
-import chatLieuPlan from '../../04-chat-lieu.md?raw';
-import sizePlan from '../../05-size.md?raw';
-import phoiDoPlan from '../../06-phoi-do.md?raw';
-import buyerPlan from '../../07-buyer.md?raw';
-import keywordMasterPlan from '../../08-keyword-master.md?raw';
-import roadmapPlan from '../../09-roadmap.md?raw';
-import aiAutomationPlan from '../../10-ai-automation.md?raw';
+import aoThunPlan from '../content/01-ao-thun-nam.md?raw';
+import quanTheThaoPlan from '../content/02-quan-the-thao.md?raw';
+import doGymPlan from '../content/03-do-gym.md?raw';
+import chatLieuPlan from '../content/04-chat-lieu.md?raw';
+import sizePlan from '../content/05-size.md?raw';
+import phoiDoPlan from '../content/06-phoi-do.md?raw';
+import buyerPlan from '../content/07-buyer.md?raw';
+import keywordMasterPlan from '../content/08-keyword-master.md?raw';
+import roadmapPlan from '../content/09-roadmap.md?raw';
+import aiAutomationPlan from '../content/10-ai-automation.md?raw';
 
 export type SeoSuggestion = {
   id: string;
