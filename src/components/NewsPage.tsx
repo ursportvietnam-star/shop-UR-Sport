@@ -975,11 +975,6 @@ export function NewsPage() {
 
         {/* Post Metadata Hero Block */}
         <div className="max-w-4xl mb-8">
-          {selectedPost.category && (
-            <span className="inline-flex px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#1e4b64]/10 text-[#1e4b64] mb-4">
-              {selectedPost.category}
-            </span>
-          )}
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-zinc-955 leading-tight tracking-tight mb-6">
             {selectedPost.title}
           </h1>
