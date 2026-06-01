@@ -70,9 +70,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
       await loginWithGoogle();
       onClose();
       toast.success('Đăng nhập thành công!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
-      // AuthContext.tsx already handles the toast with specific messages
+      toast.error(error.message || 'Đăng nhập Google thất bại');
     }
   };
 

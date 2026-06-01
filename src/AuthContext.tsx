@@ -176,7 +176,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginWithGoogle = async () => {
     if (!auth || !db || !isFirebaseConfigured) {
-      throw new Error('Firebase chua duoc cau hinh. Vui long them VITE_FIREBASE_* vao GitHub Secrets va build lai.');
+      throw new Error('Firebase chưa được cấu hình. Vui lòng thêm các khóa VITE_FIREBASE_* vào Environment Variables (trên Vercel/Hosting) hoặc GitHub Secrets.');
     }
 
     const provider = googleProvider();
@@ -208,7 +208,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginWithEmail = async (email: string, password: string) => {
     if (!auth || !db || !isFirebaseConfigured) {
-      throw new Error('Firebase chua duoc cau hinh. Vui long them VITE_FIREBASE_* vao GitHub Secrets va build lai.');
+      throw new Error('Firebase chưa được cấu hình. Vui lòng thêm các khóa VITE_FIREBASE_* vào Environment Variables (trên Vercel/Hosting) hoặc GitHub Secrets.');
     }
 
     try {
@@ -234,7 +234,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const registerWithEmail = async (email: string, password: string, displayName: string) => {
     if (!auth || !db || !isFirebaseConfigured) {
-      throw new Error('Firebase chua duoc cau hinh. Vui long them VITE_FIREBASE_* vao GitHub Secrets va build lai.');
+      throw new Error('Firebase chưa được cấu hình. Vui lòng thêm các khóa VITE_FIREBASE_* vào Environment Variables (trên Vercel/Hosting) hoặc GitHub Secrets.');
     }
 
     try {
