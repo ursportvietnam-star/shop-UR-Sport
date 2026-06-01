@@ -93,6 +93,7 @@ export const SEO: React.FC<SEOProps> = ({
       injectMeta('name', 'robots', robots);
       injectMeta('name', 'author', 'UR Sport Team');
       injectLink('canonical', finalCanonical);
+      injectLink('image_src', finalImage);
 
       // --- Open Graph / Facebook ---
       injectMeta('property', 'og:type', type);

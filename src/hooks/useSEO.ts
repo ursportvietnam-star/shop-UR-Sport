@@ -129,6 +129,7 @@ export function useSEO({
       injectMeta('name', 'author', 'UR Sport Team');
       injectMeta('name', 'theme-color', '#1e4b64');
       injectLink('canonical', finalCanonical);
+      injectLink('image_src', finalImage);
 
       // --- Open Graph / Facebook ---
       injectMeta('property', 'og:type', type);
