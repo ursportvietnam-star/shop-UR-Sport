@@ -946,6 +946,29 @@ export function NewsPage() {
           <button onClick={() => navigate("/")} className="hover:text-zinc-900 transition-colors cursor-pointer">Trang chủ</button>
           <ChevronRight className="h-3 w-3" />
           <button onClick={() => navigate("/blog")} className="hover:text-zinc-900 transition-colors cursor-pointer">Blog</button>
+          {selectedPost.category && (() => {
+            const cat = blogCategories.find(c => 
+              c.label.toLowerCase() === selectedPost.category.toLowerCase() ||
+              selectedPost.category.toLowerCase().includes(c.label.toLowerCase()) ||
+              c.label.toLowerCase().includes(selectedPost.category.toLowerCase())
+            ) || DEFAULT_BLOG_CATEGORY_ITEMS.find(c => 
+              c.label.toLowerCase() === selectedPost.category.toLowerCase() ||
+              selectedPost.category.toLowerCase().includes(c.label.toLowerCase()) ||
+              c.label.toLowerCase().includes(selectedPost.category.toLowerCase())
+            );
+            const catLink = cat ? cat.link : `/blog/category/${slugifyCategory(selectedPost.category)}`;
+            return (
+              <>
+                <ChevronRight className="h-3 w-3" />
+                <button 
+                  onClick={() => navigate(catLink)} 
+                  className="hover:text-zinc-900 transition-colors cursor-pointer"
+                >
+                  {selectedPost.category}
+                </button>
+              </>
+            );
+          })()}
           <ChevronRight className="h-3 w-3" />
           <span className="text-zinc-600 truncate max-w-[200px] sm:max-w-md">{selectedPost.title}</span>
         </nav>
