@@ -14,11 +14,20 @@
       <p>Đang chuyển về trang chủ...</p>
       <p><a href="/">Quay về trang chủ</a></p>
     </div>
-    <script>
-      if (window.location.pathname !== '/') {
-        history.replaceState(null, '', '/');
-        window.location.reload();
-      }
+    <script type="text/javascript">
+      // Dynamic Single Page Apps for GitHub Pages routing redirect
+      var repoName = 'shop-UR-Sport';
+      var pathSegments = window.location.pathname.split('/').filter(Boolean);
+      var pathSegmentsToKeep = (pathSegments[0] === repoName) ? 1 : 0;
+
+      var l = window.location;
+      l.replace(
+        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+        l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?/' +
+        l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
+        (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+        l.hash
+      );
     </script>
   </body>
 </html>

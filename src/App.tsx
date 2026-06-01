@@ -180,7 +180,8 @@ function AppContent() {
   };
 
   const onPageChange = (page: string) => {
-    navigate(page === 'home' ? '/' : `/${page}`);
+    const cleanPage = page.startsWith('/') ? page : `/${page}`;
+    navigate(page === 'home' ? '/' : cleanPage);
     window.scrollTo(0, 0);
   };
 
