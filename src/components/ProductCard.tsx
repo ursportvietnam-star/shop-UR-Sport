@@ -121,7 +121,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
             <motion.img
               key={primaryImage || product.id}
               initial={{ opacity: 0.9 }} animate={{ opacity: 1 }} exit={{ opacity: 0.9 }}
-              src={primaryImage || '/images/og-ursport.svg'}
+              src={primaryImage || '/images/og-ursport.jpg'}
               alt={product.name}
               loading="lazy"
               decoding="async"

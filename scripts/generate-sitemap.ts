@@ -201,7 +201,7 @@ const staticBlogCategoryRoutes: SitemapRoute[] = Array.from(
 }));
 
 const routes: SitemapRoute[] = [
-  { path: '/', priority: '1.0', changefreq: 'daily', images: imageList(['/images/og-ursport.svg'], 'UR Sport') },
+  { path: '/', priority: '1.0', changefreq: 'daily', images: imageList(['/images/og-ursport.jpg'], 'UR Sport') },
   { path: '/shop', priority: '0.9', changefreq: 'daily', images: imageList(PRODUCTS.slice(0, 6).map(product => product.images?.[0]), 'Shop đồ thể thao nam UR Sport') },
   { path: '/blog', priority: '0.7', changefreq: 'weekly', images: imageList(STATIC_BLOG_POSTS.slice(0, 6).map(post => post.image), 'Blog UR Sport') },
   ...categoryRoutes,

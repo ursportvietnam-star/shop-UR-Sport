@@ -106,7 +106,7 @@ const injectSeo = (html: string, snapshot: Snapshot) => {
   const canonical = absoluteUrl(snapshot.route);
   const title = cleanTitle(snapshot.title);
   const description = cleanSeoText(snapshot.description, 170);
-  const image = absoluteUrl(snapshot.image || '/images/og-ursport.svg');
+  const image = absoluteUrl(snapshot.image || '/images/og-ursport.jpg');
   const schema = snapshot.schema || buildSeoGraph();
   const keywords = cleanSeoText(snapshot.keywords || '', 240);
   const type = snapshot.type || 'website';
@@ -297,7 +297,7 @@ const categorySnapshot = (category: (typeof CATEGORY_METADATA)[number]): Snapsho
 const blogSnapshot = (post: (typeof STATIC_BLOG_POSTS)[number]): Snapshot => {
   const slug = post.slug || post.id;
   const route = `/blog/${slug}`;
-  const image = post.image || '/images/og-ursport.svg';
+  const image = post.image || '/images/og-ursport.jpg';
   const date = toIsoDate(post.date);
 
   return {
@@ -337,7 +337,7 @@ const shopSnapshot = (): Snapshot => ({
   title: `Shop đồ thể thao nam | ${SITE_NAME}`,
   description: `Khám phá sản phẩm thể thao nam tại ${SITE_NAME}: áo thun, áo polo, quần thể thao và phụ kiện dễ mặc hằng ngày.`,
   keywords: 'đồ thể thao nam, áo thun nam, áo polo nam, quần thể thao nam, UR Sport',
-  image: '/images/og-ursport.svg',
+  image: '/images/og-ursport.jpg',
   schema: buildSeoGraph(
     {
       '@type': 'CollectionPage',
@@ -355,7 +355,7 @@ const homeSnapshot = (): Snapshot => ({
   title: `UR Sport - Phong Cách Thể Thao Đẳng Cấp | Áo Thun, Áo Polo Nam`,
   description: `Khám phá bộ sưu tập thời trang thể thao nam cao cấp tại UR Sport. Chuyên cung cấp áo thun, áo polo nam chất lượng, phong cách và bền bỉ. Miễn phí vận chuyển toàn quốc.`,
   keywords: `ur sport, thời trang thể thao nam, áo thun nam, áo polo nam, quần thể thao, phụ kiện thể thao, đồ tập gym nam`,
-  image: '/images/og-ursport.svg',
+  image: '/images/og-ursport.jpg',
   schema: buildSeoGraph(localBusinessSchema)
 });
 
@@ -364,7 +364,7 @@ const blogIndexSnapshot = (): Snapshot => ({
   title: `Blog thời trang thể thao nam | ${SITE_NAME}`,
   description: `Kiến thức chọn áo thun, áo polo, chất liệu và cách phối đồ thể thao nam từ ${SITE_NAME}.`,
   keywords: 'blog thời trang nam, áo thun nam, áo polo nam, đồ thể thao nam',
-  image: '/images/og-ursport.svg',
+  image: '/images/og-ursport.jpg',
   schema: buildSeoGraph({
     '@type': 'Blog',
     '@id': `${absoluteUrl('/blog')}#blog`,
