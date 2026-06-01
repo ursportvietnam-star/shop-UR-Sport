@@ -1,4 +1,4 @@
-import { Check as CheckIcon, Code2, Copy, Download, Eye, Search, Trash2, Upload, Plus, X, AlertCircle, AlertTriangle, Calendar, ChevronRight, Globe, RefreshCw, Settings, ShieldCheck, Play, CheckCircle2, XCircle, Info, ExternalLink, FileText, Database, ArrowRight, Activity, Clock, Server } from 'lucide-react';
+import { Check as CheckIcon, Code2, Copy, Download, Eye, Search, Trash2, Upload, Plus, X, AlertCircle, AlertTriangle, Calendar, ChevronRight, Globe, RefreshCw, Settings, ShieldCheck, Play, CheckCircle2, XCircle, Info, ExternalLink, FileText, Database, ArrowRight, Activity, Clock, Server, GripVertical } from 'lucide-react';
 import { useState, useEffect, type Dispatch, type ReactNode, type SetStateAction } from 'react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -52,6 +52,11 @@ interface AdminSettingsTabProps {
     }[];
     paymentBadges: string[];
     paymentGateways: string[];
+    showLogo?: boolean;
+    showNewsletter?: boolean;
+    newsletterPlaceholder?: string;
+    newsletterButtonText?: string;
+    columnOrder?: string[];
   };
   setFooterSettings: Dispatch<SetStateAction<{
     description: string;
@@ -73,6 +78,11 @@ interface AdminSettingsTabProps {
     }[];
     paymentBadges: string[];
     paymentGateways: string[];
+    showLogo?: boolean;
+    showNewsletter?: boolean;
+    newsletterPlaceholder?: string;
+    newsletterButtonText?: string;
+    columnOrder?: string[];
   }>>;
   handleSaveFooterSettings: (settings: {
     description: string;
@@ -94,6 +104,11 @@ interface AdminSettingsTabProps {
     }[];
     paymentBadges: string[];
     paymentGateways: string[];
+    showLogo?: boolean;
+    showNewsletter?: boolean;
+    newsletterPlaceholder?: string;
+    newsletterButtonText?: string;
+    columnOrder?: string[];
   }) => void;
   onOpenProductEdit?: (product: Product) => void;
   onOpenBlogPostEdit?: (post: BlogPost) => void;
@@ -125,8 +140,83 @@ export function AdminSettingsTab({
   onOpenProductEdit,
   onOpenBlogPostEdit,
 }: AdminSettingsTabProps) {
+  const [draggedColId, setDraggedColId] = useState<string | null>(null);
+  const [dragOverColId, setDragOverColId] = useState<string | null>(null);
+  const [expandedColId, setExpandedColId] = useState<string | null>('intro');
+
+  const getFooterColumns = () => {
+    const cols = [
+      { id: 'intro', name: 'Cột 1: Giới thiệu (Logo & Đăng ký Email)' },
+      ...(footerSettings.customLinks || []).map((col, idx) => ({
+        id: `custom_${idx}`,
+        name: `Cột ${idx + 2}: ${col.title || 'Liên kết tùy chỉnh'}`
+      })),
+      { id: 'contact', name: 'Cột Thông tin liên hệ' },
+      { id: 'social', name: 'Cột Mạng xã hội & Thanh toán' }
+    ];
+
+    const order = footerSettings.columnOrder || ['intro', ...((footerSettings.customLinks || []).map((_, idx) => `custom_${idx}`)), 'contact', 'social'];
+    
+    const sortedCols = [];
+    order.forEach(id => {
+      const found = cols.find(c => c.id === id);
+      if (found) sortedCols.push(found);
+    });
+
+    cols.forEach(c => {
+      if (!sortedCols.some(sc => sc.id === c.id)) {
+        sortedCols.push(c);
+      }
+    });
+
+    return sortedCols;
+  };
+
+  const handleColDragStart = (id: string) => {
+    setDraggedColId(id);
+  };
+
+  const handleColDragOver = (id: string, e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOverColId(id);
+  };
+
+  const handleColDrop = (id: string) => {
+    if (!draggedColId || draggedColId === id) return;
+
+    const cols = getFooterColumns();
+    const order = cols.map(c => c.id);
+    const fromIndex = order.indexOf(draggedColId);
+    const toIndex = order.indexOf(id);
+
+    if (fromIndex !== -1 && toIndex !== -1) {
+      const updatedOrder = [...order];
+      updatedOrder.splice(fromIndex, 1);
+      updatedOrder.splice(toIndex, 0, draggedColId);
+      
+      setFooterSettings({
+        ...footerSettings,
+        columnOrder: updatedOrder
+      });
+      toast.success('Đã thay đổi thứ tự cột!');
+    }
+
+    setDraggedColId(null);
+    setDragOverColId(null);
+  };
+
+  const handleColDragEnd = () => {
+    setDraggedColId(null);
+    setDragOverColId(null);
+  };
   const [newBadgeText, setNewBadgeText] = useState('');
   const [newGatewayText, setNewGatewayText] = useState('');
+
+  const clearLogoField = (field: 'logoLight' | 'logoDark' | 'favicon') => {
+    const updated = { ...logoSettings, [field]: '' };
+    setLogoSettings(updated);
+    handleSaveLogoSettings(updated);
+  };
 
   // --- Sub-tab selections ---
   const [sitemapSubTab, setSitemapSubTab] = useState<'overview' | 'product' | 'category' | 'blog' | 'image' | 'video' | 'brand' | 'gsc' | 'config'>('overview');
@@ -1032,6 +1122,13 @@ export function AdminSettingsTab({
                         toast.success('Đã tự động lưu Logo nền sáng!');
                       }}
                     />
+                    <button
+                      type="button"
+                      onClick={() => clearLogoField('logoLight')}
+                      className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/20 bg-red-500/5 text-red-300 text-xs font-bold px-3 py-2 hover:bg-red-500/10 transition"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> Xóa logo nền sáng
+                    </button>
                     <input 
                       type="text"
                       value={logoSettings.logoLight || ''}
@@ -1066,6 +1163,13 @@ export function AdminSettingsTab({
                         toast.success('Đã tự động lưu Logo nền tối!');
                       }}
                     />
+                    <button
+                      type="button"
+                      onClick={() => clearLogoField('logoDark')}
+                      className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/20 bg-red-500/5 text-red-300 text-xs font-bold px-3 py-2 hover:bg-red-500/10 transition"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> Xóa logo nền tối
+                    </button>
                     <input 
                       type="text"
                       value={logoSettings.logoDark || ''}
@@ -1102,6 +1206,13 @@ export function AdminSettingsTab({
                         toast.success('Đã tự động lưu Favicon!');
                       }}
                     />
+                    <button
+                      type="button"
+                      onClick={() => clearLogoField('favicon')}
+                      className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/20 bg-red-500/5 text-red-300 text-xs font-bold px-3 py-2 hover:bg-red-500/10 transition"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> Xóa Favicon
+                    </button>
                     <input 
                       type="text"
                       value={logoSettings.favicon || ''}
@@ -1126,404 +1237,580 @@ export function AdminSettingsTab({
               {/* Footer Configuration Panel */}
               {(activeSection === 'settings' || activeSection === 'settings-footer') && (
                 <div className="bg-[#13161f] border border-white/5 rounded-2xl p-6">
-                <h3 className="text-white font-black text-sm uppercase tracking-widest mb-6">Cấu hình Chân trang (Footer)</h3>
-                
-                <div className="space-y-6">
-                  {/* General Info */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="md:col-span-2">
-                      <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Mô tả giới thiệu chân trang</label>
-                      <textarea 
-                        value={footerSettings.description}
-                        onChange={(e) => setFooterSettings({...footerSettings, description: e.target.value})}
-                        placeholder="VD: Chuyên cung cấp đồ thể thao chất lượng cao..."
-                        rows={3}
-                        className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50 resize-y"
-                      />
-                    </div>
-
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-white/5 pb-4 mb-6">
                     <div>
-                      <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Địa chỉ liên hệ</label>
-                      <input 
-                        type="text"
-                        value={footerSettings.address}
-                        onChange={(e) => setFooterSettings({...footerSettings, address: e.target.value})}
-                        placeholder="VD: 72 Nguyễn Trãi, Quận 1, TP. Hồ Chí Minh"
-                        className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50"
-                      />
+                      <h3 className="text-white font-black text-sm uppercase tracking-widest">Cấu hình Chân trang (Footer)</h3>
+                      <p className="text-white/30 text-xs font-medium mt-1">Kéo thả các thanh tiêu đề để đổi vị trí cột, nhấp vào tiêu đề để sửa chi tiết từng cột</p>
                     </div>
-
-                    <div>
-                      <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Số điện thoại liên hệ</label>
-                      <input 
-                        type="text"
-                        value={footerSettings.phone}
-                        onChange={(e) => setFooterSettings({...footerSettings, phone: e.target.value})}
-                        placeholder="VD: +84 917 722 425"
-                        className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Email liên hệ</label>
-                      <input 
-                        type="email"
-                        value={footerSettings.email}
-                        onChange={(e) => setFooterSettings({...footerSettings, email: e.target.value})}
-                        placeholder="VD: support@ursport.vn"
-                        className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Copyright Chân trang</label>
-                      <input 
-                        type="text"
-                        value={footerSettings.copyright}
-                        onChange={(e) => setFooterSettings({...footerSettings, copyright: e.target.value})}
-                        placeholder="VD: © 2026 UR SPORT. All rights reserved"
-                        className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50"
-                      />
-                    </div>
+                    <button 
+                      onClick={() => handleSaveFooterSettings(footerSettings)}
+                      className="mt-4 md:mt-0 px-6 py-2 bg-[#1e4b64] hover:bg-[#153446] text-white text-xs font-black rounded-xl shadow-lg transition-all border border-white/10"
+                    >
+                      Lưu cấu hình Chân trang
+                    </button>
                   </div>
 
-                  {/* Google Maps embed and Social links */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-white/5 pt-6">
-                    <div className="space-y-4">
-                      <h4 className="text-white font-bold text-xs uppercase tracking-wider">Mạng xã hội (Social Links)</h4>
-                      <div className="grid grid-cols-1 gap-3">
-                        <div>
-                          <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Link Facebook</label>
-                          <input 
-                            type="text"
-                            value={footerSettings.facebook}
-                            onChange={(e) => setFooterSettings({...footerSettings, facebook: e.target.value})}
-                            placeholder="https://facebook.com/ursport"
-                            className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Link Instagram</label>
-                          <input 
-                            type="text"
-                            value={footerSettings.instagram}
-                            onChange={(e) => setFooterSettings({...footerSettings, instagram: e.target.value})}
-                            placeholder="https://instagram.com/ursport"
-                            className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Link TikTok</label>
-                          <input 
-                            type="text"
-                            value={footerSettings.tiktok}
-                            onChange={(e) => setFooterSettings({...footerSettings, tiktok: e.target.value})}
-                            placeholder="https://tiktok.com/@ursport"
-                            className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50"
-                          />
-                        </div>
-                      </div>
-                    </div>
+                  <div className="space-y-4">
+                    {/* Danh sách các cột dạng Accordion Kéo thả */}
+                    {getFooterColumns().map((col, idx) => {
+                      const isExpanded = expandedColId === col.id;
+                      const isDragging = draggedColId === col.id;
+                      const isDragOver = dragOverColId === col.id;
 
-                    <div className="space-y-4">
-                      <h4 className="text-white font-bold text-xs uppercase tracking-wider">Bản đồ Google Maps (Iframe Src)</h4>
-                      <div>
-                        <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Đường dẫn Iframe Google Maps</label>
-                        <textarea 
-                          value={footerSettings.mapUrl}
-                          onChange={(e) => setFooterSettings({...footerSettings, mapUrl: e.target.value})}
-                          placeholder="Dán thuộc tính src của mã nhúng iframe bản đồ..."
-                          rows={4}
-                          className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50 resize-y font-mono"
-                        />
+                      return (
+                        <div 
+                          key={col.id} 
+                          className={cn(
+                            "bg-[#0f1117] border rounded-2xl overflow-hidden transition-all duration-200",
+                            isExpanded ? "border-[#1e4b64]" : "border-white/5",
+                            isDragging && "opacity-40 scale-98",
+                            isDragOver && "border-blue-400 bg-white/[0.01]"
+                          )}
+                        >
+                          {/* Accordion Header (Draggable) */}
+                          <div 
+                            draggable
+                            onDragStart={() => handleColDragStart(col.id)}
+                            onDragOver={(e) => handleColDragOver(col.id, e)}
+                            onDrop={() => handleColDrop(col.id)}
+                            onDragEnd={handleColDragEnd}
+                            onClick={() => setExpandedColId(isExpanded ? null : col.id)}
+                            className="flex items-center justify-between p-4 cursor-pointer hover:bg-white/[0.02] select-none group"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="text-white/20 hover:text-white/60 cursor-grab active:cursor-grabbing p-1">
+                                <GripVertical className="h-4 w-4" />
+                              </div>
+                              <span className="text-[10px] font-black uppercase text-white/35 bg-white/5 px-2.5 py-1 rounded-md">Vị trí {idx + 1}</span>
+                              <h4 className="text-white font-bold text-xs uppercase tracking-wider">{col.name}</h4>
+                            </div>
+                            <div className="text-white/40 group-hover:text-white transition-colors p-1">
+                              <ChevronRight className={cn("h-4 w-4 transform transition-transform duration-300", isExpanded && "rotate-90")} />
+                            </div>
+                          </div>
+
+                          {/* Accordion Content */}
+                          {isExpanded && (
+                            <div className="p-6 border-t border-white/5 bg-white/[0.01] space-y-6">
+                              {/* 1. Intro Column Settings */}
+                              {col.id === 'intro' && (
+                                <div className="grid grid-cols-1 gap-6">
+                                  <div>
+                                    <label className="text-[10px] font-black uppercase text-white/35 mb-1.5 block">Mô tả giới thiệu chân trang</label>
+                                    <textarea 
+                                      value={footerSettings.description}
+                                      onChange={(e) => setFooterSettings({...footerSettings, description: e.target.value})}
+                                      placeholder="VD: Chuyên cung cấp đồ thể thao chất lượng cao..."
+                                      rows={3}
+                                      className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50 resize-y"
+                                    />
+                                  </div>
+
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-white/5 pt-6">
+                                    {/* Logo Settings */}
+                                    <div className="space-y-4">
+                                      <label className="text-[10px] font-black uppercase text-white/35 block">Logo Chân Trang (Cột 1)</label>
+                                      <div className="flex items-center gap-4">
+                                        <label className="flex items-center gap-2 text-xs text-white/80 cursor-pointer select-none">
+                                          <input 
+                                            type="checkbox"
+                                            checked={footerSettings.showLogo !== false}
+                                            onChange={(e) => setFooterSettings({...footerSettings, showLogo: e.target.checked})}
+                                            className="accent-[#1e4b64] h-3.5 w-3.5 rounded border-white/10"
+                                          />
+                                          Hiển thị Logo ở chân trang
+                                        </label>
+                                      </div>
+                                      {footerSettings.showLogo !== false && (
+                                        <div className="space-y-3">
+                                          <div className="aspect-[3/1] max-w-[200px] rounded-xl bg-[#0f1117] flex items-center justify-center p-3 border border-white/5 overflow-hidden">
+                                            {logoSettings.logoDark ? (
+                                              <img src={logoSettings.logoDark} alt="Logo Dark Background" className="max-h-full max-w-full object-contain" />
+                                            ) : (
+                                              <span className="text-white/30 text-xs font-bold">Chưa có logo nền tối</span>
+                                            )}
+                                          </div>
+                                          <ImageUpload 
+                                            folder="settings"
+                                            label="Thay đổi Logo Footer (Nền tối)"
+                                            compact={true}
+                                            externalPreview={logoSettings.logoDark}
+                                            onUploadComplete={(url) => {
+                                              const updated = {...logoSettings, logoDark: url};
+                                              setLogoSettings(updated);
+                                              handleSaveLogoSettings(updated);
+                                              toast.success('Đã cập nhật Logo chân trang!');
+                                            }}
+                                          />
+                                          <button
+                                            type="button"
+                                            onClick={() => clearLogoField('logoDark')}
+                                            className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/20 bg-red-500/5 text-red-300 text-xs font-bold px-3 py-2 hover:bg-red-500/10 transition"
+                                          >
+                                            <Trash2 className="h-3.5 w-3.5" /> Xóa Logo chân trang
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Email Settings */}
+                                    <div className="space-y-4">
+                                      <label className="text-[10px] font-black uppercase text-white/35 block">Form Đăng ký Email (Cột 1)</label>
+                                      <div className="flex items-center gap-4">
+                                        <label className="flex items-center gap-2 text-xs text-white/80 cursor-pointer select-none">
+                                          <input 
+                                            type="checkbox"
+                                            checked={footerSettings.showNewsletter !== false}
+                                            onChange={(e) => setFooterSettings({...footerSettings, showNewsletter: e.target.checked})}
+                                            className="accent-[#1e4b64] h-3.5 w-3.5 rounded border-white/10"
+                                          />
+                                          Hiển thị Form Đăng ký nhận tin
+                                        </label>
+                                      </div>
+
+                                      {footerSettings.showNewsletter !== false && (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                                          <div>
+                                            <label className="text-[9px] font-black uppercase text-white/25 mb-1 block">Gợi ý ô nhập (Placeholder)</label>
+                                            <input 
+                                              type="text"
+                                              value={footerSettings.newsletterPlaceholder || ''}
+                                              onChange={(e) => setFooterSettings({...footerSettings, newsletterPlaceholder: e.target.value})}
+                                              placeholder="VD: Email của bạn"
+                                              className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                            />
+                                          </div>
+                                          <div>
+                                            <label className="text-[9px] font-black uppercase text-white/25 mb-1 block">Chữ trên nút (Button Text)</label>
+                                            <input 
+                                              type="text"
+                                              value={footerSettings.newsletterButtonText || ''}
+                                              onChange={(e) => setFooterSettings({...footerSettings, newsletterButtonText: e.target.value})}
+                                              placeholder="VD: Đăng ký"
+                                              className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                            />
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* 2. Custom Link Column Settings */}
+                              {col.id.startsWith('custom_') && (() => {
+                                const colIdx = parseInt(col.id.split('_')[1]);
+                                const customCol = footerSettings.customLinks?.[colIdx];
+                                if (!customCol) return null;
+
+                                return (
+                                  <div className="space-y-4">
+                                    <div className="flex items-center justify-between gap-3">
+                                      <div className="flex-1">
+                                        <label className="text-[9px] font-black uppercase text-white/30 mb-1.5 block">Tên Cột</label>
+                                        <input
+                                          type="text"
+                                          value={customCol.title}
+                                          onChange={(e) => updateColumnTitle(colIdx, e.target.value)}
+                                          className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs font-bold outline-none focus:border-[#1e4b64]/50"
+                                        />
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => deleteColumn(colIdx)}
+                                        className="self-end p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded-lg transition-all border border-red-500/20"
+                                        title="Xóa cột này"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </button>
+                                    </div>
+
+                                    <div className="space-y-3 border-t border-white/5 pt-4">
+                                      <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                                        <span className="text-[10px] font-black uppercase text-white/40">Liên kết trong cột</span>
+                                        <button
+                                          type="button"
+                                          onClick={() => addLinkItem(colIdx)}
+                                          className="flex items-center gap-1 text-[10px] font-bold text-[#4ca6d8] hover:text-[#5cb6e8] transition-colors"
+                                        >
+                                          <Plus className="h-3 w-3" /> Thêm liên kết
+                                        </button>
+                                      </div>
+
+                                      {(!customCol.items || customCol.items.length === 0) ? (
+                                        <p className="text-white/20 text-[10px] text-center py-4 font-bold italic">Chưa có liên kết nào</p>
+                                      ) : (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar">
+                                          {customCol.items.map((item, itemIdx) => (
+                                            <div key={itemIdx} className="bg-white/[0.01] border border-white/5 rounded-xl p-3 space-y-2 relative group">
+                                              <div className="grid grid-cols-2 gap-2">
+                                                <div>
+                                                  <label className="text-[8px] font-black uppercase text-white/25 mb-0.5 block">Nhãn hiển thị</label>
+                                                  <input
+                                                    type="text"
+                                                    value={item.label}
+                                                    onChange={(e) => updateLinkItem(colIdx, itemIdx, 'label', e.target.value)}
+                                                    placeholder="Tên nhãn..."
+                                                    className="w-full bg-white/5 border border-white/5 rounded-md px-2 py-1 text-white text-[11px] outline-none focus:border-[#1e4b64]/50"
+                                                  />
+                                                </div>
+                                                <div>
+                                                  <label className="text-[8px] font-black uppercase text-white/25 mb-0.5 block">Hành động link</label>
+                                                  <select
+                                                    value={item.action}
+                                                    onChange={(e) => updateLinkItem(colIdx, itemIdx, 'action', e.target.value as any)}
+                                                    className="w-full bg-[#13161f] border border-white/5 rounded-md px-2 py-1 text-white text-[11px] outline-none focus:border-[#1e4b64]/55 [color-scheme:dark]"
+                                                  >
+                                                    <option value="category">Mở Danh mục</option>
+                                                    <option value="page">Mở Trang</option>
+                                                  </select>
+                                                </div>
+                                              </div>
+                                              <div className="flex gap-2 items-center">
+                                                <div className="flex-1">
+                                                  <label className="text-[8px] font-black uppercase text-white/25 mb-0.5 block">
+                                                    {item.action === 'category' ? 'Tên danh mục chính xác (VD: Áo thun nam)' : 'Đường dẫn/Slug trang (VD: blog, contact, etc.)'}
+                                                  </label>
+                                                  <input
+                                                    type="text"
+                                                    value={item.value}
+                                                    onChange={(e) => updateLinkItem(colIdx, itemIdx, 'value', e.target.value)}
+                                                    placeholder={item.action === 'category' ? 'VD: Áo thun nam' : 'VD: blog'}
+                                                    className="w-full bg-white/5 border border-white/5 rounded-md px-2 py-1 text-white text-[11px] outline-none focus:border-[#1e4b64]/55"
+                                                  />
+                                                </div>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => deleteLinkItem(colIdx, itemIdx)}
+                                                  className="self-end p-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-md transition-all border border-red-500/20"
+                                                  title="Xóa liên kết"
+                                                >
+                                                  <X className="h-3 w-3" />
+                                                </button>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+
+                              {/* 3. Contact Info Column Settings */}
+                              {col.id === 'contact' && (
+                                <div className="space-y-6">
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div>
+                                      <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Địa chỉ liên hệ</label>
+                                      <input 
+                                        type="text"
+                                        value={footerSettings.address}
+                                        onChange={(e) => setFooterSettings({...footerSettings, address: e.target.value})}
+                                        placeholder="VD: 72 Nguyễn Trãi, Quận 1, TP. Hồ Chí Minh"
+                                        className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                      />
+                                    </div>
+
+                                    <div>
+                                      <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Số điện thoại liên hệ</label>
+                                      <input 
+                                        type="text"
+                                        value={footerSettings.phone}
+                                        onChange={(e) => setFooterSettings({...footerSettings, phone: e.target.value})}
+                                        placeholder="VD: +84 917 722 425"
+                                        className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                      />
+                                    </div>
+
+                                    <div>
+                                      <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Email liên hệ</label>
+                                      <input 
+                                        type="email"
+                                        value={footerSettings.email}
+                                        onChange={(e) => setFooterSettings({...footerSettings, email: e.target.value})}
+                                        placeholder="VD: support@ursport.vn"
+                                        className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div className="border-t border-white/5 pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                      <label className="text-[10px] font-black uppercase text-white/30 block">Đường dẫn Iframe Google Maps</label>
+                                      <textarea 
+                                        value={footerSettings.mapUrl}
+                                        onChange={(e) => setFooterSettings({...footerSettings, mapUrl: e.target.value})}
+                                        placeholder="Dán thuộc tính src của mã nhúng iframe bản đồ..."
+                                        rows={4}
+                                        className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50 resize-y font-mono"
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <label className="text-[10px] font-black uppercase text-white/30 block">Xem trước bản đồ</label>
+                                      {footerSettings.mapUrl ? (
+                                        <div className="overflow-hidden rounded-lg border border-white/5 bg-slate-900 h-24">
+                                          <iframe
+                                            className="h-full w-full"
+                                            src={footerSettings.mapUrl}
+                                            title="Preview Google Map"
+                                            loading="lazy"
+                                          />
+                                        </div>
+                                      ) : (
+                                        <p className="text-white/20 text-[10px] italic py-8 border border-dashed border-white/5 rounded-lg text-center">Chưa dán iframe bản đồ</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* 4. Social & Payments Settings */}
+                              {col.id === 'social' && (
+                                <div className="space-y-6">
+                                  <div className="space-y-4">
+                                    <h5 className="text-white font-bold text-xs uppercase tracking-wider">Mạng xã hội (Social Links)</h5>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                      <div>
+                                        <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Link Facebook</label>
+                                        <input 
+                                          type="text"
+                                          value={footerSettings.facebook}
+                                          onChange={(e) => setFooterSettings({...footerSettings, facebook: e.target.value})}
+                                          placeholder="https://facebook.com/ursport"
+                                          className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Link Instagram</label>
+                                        <input 
+                                          type="text"
+                                          value={footerSettings.instagram}
+                                          onChange={(e) => setFooterSettings({...footerSettings, instagram: e.target.value})}
+                                          placeholder="https://instagram.com/ursport"
+                                          className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Link TikTok</label>
+                                        <input 
+                                          type="text"
+                                          value={footerSettings.tiktok}
+                                          onChange={(e) => setFooterSettings({...footerSettings, tiktok: e.target.value})}
+                                          placeholder="https://tiktok.com/@ursport"
+                                          className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="border-t border-white/5 pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* Payment Badges */}
+                                    <div className="space-y-4">
+                                      <div>
+                                        <h5 className="text-white font-bold text-xs uppercase tracking-wider">Huy hiệu thanh toán (Payment Badges)</h5>
+                                        <p className="text-white/35 text-[9px] mt-0.5">Hiển thị trong hộp Thanh toán màu xám</p>
+                                      </div>
+
+                                      <div className="flex gap-2">
+                                        <input
+                                          type="text"
+                                          value={newBadgeText}
+                                          onChange={(e) => setNewBadgeText(e.target.value)}
+                                          onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                              e.preventDefault();
+                                              addPaymentBadge(newBadgeText);
+                                            }
+                                          }}
+                                          placeholder="Nhập mã huy hiệu mới (VD: VISA)..."
+                                          className="flex-1 bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => addPaymentBadge(newBadgeText)}
+                                          className="px-3 bg-[#1e4b64] hover:bg-[#153446] text-white text-xs font-bold rounded-lg transition-all"
+                                        >
+                                          Thêm
+                                        </button>
+                                      </div>
+
+                                      <div className="flex flex-wrap gap-2 bg-[#0f1117]/50 border border-white/5 rounded-xl p-3 min-h-16 items-center">
+                                        {(!footerSettings.paymentBadges || footerSettings.paymentBadges.length === 0) ? (
+                                          <span className="text-white/20 text-[10px] italic">Không có huy hiệu nào.</span>
+                                        ) : (
+                                          footerSettings.paymentBadges.map((badge, idx) => (
+                                            <span
+                                              key={idx}
+                                              className="inline-flex items-center gap-1 bg-white hover:bg-zinc-100 text-slate-950 px-2 py-0.5 rounded text-[10px] font-black uppercase border border-zinc-200 transition-all select-none"
+                                            >
+                                              {badge}
+                                              <button
+                                                type="button"
+                                                onClick={() => deletePaymentBadge(idx)}
+                                                className="text-red-500 hover:text-red-700 transition-colors p-0.5"
+                                                title="Xóa huy hiệu"
+                                              >
+                                                <X className="h-3 w-3" />
+                                              </button>
+                                            </span>
+                                          ))
+                                        )}
+                                      </div>
+
+                                      <div className="flex flex-wrap gap-1.5 items-center">
+                                        <span className="text-[9px] font-bold text-white/30 uppercase mr-1">Gợi ý:</span>
+                                        {['COD', 'BANK', 'MOMO', 'ZALO', 'VISA', 'MASTER', 'PAYPAL'].map((suggested) => {
+                                          const current = footerSettings.paymentBadges || [];
+                                          if (current.includes(suggested)) return null;
+                                          return (
+                                            <button
+                                              key={suggested}
+                                              type="button"
+                                              onClick={() => addPaymentBadge(suggested)}
+                                              className="text-[9px] font-bold px-2 py-0.5 rounded bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all border border-white/5"
+                                            >
+                                              + {suggested}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+
+                                    {/* Payment Gateways */}
+                                    <div className="space-y-4">
+                                      <div>
+                                        <h5 className="text-white font-bold text-xs uppercase tracking-wider">Cổng thanh toán dưới cùng (Payment Gateways)</h5>
+                                        <p className="text-white/35 text-[9px] mt-0.5">Hiển thị dạng viền chữ nhật nhỏ cạnh Copyright</p>
+                                      </div>
+
+                                      <div className="flex gap-2">
+                                        <input
+                                          type="text"
+                                          value={newGatewayText}
+                                          onChange={(e) => setNewGatewayText(e.target.value)}
+                                          onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                              e.preventDefault();
+                                              addPaymentGateway(newGatewayText);
+                                            }
+                                          }}
+                                          placeholder="Nhập cổng mới (VD: Credit Card)..."
+                                          className="flex-1 bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => addPaymentGateway(newGatewayText)}
+                                          className="px-3 bg-[#1e4b64] hover:bg-[#153446] text-white text-xs font-bold rounded-lg transition-all"
+                                        >
+                                          Thêm
+                                        </button>
+                                      </div>
+
+                                      <div className="flex flex-wrap gap-2 bg-[#0f1117]/50 border border-white/5 rounded-xl p-3 min-h-16 items-center">
+                                        {(!footerSettings.paymentGateways || footerSettings.paymentGateways.length === 0) ? (
+                                          <span className="text-white/20 text-[10px] italic">Không có cổng nào.</span>
+                                        ) : (
+                                          footerSettings.paymentGateways.map((gw, idx) => (
+                                            <span
+                                              key={idx}
+                                              className="inline-flex items-center gap-1 bg-white/5 border border-white/5 rounded-md px-2.5 py-0.5 text-[10px] font-black text-slate-300 uppercase tracking-widest transition-all select-none"
+                                            >
+                                              {gw}
+                                              <button
+                                                type="button"
+                                                onClick={() => deletePaymentGateway(idx)}
+                                                className="text-red-400 hover:text-red-500 transition-colors p-0.5 ml-1"
+                                                title="Xóa cổng thanh toán"
+                                              >
+                                                <X className="h-3 w-3" />
+                                              </button>
+                                            </span>
+                                          ))
+                                        )}
+                                      </div>
+
+                                      <div className="flex flex-wrap gap-1.5 items-center">
+                                        <span className="text-[9px] font-bold text-white/30 uppercase mr-1">Gợi ý:</span>
+                                        {['COD', 'Bank Transfer', 'E-Wallet', 'Credit Card', 'Pay Later'].map((suggested) => {
+                                          const current = footerSettings.paymentGateways || [];
+                                          if (current.includes(suggested)) return null;
+                                          return (
+                                            <button
+                                              key={suggested}
+                                              type="button"
+                                              onClick={() => addPaymentGateway(suggested)}
+                                              className="text-[9px] font-bold px-2 py-0.5 rounded bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all border border-white/5"
+                                            >
+                                              + {suggested}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {/* Khối Accordion phụ: Bản quyền & Cài đặt chung */}
+                    <div 
+                      className={cn(
+                        "bg-[#0f1117] border rounded-2xl overflow-hidden transition-all duration-200",
+                        expandedColId === 'general' ? "border-[#1e4b64]" : "border-white/5"
+                      )}
+                    >
+                      <div 
+                        onClick={() => setExpandedColId(expandedColId === 'general' ? null : 'general')}
+                        className="flex items-center justify-between p-4 cursor-pointer hover:bg-white/[0.02] select-none group"
+                      >
+                        <div className="flex items-center gap-3 pl-8">
+                          <h4 className="text-white font-bold text-xs uppercase tracking-wider">Cài đặt Bản quyền (Copyright)</h4>
+                        </div>
+                        <div className="text-white/40 group-hover:text-white transition-colors p-1">
+                          <ChevronRight className={cn("h-4 w-4 transform transition-transform duration-300", expandedColId === 'general' && "rotate-90")} />
+                        </div>
                       </div>
-                      {footerSettings.mapUrl && (
-                        <div className="overflow-hidden rounded-lg border border-white/5 bg-slate-900 h-24">
-                          <iframe
-                            className="h-full w-full"
-                            src={footerSettings.mapUrl}
-                            title="Preview Google Map"
-                            loading="lazy"
-                          />
+
+                      {expandedColId === 'general' && (
+                        <div className="p-6 border-t border-white/5 bg-white/[0.01] space-y-4">
+                          <div>
+                            <label className="text-[10px] font-black uppercase text-white/30 mb-1.5 block">Copyright Chân trang</label>
+                            <input 
+                              type="text"
+                              value={footerSettings.copyright}
+                              onChange={(e) => setFooterSettings({...footerSettings, copyright: e.target.value})}
+                              placeholder="VD: © 2026 UR SPORT. All rights reserved"
+                              className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                            />
+                          </div>
                         </div>
                       )}
                     </div>
                   </div>
 
-                  {/* Custom Link Columns Management */}
-                  <div className="border-t border-white/5 pt-6 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="text-white font-bold text-xs uppercase tracking-wider">Cột liên kết tùy chỉnh (Custom Links)</h4>
-                        <p className="text-white/35 text-[10px] mt-0.5">Quản lý các cột và danh sách liên kết hiển thị ở chân trang</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={addColumn}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1e4b64]/20 hover:bg-[#1e4b64]/30 text-[#4ca6d8] hover:text-[#5cb6e8] text-xs font-bold transition-all border border-[#1e4b64]/30"
-                      >
-                        <Plus className="h-3.5 w-3.5" /> Thêm Cột Mới
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                      {(footerSettings.customLinks || []).map((col, colIdx) => (
-                        <div key={colIdx} className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 space-y-4">
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex-1">
-                              <label className="text-[9px] font-black uppercase text-white/30 mb-1 block">Tên Cột {colIdx + 1}</label>
-                              <input
-                                type="text"
-                                value={col.title}
-                                onChange={(e) => updateColumnTitle(colIdx, e.target.value)}
-                                className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs font-bold outline-none focus:border-[#1e4b64]/50"
-                              />
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => deleteColumn(colIdx)}
-                              className="self-end p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded-lg transition-all border border-red-500/20"
-                              title="Xóa cột này"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between border-b border-white/5 pb-2">
-                              <span className="text-[10px] font-black uppercase text-white/40">Liên kết trong cột</span>
-                              <button
-                                type="button"
-                                onClick={() => addLinkItem(colIdx)}
-                                className="flex items-center gap-1 text-[10px] font-bold text-[#4ca6d8] hover:text-[#5cb6e8] transition-colors"
-                              >
-                                <Plus className="h-3 w-3" /> Thêm liên kết
-                              </button>
-                            </div>
-
-                            {(!col.items || col.items.length === 0) ? (
-                              <p className="text-white/20 text-[10px] text-center py-4 font-bold italic">Chưa có liên kết nào</p>
-                            ) : (
-                              <div className="space-y-3 max-h-[250px] overflow-y-auto pr-1 custom-scrollbar">
-                                {col.items.map((item, itemIdx) => (
-                                  <div key={itemIdx} className="bg-white/[0.01] border border-white/5 rounded-xl p-2.5 space-y-2 relative group">
-                                    <div className="grid grid-cols-2 gap-2">
-                                      <div>
-                                        <label className="text-[8px] font-black uppercase text-white/25 mb-0.5 block">Nhãn hiển thị</label>
-                                        <input
-                                          type="text"
-                                          value={item.label}
-                                          onChange={(e) => updateLinkItem(colIdx, itemIdx, 'label', e.target.value)}
-                                          placeholder="Tên nhãn..."
-                                          className="w-full bg-white/5 border border-white/5 rounded-md px-2 py-1 text-white text-[11px] outline-none focus:border-[#1e4b64]/50"
-                                        />
-                                      </div>
-                                      <div>
-                                        <label className="text-[8px] font-black uppercase text-white/25 mb-0.5 block">Hành động link</label>
-                                        <select
-                                          value={item.action}
-                                          onChange={(e) => updateLinkItem(colIdx, itemIdx, 'action', e.target.value as any)}
-                                          className="w-full bg-[#13161f] border border-white/5 rounded-md px-2 py-1 text-white text-[11px] outline-none focus:border-[#1e4b64]/55 [color-scheme:dark]"
-                                        >
-                                          <option value="category">Mở Danh mục</option>
-                                          <option value="page">Mở Trang</option>
-                                        </select>
-                                      </div>
-                                    </div>
-                                    <div className="flex gap-2 items-center">
-                                      <div className="flex-1">
-                                        <label className="text-[8px] font-black uppercase text-white/25 mb-0.5 block">
-                                          {item.action === 'category' ? 'Tên danh mục chính xác (VD: Áo thun nam)' : 'Đường dẫn/Slug trang (VD: blog, contact, etc.)'}
-                                        </label>
-                                        <input
-                                          type="text"
-                                          value={item.value}
-                                          onChange={(e) => updateLinkItem(colIdx, itemIdx, 'value', e.target.value)}
-                                          placeholder={item.action === 'category' ? 'VD: Áo thun nam' : 'VD: blog'}
-                                          className="w-full bg-white/5 border border-white/5 rounded-md px-2 py-1 text-white text-[11px] outline-none focus:border-[#1e4b64]/55"
-                                        />
-                                      </div>
-                                      <button
-                                        type="button"
-                                        onClick={() => deleteLinkItem(colIdx, itemIdx)}
-                                        className="self-end p-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-md transition-all border border-red-500/20"
-                                        title="Xóa liên kết"
-                                      >
-                                        <X className="h-3 w-3" />
-                                      </button>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                  {/* Nút lưu cấu hình */}
+                  <div className="flex justify-between items-center mt-6 border-t border-white/5 pt-6">
+                    <button
+                      type="button"
+                      onClick={addColumn}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1e4b64]/20 hover:bg-[#1e4b64]/30 text-[#4ca6d8] hover:text-[#5cb6e8] text-xs font-bold transition-all border border-[#1e4b64]/30"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Thêm Cột Liên Kết Mới
+                    </button>
+                    <button 
+                      onClick={() => handleSaveFooterSettings(footerSettings)}
+                      className="px-8 py-2.5 bg-[#1e4b64] hover:bg-[#153446] text-white text-xs font-black rounded-xl shadow-lg transition-all border border-white/10"
+                    >
+                      Lưu cấu hình Chân trang
+                    </button>
                   </div>
-
-                  {/* Payment Badges & Gateways */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-white/5 pt-6">
-                    {/* Payment Badges */}
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="text-white font-bold text-xs uppercase tracking-wider">Huy hiệu thanh toán (Payment Badges)</h4>
-                        <p className="text-white/35 text-[10px] mt-0.5">Hiển thị trong hộp Thanh toán màu xám ở widget Mạng xã hội</p>
-                      </div>
-
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={newBadgeText}
-                          onChange={(e) => setNewBadgeText(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              addPaymentBadge(newBadgeText);
-                            }
-                          }}
-                          placeholder="Nhập mã huy hiệu mới (VD: VISA, Momo)..."
-                          className="flex-1 bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => addPaymentBadge(newBadgeText)}
-                          className="px-3 bg-[#1e4b64] hover:bg-[#153446] text-white text-xs font-bold rounded-lg transition-all"
-                        >
-                          Thêm
-                        </button>
-                      </div>
-
-                      <div className="flex flex-wrap gap-2 bg-[#0f1117]/50 border border-white/5 rounded-xl p-3 min-h-16 items-center">
-                        {(!footerSettings.paymentBadges || footerSettings.paymentBadges.length === 0) ? (
-                          <span className="text-white/20 text-[10px] italic">Không có huy hiệu nào. Sẽ bị ẩn ở footer.</span>
-                        ) : (
-                          footerSettings.paymentBadges.map((badge, idx) => (
-                            <span
-                              key={idx}
-                              className="inline-flex items-center gap-1 bg-white hover:bg-zinc-100 text-slate-950 px-2 py-0.5 rounded text-[10px] font-black uppercase border border-zinc-200 transition-all select-none"
-                            >
-                              {badge}
-                              <button
-                                type="button"
-                                onClick={() => deletePaymentBadge(idx)}
-                                className="text-red-500 hover:text-red-700 transition-colors p-0.5"
-                                title="Xóa huy hiệu"
-                              >
-                                <X className="h-3 w-3" />
-                              </button>
-                            </span>
-                          ))
-                        )}
-                      </div>
-                      
-                      {/* Suggested Badges */}
-                      <div className="flex flex-wrap gap-1.5 items-center">
-                        <span className="text-[9px] font-bold text-white/30 uppercase mr-1">Gợi ý nhanh:</span>
-                        {['COD', 'BANK', 'MOMO', 'ZALO', 'VISA', 'MASTER', 'PAYPAL'].map((suggested) => {
-                          const current = footerSettings.paymentBadges || [];
-                          if (current.includes(suggested)) return null;
-                          return (
-                            <button
-                              key={suggested}
-                              type="button"
-                              onClick={() => addPaymentBadge(suggested)}
-                              className="text-[9px] font-bold px-2 py-0.5 rounded bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all border border-white/5"
-                            >
-                              + {suggested}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Payment Gateways (Bottom) */}
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="text-white font-bold text-xs uppercase tracking-wider">Cổng thanh toán dưới cùng (Payment Gateways)</h4>
-                        <p className="text-white/35 text-[10px] mt-0.5">Các cổng hiển thị dạng viền chữ nhật nhỏ cạnh Copyright</p>
-                      </div>
-
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={newGatewayText}
-                          onChange={(e) => setNewGatewayText(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              addPaymentGateway(newGatewayText);
-                            }
-                          }}
-                          placeholder="Nhập tên cổng mới (VD: Credit Card)..."
-                          className="flex-1 bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-white text-xs outline-none focus:border-[#1e4b64]/50"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => addPaymentGateway(newGatewayText)}
-                          className="px-3 bg-[#1e4b64] hover:bg-[#153446] text-white text-xs font-bold rounded-lg transition-all"
-                        >
-                          Thêm
-                        </button>
-                      </div>
-
-                      <div className="flex flex-wrap gap-2 bg-[#0f1117]/50 border border-white/5 rounded-xl p-3 min-h-16 items-center">
-                        {(!footerSettings.paymentGateways || footerSettings.paymentGateways.length === 0) ? (
-                          <span className="text-white/20 text-[10px] italic">Không có cổng nào. Sẽ bị ẩn ở footer.</span>
-                        ) : (
-                          footerSettings.paymentGateways.map((gw, idx) => (
-                            <span
-                              key={idx}
-                              className="inline-flex items-center gap-1 bg-white/5 border border-white/5 rounded-md px-2.5 py-0.5 text-[10px] font-black text-slate-300 uppercase tracking-widest transition-all select-none"
-                            >
-                              {gw}
-                              <button
-                                type="button"
-                                onClick={() => deletePaymentGateway(idx)}
-                                className="text-red-400 hover:text-red-500 transition-colors p-0.5 ml-1"
-                                title="Xóa cổng thanh toán"
-                              >
-                                <X className="h-3 w-3" />
-                              </button>
-                            </span>
-                          ))
-                        )}
-                      </div>
-
-                      {/* Suggested Gateways */}
-                      <div className="flex flex-wrap gap-1.5 items-center">
-                        <span className="text-[9px] font-bold text-white/30 uppercase mr-1">Gợi ý nhanh:</span>
-                        {['COD', 'Bank Transfer', 'E-Wallet', 'Credit Card', 'Pay Later'].map((suggested) => {
-                          const current = footerSettings.paymentGateways || [];
-                          if (current.includes(suggested)) return null;
-                          return (
-                            <button
-                              key={suggested}
-                              type="button"
-                              onClick={() => addPaymentGateway(suggested)}
-                              className="text-[9px] font-bold px-2 py-0.5 rounded bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all border border-white/5"
-                            >
-                              + {suggested}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-
                 </div>
-
-                <div className="flex justify-end mt-6 border-t border-white/5 pt-6">
-                  <button 
-                    onClick={() => handleSaveFooterSettings(footerSettings)}
-                    className="px-6 py-2 bg-[#1e4b64] hover:bg-[#153446] text-white text-sm font-bold rounded-xl shadow-lg transition-all"
-                  >
-                    Lưu cấu hình Chân trang
-                  </button>
-                </div>
-              </div>
               )}
-
               {/* Custom CSS */}
               {(activeSection === 'settings' || activeSection === 'settings-css') && (
                 <div className="bg-[#13161f] border border-white/5 rounded-2xl overflow-hidden">

@@ -211,7 +211,7 @@ function AppContent() {
         <RecentlyViewedProvider>
         <ComparisonProvider>
         <PromotionProvider>
-        <div className="min-h-screen bg-white font-sans selection:bg-black selection:text-white w-full overflow-x-hidden relative">
+        <div className="min-h-screen bg-white font-sans selection:bg-black selection:text-white w-full relative">
           {!isAdminRoute && (
             <Navbar 
               onCartClick={() => setIsCartOpen(true)} 

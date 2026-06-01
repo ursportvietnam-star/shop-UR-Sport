@@ -110,7 +110,7 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
                             <span className="text-white">UR</span>
                             <span className="text-white ml-1">SPORT</span>
                         </Link>
-                        <span className="text-[7px] font-bold italic tracking-[0.2em] text-white/70 mt-1 uppercase">
+                        <span className="text-[7px] font-bold italic tracking-[0.2em] text-white/70 mt-1.5 uppercase">
                             Phong Cách Thể Thao
                         </span>
                     </div>
@@ -118,84 +118,10 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
                         <X className="h-5 w-5" />
                     </button>
                 </div>
-
-                {/* User Card */}
-                <div 
-                    onClick={() => { if(!user) onLogin(); onClose(); }}
-                    className="relative overflow-hidden bg-white/10 backdrop-blur-md p-3 rounded-xl shadow-lg border border-white/20 cursor-pointer group transition-all active:scale-[0.98] flex items-center gap-3"
-                >
-                    <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center flex-shrink-0 shadow-md">
-                        {user?.photoURL ? (
-                            <img src={user.photoURL} alt={user.displayName || 'User profile'} loading="lazy" className="h-full w-full object-cover rounded-full" referrerPolicy="no-referrer" />
-                        ) : (
-                            <div className="h-full w-full rounded-full flex items-center justify-center">
-                                <User className="h-5 w-5 text-[#1e4b64]" />
-                            </div>
-                        )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <p className="font-extrabold text-[14px] tracking-tight truncate text-white">
-                            {user ? user.displayName : 'Đăng nhập | Đăng ký'}
-                        </p>
-                        <p className="text-[9px] font-medium text-white/70 mt-0.5 tracking-tight truncate">
-                            {user ? 'Chào đón bạn trở lại' : 'Nhận ưu đãi độc quyền ngay'}
-                        </p>
-                    </div>
-                </div>
             </div>
 
             <div className="flex-1 overflow-y-auto bg-white">
                 <div className="py-0">
-                    {/* Main Menu */}
-                    <div className="bg-zinc-50/50 py-3 px-6 border-b border-zinc-100">
-                        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-400">
-                            KHÁM PHÁ UR SPORT
-                        </p>
-                    </div>
-
-                    <div className="px-6 py-2 space-y-1 mb-4">
-                        <Link 
-                            to="/yeu-thich"
-                            onClick={onClose}
-                            className="flex w-full items-center justify-between py-2.5 text-[15px] font-black italic tracking-tight uppercase text-zinc-900 transition-colors hover:text-red-500"
-                        >
-                            <span className="flex items-center gap-2">
-                                <Heart className="h-4 w-4" />
-                                Yêu thích
-                            </span>
-                            {wishlistCount > 0 && (
-                                <span className="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-black text-white">
-                                    {wishlistCount}
-                                </span>
-                            )}
-                        </Link>
-                        <Link 
-                            to="/da-xem"
-                            onClick={onClose}
-                            className="flex w-full items-center justify-between py-2.5 text-[15px] font-black italic tracking-tight uppercase text-zinc-900 transition-colors hover:text-[#1e4b64]"
-                        >
-                            <span className="flex items-center gap-2">
-                                <Clock className="h-4 w-4" />
-                                Đã xem
-                            </span>
-                            {recentCount > 0 && (
-                                <span className="rounded-full bg-[#1e4b64] px-2 py-0.5 text-[10px] font-black text-white">
-                                    {recentCount}
-                                </span>
-                            )}
-                        </Link>
-                        {mainLinks.map((link, idx) => (
-                          <Link 
-                              key={idx}
-                              to={link.link}
-                              onClick={onClose}
-                              className="block w-full text-left py-2.5 text-[15px] font-black italic tracking-tight uppercase text-zinc-900 hover:text-[#1e4b64] transition-colors"
-                          >
-                              {link.label}
-                          </Link>
-                        ))}
-                    </div>
-
                     <div className="bg-zinc-50/50 py-3 px-6 border-b border-zinc-100">
                         <p className="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-400">
                             DANH MỤC SẢN PHẨM
@@ -293,7 +219,80 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
                         </div>
                     </div>
 
-                    <div className="mt-6 px-5 pb-10">
+                    {/* Main Menu */}
+                    <div className="bg-zinc-50/50 py-3 px-6 border-b border-zinc-100 mt-6">
+                        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-400">
+                            KHÁM PHÁ UR SPORT
+                        </p>
+                    </div>
+
+                    <div className="px-6 py-2 space-y-1 mb-4">
+                        <Link 
+                            to="/yeu-thich"
+                            onClick={onClose}
+                            className="flex w-full items-center justify-between py-2.5 text-[15px] font-black italic tracking-tight uppercase text-zinc-900 transition-colors hover:text-red-500"
+                        >
+                            <span className="flex items-center gap-2">
+                                <Heart className="h-4 w-4" />
+                                Yêu thích
+                            </span>
+                            {wishlistCount > 0 && (
+                                <span className="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-black text-white">
+                                    {wishlistCount}
+                                </span>
+                            )}
+                        </Link>
+                        <Link 
+                            to="/da-xem"
+                            onClick={onClose}
+                            className="flex w-full items-center justify-between py-2.5 text-[15px] font-black italic tracking-tight uppercase text-zinc-900 transition-colors hover:text-[#1e4b64]"
+                        >
+                            <span className="flex items-center gap-2">
+                                <Clock className="h-4 w-4" />
+                                Đã xem
+                            </span>
+                            {recentCount > 0 && (
+                                <span className="rounded-full bg-[#1e4b64] px-2 py-0.5 text-[10px] font-black text-white">
+                                    {recentCount}
+                                </span>
+                            )}
+                        </Link>
+                        {mainLinks.map((link, idx) => (
+                          <Link 
+                              key={idx}
+                              to={link.link}
+                              onClick={onClose}
+                              className="block w-full text-left py-2.5 text-[15px] font-black italic tracking-tight uppercase text-zinc-900 hover:text-[#1e4b64] transition-colors"
+                          >
+                              {link.label}
+                          </Link>
+                        ))}
+                    </div>
+
+                    <div className="mt-4 px-5 pb-6">
+                        <div 
+                            onClick={() => { if(!user) onLogin(); onClose(); }}
+                            className="relative overflow-hidden bg-white shadow-lg border border-zinc-200 rounded-2xl cursor-pointer transition-all hover:-translate-y-0.5 active:scale-[0.99] flex items-center gap-3 p-4 mb-5"
+                        >
+                            <div className="h-11 w-11 rounded-full bg-zinc-100 flex items-center justify-center flex-shrink-0 shadow-sm">
+                                {user?.photoURL ? (
+                                    <img src={user.photoURL} alt={user.displayName || 'User profile'} loading="lazy" className="h-full w-full object-cover rounded-full" referrerPolicy="no-referrer" />
+                                ) : (
+                                    <div className="h-full w-full rounded-full flex items-center justify-center">
+                                        <User className="h-5 w-5 text-[#1e4b64]" />
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="font-extrabold text-sm tracking-tight text-zinc-900 truncate">
+                                    {user ? user.displayName : 'Đăng nhập | Đăng ký'}
+                                </p>
+                                <p className="text-[10px] font-medium text-zinc-500 mt-1 tracking-tight truncate">
+                                    {user ? 'Chào đón bạn trở lại' : 'Nhận ưu đãi độc quyền ngay'}
+                                </p>
+                            </div>
+                        </div>
+
                         <Button 
                             className="w-full bg-[#1e4b64] text-white font-black h-14 uppercase tracking-widest text-[11px] rounded-xl shadow-xl hover:bg-[#153446] transition-all mb-4"
                             onClick={() => { onCategorySelect('All' as any); onClose(); }}

@@ -25,7 +25,7 @@
   html, body {
     @apply antialiased text-slate-900 bg-white;
     font-family: var(--font-sans);
-    overflow-x: hidden;
+    overflow-x: clip;
     width: 100%;
     position: relative;
     -webkit-tap-highlight-color: transparent;

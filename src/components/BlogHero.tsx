@@ -7,6 +7,7 @@ interface BlogHeroProps {
   subtitle?: string;
   searchValue?: string;
   onSearchChange?: (val: string) => void;
+  onSearchSubmit?: () => void;
   trendingTags?: string[];
   onTagClick?: (tag: string) => void;
 }
@@ -16,6 +17,7 @@ export const BlogHero: React.FC<BlogHeroProps> = ({
   subtitle = 'Khám phá bí quyết chọn size, chất liệu vải cao cấp và phong cách phối đồ thể thao nam thời thượng dẫn đầu xu hướng.',
   searchValue = '',
   onSearchChange,
+  onSearchSubmit,
   trendingTags = ['Áo thun nam', 'Chất liệu', 'Oversize', 'Chạy bộ', 'Tập gym'],
   onTagClick
 }) => {
@@ -42,7 +44,13 @@ export const BlogHero: React.FC<BlogHeroProps> = ({
         </p>
 
         {/* Glassmorphic Search Bar */}
-        <div className="w-full max-w-xl relative flex items-center mb-6 group">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSearchSubmit?.();
+          }}
+          className="w-full max-w-xl relative flex items-center mb-6 group"
+        >
           <div className="absolute left-4 text-zinc-400 group-focus-within:text-sky-400 transition-colors">
             <Search className="h-5 w-5" />
           </div>
@@ -51,10 +59,18 @@ export const BlogHero: React.FC<BlogHeroProps> = ({
             value={searchValue}
             onChange={(e) => onSearchChange?.(e.target.value)}
             aria-label="Tìm kiếm bài viết"
-            className="w-full h-14 pl-12 pr-6 rounded-2xl bg-white/5 hover:bg-white/8 backdrop-blur-md border border-white/10 text-white placeholder-zinc-400 text-base font-semibold focus:outline-none focus:ring-2 focus:ring-sky-400/50 focus:border-sky-400 transition-all shadow-2xl"
+            className="w-full h-14 pl-12 pr-28 rounded-2xl bg-white/5 hover:bg-white/8 backdrop-blur-md border border-white/10 text-white placeholder-zinc-400 text-base font-semibold focus:outline-none focus:ring-2 focus:ring-sky-400/50 focus:border-sky-400 transition-all shadow-2xl"
             placeholder="Tìm bài viết: size, chất liệu, cách phối..."
           />
-        </div>
+          <button
+            type="submit"
+            className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center gap-2 rounded-full bg-sky-500 px-4 py-2 text-[11px] font-black uppercase tracking-[0.3em] text-white transition-all hover:bg-sky-400"
+            aria-label="Tìm kiếm bài viết"
+          >
+            <Search className="h-4 w-4" />
+            Tìm
+          </button>
+        </form>
 
         {/* Trending Tags */}
         {trendingTags.length > 0 && (

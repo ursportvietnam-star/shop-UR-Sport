@@ -44,11 +44,22 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
     }
   });
   const mobileSearchRef = useRef<HTMLInputElement>(null);
+  const logoImgRef = useRef<HTMLImageElement>(null);
+  const [logoWidth, setLogoWidth] = useState<number | null>(null);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+
+    const handleResize = () => {
+      if (logoImgRef.current) setLogoWidth(logoImgRef.current.getBoundingClientRect().width);
+    };
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
 
   useEffect(() => {
@@ -228,30 +239,62 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
             </button>
 
             <Link to="/" className="flex items-center active:opacity-70 transition-opacity min-w-fit shrink-0">
-              {logoSettings?.logoLight ? (
-                <motion.img
-                  animate={{ scale: isScrolled ? 0.92 : 1 }}
-                  src={logoSettings.logoLight}
-                  alt="UR Sport"
-                  className="h-9 sm:h-10 object-contain origin-left"
-                />
-              ) : (
-                <div className="flex flex-col items-start">
-                  <motion.div
-                    animate={{ scale: isScrolled ? 0.92 : 1 }}
-                    className="text-[18px] xs:text-[20px] sm:text-[22px] font-black italic tracking-tighter leading-none flex items-baseline origin-left whitespace-nowrap"
+              <motion.div
+                animate={{ scale: isScrolled ? 0.92 : 1 }}
+                className="flex flex-col origin-left"
+                style={{ display: 'inline-flex' }}
+              >
+                {/* Hàng 1: dùng ảnh nếu có, còn không dùng chữ UR SPORT */}
+                {logoSettings?.logoLight ? (
+                  <motion.img
+                    ref={logoImgRef}
+                    src={logoSettings.logoLight}
+                    alt="UR Sport"
+                    className="h-9 sm:h-10 object-contain origin-left"
+                    style={{ display: 'block' }}
+                    onLoad={() => {
+                      if (logoImgRef.current) setLogoWidth(logoImgRef.current.getBoundingClientRect().width);
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'baseline',
+                      lineHeight: 1,
+                      fontStyle: 'italic',
+                      fontWeight: 900,
+                      fontSize: 'clamp(16px, 2.5vw, 22px)',
+                      letterSpacing: '-0.02em',
+                    }}
                   >
-                    <span className="text-[#1e4b64]">UR</span>
-                    <span className="text-zinc-900">SPORT</span>
-                  </motion.div>
-                  <motion.span
-                    animate={{ opacity: isScrolled ? 0 : 1 }}
-                    className="text-[7px] sm:text-[8px] font-semibold uppercase tracking-widest text-zinc-400 mt-px whitespace-nowrap"
-                  >
-                    Phong Cách Thể Thao
-                  </motion.span>
-                </div>
-              )}
+                    <span style={{ color: '#2E8BC9' }}>U</span>
+                    <span style={{ color: '#1A3A5C' }}>R</span>
+                    <span style={{ marginLeft: '5px', color: '#111111' }}>SPORT</span>
+                  </div>
+                )}
+
+                {/* Hàng 2: dòng phụ — luôn áp dụng (ẩn khi cuộn nhờ opacity) */}
+                <motion.div
+                  animate={{ opacity: isScrolled ? 0 : 1 }}
+                  style={{
+                    width: logoWidth ? `${logoWidth}px` : '100%',
+                    marginTop: '2px',
+                    fontSize: 'clamp(5px, 0.75vw, 7px)',
+                    fontWeight: 700,
+                    fontStyle: 'italic',
+                    color: '#9CA3AF',
+                    textTransform: 'uppercase',
+                    whiteSpace: 'nowrap',
+                    letterSpacing: '0.15em',
+                    marginRight: '-0.38em',
+                    textAlign: 'justify',
+                    textAlignLast: 'justify',
+                  }}
+                >
+                  Phong cách thể thao
+                </motion.div>
+              </motion.div>
             </Link>
           </div>
 

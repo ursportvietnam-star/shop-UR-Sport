@@ -535,6 +535,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
   const { user, isAdmin, loading: authLoading, logout, devLogin, loginWithGoogle } = useAuth();
   const isLocalhost = typeof window !== 'undefined' &&
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  const navRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<AdminTab>(initialTab);
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['orders-group', 'products-group', 'content-group', 'ai-group']);
   const [products, setProducts] = useState<Product[]>([]);
@@ -614,7 +615,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
       }
     ],
     paymentBadges: ["COD", "BANK", "MOMO", "ZALO"],
-    paymentGateways: ["COD", "Bank Transfer", "E-Wallet"]
+    paymentGateways: ["COD", "Bank Transfer", "E-Wallet"],
+    showLogo: true,
+    showNewsletter: true,
+    newsletterPlaceholder: "Email của bạn",
+    newsletterButtonText: "Đăng ký",
+    columnOrder: ['intro', 'custom_0', 'custom_1', 'contact', 'social']
   });
   const [floatingMenu, setFloatingMenu] = useState<FloatingMenuSettings>({
     zaloPhone: '0917722425',
@@ -1875,7 +1881,11 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
               </div>
             ) : (
               <div>
-                <span className="text-white font-black text-base italic tracking-tight">UR<span className="text-[#1e4b64]">SPORT</span></span>
+                <span className="text-white font-black text-base italic tracking-tight">
+                  <span className="text-[#0e76d9]">U</span>
+                  <span className="text-[#0a3c6f]">R</span>
+                  SPORT
+                </span>
                 <p className="text-[9px] font-bold text-white/30 uppercase tracking-widest -mt-0.5">Admin Panel</p>
               </div>
             )}
@@ -1886,7 +1896,7 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        <nav ref={navRef} className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {NAV_ITEMS.map(item => {
             if (item.isGroup && item.children) {
               const isExpanded = expandedGroups.includes(item.id);
@@ -1912,7 +1922,8 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
               return (
                 <div key={item.id} className="space-y-1">
                   <button
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setExpandedGroups(prev => 
                         prev.includes(item.id) 
                           ? prev.filter(id => id !== item.id)
@@ -1932,7 +1943,8 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
                   {isExpanded && (
                     <div className="pl-4 space-y-1 mt-1">
                       {item.children.map(child => {
-                        const handleChildClick = () => {
+                        const handleChildClick = (e: React.MouseEvent) => {
+                          e.stopPropagation();
                           const id = child.id;
                           if (id.startsWith('products-cat-')) {
                             setActiveTab('products');
@@ -1947,6 +1959,12 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
                             else if (id === 'orders-pending') setOrderStatusFilter('pending');
                             else if (id === 'orders-shipped') setOrderStatusFilter('shipped');
                             else if (id === 'orders-delivered') setOrderStatusFilter('delivered');
+                          } else if (id.startsWith('settings-') || id.startsWith('seo-')) {
+                            // For settings and SEO items, ensure the group stays expanded
+                            setActiveTab(id as AdminTab);
+                            setExpandedGroups(prev => 
+                              prev.includes(item.id) ? prev : [...prev, item.id]
+                            );
                           } else {
                             setActiveTab(id as AdminTab);
                           }

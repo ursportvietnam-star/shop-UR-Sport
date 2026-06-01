@@ -244,6 +244,7 @@ export function NewsPage() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [readProgress, setReadProgress] = useState(0);
+  const [shouldHideSidebar, setShouldHideSidebar] = useState(false);
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const [copied, setCopied] = useState(false);
@@ -284,10 +285,12 @@ export function NewsPage() {
       const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
       if (scrollHeight <= 0) {
         setReadProgress(100);
+        setShouldHideSidebar(true);
         return;
       }
       const progress = Math.min(100, Math.max(0, (window.scrollY / scrollHeight) * 100));
       setReadProgress(progress);
+      setShouldHideSidebar(progress > 80);
     };
     window.addEventListener('scroll', handleScrollProgress, { passive: true });
     return () => window.removeEventListener('scroll', handleScrollProgress);
@@ -875,7 +878,7 @@ export function NewsPage() {
               initial={{ y: -100 }}
               animate={{ y: 0 }}
               exit={{ y: -100 }}
-              className="fixed top-0 left-0 right-0 z-[60] bg-white/90 backdrop-blur-md border-b border-zinc-100 shadow-sm lg:top-[80px]"
+              className="fixed top-0 left-0 right-0 z-[60] bg-white/90 backdrop-blur-md border-b border-zinc-100 shadow-sm lg:hidden lg:top-[80px]"
             >
               <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
                 <div className="flex-grow min-w-0">
@@ -1074,7 +1077,7 @@ export function NewsPage() {
                       <motion.div 
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="mt-4 mb-8 p-6 rounded-2xl bg-zinc-50 border border-zinc-200/60 shadow-md"
+                        className="mt-4 mb-8 p-6 rounded-2xl bg-zinc-50 border border-zinc-200/60 shadow-md lg:hidden"
                       >
                         <div className="flex items-center justify-between mb-4 pb-2 border-b border-zinc-150">
                           <h4 className="text-sm font-black text-zinc-955 uppercase tracking-wider">
@@ -1191,84 +1194,86 @@ export function NewsPage() {
             )}
           </div>
 
-          {/* Sticky Sidebar (Desktop only) */}
-          <aside className="hidden lg:block lg:w-[320px] shrink-0">
-            <div className="sticky top-[150px] space-y-8">
-              {/* Dynamic scroll-following TOC */}
-              {tocHeadings.length > 0 && (
+          {tocHeadings.length > 0 && (
+            <aside className={cn(
+              "hidden lg:block lg:w-[320px] shrink-0 transition-opacity duration-300 self-stretch h-full",
+              shouldHideSidebar ? "opacity-0 pointer-events-none" : "opacity-100"
+            )}>
+              <div className="space-y-8 lg:sticky lg:top-24">
+                {/* Dynamic scroll-following TOC */}
                 <div className="p-6 rounded-2xl bg-zinc-50 border border-zinc-200/60 shadow-xs">
                   <h4 className="text-[11px] font-black text-zinc-455 uppercase tracking-[0.2em] mb-4 pb-2 border-b border-zinc-150">
                     Mục lục bài viết
                   </h4>
                   <nav className="space-y-3">
-                    {tocHeadings.map((heading) => {
-                      const isActive = activeHeadingId === heading.id;
-                      return (
-                        <button
-                          key={heading.id}
-                          onClick={() => scrollToTocHeading(heading.id, 100)}
-                          className={cn(
-                            "block text-left text-[13px] leading-relaxed transition-all duration-200 cursor-pointer w-full font-bold",
-                            heading.level !== 2 ? "pl-3 text-[12px] font-semibold" : "",
-                            isActive 
-                              ? "text-[#1e4b64] font-black translate-x-1" 
-                              : "text-zinc-500 hover:text-zinc-800"
-                          )}
-                        >
-                          {heading.number}. {heading.text}
-                        </button>
-                      );
-                    })}
-                  </nav>
-                </div>
-              )}
+                      {tocHeadings.map((heading) => {
+                        const isActive = activeHeadingId === heading.id;
+                        return (
+                          <button
+                            key={heading.id}
+                            onClick={() => scrollToTocHeading(heading.id, 100)}
+                            className={cn(
+                              "block text-left text-[13px] leading-relaxed transition-all duration-200 cursor-pointer w-full font-bold",
+                              heading.level !== 2 ? "pl-3 text-[12px] font-semibold" : "",
+                              isActive 
+                                ? "text-[#1e4b64] font-black translate-x-1" 
+                                : "text-zinc-500 hover:text-zinc-800"
+                            )}
+                          >
+                            {heading.number}. {heading.text}
+                          </button>
+                        );
+                      })}
+                    </nav>
+                  </div>
 
-              {/* Related Posts */}
-              <div>
-                <h3 className="text-[11px] font-black text-zinc-455 uppercase tracking-[0.2em] mb-5 border-b border-zinc-150 pb-2 truncate">
-                  BÀI VIẾT LIÊN QUAN
-                </h3>
-                <div className="space-y-5">
-                  {relatedPosts.slice(0, 3).map((post) => (
-                    <div 
-                      key={post.id} 
-                      className="flex gap-4 group cursor-pointer"
-                      onClick={() => navigate(getBlogPostPath(post))}
-                    >
-                      <div className="w-16 h-16 flex-shrink-0 overflow-hidden rounded-xl bg-zinc-50 border border-zinc-100 shadow-xs">
-                         <LazyImage 
-                          src={post.image} 
-                          alt={post.title} 
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                         />
+                {/* Related Posts */}
+                <div>
+                  <h3 className="text-[11px] font-black text-zinc-455 uppercase tracking-[0.2em] mb-5 border-b border-zinc-150 pb-2 truncate">
+                    BÀI VIẾT LIÊN QUAN
+                  </h3>
+                  <div className="space-y-5">
+                    {relatedPosts.slice(0, 3).map((post) => (
+                      <div 
+                        key={post.id} 
+                        className="flex gap-4 group cursor-pointer"
+                        onClick={() => navigate(getBlogPostPath(post))}
+                      >
+                        <div className="w-16 h-16 flex-shrink-0 overflow-hidden rounded-xl bg-zinc-50 border border-zinc-100 shadow-xs">
+                           <LazyImage 
+                            src={post.image} 
+                            alt={post.title} 
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                           />
+                        </div>
+                        <div className="flex flex-col justify-center min-w-0">
+                           <h4 className="font-bold text-xs text-zinc-900 group-hover:text-[#1e4b64] transition-colors leading-snug line-clamp-2">
+                             {post.title}
+                           </h4>
+                           <span className="text-[10px] font-bold text-zinc-400 mt-1">{post.date}</span>
+                        </div>
                       </div>
-                      <div className="flex flex-col justify-center min-w-0">
-                         <h4 className="font-bold text-xs text-zinc-900 group-hover:text-[#1e4b64] transition-colors leading-snug line-clamp-2">
-                           {post.title}
-                         </h4>
-                         <span className="text-[10px] font-bold text-zinc-400 mt-1">{post.date}</span>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                </div>
+
+                {/* Sidebar Brand Banner */}
+                <div className="p-6 rounded-2xl bg-gradient-to-br from-[#1e4b64] to-[#153446] text-white text-center shadow-md relative overflow-hidden">
+                  <div className="absolute top-[-20%] left-[-10%] w-[50%] aspect-square rounded-full bg-white/5 blur-2xl pointer-events-none" />
+                  <h4 className="text-sm font-black uppercase tracking-wider mb-2">UR SPORT Premium</h4>
+                  <p className="text-xs text-zinc-300 mb-4 leading-normal">
+                    Chất liệu tối ưu hoàn hảo cho buổi tập hiệu năng cao. Khám phá bộ sưu tập mới nhất.
+                  </p>
+                  <button 
+                    onClick={() => navigate('/shop')}
+                    className="w-full py-2.5 rounded-xl bg-white hover:bg-zinc-100 text-zinc-900 font-black text-xs uppercase tracking-widest transition-all cursor-pointer shadow-xs"
+                  >
+                    Mua sắm ngay
+                  </button>
                 </div>
               </div>
-
-              {/* Sidebar Brand Banner */}
-              <div className="p-6 rounded-2xl bg-gradient-to-br from-[#1e4b64] to-[#153446] text-white text-center shadow-md relative overflow-hidden">
-                <div className="absolute top-[-20%] left-[-10%] w-[50%] aspect-square rounded-full bg-white/5 blur-2xl pointer-events-none" />
-                <h4 className="text-sm font-black uppercase tracking-wider mb-2">UR SPORT Premium</h4>
-                <p className="text-xs text-zinc-300 mb-4 leading-normal">
-                  Chất liệu tối ưu hoàn hảo cho buổi tập hiệu năng cao. Khám phá bộ sưu tập mới nhất.
-                </p>
-                <button 
-                  onClick={() => navigate('/shop')}
-                  className="w-full py-2.5 rounded-xl bg-white hover:bg-zinc-100 text-zinc-900 font-black text-xs uppercase tracking-widest transition-all cursor-pointer shadow-xs"
-                >
-                  Mua sắm ngay
-                </button>
-              </div>
-            </div>
-          </aside>
+            </aside>
+          )}
         </div>
 
         {/* Related Products Widget */}
@@ -1337,6 +1342,7 @@ export function NewsPage() {
         subtitle={currentBlogMeta?.description} 
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
+        onSearchSubmit={() => setSearchQuery(searchQuery.trim())}
         onTagClick={setSearchQuery}
       />
 

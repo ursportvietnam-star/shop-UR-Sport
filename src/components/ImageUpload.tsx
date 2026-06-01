@@ -216,6 +216,95 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     }
   };
 
+  if (compact) {
+    const hasImage = !!(externalPreview || previewUrl);
+    return (
+      <div className="w-full max-w-[280px]">
+        <input
+          type="file"
+          multiple={multiple}
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          onClick={(event) => event.stopPropagation()}
+          className="hidden"
+          accept="image/*"
+        />
+
+        <div
+          onClick={openFilePicker}
+          className={cn(
+            "relative group cursor-pointer border rounded-xl transition-all duration-300 flex items-center justify-between p-2 h-14",
+            hasImage
+              ? uploadError
+                ? "border-red-500/30 bg-red-500/5"
+                : isDone
+                  ? "border-emerald-500/30 bg-emerald-500/5"
+                  : "border-[#1e4b64]/30 bg-blue-500/5"
+              : "border-white/10 hover:border-[#1e4b64]/50 hover:bg-white/[0.02] bg-white/[0.01]",
+            isUploading && "pointer-events-none"
+          )}
+        >
+          {hasImage ? (
+            <div className="flex items-center gap-2.5 w-full pr-6 overflow-hidden">
+              <div className="h-10 w-12 rounded-lg bg-[#0f1117]/60 border border-white/5 flex items-center justify-center p-1 overflow-hidden flex-shrink-0">
+                <img
+                  src={externalPreview || previewUrl!}
+                  alt="Preview"
+                  className="max-h-full max-w-full object-contain"
+                />
+              </div>
+              <div className="flex-1 min-w-0 text-left">
+                <span className="text-[10px] font-bold text-white/50 block truncate uppercase tracking-wider">
+                  {label ? label : 'Đã chọn ảnh'}
+                </span>
+                {isUploading ? (
+                  <div className="w-16 h-1 bg-white/10 rounded-full overflow-hidden mt-1">
+                    <div
+                      className="h-full bg-[#1e4b64] rounded-full transition-all duration-200"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                ) : (
+                  <span className="text-[9px] font-medium text-emerald-400 block">
+                    {uploadError ? 'Lỗi tải lên' : 'Đã đồng bộ'}
+                  </span>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2.5 w-full">
+              <div className="h-9 w-9 rounded-lg bg-white/5 flex items-center justify-center group-hover:bg-[#1e4b64]/20 transition-all flex-shrink-0">
+                <Upload className="h-4 w-4 text-zinc-400 group-hover:text-[#4ca6d8] transition-colors" />
+              </div>
+              <div className="text-left">
+                <span className="text-[10px] font-black text-zinc-400 group-hover:text-white uppercase tracking-wider block">
+                  {label ? label : 'Tải ảnh lên'}
+                </span>
+                <span className="text-[8px] font-medium text-zinc-500 block">
+                  JPG, PNG, WebP
+                </span>
+              </div>
+            </div>
+          )}
+
+          {hasImage && (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                removeImage();
+              }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-[#0f1117] hover:bg-red-500/20 border border-white/10 rounded-lg text-white/40 hover:text-red-400 transition-all"
+              title="Xóa ảnh"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full space-y-3">
       {label && !compact && <label className="text-sm font-bold text-white/40 uppercase tracking-widest">{label}</label>}
@@ -224,7 +313,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
         onClick={openFilePicker}
         className={cn(
           "relative group cursor-pointer border-2 border-dashed rounded-2xl transition-all duration-300 flex flex-col items-center justify-center",
-          compact ? "p-2 min-h-[64px] aspect-square" : "p-6 min-h-[180px]",
+          "p-6 min-h-[180px]",
           previewUrl || externalPreview
             ? uploadError
               ? "border-red-400 bg-red-50/5"
@@ -252,8 +341,8 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                 src={externalPreview || previewUrl!}
                 alt="Preview"
                 className={cn(
-                  "rounded-xl object-cover shadow-2xl border border-white/10",
-                  compact ? "h-12 w-12" : "max-h-40"
+                  "rounded-xl object-contain shadow-2xl border border-white/10",
+                  "max-h-40"
                 )}
               />
               {isDone && !previewUrl?.startsWith('blob:') && !compact && (
@@ -271,7 +360,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
             </div>
 
             {isUploading && (
-              <div className={cn("w-full space-y-2", compact ? "max-w-[40px]" : "max-w-[200px]")}>
+              <div className={cn("w-full space-y-2", "max-w-[200px]")}>
                 <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-[#1e4b64] rounded-full transition-all duration-200"
@@ -295,7 +384,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
               onClick={(event) => { event.stopPropagation(); removeImage(); }}
               className={cn(
                 "absolute bg-[#0f1117] border border-white/10 rounded-full shadow-xl text-white/50 hover:text-red-400 transition-colors",
-                compact ? "-top-2 -right-2 p-1" : "-top-3 -right-3 p-2"
+                "-top-3 -right-3 p-2"
               )}
             >
               <X className="h-3 w-3" />
@@ -303,8 +392,8 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
           </div>
         ) : (
           <>
-            <div className={cn("bg-zinc-100 rounded-full group-hover:bg-blue-100 transition-colors flex items-center justify-center", compact ? "p-2" : "p-4 mb-3")}>
-              <Upload className={cn("text-zinc-400 group-hover:text-[#1e4b64] transition-colors", compact ? "h-4 w-4" : "h-7 w-7")} />
+            <div className={cn("bg-zinc-100 rounded-full group-hover:bg-blue-100 transition-colors flex items-center justify-center", "p-4 mb-3")}>
+              <Upload className={cn("text-zinc-400 group-hover:text-[#1e4b64] transition-colors", "h-7 w-7")} />
             </div>
             {!compact && (
               <>
