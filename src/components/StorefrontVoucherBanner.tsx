@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, isFirebaseConfigured } from '../firebase';
 import { Voucher } from '../types';
 import { STATIC_VOUCHERS } from '../data';
 import { useCart } from '../CartContext';
@@ -14,6 +14,11 @@ export const StorefrontVoucherBanner = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    if (!db || !isFirebaseConfigured) {
+      setVouchers(STATIC_VOUCHERS.filter(v => v.isActive));
+      setIsLoading(false);
+      return;
+    }
     const q = query(collection(db, 'vouchers'), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Voucher[];

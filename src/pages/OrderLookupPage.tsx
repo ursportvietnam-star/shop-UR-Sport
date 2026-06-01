@@ -1,6 +1,6 @@
 import React from 'react';
 import { collection, query, where, getDocs, documentId } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, isFirebaseConfigured } from '../firebase';
 import { Order } from '../types';
 import { cn } from '@/lib/utils';
 
@@ -29,6 +29,12 @@ export default function OrderLookupPage() {
       const normalizedPhone = phone.trim();
       if (!normalizedCode || !normalizedPhone) {
         setMessage('Vui lòng nhập số điện thoại và mã đơn hàng.');
+        return;
+      }
+
+      if (!db || !isFirebaseConfigured) {
+        setMessage('Tính năng tra cứu đơn hàng tạm thời không khả dụng do hệ thống chưa cấu hình Firebase.');
+        setIsLoading(false);
         return;
       }
 

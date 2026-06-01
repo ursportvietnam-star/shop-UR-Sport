@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { addDoc, collection, onSnapshot, query, serverTimestamp, where } from 'firebase/firestore';
 import { CalendarDays, Camera, LogIn, Package, PackageCheck, ReceiptText, ShoppingBag, Star, Truck, UserRound, Video, X } from 'lucide-react';
-import { db } from '../firebase';
+import { db, isFirebaseConfigured } from '../firebase';
 import { useAuth } from '../AuthContext';
 import { CartItem, Order } from '../types';
 import { cn } from '@/lib/utils';
@@ -51,6 +51,11 @@ export const AccountPage: React.FC = () => {
     }
 
     setIsLoadingOrders(true);
+    if (!db || !isFirebaseConfigured) {
+      setOrders([]);
+      setIsLoadingOrders(false);
+      return;
+    }
     const ordersQuery = query(collection(db, 'orders'), where('userId', '==', user.uid));
 
     const unsubscribe = onSnapshot(ordersQuery, snapshot => {
@@ -134,6 +139,10 @@ export const AccountPage: React.FC = () => {
   const submitReview = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!user || !reviewTarget) return;
+    if (!db || !isFirebaseConfigured) {
+      toast.error('Chức năng đánh giá tạm thời không khả dụng do hệ thống chưa cấu hình Firebase.');
+      return;
+    }
     if (!reviewComment.trim()) {
       toast.error('Vui lòng nhập cảm nhận sản phẩm');
       return;

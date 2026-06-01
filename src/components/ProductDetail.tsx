@@ -8,7 +8,7 @@ import { useAuth } from '../AuthContext';
 import { useProducts } from '../ProductsContext';
 import { useRecentlyViewed } from '../RecentlyViewedContext';
 import { Button } from '@/components/ui/button';
-import { db } from '../firebase';
+import { db, isFirebaseConfigured } from '../firebase';
 import {
   collection,
   addDoc,
@@ -248,6 +248,14 @@ export const ProductDetail: React.FC = () => {
   useEffect(() => {
     if (!product?.id) return;
 
+    if (!db || !isFirebaseConfigured) {
+      setReviews([]);
+      setHasPurchased(false);
+      setIsCheckingPurchase(false);
+      setFlashSaleSettings(null);
+      return;
+    }
+
     const q = query(
       collection(db, 'reviews'),
       where('productId', '==', product.id)
@@ -371,6 +379,10 @@ export const ProductDetail: React.FC = () => {
     if (!product?.id) return;
     if (!user) {
       toast.error('Vui lòng đăng nhập để gửi đánh giá!');
+      return;
+    }
+    if (!db || !isFirebaseConfigured) {
+      toast.error('Chức năng đánh giá tạm thời không khả dụng do hệ thống chưa cấu hình Firebase.');
       return;
     }
     if (!newReview.comment.trim() || (!user && !newReview.userName.trim())) {

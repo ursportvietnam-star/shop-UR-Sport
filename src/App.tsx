@@ -109,7 +109,7 @@ const SEO_LANDING_PAGES = DEFAULT_SEO_SUBCATEGORIES
 
 export default function App() {
   return (
-    <Router>
+    <Router basename={import.meta.env.BASE_URL}>
       <AppContent />
     </Router>
   );
@@ -119,7 +119,7 @@ function AppContent() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const location = useLocation();
   const [activeCategory, setActiveCategory] = useState(() => {
-    const path = window.location.pathname.substring(1);
+    const path = location.pathname.substring(1);
     const cat = CATEGORY_METADATA.find(c => c.slug === path);
     return cat ? cat.name : 'All';
   });

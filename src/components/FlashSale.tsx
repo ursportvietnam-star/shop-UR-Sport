@@ -4,7 +4,7 @@ import { ProductCard } from './ProductCard';
 import { Zap, Timer, ChevronRight, ChevronLeft, TrendingUp } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, isFirebaseConfigured } from '../firebase';
 import { cn } from '@/lib/utils';
 import { LazyImage } from './LazyImage';
 import { getProductPath } from '../lib/productUrls';
@@ -33,6 +33,7 @@ export function FlashSale({ products }: FlashSaleProps) {
 
   useEffect(() => {
     const fetchSettings = async () => {
+      if (!db || !isFirebaseConfigured) return;
       const snap = await getDoc(doc(db, 'settings', 'flashSale'));
       if (snap.exists()) {
         setSettings(snap.data() as FlashSaleSettings);

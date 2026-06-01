@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { CheckCircle2, Clipboard, ClipboardList, Home, PackageSearch, ShieldCheck, Truck } from 'lucide-react';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, isFirebaseConfigured } from '../firebase';
 import { Order } from '../types';
 import { BANK_TRANSFER_INFO, getPaymentLabel, getTransferContent, getVietQrUrl } from '../lib/payment';
 import { toast } from 'sonner';
@@ -23,6 +23,11 @@ export const OrderSuccessPage: React.FC = () => {
 
     let isMounted = true;
     setIsLoadingOrder(true);
+
+    if (!db || !isFirebaseConfigured) {
+      setIsLoadingOrder(false);
+      return;
+    }
 
     getDoc(doc(db, 'orders', orderId)).then(snap => {
       if (!isMounted) return;

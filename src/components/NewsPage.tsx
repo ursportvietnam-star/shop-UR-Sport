@@ -27,7 +27,7 @@ import { SITE_URL, absoluteUrl, buildBreadcrumbSchema, buildSeoGraph, cleanSeoTe
 import { formatFaqContentHtml } from '../lib/faqHtml';
 import { removeEmptyMedia, sanitizeRichHtml } from '../lib/htmlContent';
 import { collection, onSnapshot, query, orderBy, doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, isFirebaseConfigured } from '../firebase';
 import { STATIC_BLOG_POSTS as POSTS } from '../data';
 import { useProducts } from '../ProductsContext';
 import { LazyImage } from './LazyImage';
@@ -300,6 +300,11 @@ export function NewsPage() {
   }, [slug]);
 
   useEffect(() => {
+    if (!db || !isFirebaseConfigured) {
+      setPosts(POSTS);
+      setPostsLoaded(true);
+      return;
+    }
     const q = query(collection(db, 'blogPosts'), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const loaded = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
@@ -315,6 +320,11 @@ export function NewsPage() {
   }, []);
 
   useEffect(() => {
+    if (!db || !isFirebaseConfigured) {
+      setBlogCategories(loadCachedBlogCategories() || DEFAULT_BLOG_CATEGORY_ITEMS);
+      setBlogCategoriesLoaded(true);
+      return;
+    }
     getDoc(doc(db, 'settings', 'blogCategories')).then(snap => {
       if (!snap.exists()) {
         const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';

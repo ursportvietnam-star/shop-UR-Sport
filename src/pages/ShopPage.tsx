@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 
 import { useProducts } from '../ProductsContext';
 import { useSEO } from '../hooks/useSEO';
-import { db } from '../firebase';
+import { db, isFirebaseConfigured } from '../firebase';
 import { CATEGORY_METADATA, CATEGORIES } from '../data';
 import { Product, Category } from '../types';
 import { DEFAULT_SEO_SUBCATEGORIES, CATEGORY_PRODUCT_MATCH_TERMS } from '../lib/categoryConfig';
@@ -263,6 +263,18 @@ export function ShopPage({
           keywords: `${seoLanding?.label || currentCategory}, đồ thể thao nam, ur sport`,
         };
         try {
+          if (!db || !isFirebaseConfigured) {
+            setSeoContent('');
+            setSeoMeta({
+              title: fallback.title,
+              description: fallback.description,
+              keywords: fallback.keywords,
+              canonical: '',
+              robots: 'index, follow',
+              heading: seoLanding?.label || ''
+            });
+            return;
+          }
           const docRef = doc(db, 'categorySeo', seoDocSlug);
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {

@@ -3,7 +3,7 @@ import { X, Search, Ticket, Check } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, isFirebaseConfigured } from '../firebase';
 import { Voucher } from '../types';
 import { STATIC_VOUCHERS } from '../data';
 import { cn } from '@/lib/utils';
@@ -39,6 +39,11 @@ export const VoucherSelectionModal: React.FC<VoucherSelectionModalProps> = ({
 
   useEffect(() => {
     if (!isOpen) return;
+    if (!db || !isFirebaseConfigured) {
+      setVouchers(STATIC_VOUCHERS.filter(v => v.isActive));
+      setIsLoading(false);
+      return;
+    }
     const q = query(collection(db, 'vouchers'), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Voucher[];

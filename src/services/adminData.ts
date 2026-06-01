@@ -14,7 +14,7 @@ import {
   type Unsubscribe,
   type WithFieldValue,
 } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, isFirebaseConfigured } from '../firebase';
 
 export type AdminCollection =
   | 'blogPosts'
@@ -55,6 +55,10 @@ export const subscribeAdminCollection = <T extends { id: string }>(
   onData: (items: T[]) => void,
   onError?: (error: unknown) => void,
 ): Unsubscribe => {
+  if (!db || !isFirebaseConfigured) {
+    setTimeout(() => onData([]), 0);
+    return () => {};
+  }
   const collectionQuery = query(collection(db, collectionName), orderBy('createdAt', 'desc'));
 
   return onSnapshot(
@@ -69,16 +73,19 @@ export const subscribeAdminCollection = <T extends { id: string }>(
 };
 
 export const getAdminSetting = async <T = DocumentData>(settingId: AdminSetting) => {
+  if (!db || !isFirebaseConfigured) return null;
   const snapshot = await getDoc(doc(db, 'settings', settingId));
   return snapshot.exists() ? (snapshot.data() as T) : null;
 };
 
 export const getAdminDocument = async <T = DocumentData>(collectionName: AdminCollection, id: string) => {
+  if (!db || !isFirebaseConfigured) return null;
   const snapshot = await getDoc(doc(db, collectionName, id));
   return snapshot.exists() ? (snapshot.data() as T) : null;
 };
 
 export const saveAdminSetting = async <T extends WithFieldValue<DocumentData>>(settingId: AdminSetting, data: T) => {
+  if (!db || !isFirebaseConfigured) throw new Error('Firebase configuration missing');
   await setDoc(doc(db, 'settings', settingId), data);
 };
 
@@ -87,6 +94,7 @@ export const mergeAdminDocument = async <T extends WithFieldValue<DocumentData>>
   id: string,
   data: T,
 ) => {
+  if (!db || !isFirebaseConfigured) throw new Error('Firebase configuration missing');
   await setDoc(doc(db, collectionName, id), data, { merge: true });
 };
 
@@ -95,6 +103,7 @@ export const updateAdminDocument = async <T extends Partial<DocumentData>>(
   id: string,
   data: T,
 ) => {
+  if (!db || !isFirebaseConfigured) throw new Error('Firebase configuration missing');
   await updateDoc(doc(db, collectionName, id), data);
 };
 
@@ -102,9 +111,11 @@ export const addAdminDocument = async <T extends WithFieldValue<DocumentData>>(
   collectionName: AdminCollection,
   data: T,
 ) => {
+  if (!db || !isFirebaseConfigured) throw new Error('Firebase configuration missing');
   return addDoc(collection(db, collectionName), data);
 };
 
 export const deleteAdminDocument = async (collectionName: AdminCollection, id: string) => {
+  if (!db || !isFirebaseConfigured) throw new Error('Firebase configuration missing');
   await deleteDoc(doc(db, collectionName, id));
 };

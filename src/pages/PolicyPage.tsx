@@ -2,7 +2,7 @@ import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { getDoc, doc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, isFirebaseConfigured } from '../firebase';
 import { useSEO } from '../hooks/useSEO';
 import { absoluteUrl } from '../lib/seo';
 
@@ -61,6 +61,7 @@ export default function PolicyPage({ type }: { type?: keyof typeof POLICY_CONTEN
 
   React.useEffect(() => {
     let isMounted = true;
+    if (!db || !isFirebaseConfigured) return;
     getDoc(doc(db, 'settings', 'supportPolicies')).then(snap => {
       const data = snap.exists() ? snap.data() : {};
       const savedPolicy = type

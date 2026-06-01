@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { Voucher } from '../types';
 import { VoucherSelectionModal } from './VoucherSelectionModal';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, isFirebaseConfigured } from '../firebase';
 import { STATIC_VOUCHERS } from '../data';
 import { BANK_TRANSFER_INFO, createOrderCode, getTransferContent, getVietQrUrl } from '../lib/payment';
 
@@ -82,6 +82,10 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
   }, [appliedVoucher, availableVouchers, discountAmount, total]);
 
   React.useEffect(() => {
+    if (!db || !isFirebaseConfigured) {
+      setAvailableVouchers(STATIC_VOUCHERS.filter(isVoucherCurrentlyUsable));
+      return;
+    }
     const vouchersQuery = query(collection(db, 'vouchers'), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(vouchersQuery, (snapshot) => {
       const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Voucher[];
@@ -141,7 +145,13 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
     setIsProcessing(true);
     try {
       const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
-      const { db } = await import('../firebase');
+      const { db, isFirebaseConfigured } = await import('../firebase');
+      
+      if (!db || !isFirebaseConfigured) {
+        toast.error('Chức năng đặt hàng tạm thời không khả dụng do hệ thống chưa cấu hình Firebase.');
+        setIsProcessing(false);
+        return;
+      }
       
       const orderCode = createOrderCode();
       const savedPaymentMethod = paymentMethod === 'e_wallet' ? activeWallet : paymentMethod;
