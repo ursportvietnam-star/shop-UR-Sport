@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, isFirebaseConfigured } from '../firebase';
 import {
   SITE_NAME,
   absoluteUrl,
@@ -16,6 +16,10 @@ let isFetchingSchema = false;
 const schemaListeners = new Set<(settings: any) => void>();
 
 const getCachedSchemaSettings = async (): Promise<any> => {
+  if (!db || !isFirebaseConfigured) {
+    return null;
+  }
+
   if (cachedSchemaSettings) return cachedSchemaSettings;
   if (isFetchingSchema) {
     return new Promise((resolve) => {

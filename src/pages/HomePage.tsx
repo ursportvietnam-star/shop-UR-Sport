@@ -17,7 +17,7 @@ import { TrustBadgesSection } from '../components/TrustBadgesSection';
 
 import { useProducts } from '../ProductsContext';
 import { useSEO } from '../hooks/useSEO';
-import { db } from '../firebase';
+import { db, isFirebaseConfigured } from '../firebase';
 import { STATIC_BLOG_POSTS, CATEGORY_METADATA } from '../data';
 import { Product, Category, BlogPost } from '../types';
 import { readLocalHomepageSections } from '../lib/homepageConfig';
@@ -159,6 +159,10 @@ export default function HomePage({
 
   useEffect(() => {
     const fetchHomeSeo = async () => {
+      if (!db || !isFirebaseConfigured) {
+        return;
+      }
+
       try {
         const seoDoc = await getDoc(doc(db, 'categorySeo', 'homepage'));
         if (seoDoc.exists()) {
@@ -181,13 +185,18 @@ export default function HomePage({
 
     // load homepage sections config
     const fetchHomepageConfig = async () => {
-      try {
-        const localSections = readLocalHomepageSections();
-        if (localSections) {
-          setHomepageSections(localSections as HomepageSectionConfig[]);
-          return;
-        }
+      const localSections = readLocalHomepageSections();
+      if (localSections) {
+        setHomepageSections(localSections as HomepageSectionConfig[]);
+        return;
+      }
 
+      if (!db || !isFirebaseConfigured) {
+        setHomepageSections(DEFAULT_HOMEPAGE_SECTIONS);
+        return;
+      }
+
+      try {
         const cfgDoc = await getDoc(doc(db, 'settings', 'homepage'));
         if (cfgDoc.exists()) {
           const data = cfgDoc.data();
@@ -225,6 +234,10 @@ export default function HomePage({
   useEffect(() => {
     let mounted = true;
     const fetchHomeBlogPosts = async () => {
+      if (!db || !isFirebaseConfigured) {
+        return;
+      }
+
       try {
         const snapshot = await getDocs(query(collection(db, 'blogPosts'), orderBy('createdAt', 'desc'), limit(12)));
         const posts = snapshot.docs.map(postDoc => ({
