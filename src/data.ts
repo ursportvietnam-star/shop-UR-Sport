@@ -41,7 +41,6 @@ export const PRODUCTS: Product[] = [
     category: 'Áo thun nam',
     images: [
       '/images/ao-thun-nam.webp',
-      '/images/ao-thun-nam.webp',
       '/images/ao-thun-the-thao-nam.webp',
       '/images/ao-polo-nam.webp',
       '/images/quan-the-thao-nam.webp',
