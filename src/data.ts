@@ -4,22 +4,22 @@ export const CATEGORY_METADATA: CategoryInfo[] = [
   { 
     name: 'Áo thun nam', 
     slug: 'ao-thun-nam', 
-    icon: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=100&h=100&fit=crop' 
+    icon: '/images/blog/bn-to-video-bn-hng.gif' 
   },
   { 
     name: 'Áo thun thể thao nam', 
     slug: 'ao-thun-the-thao-nam', 
-    icon: 'https://images.unsplash.com/photo-1581009146145-b5ef03a7401f?w=100&h=100&fit=crop' 
+    icon: '/images/blog/mua-ao-thun-nam-cao-cap-o-dau.webp' 
   },
   { 
     name: 'Áo polo nam', 
     slug: 'ao-polo-nam', 
-    icon: 'https://images.unsplash.com/photo-1586363104862-3a5e2ab60d99?w=100&h=100&fit=crop' 
+    icon: '/images/ao-polo-nam.webp' 
   },
   { 
     name: 'Quần thể thao nam', 
     slug: 'quan-the-thao-nam', 
-    icon: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=100&h=100&fit=crop' 
+    icon: '/images/quan-the-thao-nam.webp' 
   },
   { 
     name: 'Phụ kiện thể thao', 

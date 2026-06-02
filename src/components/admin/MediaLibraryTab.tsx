@@ -32,9 +32,16 @@ const getMediaPath = (url: string) => {
   return url;
 };
 
+const LOCAL_UPLOAD_FOLDERS = [
+  { key: 'blog', path: '/images/blog', label: 'Anh blog' },
+  { key: 'product', path: '/images/product', label: 'Anh san pham' },
+  { key: 'images', path: '/images', label: 'Anh co dinh' },
+];
+
 export function MediaLibraryTab({ mediaItems, onDeleteMedia, onSaveMedia }: MediaLibraryTabProps) {
   const DISABLE_UPLOADS = (import.meta as any).env?.VITE_DISABLE_MEDIA_UPLOADS === 'true';
   const allowLocalUpload = import.meta.env.DEV;
+  const [selectedFolder, setSelectedFolder] = React.useState(LOCAL_UPLOAD_FOLDERS[0]);
   const [brokenIds, setBrokenIds] = React.useState<Set<string>>(new Set());
   const brokenCount = mediaItems.filter(item => brokenIds.has(item.id)).length;
 
@@ -56,7 +63,7 @@ export function MediaLibraryTab({ mediaItems, onDeleteMedia, onSaveMedia }: Medi
             </div>
             <div>
               <h3 className="text-white font-black text-sm uppercase tracking-widest">Tai anh len</h3>
-              <p className="text-white/30 text-xs font-medium">{allowLocalUpload ? 'Local se luu vao /images/blog/' : 'Production dung Cloudinary de tranh loi upload'}</p>
+              <p className="text-white/30 text-xs font-medium">{allowLocalUpload ? `Local se luu vao ${selectedFolder.path}/` : 'Production dung Cloudinary de tranh loi upload'}</p>
             </div>
           </div>
           <div className="space-y-4">
@@ -69,13 +76,35 @@ export function MediaLibraryTab({ mediaItems, onDeleteMedia, onSaveMedia }: Medi
               <>
                 {allowLocalUpload ? (
                   <div className="p-2 bg-white/[0.02] rounded-xl border border-white/5">
-                    <p className="text-xs text-white/40 mb-2">Upload trực tiếp vào thư mục blog (sẽ lưu trong <span className="font-mono">/images/blog/</span>)</p>
+                    <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                      {LOCAL_UPLOAD_FOLDERS.map((folder) => {
+                        const isActive = selectedFolder.key === folder.key;
+                        return (
+                          <button
+                            key={folder.key}
+                            type="button"
+                            onClick={() => setSelectedFolder(folder)}
+                            className={cn(
+                              "rounded-lg border px-3 py-2 text-left transition-all",
+                              isActive
+                                ? "border-[#4ca6d8]/60 bg-[#1e4b64]/30 text-white"
+                                : "border-white/10 bg-white/[0.02] text-white/50 hover:border-white/20 hover:text-white"
+                            )}
+                          >
+                            <span className="block text-[10px] font-black uppercase tracking-widest">{folder.label}</span>
+                            <span className="mt-1 block font-mono text-[10px]">{folder.path}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-xs text-white/40 mb-2">Anh se luu truc tiep vao <span className="font-mono">{selectedFolder.path}/</span> va giu ten file sach.</p>
                     <ImageUpload
+                      key={selectedFolder.key}
                       onUploadComplete={onSaveMedia}
-                      folder="blog"
-                      storage="blog-local"
+                      folder={selectedFolder.key}
+                      storage="local"
                       multiple
-                      label="Upload vào /images/blog (dùng cho bài viết)"
+                      label={`Upload vao ${selectedFolder.path}`}
                     />
                   </div>
                 ) : (

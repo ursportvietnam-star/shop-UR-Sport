@@ -137,7 +137,10 @@ function isLocalDevAdminRequest(req: express.Request) {
 
 function normalizeLocalMediaFolder(folderParam: string) {
   const folderMap: Record<string, string> = {
+    images: "",
+    root: "",
     blog: "blog",
+    product: "product",
     products: "products",
     "product-descriptions": "products/descriptions",
     "size-guides": "products/size-guides",
@@ -147,7 +150,9 @@ function normalizeLocalMediaFolder(folderParam: string) {
     "blog-categories": "blog/categories",
   };
 
-  return folderMap[folderParam] || null;
+  return Object.prototype.hasOwnProperty.call(folderMap, folderParam)
+    ? folderMap[folderParam]
+    : null;
 }
 
 function getContentType(req: express.Request) {
@@ -169,7 +174,7 @@ function slugifyFileBase(value: string, fallbackName: string) {
     .slice(0, 80) || fallbackName;
 }
 
-function buildSafeImageFileName(req: express.Request, fallbackName: string) {
+function buildSafeImageFileName(req: express.Request, fallbackName: string, useUniqueSuffix = true) {
   const mimeToExt: Record<string, string> = {
     "image/jpeg": "jpg",
     "image/png": "png",
@@ -184,8 +189,11 @@ function buildSafeImageFileName(req: express.Request, fallbackName: string) {
     : req.headers["x-file-name"];
   const originalName = encodedOriginalName ? decodeURIComponent(encodedOriginalName) : "";
   const baseName = slugifyFileBase(originalName, fallbackName);
-  const uniqueSuffix = `${Date.now()}-${randomUUID().slice(0, 8)}`;
+  if (!useUniqueSuffix) {
+    return `${baseName}.${ext}`;
+  }
 
+  const uniqueSuffix = `${Date.now()}-${randomUUID().slice(0, 8)}`;
   return `${baseName}-${uniqueSuffix}.${ext}`;
 }
 
@@ -194,12 +202,17 @@ function assertInsideDirectory(parentDir: string, targetPath: string) {
   return relative && !relative.startsWith("..") && !path.isAbsolute(relative);
 }
 
-async function saveUploadedImage(req: express.Request, mediaFolder: string, fallbackName: string) {
+async function saveUploadedImage(
+  req: express.Request,
+  mediaFolder: string,
+  fallbackName: string,
+  options: { useUniqueSuffix?: boolean; overwrite?: boolean } = {}
+) {
   if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
     throw Object.assign(new Error("No image file received"), { statusCode: 400 });
   }
 
-  const fileName = buildSafeImageFileName(req, fallbackName);
+  const fileName = buildSafeImageFileName(req, fallbackName, options.useUniqueSuffix ?? true);
   if (!fileName) {
     throw Object.assign(new Error("Unsupported image format. Allowed formats: JPG, PNG, WebP, GIF"), { statusCode: 400 });
   }
@@ -208,16 +221,19 @@ async function saveUploadedImage(req: express.Request, mediaFolder: string, fall
   const uploadDir = path.resolve(imagesRoot, mediaFolder);
   const targetPath = path.resolve(uploadDir, fileName);
 
-  if (!assertInsideDirectory(imagesRoot, uploadDir) || !assertInsideDirectory(uploadDir, targetPath)) {
+  const isImagesRoot = uploadDir === imagesRoot;
+  if ((!isImagesRoot && !assertInsideDirectory(imagesRoot, uploadDir)) || !assertInsideDirectory(uploadDir, targetPath)) {
     throw Object.assign(new Error("Invalid upload path"), { statusCode: 400 });
   }
 
   await fs.mkdir(uploadDir, { recursive: true });
-  await fs.writeFile(targetPath, req.body, { flag: "wx" });
+  await fs.writeFile(targetPath, req.body, { flag: options.overwrite ? "w" : "wx" });
 
   return {
     fileName,
-    url: `/images/${mediaFolder.replace(/\\/g, "/")}/${fileName}`,
+    url: mediaFolder
+      ? `/images/${mediaFolder.replace(/\\/g, "/")}/${fileName}`
+      : `/images/${fileName}`,
   };
 }
 
@@ -409,11 +425,14 @@ async function startServer() {
         }
 
         const mediaFolder = normalizeLocalMediaFolder(req.params.folder);
-        if (!mediaFolder) {
+        if (mediaFolder === null) {
           return res.status(400).json({ error: "Unsupported local image folder" });
         }
 
-        const saved = await saveUploadedImage(req, mediaFolder, "local-image");
+        const saved = await saveUploadedImage(req, mediaFolder, "local-image", {
+          useUniqueSuffix: false,
+          overwrite: true,
+        });
         return res.json(saved);
       } catch (error: any) {
         console.error("Local image upload failed:", error);
@@ -779,7 +798,10 @@ YÊU CẦU CỤ THỂ:
           console.warn("⚠️ WARNING: Admin authentication bypassed in development mode!");
         }
 
-        const saved = await saveUploadedImage(req, "blog", "blog-image");
+        const saved = await saveUploadedImage(req, "blog", "blog-image", {
+          useUniqueSuffix: false,
+          overwrite: true,
+        });
         return res.json(saved);
       } catch (error: any) {
         console.error("Blog image upload failed:", error);

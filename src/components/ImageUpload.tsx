@@ -108,7 +108,11 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
       // blog images
       'blog': 'blog',
       // product hero / gallery images
+      'product': 'product',
       'products': 'products',
+      // fixed site images
+      'images': 'images',
+      'root': 'images',
       // homepage banners
       'banners': 'banners',
     };
