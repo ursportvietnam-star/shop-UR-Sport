@@ -9,7 +9,7 @@ export const CATEGORY_METADATA: CategoryInfo[] = [
   { 
     name: 'Áo thun thể thao nam', 
     slug: 'ao-thun-the-thao-nam', 
-    icon: '/images/blog/mua-ao-thun-nam-cao-cap-o-dau.webp' 
+    icon: '/images/ao-thun-the-thao-nam.webp' 
   },
   { 
     name: 'Áo polo nam', 
