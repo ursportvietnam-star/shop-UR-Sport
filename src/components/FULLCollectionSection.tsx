@@ -10,23 +10,23 @@ interface FULLCollectionSectionProps {
 
 const CATEGORY_DETAILS: Record<string, { image: string; description: string }> = {
   'ao-thun-nam': {
-    image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&q=80&w=900',
+    image: '/images/ao-thun-nam.webp',
     description: 'Cotton, graphic, oversize cho mặc hằng ngày.',
   },
   'ao-thun-the-thao-nam': {
-    image: 'https://images.unsplash.com/photo-1581009146145-b5ef03a7401f?auto=format&fit=crop&q=80&w=900',
+    image: '/images/ao-thun-the-thao-nam.webp',
     description: 'Thoáng khí, co giãn, hợp gym và chạy bộ.',
   },
   'ao-polo-nam': {
-    image: 'https://images.unsplash.com/photo-1586363104862-3a5e2ab60d99?auto=format&fit=crop&q=80&w=900',
+    image: '/images/ao-polo-nam.webp',
     description: 'Gọn gàng hơn cho đi làm, đi chơi, chơi golf.',
   },
   'quan-the-thao-nam': {
-    image: 'https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&q=80&w=900',
+    image: '/images/quan-the-thao-nam.webp',
     description: 'Short, jogger, quần tập dễ vận động.',
   },
   'phu-kien-the-thao': {
-    image: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?auto=format&fit=crop&q=80&w=900',
+    image: '/images/phu-kien-the-thao.webp',
     description: 'Túi, bình nước, phụ kiện hoàn thiện set tập.',
   },
 };
