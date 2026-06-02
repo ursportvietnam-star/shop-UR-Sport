@@ -4,7 +4,7 @@ export const CATEGORY_METADATA: CategoryInfo[] = [
   { 
     name: 'Áo thun nam', 
     slug: 'ao-thun-nam', 
-    icon: '/images/blog/bn-to-video-bn-hng.gif' 
+    icon: '/images/ao-thun-nam.webp' 
   },
   { 
     name: 'Áo thun thể thao nam', 
