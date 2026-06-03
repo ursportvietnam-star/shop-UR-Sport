@@ -44,6 +44,154 @@ const normalizeStringArray = (value: unknown): string[] => {
   return [];
 };
 
+const parseAIJson = (text: string) => {
+  const cleanText = String(text || '')
+    .replace(/```json/gi, '')
+    .replace(/```/g, '')
+    .trim();
+
+  try {
+    return JSON.parse(cleanText);
+  } catch {
+    const firstBrace = cleanText.indexOf('{');
+    const lastBrace = cleanText.lastIndexOf('}');
+    if (firstBrace >= 0 && lastBrace > firstBrace) {
+      return JSON.parse(cleanText.slice(firstBrace, lastBrace + 1));
+    }
+    throw new SyntaxError('AI response does not contain valid JSON');
+  }
+};
+
+const pickPromptLine = (prompt: string, label: string) => {
+  const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = prompt.match(new RegExp(`^${escaped}:\\s*(.+)$`, 'im'));
+  return match?.[1]?.trim() || '';
+};
+
+const compactLocalBlogPrompt = (prompt: string) => {
+  const title = pickPromptLine(prompt, 'Tiêu đề') || pickPromptLine(prompt, 'Title');
+  const slug = pickPromptLine(prompt, 'Slug bắt buộc') || pickPromptLine(prompt, 'Slug');
+  const seoTitle = pickPromptLine(prompt, 'SEO title đề xuất') || title;
+  const metaDescription = pickPromptLine(prompt, 'Meta description đề xuất');
+  const keyword = pickPromptLine(prompt, 'Primary keyword');
+  const secondaryKeywords = pickPromptLine(prompt, 'Secondary keywords');
+  const intent = pickPromptLine(prompt, 'Search intent');
+  const funnel = pickPromptLine(prompt, 'Funnel');
+  const cluster = pickPromptLine(prompt, 'Content silo');
+  const internalLinksMatch = prompt.match(/Internal links[\s\S]*?(?=\n\nOutline|\nOutline|$)/i);
+  const outlineMatch = prompt.match(/Outline H2\/H3[\s\S]*?(?=\n\nNguon|\nNguồn|\n```|$)/i);
+
+  return [
+    'Viet 1 ban nhap blog URSport ngan gon. Chi tra JSON hop le, khong markdown, khong giai thich.',
+    '',
+    `Tiêu đề: ${title}`,
+    `Slug bắt buộc: ${slug}`,
+    `SEO title: ${seoTitle}`,
+    `Meta description: ${metaDescription}`,
+    `Primary keyword: ${keyword}`,
+    `Secondary keywords: ${secondaryKeywords}`,
+    `Search intent: ${intent}`,
+    `Funnel: ${funnel}`,
+    `Content silo: ${cluster}`,
+    '',
+    internalLinksMatch?.[0]?.slice(0, 900) || 'Internal links: /ao-thun-nam, /quan-the-thao-nam, /ao-thun-the-thao-nam',
+    '',
+    outlineMatch?.[0]?.slice(0, 1400) || 'Outline: mở bài trả lời intent, 3 H2 chính, FAQ cuối bài.',
+    '',
+    'Bắt buộc JSON schema:',
+    '{"title":"","slug":"","contentHtml":"","keywordCluster":[],"metaTitle":"","metaDescription":"","internalLinkMap":[],"imagePrompts":[{"filename":"","alt":"","title":"","caption":"","prompt":""},{"filename":"","alt":"","title":"","caption":"","prompt":""},{"filename":"","alt":"","title":"","caption":"","prompt":""}],"cta":"","faqSchema":"","socialCaption":""}',
+    '',
+    'Yeu cau contentHtml: 250-450 tu, dung <p>, <h2>, <h3>, <ul><li>, <strong>, 3 <figure> placeholder CLOUDINARY_OR_UPLOADED_IMAGE_URL, FAQ cuoi bai, CTA tu nhien, internal links bang <a href="/...">.',
+  ].join('\n');
+};
+
+const slugifyText = (value: string) => value
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .replace(/đ/g, 'd')
+  .replace(/Đ/g, 'D')
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, '-')
+  .replace(/^-+|-+$/g, '')
+  .slice(0, 90);
+
+const extractPromptLinks = (prompt: string) => {
+  const links = Array.from(prompt.matchAll(/\/(?:blog|ao|quan|phu-kien|collections|product)[a-z0-9\-\/]*/gi))
+    .map(match => match[0])
+    .filter(Boolean);
+  return Array.from(new Set(links)).slice(0, 5);
+};
+
+const buildLocalBlogFallback = (prompt: string): AIBlogData => {
+  const title = pickPromptLine(prompt, 'Tiêu đề') || pickPromptLine(prompt, 'Title') || 'Bài viết URSport';
+  const slug = pickPromptLine(prompt, 'Slug bắt buộc') || pickPromptLine(prompt, 'Slug') || `/blog/${slugifyText(title)}`;
+  const metaTitle = pickPromptLine(prompt, 'SEO title đề xuất') || title;
+  const metaDescription = pickPromptLine(prompt, 'Meta description đề xuất') || `Gợi ý chọn ${title.toLowerCase()} phù hợp nhu cầu mặc thể thao, đi chơi và phối đồ nam hằng ngày.`;
+  const keyword = pickPromptLine(prompt, 'Primary keyword') || title.toLowerCase();
+  const secondaryKeywords = normalizeStringArray(pickPromptLine(prompt, 'Secondary keywords'));
+  const links = extractPromptLinks(prompt).filter(link => link !== slug);
+  const firstLink = links[0] || '/ao-thun-nam';
+  const secondLink = links[1] || '/quan-the-thao-nam';
+  const h2Matches = Array.from(prompt.matchAll(/^H2:\s*(.+)$/gim)).map(match => match[1].trim()).filter(Boolean);
+  const h2One = h2Matches[0] || `Cách chọn ${keyword} phù hợp`;
+  const h2Two = h2Matches[1] || `Những tiêu chí nên kiểm tra trước khi mua`;
+  const h2Three = h2Matches[2] || `Gợi ý phối đồ và sử dụng thực tế`;
+
+  const contentHtml = [
+    `<p><strong>${title}</strong> là chủ đề nhiều nam giới quan tâm khi muốn chọn đồ thể thao vừa dễ mặc, vừa đủ chỉn chu cho tập luyện và sinh hoạt hằng ngày. Nếu bạn đang tìm ${keyword}, hãy ưu tiên cảm giác mặc, form dáng và khả năng phối với các món đang có.</p>`,
+    '<figure><img src="CLOUDINARY_OR_UPLOADED_IMAGE_URL" alt="Nam giới mặc đồ thể thao URSport trong bối cảnh năng động" height="800" width="1200" title="Gợi ý đồ thể thao nam"><figcaption>Ảnh mở bài nên thể hiện rõ bối cảnh sử dụng thực tế của sản phẩm.</figcaption></figure>',
+    `<h2>${h2One}</h2>`,
+    `<p>Điểm đầu tiên cần xem là mục đích mặc: tập gym, chạy bộ nhẹ, đi chơi cuối tuần hay mặc thường ngày. Với nhu cầu linh hoạt, bạn có thể bắt đầu từ các mẫu <a href="${firstLink}">áo thể thao nam</a> có chất liệu thoáng, bề mặt mềm và form không quá bó.</p>`,
+    '<ul><li>Chọn form vừa vai, không kéo căng khi vận động.</li><li>Ưu tiên chất liệu thoáng, dễ giặt và nhanh khô.</li><li>Màu trung tính sẽ dễ phối hơn nếu bạn mới bắt đầu.</li></ul>',
+    '<figure><img src="CLOUDINARY_OR_UPLOADED_IMAGE_URL" alt="Chi tiết chất liệu và form áo thể thao nam" height="800" width="1200" title="Chi tiết chất liệu áo"><figcaption>Ảnh chi tiết giúp người đọc hiểu rõ hơn về chất liệu, đường may và độ co giãn.</figcaption></figure>',
+    `<h2>${h2Two}</h2>`,
+    `<p>Trước khi mua, hãy kiểm tra đường may, độ dày vải, độ co giãn và cảm giác khi mặc thử. Nếu phối cùng <a href="${secondLink}">quần thể thao nam</a>, tổng thể nên gọn, không vướng và không làm mất dáng người mặc.</p>`,
+    `<h2>${h2Three}</h2>`,
+    '<p>Một set đồ dễ dùng thường gồm áo màu trung tính, quần tối màu và giày thể thao đơn giản. Cách phối này phù hợp cả khi đi tập, đi cà phê hoặc di chuyển trong ngày.</p>',
+    '<figure><img src="CLOUDINARY_OR_UPLOADED_IMAGE_URL" alt="Nam giới phối đồ thể thao URSport hằng ngày" height="800" width="1200" title="Phối đồ thể thao nam"><figcaption>Ảnh lifestyle nên cho thấy cách phối đồ thật, rõ sản phẩm và không có chữ trên ảnh.</figcaption></figure>',
+    '<h2>Câu hỏi thường gặp</h2>',
+    `<h3>${keyword} nên chọn form rộng hay vừa?</h3><p>Nên chọn form vừa cơ thể, đủ thoải mái khi vận động nhưng không quá rộng nếu bạn muốn mặc gọn và dễ phối.</p>`,
+    `<h3>Có nên mua nhiều màu cùng lúc không?</h3><p>Nên bắt đầu với màu đen, trắng, xám hoặc navy. Khi đã chắc form và chất liệu phù hợp, bạn có thể bổ sung màu nổi hơn.</p>`,
+    '<p><strong>Gợi ý từ URSport:</strong> hãy chọn sản phẩm theo mục đích mặc chính trước, sau đó tối ưu màu sắc và cách phối để dùng được nhiều hoàn cảnh hơn.</p>',
+  ].join('');
+
+  return {
+    title,
+    slug,
+    contentHtml,
+    keywordCluster: [keyword, ...secondaryKeywords].filter(Boolean).slice(0, 6),
+    metaTitle,
+    metaDescription,
+    internalLinkMap: links,
+    imagePrompts: [
+      {
+        filename: `${slugifyText(title)}-hero.webp`,
+        alt: `Nam giới mặc ${keyword} trong bối cảnh năng động`,
+        title: title.slice(0, 60),
+        caption: 'Ảnh hero thể hiện bối cảnh sử dụng thực tế.',
+        prompt: `Ảnh ecommerce/lifestyle nam Việt Nam cho chủ đề ${keyword}, tỉ lệ 3:2, sản phẩm rõ, không chữ trên ảnh.`
+      },
+      {
+        filename: `${slugifyText(title)}-detail.webp`,
+        alt: `Chi tiết chất liệu và form ${keyword}`,
+        title: `Chi tiết ${keyword}`.slice(0, 60),
+        caption: 'Ảnh chi tiết chất liệu, đường may và form dáng.',
+        prompt: `Ảnh cận cảnh chất liệu/form ${keyword}, ánh sáng sạch, tỉ lệ 3:2, không chữ trên ảnh.`
+      },
+      {
+        filename: `${slugifyText(title)}-lifestyle.webp`,
+        alt: `Cách phối ${keyword} cho nam`,
+        title: `Phối ${keyword}`.slice(0, 60),
+        caption: 'Ảnh lifestyle gợi ý cách phối đồ hằng ngày.',
+        prompt: `Ảnh lifestyle nam Việt Nam phối ${keyword}, sản phẩm rõ, tỉ lệ 3:2, không chữ trên ảnh.`
+      }
+    ],
+    cta: 'Xem thêm các gợi ý đồ thể thao nam tại URSport để chọn đúng form, chất liệu và phong cách phù hợp.',
+    faqSchema: '',
+    socialCaption: `${title} - gợi ý chọn đồ thể thao nam dễ mặc, dễ phối từ URSport.`
+  };
+};
+
 const normalizeAIBlogData = (data: any): AIBlogData => ({
   ...data,
   title: String(data?.title || data?.blogTitle || data?.headline || '').trim(),
@@ -71,7 +219,8 @@ const DEV_ADMIN_KEY = 'ursport_dev_admin';
 
 const isLocalDevAdmin = () => {
   if (typeof window === 'undefined') return false;
-  return window.location.hostname === 'localhost' && window.localStorage.getItem(DEV_ADMIN_KEY) === '1';
+  return ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname) ||
+    window.localStorage.getItem(DEV_ADMIN_KEY) === '1';
 };
 
 const buildAIHeaders = async (initialMessage: string) => {
@@ -225,7 +374,7 @@ Trả về đúng JSON, không markdown:
 }
 
 export async function generateProductDescriptionFromMd(markdownContent: string, productName: string, keywords: string): Promise<{ contentHtml: string }> {
-  const provider = getAIProvider();
+  const provider = 'gemini';
 
   try {
     const headers = await buildAIHeaders('Bạn cần đăng nhập admin để dùng AI.');
@@ -463,23 +612,41 @@ TRẢ VỀ JSON CHUẨN:
 
 async function callGemini(systemInstruction: string, userPrompt: string) {
   const provider = getAIProvider();
+  const isBlogGenerationPrompt =
+    /contentHtml|imagePrompts|faqSchema/i.test(systemInstruction) &&
+    /Slug b(?:ắ|a)t bu(?:ộ|o)c|SEO title|Primary keyword|Outline H2\/H3/i.test(userPrompt);
 
   if (provider === 'local') {
     const url = '/api/local-ai';
+    const localSystemInstruction = isBlogGenerationPrompt
+      ? 'Ban la AI viet blog SEO cho URSport. Chi tra ve JSON hop le theo schema, khong markdown, khong giai thich.'
+      : systemInstruction;
+    const localUserPrompt = isBlogGenerationPrompt
+      ? compactLocalBlogPrompt(userPrompt)
+      : userPrompt;
     const payload = {
       model: "qwen2.5",
-      systemInstruction,
-      userPrompt,
+      systemInstruction: localSystemInstruction,
+      userPrompt: localUserPrompt,
+      options: isBlogGenerationPrompt
+        ? { temperature: 0.15, num_ctx: 4096, num_predict: 900 }
+        : undefined,
     };
 
     try {
       const headers = await buildAIHeaders('Ban can dang nhap admin de dung Local AI.');
+      const controller = isBlogGenerationPrompt ? new AbortController() : undefined;
+      const timeoutId = controller
+        ? window.setTimeout(() => controller.abort(), 75000)
+        : undefined;
 
       const response = await fetch(url, {
         method: 'POST',
         headers,
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        signal: controller?.signal,
       });
+      if (timeoutId) window.clearTimeout(timeoutId);
 
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
@@ -491,9 +658,12 @@ async function callGemini(systemInstruction: string, userPrompt: string) {
       const text = data.text;
       if (!text) throw new Error('Không nhận được phản hồi từ Local AI');
 
-      return JSON.parse(text);
+      return parseAIJson(text);
     } catch (error: any) {
       console.error('Local AI error:', error);
+      if (isBlogGenerationPrompt && (error.name === 'AbortError' || error.name === 'SyntaxError')) {
+        return buildLocalBlogFallback(userPrompt);
+      }
       if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
         throw new Error('Không kết nối được Local AI. Hãy chắc chắn bạn đã bật Ollama và tải model qwen2.5');
       }
@@ -523,12 +693,7 @@ async function callGemini(systemInstruction: string, userPrompt: string) {
     const text = data.text;
     if (!text) throw new Error('Khong nhan duoc phan hoi tu AI');
 
-    const cleanText = text
-      .replace(/```json/g, '')
-      .replace(/```/g, '')
-      .trim();
-
-    return JSON.parse(cleanText);
+    return parseAIJson(text);
   } catch (error: any) {
     console.error('Gemini proxy error:', error);
     if (error.name === 'SyntaxError') {

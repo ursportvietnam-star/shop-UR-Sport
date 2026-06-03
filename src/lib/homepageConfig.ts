@@ -35,6 +35,7 @@ export type HomepageSectionConfig = {
 
 export const HOMEPAGE_CONFIG_STORAGE_KEY = 'ursport_homepage_config_v1';
 export const HOMEPAGE_BANNERS_STORAGE_KEY = 'ursport_homepage_banners_v1';
+export const HOMEPAGE_MOBILE_BANNERS_STORAGE_KEY = 'ursport_homepage_mobile_banners_v1';
 
 export const HOMEPAGE_SECTION_TYPES: { value: HomepageSectionType; label: string }[] = [
   { value: 'hero', label: 'Banner' },
@@ -187,3 +188,30 @@ export const writeLocalHomepageBanners = (items: LocalHomepageBanner[]) => {
     }),
   );
 };
+
+export const readLocalHomepageMobileBanners = () => {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const raw = window.localStorage.getItem(HOMEPAGE_MOBILE_BANNERS_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const items = Array.isArray(parsed?.items) ? parsed.items : parsed;
+    return Array.isArray(items) ? items as LocalHomepageBanner[] : null;
+  } catch {
+    return null;
+  }
+};
+
+export const writeLocalHomepageMobileBanners = (items: LocalHomepageBanner[]) => {
+  if (typeof window === 'undefined') return;
+
+  window.localStorage.setItem(
+    HOMEPAGE_MOBILE_BANNERS_STORAGE_KEY,
+    JSON.stringify({
+      items,
+      updatedAt: new Date().toISOString(),
+    }),
+  );
+};
+

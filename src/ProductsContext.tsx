@@ -4,6 +4,7 @@ import { db } from './firebase';
 import { PRODUCTS as STATIC_PRODUCTS } from './data';
 import { Product } from './types';
 import { normalizeProductSlug } from './lib/productUrls';
+import { LOCAL_PRODUCTS_UPDATED_EVENT, mergeLocalProducts } from './lib/localProducts';
 
 interface ProductsContextType {
   products: Product[];
@@ -20,13 +21,15 @@ const normalizeProduct = (product: Product): Product => ({
 export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const productSourceRef = React.useRef<Product[]>([]);
 
   useEffect(() => {
     let mounted = true;
 
     const loadProducts = async () => {
       if (!db) {
-        setProducts(STATIC_PRODUCTS.map(normalizeProduct));
+        productSourceRef.current = STATIC_PRODUCTS.map(normalizeProduct);
+        setProducts(mergeLocalProducts(productSourceRef.current));
         setLoading(false);
         return;
       }
@@ -41,22 +44,36 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             id: d.id,
             ...d.data()
           } as Product)).map(normalizeProduct);
-          setProducts(data);
+          productSourceRef.current = data;
+          setProducts(mergeLocalProducts(data));
         } else {
-          setProducts(STATIC_PRODUCTS.map(normalizeProduct));
+          productSourceRef.current = STATIC_PRODUCTS.map(normalizeProduct);
+          setProducts(mergeLocalProducts(productSourceRef.current));
         }
       } catch (error) {
         console.error('Error fetching products:', error);
-        if (mounted) setProducts(STATIC_PRODUCTS.map(normalizeProduct));
+        if (mounted) {
+          productSourceRef.current = STATIC_PRODUCTS.map(normalizeProduct);
+          setProducts(mergeLocalProducts(productSourceRef.current));
+        }
       } finally {
         if (mounted) setLoading(false);
       }
     };
 
     loadProducts();
+    const refreshLocalProducts = () => {
+      if (!mounted) return;
+      const sourceProducts = productSourceRef.current.length > 0
+        ? productSourceRef.current
+        : STATIC_PRODUCTS.map(normalizeProduct);
+      setProducts(mergeLocalProducts(sourceProducts));
+    };
+    window.addEventListener(LOCAL_PRODUCTS_UPDATED_EVENT, refreshLocalProducts);
 
     return () => {
       mounted = false;
+      window.removeEventListener(LOCAL_PRODUCTS_UPDATED_EVENT, refreshLocalProducts);
     };
   }, []);
 

@@ -23,8 +23,10 @@ import {
   mergeHomepageSections,
   normalizeHomepageSection,
   readLocalHomepageBanners,
+  readLocalHomepageMobileBanners,
   readLocalHomepageSections,
   writeLocalHomepageBanners,
+  writeLocalHomepageMobileBanners,
   writeLocalHomepageSections,
   type HomepageSectionConfig,
   type HomepageSectionType,
@@ -118,6 +120,8 @@ export function HomepageConfigManager({ blogPosts = [], products = [], navigatio
   const [newSectionName, setNewSectionName] = useState('');
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [banners, setBanners] = useState<BannerItem[]>([]);
+  const [mobileBanners, setMobileBanners] = useState<BannerItem[]>([]);
+  const [activeBannerTab, setActiveBannerTab] = useState<'desktop' | 'mobile'>('desktop');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingBanners, setSavingBanners] = useState(false);
@@ -154,18 +158,36 @@ export function HomepageConfigManager({ blogPosts = [], products = [], navigatio
     const loadBanners = async () => {
       try {
         const localBanners = readLocalHomepageBanners();
+        const localMobileBanners = readLocalHomepageMobileBanners();
         if (localBanners?.length) {
           if (mounted) setBanners(localBanners);
+        }
+        if (localMobileBanners?.length) {
+          if (mounted) setMobileBanners(localMobileBanners);
+        }
+
+        if (localBanners?.length && localMobileBanners?.length) {
           return;
         }
 
         const snap = await getDoc(doc(db, 'settings', 'banners'));
-        const items = snap.exists() && Array.isArray(snap.data().items) ? snap.data().items : [];
-        if (mounted) setBanners(items);
+        if (snap.exists()) {
+          const data = snap.data();
+          const items = Array.isArray(data.items) ? data.items : [];
+          const mobileItems = Array.isArray(data.mobileItems) ? data.mobileItems : [];
+          if (mounted) {
+            if (!localBanners?.length) setBanners(items);
+            if (!localMobileBanners?.length) setMobileBanners(mobileItems);
+          }
+        }
       } catch (error) {
         console.error('Failed to load homepage banners:', error);
         const localBanners = readLocalHomepageBanners();
-        if (mounted) setBanners(localBanners || []);
+        const localMobileBanners = readLocalHomepageMobileBanners();
+        if (mounted) {
+          setBanners(localBanners || []);
+          setMobileBanners(localMobileBanners || []);
+        }
       }
     };
 
@@ -295,24 +317,34 @@ export function HomepageConfigManager({ blogPosts = [], products = [], navigatio
   };
 
   const updateBanner = (index: number, patch: Partial<BannerItem>) => {
-    setBanners(prev => prev.map((banner, itemIndex) => itemIndex === index ? { ...banner, ...patch } : banner));
+    if (activeBannerTab === 'mobile') {
+      setMobileBanners(prev => prev.map((banner, itemIndex) => itemIndex === index ? { ...banner, ...patch } : banner));
+    } else {
+      setBanners(prev => prev.map((banner, itemIndex) => itemIndex === index ? { ...banner, ...patch } : banner));
+    }
   };
 
   const addBanner = () => {
-    setBanners(prev => [
-      ...prev,
-      {
-        id: Date.now(),
-        image: '',
-        title: 'Banner mới',
-        subtitle: '',
-        link: ''
-      }
-    ]);
+    const newBanner: BannerItem = {
+      id: Date.now(),
+      image: '',
+      title: activeBannerTab === 'mobile' ? 'Banner mobile mới' : 'Banner mới',
+      subtitle: '',
+      link: ''
+    };
+    if (activeBannerTab === 'mobile') {
+      setMobileBanners(prev => [...prev, newBanner]);
+    } else {
+      setBanners(prev => [...prev, newBanner]);
+    }
   };
 
   const removeBanner = (index: number) => {
-    setBanners(prev => prev.filter((_, itemIndex) => itemIndex !== index));
+    if (activeBannerTab === 'mobile') {
+      setMobileBanners(prev => prev.filter((_, itemIndex) => itemIndex !== index));
+    } else {
+      setBanners(prev => prev.filter((_, itemIndex) => itemIndex !== index));
+    }
   };
 
   const saveBanners = async () => {
@@ -325,18 +357,30 @@ export function HomepageConfigManager({ blogPosts = [], products = [], navigatio
       link: banner.link || ''
     }));
 
+    const nextMobileBanners = mobileBanners.map((banner, index) => ({
+      ...banner,
+      id: banner.id || `${Date.now()}-${index}-m`,
+      image: banner.image || '',
+      title: banner.title || '',
+      subtitle: banner.subtitle || '',
+      link: banner.link || ''
+    }));
+
     setSavingBanners(true);
     try {
       await setDoc(doc(db, 'settings', 'banners'), {
         items: nextBanners,
+        mobileItems: nextMobileBanners,
         updatedAt: serverTimestamp()
       }, { merge: true });
       writeLocalHomepageBanners(nextBanners);
+      writeLocalHomepageMobileBanners(nextMobileBanners);
       toast.success('Đã lưu banner trang chủ');
     } catch (error) {
       console.error('Error saving homepage banners:', error);
       if (isLocalhost()) {
         writeLocalHomepageBanners(nextBanners);
+        writeLocalHomepageMobileBanners(nextMobileBanners);
         toast.success('Đã lưu banner trang chủ trên local');
       } else {
         toast.error('Lưu banner thất bại');
@@ -420,13 +464,41 @@ export function HomepageConfigManager({ blogPosts = [], products = [], navigatio
               </div>
             </div>
 
-            {banners.length === 0 ? (
+            {/* Viewport tabs for Banners */}
+            <div className="flex gap-2 border-b border-white/5 pb-2 mb-2">
+              <button
+                type="button"
+                onClick={() => setActiveBannerTab('desktop')}
+                className={cn(
+                  "px-4 py-2 text-xs font-black uppercase tracking-wider rounded-lg transition-all",
+                  activeBannerTab === 'desktop'
+                    ? "bg-[#1e4b64] text-white"
+                    : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white"
+                )}
+              >
+                Banner máy tính ({banners.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveBannerTab('mobile')}
+                className={cn(
+                  "px-4 py-2 text-xs font-black uppercase tracking-wider rounded-lg transition-all",
+                  activeBannerTab === 'mobile'
+                    ? "bg-[#1e4b64] text-white"
+                    : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white"
+                )}
+              >
+                Banner điện thoại ({mobileBanners.length})
+              </button>
+            </div>
+
+            {(activeBannerTab === 'mobile' ? mobileBanners : banners).length === 0 ? (
               <div className="rounded-xl border border-dashed border-white/10 p-6 text-center text-sm font-bold text-white/35">
-                Chưa có banner. Bấm Thêm banner để tạo banner đầu tiên.
+                Chưa có banner {activeBannerTab === 'mobile' ? 'mobile' : 'máy tính'}. Bấm Thêm banner để tạo banner đầu tiên.
               </div>
             ) : (
               <div className="space-y-4">
-                {banners.map((banner, bannerIndex) => (
+                {(activeBannerTab === 'mobile' ? mobileBanners : banners).map((banner, bannerIndex) => (
                   <div key={banner.id || bannerIndex} className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 lg:grid-cols-[180px_1fr_auto]">
                     <div className="space-y-3">
                       <div className="aspect-video overflow-hidden rounded-xl border border-white/10 bg-white/5">

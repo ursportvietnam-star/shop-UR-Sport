@@ -29,7 +29,7 @@ export function AIBlogAssistant({ onApply, blogPosts = [], initialPrompt = '', i
     if (!initialPrompt.trim()) return;
     setPrompt(initialPrompt);
     setResult(null);
-    toast.success('Đã nhận gợi ý SEO từ AI SEO Report vào AI Blog Creator.');
+    toast.success('Đã nhận gợi ý SEO vào AI Blog Writer.');
   }, [initialPrompt, initialPromptKey]);
 
   const detectedLinks = React.useMemo(() => {
@@ -172,8 +172,8 @@ export function AIBlogAssistant({ onApply, blogPosts = [], initialPrompt = '', i
               <PenTool className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-black text-zinc-900 leading-tight uppercase tracking-tighter">AI Blog Creator</h2>
-              <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest">Content Marketing Specialist</p>
+              <h2 className="text-xl font-black text-zinc-900 leading-tight uppercase tracking-tighter">AI Blog Writer</h2>
+              <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest">Draft {'->'} SEO QA {'->'} Review {'->'} Apply</p>
             </div>
           </div>
           <button onClick={() => setShowSettings(!showSettings)} className="p-2 hover:bg-zinc-100 rounded-full transition-colors">
@@ -182,7 +182,7 @@ export function AIBlogAssistant({ onApply, blogPosts = [], initialPrompt = '', i
         </div>
 
         <div className="mb-6 inline-flex rounded-xl bg-purple-50 px-3 py-2 text-xs font-black uppercase tracking-wider text-purple-700">
-          {provider === 'local' ? '🧠 Local AI (Ollama qwen2.5)' : '☁️ Google Gemini'}
+          {provider === 'local' ? 'Local AI (Ollama qwen2.5)' : 'Google Gemini'}
         </div>
         
           <div className="flex flex-col gap-4">
@@ -214,7 +214,7 @@ export function AIBlogAssistant({ onApply, blogPosts = [], initialPrompt = '', i
           </div>
           <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs font-medium leading-5 text-zinc-500">
-              Quy trình tốt nhất: chọn gợi ý hôm nay, kiểm tra prompt đủ 5 tín hiệu, tạo bài, rồi Apply to Blog để mở form duyệt trước khi publish.
+              Quy trình tốt nhất: chọn gợi ý hôm nay, kiểm tra prompt đủ 5 tín hiệu, tạo nháp, rồi mở form duyệt trước khi publish.
             </p>
             <Button 
               onClick={() => handleGenerate()} 
@@ -226,7 +226,7 @@ export function AIBlogAssistant({ onApply, blogPosts = [], initialPrompt = '', i
               ) : (
                 <BrainCircuit className="h-6 w-6" />
               )}
-              {loading ? 'AI ĐANG VIẾT BÀI...' : 'WRITE BLOG WITH AI'}
+              {loading ? 'AI đang viết bài...' : 'Tạo nháp blog'}
             </Button>
           </div>
         </div>
@@ -237,13 +237,13 @@ export function AIBlogAssistant({ onApply, blogPosts = [], initialPrompt = '', i
         <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-bold text-zinc-900 flex items-center gap-2">
-              <CheckIcon className="h-5 w-5 text-green-500" /> Kết quả bài viết
+              <CheckIcon className="h-5 w-5 text-green-500" /> Nháp blog chờ duyệt
             </h3>
             <Button 
               onClick={() => onApply(result)}
               className="bg-zinc-900 hover:bg-zinc-800 text-white font-bold h-10 px-6 gap-2 rounded-lg"
             >
-              <Send className="h-4 w-4" /> Apply to Blog
+              <Send className="h-4 w-4" /> Mở form duyệt
             </Button>
           </div>
 

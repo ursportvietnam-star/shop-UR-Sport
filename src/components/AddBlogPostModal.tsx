@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AlignCenter, AlignLeft, AlignRight, Tag, X, Upload, Trash2, Code } from 'lucide-react';
+import { AlignCenter, AlignLeft, AlignRight, Tag, X, Upload, Trash2, Code, Sparkles } from 'lucide-react';
 import { collection, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Button } from './ui/button';
@@ -12,6 +12,7 @@ import { BlogPost } from '../types';
 import beautify from 'js-beautify';
 import { removeEmptyMedia, sanitizeRichHtml } from '../lib/htmlContent';
 import { uploadLocalImage } from '../lib/localMediaUpload';
+import { generateBlogSEO } from '../lib/gemini';
 
 // ── Đăng ký blots cho <figure> và <figcaption> để Quill không strip các thẻ này ──
 const BlockEmbedClass = Quill.import('blots/block/embed') as any;
@@ -112,6 +113,8 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
   const [htmlSource, setHtmlSource] = useState('');
   const [seoTitle, setSeoTitle] = useState('');
   const [metaDescription, setMetaDescription] = useState('');
+  const [isAiRewriteLoading, setIsAiRewriteLoading] = useState(false);
+  const [isAiMarkdownLoading, setIsAiMarkdownLoading] = useState(false);
   const [captionDraft, setCaptionDraft] = useState('');
   const [altDraft, setAltDraft] = useState('');
   const [imageEditPanel, setImageEditPanel] = useState<'caption' | 'alt' | 'replace' | null>(null);
@@ -829,6 +832,108 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
       unformatted: ['a', 'span', 'strong', 'b', 'em', 'i', 'u', 's', 'code', 'small'],
     });
 
+  const getCurrentContentHtml = () => {
+    if (isHtmlMode) return htmlSource;
+    return getQuillEditor()?.root?.innerHTML || content;
+  };
+
+  const getPlainTextFromHtml = (html: string) => {
+    if (typeof window === 'undefined' || !window.DOMParser) {
+      return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+
+    const parsed = new DOMParser().parseFromString(`<div>${html}</div>`, 'text/html');
+    return (parsed.body.textContent || '').replace(/\s+/g, ' ').trim();
+  };
+
+  const applyAiBlogDraft = (data: Awaited<ReturnType<typeof generateBlogSEO>>) => {
+    const nextContent = normalizeImageFigures(data.contentHtml || '');
+    if (!nextContent.trim()) {
+      throw new Error('AI khong tra ve noi dung HTML');
+    }
+
+    setContent(nextContent);
+    if (isHtmlMode) {
+      setHtmlSource(beautifyHtml(nextContent));
+    }
+
+    if (data.title?.trim()) setTitle(data.title.trim());
+    if (data.slug?.trim()) setSlug(data.slug.trim());
+    if (data.metaTitle?.trim()) setSeoTitle(data.metaTitle.trim());
+    if (data.metaDescription?.trim()) setMetaDescription(data.metaDescription.trim());
+  };
+
+  const buildAiRewritePrompt = (sourceHtml: string) => {
+    const plainText = getPlainTextFromHtml(sourceHtml);
+    return [
+      `Primary keyword: ${seoTitle || title || 'blog URSport'}`,
+      `Slug bat buoc: ${slug || slugify(title || 'bai-viet-ursport')}`,
+      `SEO title hien tai: ${seoTitle || title || 'Chua co'}`,
+      `Meta description hien tai: ${metaDescription || 'Chua co'}`,
+      `Danh muc: ${category || 'Blog'}`,
+      `Tac gia: ${author || 'UR SPORT Team'}`,
+      'Outline H2/H3: Giu dung chu de hien tai, toi uu lai bo cuc, FAQ, CTA, internal links va cac block anh.',
+      'Yeu cau: Sua lai bai blog hien tai thanh HTML SEO chuyen sau cho URSport. Giu dung thong tin cot loi, khong doi chu de, khong chen markdown.',
+      `Noi dung hien tai:\n${plainText.slice(0, 8000)}`,
+    ].join('\n');
+  };
+
+  const handleAiRewriteBlog = React.useCallback(async () => {
+    if (isAiRewriteLoading) return;
+    const sourceHtml = getCurrentContentHtml();
+    if (!getPlainTextFromHtml(sourceHtml).trim()) {
+      toast.error('Vui long nhap noi dung bai viet truoc khi dung AI sua.');
+      return;
+    }
+
+    const toastId = toast.loading('AI dang sua bai blog theo chuan SEO...');
+    setIsAiRewriteLoading(true);
+    try {
+      const data = await generateBlogSEO(buildAiRewritePrompt(sourceHtml));
+      applyAiBlogDraft(data);
+      toast.success('AI da cap nhat bai viet tren editor.', { id: toastId });
+    } catch (error: any) {
+      toast.error(error.message || 'AI chua the sua bai viet.', { id: toastId });
+    } finally {
+      setIsAiRewriteLoading(false);
+    }
+  }, [author, category, content, htmlSource, isAiRewriteLoading, isHtmlMode, metaDescription, seoTitle, slug, title]);
+
+  const handleAiMarkdownBlog = React.useCallback(() => {
+    if (isAiMarkdownLoading) return;
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.md,.markdown,text/markdown,text/plain';
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+
+      const toastId = toast.loading('AI dang doc Markdown va viet bai blog...');
+      setIsAiMarkdownLoading(true);
+      try {
+        const markdown = await file.text();
+        const data = await generateBlogSEO([
+          `Primary keyword: ${seoTitle || title || file.name.replace(/\.[^.]+$/, '')}`,
+          `Slug bat buoc: ${slug || slugify(title || file.name.replace(/\.[^.]+$/, ''))}`,
+          `SEO title: ${seoTitle || title || 'Chua co'}`,
+          `Meta description: ${metaDescription || 'Chua co'}`,
+          `Danh muc: ${category || 'Blog'}`,
+          'Outline H2/H3: Trich xuat tu file Markdown ben duoi, giu dung y chinh va toi uu thanh bai blog HTML.',
+          'Yeu cau: Bien file Markdown thanh bai blog URSport co contentHtml, FAQ, CTA, internal links va imagePrompts. Khong tra markdown.',
+          `Markdown source:\n${markdown.slice(0, 12000)}`,
+        ].join('\n'));
+        applyAiBlogDraft(data);
+        toast.success('AI da chen bai blog tu Markdown.', { id: toastId });
+      } catch (error: any) {
+        toast.error(error.message || 'AI chua the xu ly file Markdown.', { id: toastId });
+      } finally {
+        setIsAiMarkdownLoading(false);
+        input.value = '';
+      }
+    };
+    input.click();
+  }, [category, isAiMarkdownLoading, metaDescription, seoTitle, slug, title]);
+
   const handleImageInsert = React.useCallback(async () => {
     if (imagePickerOpenRef.current) return;
     imagePickerOpenRef.current = true;
@@ -1233,7 +1338,8 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
                         background: transparent !important;
                       }
                       .product-quill-editor .ql-toolbar .faq-toolbar-button,
-                      .product-quill-editor .ql-toolbar .html-toolbar-button {
+                      .product-quill-editor .ql-toolbar .html-toolbar-button,
+                      .product-quill-editor .ql-toolbar .ai-toolbar-button {
                         align-items: center !important;
                         border-radius: 999px !important;
                         display: inline-flex !important;
@@ -1245,6 +1351,10 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
                         color: #111827 !important;
                         font-size: 0.72rem !important;
                         font-weight: 900 !important;
+                      }
+                      .product-quill-editor .ql-toolbar .ai-toolbar-button:disabled {
+                        cursor: not-allowed !important;
+                        opacity: 0.55 !important;
                       }
                       .product-quill-editor .ql-toolbar .faq-toolbar-button::before {
                         content: "FAQ" !important;
@@ -1307,6 +1417,30 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
                     </span>
                     <span className="ql-formats">
                       <button className="ql-clean" />
+                    </span>
+                    <span className="ql-formats">
+                      <button
+                        type="button"
+                        onClick={handleAiRewriteBlog}
+                        title="AI tối ưu lại bài blog theo chuẩn SEO"
+                        className="ai-toolbar-button hover:!text-[#10b981]"
+                        disabled={isAiRewriteLoading}
+                      >
+                        <Sparkles className="h-3.5 w-3.5 text-[#10b981]" />
+                        <span className="text-[11px] font-black text-[#10b981]">AI Sửa</span>
+                      </button>
+                    </span>
+                    <span className="ql-formats">
+                      <button
+                        type="button"
+                        onClick={handleAiMarkdownBlog}
+                        title="Tải file .md để AI viết bài blog SEO"
+                        className="ai-toolbar-button hover:!text-[#8b5cf6]"
+                        disabled={isAiMarkdownLoading}
+                      >
+                        <Sparkles className="h-3.5 w-3.5 text-[#8b5cf6]" />
+                        <span className="text-[11px] font-bold text-[#8b5cf6]">AI Markdown</span>
+                      </button>
                     </span>
                   </div>
                 </div>

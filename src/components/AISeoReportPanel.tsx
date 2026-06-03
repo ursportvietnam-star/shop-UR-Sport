@@ -822,7 +822,7 @@ export function AISeoReportPanel({
       const prompt = buildSeoBlogPrompt(suggestion);
       const data = await generateBlogSEO(prompt);
       if (!data?.contentHtml?.trim()) {
-        throw new Error('AI chưa trả nội dung bài viết. Bấm "Dùng gợi ý" để mở brief .md trong AI Blog Creator rồi tạo lại.');
+        throw new Error('AI chưa trả nội dung bài viết. Bấm "Dùng gợi ý" để mở brief .md trong AI Blog Writer rồi tạo lại.');
       }
       onCreateBlogDraft?.(aiBlogToDraft(data));
       toast.success('Đã tạo draft blog bằng AI từ dữ liệu .md.');

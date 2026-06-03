@@ -20,6 +20,25 @@ const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
 const MAX_REQUESTS = 60; // Max 60 requests per minute per IP
 let gitSyncInProgress = false;
 
+const getGeminiApiKey = () => process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || "";
+
+const compactAiContext = (value: string, maxLength = 6500) => {
+  const normalized = String(value || "")
+    .replace(/\r\n/g, "\n")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  if (normalized.length <= maxLength) return normalized;
+
+  const priorityBlocks = normalized
+    .split(/\n(?=\d+\.|##|\*\*)/g)
+    .filter(block => /quy tắc|cấu trúc|bắt buộc|nghiêm cấm|html|h2|figure|image|ảnh|caption|không|seo|mô tả|description/i.test(block))
+    .join("\n\n");
+
+  return (priorityBlocks || normalized).slice(0, maxLength).trim();
+};
+
 // Cleanup expired entries every 5 minutes
 setInterval(() => {
   const now = Date.now();
@@ -356,16 +375,22 @@ async function startServer() {
     }
 
     const cwd = process.cwd();
+    const scope = String(req.query.scope || 'images');
+    const isCodeSync = scope === 'code';
     gitSyncInProgress = true;
 
     try {
-      // Kiểm tra xem có file mới/thay đổi nào trong public/images không
-      const { stdout: statusOut } = await runGit(["status", "--porcelain", "--", "public/images"], cwd);
+      const statusArgs = isCodeSync
+        ? ["status", "--porcelain", "--"]
+        : ["status", "--porcelain", "--", "public/images"];
+      const { stdout: statusOut } = await runGit(statusArgs, cwd);
 
       if (!statusOut.trim()) {
         return res.json({
           success: true,
-          message: "Không có ảnh mới cần đồng bộ. Website đã up to date.",
+          message: isCodeSync
+            ? "Không có thay đổi code cần đồng bộ. Website đã up to date."
+            : "Không có ảnh mới cần đồng bộ. Website đã up to date.",
           details: [],
         });
       }
@@ -373,24 +398,33 @@ async function startServer() {
       const changedFiles = countPorcelainLines(statusOut);
       const details: string[] = [];
 
-      // Stage toàn bộ thư mục public/images
-      await runGit(["add", "--", "public/images"], cwd);
-      const { stdout: stagedOut } = await runGit(["diff", "--cached", "--name-only", "--", "public/images"], cwd);
+      if (isCodeSync) {
+        await runGit(["add", "--all"], cwd);
+      } else {
+        await runGit(["add", "--", "public/images"], cwd);
+      }
+
+      const diffArgs = isCodeSync
+        ? ["diff", "--cached", "--name-only", "--"]
+        : ["diff", "--cached", "--name-only", "--", "public/images"];
+      const { stdout: stagedOut } = await runGit(diffArgs, cwd);
       const stagedFiles = stagedOut.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
       if (stagedFiles.length === 0) {
         return res.json({
           success: true,
-          message: "Khong co thay doi anh nao can commit sau khi stage.",
+          message: isCodeSync
+            ? "Không có thay đổi code nào cần commit sau khi stage."
+            : "Không có thay đổi ảnh nào cần commit sau khi stage.",
           details,
         });
       }
-      details.push(`✅ Staged ${changedFiles} file(s) từ public/images`);
+      details.push(`✅ Staged ${changedFiles} file(s) ${isCodeSync ? 'từ repository' : 'từ public/images'}`);
 
       // Commit với timestamp
       const now = new Date()
         .toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })
         .replace(/,/g, "");
-      const commitMsg = `sync(images): upload ${stagedFiles.length} file(s) - ${now}`;
+      const commitMsg = `sync(${isCodeSync ? 'code' : 'images'}): upload ${stagedFiles.length} file(s) - ${now}`;
       const { stdout: commitOut } = await runGit(["commit", "-m", commitMsg], cwd);
       details.push(`✅ ${commitOut.trim().split("\n")[0]}`);
 
@@ -401,7 +435,9 @@ async function startServer() {
       console.log(`[git-sync] Đồng bộ thành công ${stagedFiles.length} file(s)`);
       return res.json({
         success: true,
-        message: `Đã đồng bộ ${stagedFiles.length} ảnh lên GitHub. Vercel đang build lại...`,
+        message: isCodeSync
+          ? `Đã đồng bộ ${stagedFiles.length} file code lên GitHub. Vercel đang build lại...`
+          : `Đã đồng bộ ${stagedFiles.length} ảnh lên GitHub. Vercel đang build lại...`,
         details,
       });
     } catch (err: any) {
@@ -445,13 +481,13 @@ async function startServer() {
 
   app.post("/api/gemini-json", async (req, res) => {
     try {
-      const apiKey = process.env.GEMINI_API_KEY;
+      const apiKey = getGeminiApiKey();
       const authHeader = String(req.headers.authorization || "");
       const token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : "";
       const bypass = isLocalDevAdminRequest(req);
 
       if (!apiKey) {
-        return res.status(500).json({ error: "GEMINI_API_KEY is not configured" });
+        return res.status(500).json({ error: "Gemini API key is not configured" });
       }
 
       if (!bypass && (!token || !(await verifyAdminToken(token)))) {
@@ -512,6 +548,7 @@ async function startServer() {
       const systemInstruction = String(req.body?.systemInstruction || "").trim();
       const userPrompt = String(req.body?.userPrompt || "").trim();
       const model = String(req.body?.model || 'qwen2.5').trim();
+      const requestOptions = req.body?.options && typeof req.body.options === 'object' ? req.body.options : {};
 
       if (!systemInstruction && !userPrompt) {
         return res.status(400).json({ error: "systemInstruction or userPrompt is required" });
@@ -522,6 +559,12 @@ async function startServer() {
         prompt: `[SYSTEM INSTRUCTION]\n${systemInstruction}\n\n[USER PROMPT]\n${userPrompt}`,
         stream: false,
         format: "json",
+        options: {
+          temperature: 0.2,
+          num_ctx: 8192,
+          num_predict: 4096,
+          ...requestOptions,
+        },
       };
 
       const forward = await fetch(OLLAMA_URL, {
@@ -564,14 +607,14 @@ async function startServer() {
       let imageFormatRulesContext = "";
 
       try {
-        productSkillContext = await fs.readFile(path.join(process.cwd(), "PRODUCT_SKILL.md"), "utf-8");
+        productSkillContext = compactAiContext(await fs.readFile(path.join(process.cwd(), "PRODUCT_SKILL.md"), "utf-8"), 6200);
       } catch (err) {
         console.warn("Could not read PRODUCT_SKILL.md, using default rules", err);
         productSkillContext = "Hãy viết bài mô tả sản phẩm chi tiết, chuẩn SEO.";
       }
 
       try {
-        imageFormatRulesContext = await fs.readFile(path.join(process.cwd(), "IMAGE_FORMAT_RULES.md"), "utf-8");
+        imageFormatRulesContext = compactAiContext(await fs.readFile(path.join(process.cwd(), "IMAGE_FORMAT_RULES.md"), "utf-8"), 3200);
       } catch (err) {
         console.warn("Could not read IMAGE_FORMAT_RULES.md, using default rules", err);
         imageFormatRulesContext = "Hãy chèn hình ảnh minh họa phù hợp.";
@@ -596,7 +639,7 @@ ${imageFormatRulesContext}
 
 YÊU CẦU CỤ THỂ:
 1. Trả về định dạng JSON thuần túy (không bọc trong markdown): { "contentHtml": "Nội dung bài viết HTML" }
-2. YÊU CẦU ĐỘ DÀI BẮT BUỘC: Bài viết HTML phải chi tiết và đạt độ dài từ 500 đến 800 từ. Nếu tài liệu tham khảo/Brief do người dùng cung cấp ngắn, bạn bắt buộc phải chủ động phân tích sâu rộng, viết chi tiết thêm để đạt độ dài này. Hãy mở rộng bằng cách giải thích sâu về lợi ích của sợi Cotton Premium/Compact, lập luận tại sao công nghệ dệt này giúp giữ form lâu bền và thấm hút mồ hôi, gợi ý chi tiết các cách phối đồ (mix & match), phân tích dáng người mặc (Slim Fit vs Regular Fit), hướng dẫn chăm sóc bảo quản quần áo tỉ mỉ, và đưa ra các cam kết dịch vụ/chất lượng từ UR Sport để thuyết phục khách hàng.
+2. YÊU CẦU ĐỘ DÀI BẮT BUỘC: Bài viết HTML phải chi tiết và đạt độ dài từ 500 đến 800 từ. Nếu tài liệu tham khảo/Brief do người dùng cung cấp ngắn, bạn bắt buộc phải chủ động phân tích sâu rộng, viết chi tiết thêm để đạt độ dài này. Hãy mở rộng bằng cách giải thích sâu về lợi ích của chất liệu/nguyên liệu được cung cấp, form dáng, bối cảnh sử dụng, cách phối đồ, chọn size và bảo quản. Không được bịa số liệu, giá, tồn kho, bảo hành, đổi trả hoặc cam kết dịch vụ nếu brief/file .md không cung cấp.
 3. Mã HTML trả về:
    - Phải bám sát CẤU TRÚC BÀI VIẾT chuẩn trong hướng dẫn SEO sản phẩm ở trên. 
    - Chia thành nhiều phần bằng các thẻ <h2>, <h3> hợp lý (VD: Đặc điểm nổi bật, Chất liệu & Form dáng, Hoành cảnh sử dụng, Hướng dẫn chọn size, Cam kết từ UR Sport).
@@ -606,69 +649,136 @@ YÊU CẦU CỤ THỂ:
    - Mỗi ảnh phải có đầy đủ thuộc tính: alt (dưới 125 ký tự, mô tả ảnh tự nhiên chứa từ khóa chính), width="1200", height="800", title (ngắn gọn), và thẻ <figcaption> giải thích lợi ích thực tế cho người đọc.
    - Tuyệt đối KHÔNG dùng markdown (như **bold**) trong nội dung HTML, phải dùng thẻ <strong>. KHÔNG dùng thẻ <style> hay style inline. Không chứa class lạ ngoài class "image-figure" và "image-caption".`;
 
-      // 3. Call AI
-      let resultText = "";
-      const selectedProvider = provider || 'gemini';
+      const strictSystemInstruction = `${systemInstruction}
 
-      if (selectedProvider === 'local') {
-        const payload = {
-          model: "qwen2.5",
-          prompt: `[SYSTEM INSTRUCTION]\n${systemInstruction}\n\n[USER PROMPT]\n${brief || productName}`,
-          stream: false,
-          format: "json",
-        };
+RÀO CHẮN NGÔN NGỮ VÀ CẤU TRÚC BẮT BUỘC:
+- Chỉ được viết tiếng Việt tự nhiên cho khách hàng Việt Nam. Tuyệt đối không dùng tiếng Trung, tiếng Anh thừa, chữ Hán, pinyin, Japanese, Korean hoặc câu trả lời lẫn ngôn ngữ.
+- Không chèn emoji, lời xin lỗi, lời hỏi lại, hoặc câu ngoài nội dung bán hàng.
+- contentHtml phải bắt đầu bằng một đoạn <p>, sau đó có ít nhất 4 thẻ <h2>.
+- contentHtml phải có đúng 3 block <figure class="image-figure">. Trong mỗi figure, thứ tự bắt buộc là <img ... width="1200" height="800" ...> rồi <figcaption class="image-caption">...</figcaption>. Không đặt caption thành thẻ <p> riêng bên ngoài figure.
+- Các ảnh phải dùng đường dẫn /images/products/[slug-san-pham]-hero.webp, /images/products/[slug-san-pham]-detail.webp, /images/products/[slug-san-pham]-lifestyle.webp.
+- Dùng <ul><li> thật cho danh sách bullet. Không dùng <ol data-list="bullet">, không dùng span class="ql-ui".
+- Bắt buộc có các phần: lợi ích/chất liệu, form dáng/thiết kế, hoàn cảnh sử dụng/phối đồ, chọn size, bảo quản, cam kết UR Sport.
+- Không được bịa chính sách bảo hành, đổi trả, giá, tồn kho, số liệu kỹ thuật hoặc cam kết dịch vụ nếu không có trong brief/file .md. Nếu không có dữ liệu, chỉ viết cam kết chung về trải nghiệm tư vấn/chọn đúng sản phẩm.
+- Trả về JSON hợp lệ duy nhất: {"contentHtml":"..."}; không markdown, không code fence.`;
 
-        const forward = await fetch(OLLAMA_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
+      const compactBrief = compactAiContext(brief || '', 4500);
+      const userPrompt = `[SYSTEM INSTRUCTION]\n${strictSystemInstruction}\n\n[USER PROMPT]\n${compactBrief || productName}`;
+      const selectedProvider = 'gemini';
+      const hasCjkText = (value: string) => /[\u3400-\u9FFF\uF900-\uFAFF]/.test(value);
+      const parseAiJson = (value: string) => {
+        const cleanText = value
+          .replace(/```json/g, '')
+          .replace(/```/g, '')
+          .trim();
+        return JSON.parse(cleanText);
+      };
+
+      const validateProductDescription = (contentHtml: string) => {
+        const issues: string[] = [];
+        if (!contentHtml || typeof contentHtml !== 'string') issues.push('contentHtml is empty');
+        if (hasCjkText(contentHtml || '')) issues.push('contentHtml contains Chinese/CJK characters');
+        if (((contentHtml || '').match(/<h2[\s>]/gi) || []).length < 4) issues.push('contentHtml needs at least 4 H2 sections');
+        const figures = contentHtml.match(/<figure\b[\s\S]*?<\/figure>/gi) || [];
+        if (figures.length !== 3) issues.push('contentHtml must contain exactly 3 figure blocks');
+        figures.forEach((figure, index) => {
+          if (!/<figure\b[^>]*class=["'][^"']*\bimage-figure\b/i.test(figure)) issues.push(`figure ${index + 1} missing image-figure class`);
+          if (!/<img\b[^>]*\bwidth=["']1200["'][^>]*>/i.test(figure)) issues.push(`figure ${index + 1} image missing width=1200`);
+          if (!/<img\b[^>]*\bheight=["']800["'][^>]*>/i.test(figure)) issues.push(`figure ${index + 1} image missing height=800`);
+          if (!/<img\b[^>]*\balt=["'][^"']{20,125}["'][^>]*>/i.test(figure)) issues.push(`figure ${index + 1} image missing useful alt`);
+          if (!/<img\b[^>]*\btitle=["'][^"']+["'][^>]*>/i.test(figure)) issues.push(`figure ${index + 1} image missing title`);
+          if (!/<figcaption\b[^>]*class=["'][^"']*\bimage-caption\b[^"']*["'][^>]*>[\s\S]{20,220}?<\/figcaption>/i.test(figure)) issues.push(`figure ${index + 1} missing image-caption figcaption`);
         });
+        if (!/\/images\/products\/[^"']+-hero\.webp/i.test(contentHtml || '')) issues.push('missing hero product image path');
+        if (!/\/images\/products\/[^"']+-detail\.webp/i.test(contentHtml || '')) issues.push('missing detail product image path');
+        if (!/\/images\/products\/[^"']+-lifestyle\.webp/i.test(contentHtml || '')) issues.push('missing lifestyle product image path');
+        if (/<ol\b[^>]*data-list=["']bullet["']|class=["'][^"']*\bql-ui\b/i.test(contentHtml || '')) issues.push('contentHtml contains Quill bullet markup instead of ul/li');
+        if (/(bảo hành|bao hanh|đổi trả|doi tra|1 đổi 1|1 doi 1|30 ngày|30 ngay)/i.test(contentHtml || '')) issues.push('contentHtml invents warranty/return policy');
+        if (/\*\*|```|!\[[^\]]*\]\(/.test(contentHtml || '')) issues.push('contentHtml contains markdown syntax');
+        return issues;
+      };
 
-        const data = await forward.json().catch(() => ({}));
-        if (!forward.ok) {
-          return res.status(forward.status).json({ error: data?.error || `Local AI returned ${forward.status}` });
-        }
-        resultText = data?.response || '';
-      } else {
-        const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) {
-          return res.status(500).json({ error: "GEMINI_API_KEY is not configured" });
-        }
+      const callProductDescriptionAI = async (promptText: string) => {
+        let resultText = "";
 
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [
-                { role: "user", parts: [{ text: `[SYSTEM INSTRUCTION]\n${systemInstruction}\n\n[USER PROMPT]\n${brief || productName}` }] }
-              ],
-              generationConfig: {
-                response_mime_type: "application/json"
-              }
-            })
+        if (selectedProvider === 'local') {
+          const payload = {
+            model: "qwen2.5",
+            prompt: promptText,
+            stream: false,
+            format: "json",
+          };
+
+          const forward = await fetch(OLLAMA_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+
+          const data = await forward.json().catch(() => ({}));
+          if (!forward.ok) {
+            throw new Error(data?.error || `Local AI returned ${forward.status}`);
           }
-        );
+          resultText = data?.response || '';
+        } else {
+          const apiKey = getGeminiApiKey();
+          if (!apiKey) {
+            throw new Error("Gemini API key is not configured");
+          }
 
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          return res.status(response.status).json({ error: data?.error?.message || "Gemini request failed" });
+          const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [
+                  { role: "user", parts: [{ text: promptText }] }
+                ],
+                generationConfig: {
+                  response_mime_type: "application/json"
+                }
+              })
+            }
+          );
+
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(data?.error?.message || "Gemini request failed");
+          }
+
+          resultText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
         }
 
-        resultText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        if (!resultText) {
+          throw new Error("AI returned an empty response");
+        }
+
+        return parseAiJson(resultText);
+      };
+
+      let parsed = await callProductDescriptionAI(userPrompt);
+      let validationIssues = validateProductDescription(parsed?.contentHtml || '');
+
+      if (validationIssues.length) {
+        const repairPrompt = `${userPrompt}
+
+[REPAIR REQUIRED]
+Kết quả trước đó sai các lỗi: ${validationIssues.join('; ')}.
+Hãy viết lại hoàn toàn contentHtml bằng tiếng Việt 100%, đúng PRODUCT_SKILL và IMAGE_FORMAT_RULES.
+Không giữ lại bất kỳ câu tiếng Trung/chữ Hán/ngôn ngữ nước ngoài nào.
+Nội dung sai trước đó:
+${String(parsed?.contentHtml || '').slice(0, 12000)}`;
+        parsed = await callProductDescriptionAI(repairPrompt);
+        validationIssues = validateProductDescription(parsed?.contentHtml || '');
       }
 
-      if (!resultText) {
-        return res.status(502).json({ error: "AI returned an empty response" });
+      if (validationIssues.length) {
+        return res.status(422).json({
+          error: `AI chưa tạo đúng cấu trúc: ${validationIssues.join('; ')}. Vui lòng bấm Chạy phác thảo lại hoặc bổ sung brief rõ hơn.`
+        });
       }
 
-      const cleanText = resultText
-        .replace(/```json/g, '')
-        .replace(/```/g, '')
-        .trim();
-
-      const parsed = JSON.parse(cleanText);
       return res.json(parsed);
 
     } catch (error: any) {

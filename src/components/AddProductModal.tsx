@@ -184,6 +184,7 @@ interface AddProductModalProps {
   onClose: () => void;
   onSuccess: () => void;
   product?: Product | null;
+  openAiWriterOnOpen?: boolean;
 }
 
 type ColorVariantForm = { name: string; image: string };
@@ -299,7 +300,7 @@ interface ImageToolbarState {
   width: number;
 }
 
-export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onSuccess, product }) => {
+export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onSuccess, product, openAiWriterOnOpen = false }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const leftScrollerRef = useRef<HTMLDivElement>(null);
   const quillRef = useRef<any>(null);
@@ -330,6 +331,14 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
   const [aiWriterKeywords, setAiWriterKeywords] = useState('');
   const [aiWriterBrief, setAiWriterBrief] = useState('');
   const [isAiWriterGenerating, setIsAiWriterGenerating] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen || !openAiWriterOnOpen) return;
+    setAiWriterName(product?.name || '');
+    setAiWriterKeywords(product?.keywords || '');
+    setAiWriterBrief('');
+    setIsAiWriterModalOpen(true);
+  }, [isOpen, openAiWriterOnOpen, product?.name, product?.keywords]);
 
   const escapeHtmlAttr = (value: string) =>
     value ? value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
@@ -369,10 +378,20 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
       const existingFigcaption = existingFigure?.querySelector('figcaption') as HTMLElement | null;
       const legacyCaption = legacyNext?.getAttribute('data-caption') === '1' ? (legacyNext.textContent || '').trim() : '';
       const figureCaption = existingFigcaption ? (existingFigcaption.textContent || '').trim() : '';
-      const caption = (imageCaptionBySrcRef.current[src] || figureCaption || legacyCaption).trim();
+      const looseCaptionParagraph = existingFigure?.nextElementSibling as HTMLElement | null;
+      const looseCaption = (
+        looseCaptionParagraph?.tagName === 'P' &&
+        !looseCaptionParagraph.querySelector('img, figure, h1, h2, h3, h4, h5, h6, ul, ol') &&
+        (looseCaptionParagraph.textContent || '').trim().length >= 20 &&
+        (looseCaptionParagraph.textContent || '').trim().length <= 180
+      ) ? (looseCaptionParagraph.textContent || '').trim() : '';
+      const caption = (imageCaptionBySrcRef.current[src] || figureCaption || legacyCaption || looseCaption).trim();
 
       if (isDuplicateCaptionParagraph(legacyNext, caption)) {
         legacyNext.remove();
+      }
+      if (looseCaption && looseCaptionParagraph) {
+        looseCaptionParagraph.remove();
       }
       if (existingFigcaption) existingFigcaption.remove();
 
@@ -394,10 +413,12 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
 
       const dataAlign = img.getAttribute('data-align');
       img.getAttributeNames().forEach(name => {
-        if (!['src', 'alt', 'title', 'class', 'data-align'].includes(name)) {
+        if (!['src', 'alt', 'title', 'class', 'data-align', 'width', 'height'].includes(name)) {
           img.removeAttribute(name);
         }
       });
+      if (!img.getAttribute('width')) img.setAttribute('width', '1200');
+      if (!img.getAttribute('height')) img.setAttribute('height', '800');
       if (!dataAlign) img.removeAttribute('data-align');
       if (caption && figure) {
         const captionEl = doc.createElement('figcaption');
@@ -412,6 +433,24 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         sibling?.remove();
         sibling = nextSibling;
       }
+    });
+
+    doc.body.querySelectorAll('span.ql-ui').forEach(node => node.remove());
+    doc.body.querySelectorAll('ol').forEach(originalList => {
+      const list = originalList as HTMLOListElement;
+      const bulletItems = Array.from(list.children).filter(child =>
+        child.tagName === 'LI' && child.getAttribute('data-list') === 'bullet'
+      );
+      if (!bulletItems.length) return;
+      const ul = doc.createElement('ul');
+      Array.from(list.attributes).forEach(attr => {
+        if (attr.name !== 'data-list') ul.setAttribute(attr.name, attr.value);
+      });
+      Array.from(list.children).forEach(child => {
+        if (child.tagName === 'LI') child.removeAttribute('data-list');
+        ul.appendChild(child);
+      });
+      list.replaceWith(ul);
     });
     return doc.body.firstElementChild?.innerHTML || html;
   };
@@ -576,10 +615,11 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
   }, [formData.name, formData.category, formData.brand, formData.origin, formData.material, formData.style, formData.fashionStyle, formData.keywords]);
 
   const applyDescriptionHtml = (html: string) => {
+    const normalizedHtml = normalizeImageAltTitles(html);
     if (isHtmlMode) {
-      setHtmlSource(beautifyHtml(html));
+      setHtmlSource(beautifyHtml(normalizedHtml));
     }
-    setFormData(prev => ({ ...prev, description: html }));
+    setFormData(prev => ({ ...prev, description: normalizedHtml }));
   };
 
   const handleAiRewriteDescription = React.useCallback(async () => {
@@ -2048,7 +2088,7 @@ Yeu cau: chi dua tren du lieu co that, khong bia thong so, gia, ton kho, bao han
                           className="!inline-flex !items-center !justify-center gap-1 !w-auto !px-2 hover:!text-[#8b5cf6]"
                         >
                           <Sparkles className="h-3.5 w-3.5 text-[#8b5cf6]" />
-                          <span className="text-[11px] font-bold text-[#8b5cf6]">AI Markdown</span>
+                          <span className="text-[11px] font-bold text-[#8b5cf6]">Phác thảo bài viết</span>
                         </button>
                       </span>
                     </div>
@@ -2912,7 +2952,7 @@ Yeu cau: chi dua tren du lieu co that, khong bia thong so, gia, ton kho, bao han
             </div>
           )}
 
-          {/* AI Writer Modal (for AI Markdown button) */}
+          {/* AI Writer Modal (for optional Markdown outline) */}
           {isAiWriterModalOpen && (
             <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
               <motion.div
@@ -2924,7 +2964,7 @@ Yeu cau: chi dua tren du lieu co that, khong bia thong so, gia, ton kho, bao han
                   <div>
                     <h3 className="text-xl font-black text-zinc-900 flex items-center gap-2">
                       <Sparkles className="h-5 w-5 text-purple-600 animate-pulse" />
-                      AI Writer - Viết bài chuẩn SEO & Chèn ảnh
+                      Phác thảo bài viết (Tùy chọn)
                     </h3>
                     <p className="text-sm text-zinc-500 font-medium mt-1">
                       Tự động viết bài theo PRODUCT_SKILL và chèn ảnh theo IMAGE_FORMAT_RULES.
@@ -3009,7 +3049,7 @@ Yeu cau: chi dua tren du lieu co that, khong bia thong so, gia, ton kho, bao han
                     ) : (
                       <BrainCircuit className="h-4 w-4" />
                     )}
-                    {isAiWriterGenerating ? 'Đang viết bài...' : 'AI Viết Mô Tả'}
+                    {isAiWriterGenerating ? 'Đang viết bài...' : 'Chạy phác thảo'}
                   </Button>
                 </div>
               </motion.div>

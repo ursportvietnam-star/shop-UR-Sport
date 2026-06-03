@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { CheckCircle2, Upload, X } from 'lucide-react';
+import { CheckCircle2, ImagePlus, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { auth } from '../firebase';
@@ -11,8 +11,10 @@ interface ImageUploadProps {
   label?: string;
   externalPreview?: string;
   compact?: boolean;
+  compactLayout?: 'inline' | 'icon';
   storage?: 'cloudinary' | 'blog-local' | 'local';
   multiple?: boolean;
+  onRemove?: () => void;
 }
 
 const CLOUDINARY_CLOUD_NAME = 'dcj4qhcfh';
@@ -26,8 +28,10 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   label = 'Tai anh len',
   externalPreview,
   compact = false,
+  compactLayout = 'inline',
   storage = 'local',
-  multiple = false
+  multiple = false,
+  onRemove
 }) => {
   const DISABLE_UPLOADS = (import.meta as any).env?.VITE_DISABLE_MEDIA_UPLOADS === 'true';
   const [isUploading, setIsUploading] = useState(false);
@@ -107,6 +111,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
       'size-guides': 'size-guides',
       // blog images
       'blog': 'blog',
+      'blog-categories': 'blog-categories',
       // product hero / gallery images
       'product': 'product',
       'products': 'products',
@@ -210,6 +215,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     setUploadError(null);
     setIsDone(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
+    onRemove?.();
   };
 
   const handleCopyUrl = (event: React.MouseEvent) => {
@@ -222,6 +228,78 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
 
   if (compact) {
     const hasImage = !!(externalPreview || previewUrl);
+    if (compactLayout === 'icon') {
+      return (
+        <div className="w-full">
+          <input
+            type="file"
+            multiple={multiple}
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            onClick={(event) => event.stopPropagation()}
+            className="hidden"
+            accept="image/*"
+          />
+
+          <div
+            onClick={openFilePicker}
+            className={cn(
+              "relative group h-14 w-14 cursor-pointer overflow-hidden rounded-xl border transition-all duration-200",
+              "flex items-center justify-center bg-[#0f131b]",
+              hasImage
+                ? uploadError
+                  ? "border-red-500/40"
+                  : "border-[#1e4b64]/55"
+                : "border-white/10 hover:border-[#4ca6d8]/60 hover:bg-[#152233]",
+              isUploading && "pointer-events-none"
+            )}
+            title={hasImage ? "Thay anh" : "Tai anh"}
+          >
+            {hasImage ? (
+              <>
+                <img
+                  src={externalPreview || previewUrl!}
+                  alt="Preview"
+                  className="h-full w-full object-cover"
+                />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/45 opacity-0 transition-opacity group-hover:opacity-100">
+                  <ImagePlus className="h-4 w-4 text-white" />
+                </div>
+              </>
+            ) : (
+              <div className="flex h-full w-full items-center justify-center">
+                <ImagePlus className="h-5 w-5 text-white/45 transition-colors group-hover:text-[#4ca6d8]" />
+              </div>
+            )}
+
+            {isUploading && (
+              <div className="absolute inset-x-1 bottom-1 h-1 overflow-hidden rounded-full bg-white/15">
+                <div
+                  className="h-full rounded-full bg-[#4ca6d8] transition-all duration-200"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            )}
+
+            {hasImage && !isUploading && (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  removeImage();
+                }}
+                className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-md border border-white/15 bg-[#0f1117]/85 text-white/65 opacity-0 shadow-lg backdrop-blur transition-all hover:border-red-400/50 hover:bg-red-500/25 hover:text-white group-hover:opacity-100 focus:opacity-100"
+                title="Xoa anh"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="w-full max-w-[280px]">
         <input

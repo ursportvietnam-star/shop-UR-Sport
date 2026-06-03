@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Package, ShoppingBag, Users, MessageSquare,
   Image as ImageIcon, Settings, Plus, Trash2, Edit2, LogOut,
   TrendingUp, Eye, DollarSign, BarChart2, Menu, X, Bell,
-  Search, ChevronRight, ChevronDown, Megaphone, Upload, Star, AlertCircle, Copy, ExternalLink, Code2, Check as CheckIcon, Bot, Sparkles, Zap, Timer, Clock, Ticket, Download, Filter, MailCheck, Send, UserPlus, ShieldCheck, Network, PanelsTopLeft, Phone,
+  Search, ChevronRight, ChevronDown, Megaphone, Upload, Star, AlertCircle, Copy, ExternalLink, Code2, Check as CheckIcon, Bot, Sparkles, Zap, Timer, Clock, Ticket, Download, Filter, MailCheck, Send, UserPlus, ShieldCheck, Network, PanelsTopLeft, Phone, GripVertical,
   FileText, Globe, Rocket
 } from 'lucide-react';
 import { PRODUCTS as STATIC_PRODUCTS, STATIC_BLOG_POSTS, STATIC_ORDERS, STATIC_CUSTOMERS, CATEGORY_METADATA, STATIC_VOUCHERS } from '../data';
@@ -54,6 +54,7 @@ import {
   subscribeAdminCollection,
   updateAdminDocument,
 } from '../services/adminData';
+import { LOCAL_PRODUCTS_UPDATED_EVENT, mergeLocalProducts, removeLocalProduct } from '../lib/localProducts';
 import { getProductPath, normalizeProductSlug } from '../lib/productUrls';
  
 const AIProductAssistant = React.lazy(() =>
@@ -146,6 +147,135 @@ const ProductSeoScoreBadge = ({ product }: { product: Product }) => {
   );
 };
 
+const AIWorkflowHub = ({
+  blogPostCount,
+  onOpen,
+  productCount,
+}: {
+  blogPostCount: number;
+  onOpen: (tab: AdminTab) => void;
+  productCount: number;
+}) => {
+  const workflow = [
+    {
+      step: '01',
+      title: 'Audit trước',
+      description: 'Kiểm tra SEO, content gap, keyword và cơ hội viết bài trước khi tạo nội dung.',
+      tab: 'ai-seo-report' as AdminTab,
+      action: 'Mở AI SEO Audit',
+      icon: BarChart2,
+    },
+    {
+      step: '02',
+      title: 'Viết blog theo brief',
+      description: 'Dùng gợi ý đã chuẩn hóa để AI viết nháp blog có slug, outline, FAQ và internal link.',
+      tab: 'ai-blog' as AdminTab,
+      action: 'Mở AI Blog Writer',
+      icon: Sparkles,
+    },
+    {
+      step: '03',
+      title: 'Tối ưu sản phẩm',
+      description: 'Chọn sản phẩm thật trong kho, để AI viết lại mô tả và meta dựa trên dữ liệu đang có.',
+      tab: 'ai-product' as AdminTab,
+      action: 'Mở AI Product Writer',
+      icon: Bot,
+    },
+    {
+      step: '04',
+      title: 'Review rồi apply',
+      description: 'Rà lại dữ liệu, hình ảnh, link nội bộ và SEO trước khi đưa vào form lưu chính thức.',
+      tab: 'content-map' as AdminTab,
+      action: 'Kiểm tra liên kết',
+      icon: Network,
+    },
+  ];
+
+  const rules = [
+    'AI chỉ tạo nháp, không publish trực tiếp.',
+    'Luôn bắt đầu từ dữ liệu thật: sản phẩm, blog, keyword và tồn kho hiện có.',
+    'Một bài hoặc một sản phẩm đi theo thứ tự: Audit -> Draft -> Review -> Apply.',
+    'Provider AI dùng chung qua cấu hình Gemini/Ollama trong từng công cụ.',
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-2xl border border-white/5 bg-[#13161f] p-6">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="mb-2 text-[10px] font-black uppercase tracking-[0.28em] text-[#4ca6d8]">UR Sport AI Operating System</p>
+            <h2 className="text-2xl font-black text-white">Quy trình AI chuẩn</h2>
+            <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-white/45">
+              Đi theo một luồng duy nhất để tránh làm lung tung: kiểm tra trước, tạo nháp sau, admin duyệt rồi mới áp dụng vào dữ liệu thật.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:min-w-80">
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
+              <p className="text-2xl font-black text-white">{productCount}</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-white/35">Sản phẩm</p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
+              <p className="text-2xl font-black text-white">{blogPostCount}</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-white/35">Bài blog</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-4">
+        {workflow.map((item) => {
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.step}
+              type="button"
+              onClick={() => onOpen(item.tab)}
+              className="group rounded-2xl border border-white/5 bg-[#13161f] p-5 text-left transition-all hover:-translate-y-0.5 hover:border-[#4ca6d8]/35 hover:bg-[#151c28]"
+            >
+              <div className="mb-5 flex items-center justify-between">
+                <span className="rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1 text-xs font-black text-white/45">{item.step}</span>
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1e4b64]/20 text-[#7cc7ee] transition-colors group-hover:bg-[#1e4b64] group-hover:text-white">
+                  <Icon className="h-5 w-5" />
+                </span>
+              </div>
+              <h3 className="text-base font-black text-white">{item.title}</h3>
+              <p className="mt-2 min-h-16 text-sm font-medium leading-6 text-white/42">{item.description}</p>
+              <span className="mt-5 inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#7cc7ee]">
+                {item.action}
+                <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="rounded-2xl border border-white/5 bg-[#13161f] p-6">
+          <h3 className="text-sm font-black uppercase tracking-widest text-white">Luật vận hành</h3>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {rules.map(rule => (
+              <div key={rule} className="flex gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-4">
+                <CheckIcon className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+                <p className="text-sm font-bold leading-5 text-white/55">{rule}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-[#1e4b64]/30 bg-[#1e4b64]/10 p-6">
+          <h3 className="text-sm font-black uppercase tracking-widest text-white">Cách dùng nhanh</h3>
+          <div className="mt-4 space-y-3 text-sm font-bold leading-6 text-white/55">
+            <p>1. Mở AI SEO Audit để biết hôm nay nên sửa gì.</p>
+            <p>2. Nếu cần bài mới, dùng AI Blog Writer từ gợi ý SEO.</p>
+            <p>3. Nếu cần sản phẩm, dùng AI Product Writer và chọn sản phẩm thật.</p>
+            <p>4. Apply chỉ mở form duyệt; bạn vẫn kiểm tra lần cuối trước khi lưu.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const BLOG_CATEGORIES_STORAGE_KEY = 'ursport_blog_categories_final_v1';
 const NAV_ITEMS: AdminNavigationItem[] = [
   { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },
@@ -203,9 +333,10 @@ const NAV_ITEMS: AdminNavigationItem[] = [
     icon: Bot,
     isGroup: true,
     children: [
-      { id: 'ai-product', label: 'AI Viết Mô Tả Sản Phẩm', icon: Bot },
-      { id: 'ai-blog', label: 'AI Viết Blog SEO', icon: Sparkles },
-      { id: 'ai-seo-report', label: 'AI Kiểm Tra SEO', icon: BarChart2 },
+      { id: 'ai-workflow', label: 'Quy trình AI', icon: Network },
+      { id: 'ai-seo-report', label: 'AI SEO Audit', icon: BarChart2 },
+      { id: 'ai-blog', label: 'AI Blog Writer', icon: Sparkles },
+      { id: 'ai-product', label: 'AI Product Writer', icon: Bot },
     ]
   },
   {
@@ -539,6 +670,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
   const [activeTab, setActiveTab] = useState<AdminTab>(initialTab);
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['orders-group', 'products-group', 'content-group', 'ai-group']);
   const [products, setProducts] = useState<Product[]>([]);
+  const productSourceRef = useRef<Product[]>([]);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -547,6 +679,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [openProductAiWriterOnOpen, setOpenProductAiWriterOnOpen] = useState(false);
   const [isBlogModalOpen, setIsBlogModalOpen] = useState(false);
   const [editingBlogPost, setEditingBlogPost] = useState<BlogPost | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -570,6 +703,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
   const [expandedBlogCategoryIds, setExpandedBlogCategoryIds] = useState<Array<string | number>>([]);
   const [draggedBlogCategoryId, setDraggedBlogCategoryId] = useState<string | number | null>(null);
   const [dragOverBlogCategoryId, setDragOverBlogCategoryId] = useState<string | number | null>(null);
+  const draggedBlogCategoryIdRef = useRef<string | number | null>(null);
   const [newBlogCategory, setNewBlogCategory] = useState('');
   const [cssSaved, setCssSaved] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -645,17 +779,28 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
   const [showSitemapPreview, setShowSitemapPreview] = useState(false);
   const [aiBlogSeed, setAiBlogSeed] = useState<{ prompt: string; key: number } | null>(null);
   const [gitSyncStatus, setGitSyncStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [gitCodeSyncStatus, setGitCodeSyncStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
   useEffect(() => {
     if (!isAdmin) return;
+    const refreshLocalProducts = () => {
+      const sourceProducts = productSourceRef.current.length > 0 ? productSourceRef.current : STATIC_PRODUCTS;
+      setProducts(mergeLocalProducts(sourceProducts));
+    };
     const unsubscribe = subscribeAdminCollection<Product>('products', (data) => {
-      setProducts(data.length > 0 ? data : STATIC_PRODUCTS);
+      productSourceRef.current = data.length > 0 ? data : STATIC_PRODUCTS;
+      setProducts(mergeLocalProducts(productSourceRef.current));
       setLoading(false);
     }, () => {
-      setProducts(STATIC_PRODUCTS);
+      productSourceRef.current = STATIC_PRODUCTS;
+      setProducts(mergeLocalProducts(STATIC_PRODUCTS));
       setLoading(false);
     });
-    return () => unsubscribe();
+    window.addEventListener(LOCAL_PRODUCTS_UPDATED_EVENT, refreshLocalProducts);
+    return () => {
+      unsubscribe();
+      window.removeEventListener(LOCAL_PRODUCTS_UPDATED_EVENT, refreshLocalProducts);
+    };
   }, [isAdmin]);
 
   useEffect(() => {
@@ -909,6 +1054,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
       await deleteAdminDocument('products', id);
       toast.success('Đã xóa sản phẩm');
     } catch {
+      if (removeLocalProduct(id)) {
+        const sourceProducts = productSourceRef.current.length > 0 ? productSourceRef.current : STATIC_PRODUCTS;
+        setProducts(mergeLocalProducts(sourceProducts));
+        toast.success('Đã xóa sản phẩm local');
+        return;
+      }
       toast.error('Lỗi khi xóa sản phẩm');
     }
   };
@@ -1369,13 +1520,14 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
       reviewsCount: sourceProduct?.reviewsCount || 0,
     };
     setEditingProduct(newProduct as Product);
+    setOpenProductAiWriterOnOpen(false);
     setIsAddModalOpen(true);
     toast.success(sourceProduct ? 'Đã mở sản phẩm với nội dung AI để bạn duyệt!' : 'Đã áp dụng nội dung AI vào form sản phẩm!');
   };
 
   const handleApplyAIBlog = (data: AIBlogData) => {
     if (!data.contentHtml?.trim()) {
-      toast.error('AI chưa trả nội dung bài viết. Hãy tạo lại trong AI Blog Creator trước khi Apply.');
+      toast.error('AI chưa trả nội dung bài viết. Hãy tạo lại trong AI Blog Writer trước khi Apply.');
       return;
     }
     const newBlog: Partial<BlogPost> = {
@@ -1462,6 +1614,7 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
   });
   const openProductEditor = (product: Product) => {
     setEditingProduct(product);
+    setOpenProductAiWriterOnOpen(false);
     setIsAddModalOpen(true);
   };
 
@@ -1491,7 +1644,7 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
       prompt: buildSeoBlogPrompt(suggestion),
       key: Date.now(),
     });
-    setExpandedGroups(prev => prev.includes('seo-ai-group') ? prev : [...prev, 'seo-ai-group']);
+    setExpandedGroups(prev => prev.includes('ai-group') ? prev : [...prev, 'ai-group']);
     setActiveTab('ai-blog');
     toast.success('Đã chuyển gợi ý .md sang AI Tạo Blog.');
   };
@@ -1700,23 +1853,40 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
     setBlogCategories(updated);
   };
 
-  const handleBlogCategoryDragStart = (itemId: string | number) => {
+  const handleBlogCategoryDragStart = (itemId: string | number, event: React.DragEvent<HTMLElement>) => {
+    event.stopPropagation();
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', String(itemId));
+    draggedBlogCategoryIdRef.current = itemId;
     setDraggedBlogCategoryId(itemId);
   };
 
   const handleBlogCategoryDragOver = (itemId: string | number, event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
     setDragOverBlogCategoryId(itemId);
   };
 
+  const handleBlogCategoryDragEnter = (itemId: string | number) => {
+    const sourceId = draggedBlogCategoryIdRef.current;
+    if (sourceId !== null && sourceId !== itemId) {
+      moveBlogCategoryItem(sourceId, itemId);
+      setDragOverBlogCategoryId(itemId);
+    }
+  };
+
   const handleBlogCategoryDrop = (itemId: string | number) => {
-    if (draggedBlogCategoryId === null) return;
-    moveBlogCategoryItem(draggedBlogCategoryId, itemId);
+    const sourceId = draggedBlogCategoryIdRef.current;
+    if (sourceId !== null) {
+      moveBlogCategoryItem(sourceId, itemId);
+    }
+    draggedBlogCategoryIdRef.current = null;
     setDraggedBlogCategoryId(null);
     setDragOverBlogCategoryId(null);
   };
 
   const handleBlogCategoryDragEnd = () => {
+    draggedBlogCategoryIdRef.current = null;
     setDraggedBlogCategoryId(null);
     setDragOverBlogCategoryId(null);
   };
@@ -1832,13 +2002,15 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
   );
 
   // ─── Git Sync: đồng bộ ảnh local lên GitHub → Vercel ──────────────────────────
-  const handleGitSync = async () => {
-    if (gitSyncStatus === 'loading') return;
-    setGitSyncStatus('loading');
+  const handleGitSync = async (scope: 'images' | 'code') => {
+    const status = scope === 'code' ? gitCodeSyncStatus : gitSyncStatus;
+    const setStatus = scope === 'code' ? setGitCodeSyncStatus : setGitSyncStatus;
+    if (status === 'loading') return;
+    setStatus('loading');
     try {
       const { auth } = await import('../firebase');
       const token = await auth.currentUser?.getIdToken();
-      const res = await fetch('/api/git-sync', {
+      const res = await fetch(`/api/git-sync?scope=${scope}`, {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
@@ -1846,16 +2018,16 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
       if (!res.ok) {
         throw new Error(data.error || `HTTP ${res.status}`);
       }
-      setGitSyncStatus('success');
-      toast.success(data.message || 'Đồng bộ thành công!');
+      setStatus('success');
+      toast.success(data.message || (scope === 'code' ? 'Đồng bộ code thành công!' : 'Đồng bộ ảnh thành công!'));
       if (data.details?.length) {
         console.log('[git-sync]', data.details.join('\n'));
       }
-      setTimeout(() => setGitSyncStatus('idle'), 4000);
+      setTimeout(() => setStatus('idle'), 4000);
     } catch (err: any) {
-      setGitSyncStatus('error');
+      setStatus('error');
       toast.error(err.message || 'Git sync thất bại');
-      setTimeout(() => setGitSyncStatus('idle'), 4000);
+      setTimeout(() => setStatus('idle'), 4000);
     }
   };
 
@@ -1965,6 +2137,11 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
                             setExpandedGroups(prev => 
                               prev.includes(item.id) ? prev : [...prev, item.id]
                             );
+                          } else if (id === 'ai-product') {
+                            setActiveTab('ai-product');
+                            setEditingProduct(null);
+                            setOpenProductAiWriterOnOpen(true);
+                            setIsAddModalOpen(true);
                           } else {
                             setActiveTab(id as AdminTab);
                           }
@@ -2082,46 +2259,88 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
               <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-[#1e4b64] rounded-full" />
             </button>
             {isLocalhost && (
-              <button
-                id="btn-git-sync"
-                onClick={handleGitSync}
-                disabled={gitSyncStatus === 'loading'}
-                title="Chỉ đồng bộ ảnh local trong public/images lên GitHub và Vercel. Sản phẩm được đồng bộ qua Firestore."
-                className={cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all duration-200 border",
-                  gitSyncStatus === 'loading'
-                    ? "bg-amber-500/15 border-amber-500/30 text-amber-400 cursor-wait"
-                    : gitSyncStatus === 'success'
-                    ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
-                    : gitSyncStatus === 'error'
-                    ? "bg-red-500/15 border-red-500/30 text-red-400"
-                    : "bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/10 hover:border-white/20"
-                )}
-              >
-                {gitSyncStatus === 'loading' ? (
-                  <>
-                    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="60" strokeDashoffset="20" strokeLinecap="round" />
-                    </svg>
-                    <span className="hidden sm:inline">Syncing...</span>
-                  </>
-                ) : gitSyncStatus === 'success' ? (
-                  <>
-                    <CheckIcon className="h-4 w-4" />
-                    <span className="hidden sm:inline">Đã đồng bộ</span>
-                  </>
-                ) : gitSyncStatus === 'error' ? (
-                  <>
-                    <AlertCircle className="h-4 w-4" />
-                    <span className="hidden sm:inline">Lỗi sync</span>
-                  </>
-                ) : (
-                  <>
-                    <Upload className="h-4 w-4" />
-                    <span className="hidden sm:inline">Đồng bộ ảnh</span>
-                  </>
-                )}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  id="btn-git-sync"
+                  onClick={() => handleGitSync('images')}
+                  disabled={gitSyncStatus === 'loading'}
+                  title="Chỉ đồng bộ ảnh local trong public/images lên GitHub và Vercel. Sản phẩm được đồng bộ qua Firestore."
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all duration-200 border",
+                    gitSyncStatus === 'loading'
+                      ? "bg-amber-500/15 border-amber-500/30 text-amber-400 cursor-wait"
+                      : gitSyncStatus === 'success'
+                      ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
+                      : gitSyncStatus === 'error'
+                      ? "bg-red-500/15 border-red-500/30 text-red-400"
+                      : "bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/10 hover:border-white/20"
+                  )}
+                >
+                  {gitSyncStatus === 'loading' ? (
+                    <>
+                      <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="60" strokeDashoffset="20" strokeLinecap="round" />
+                      </svg>
+                      <span className="hidden sm:inline">Syncing...</span>
+                    </>
+                  ) : gitSyncStatus === 'success' ? (
+                    <>
+                      <CheckIcon className="h-4 w-4" />
+                      <span className="hidden sm:inline">Đã đồng bộ</span>
+                    </>
+                  ) : gitSyncStatus === 'error' ? (
+                    <>
+                      <AlertCircle className="h-4 w-4" />
+                      <span className="hidden sm:inline">Lỗi sync</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4" />
+                      <span className="hidden sm:inline">Đồng bộ ảnh</span>
+                    </>
+                  )}
+                </button>
+                <button
+                  id="btn-git-code-sync"
+                  onClick={() => handleGitSync('code')}
+                  disabled={gitCodeSyncStatus === 'loading'}
+                  title="Đồng bộ toàn bộ thay đổi mã nguồn lên GitHub và Vercel."
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all duration-200 border",
+                    gitCodeSyncStatus === 'loading'
+                      ? "bg-amber-500/15 border-amber-500/30 text-amber-400 cursor-wait"
+                      : gitCodeSyncStatus === 'success'
+                      ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
+                      : gitCodeSyncStatus === 'error'
+                      ? "bg-red-500/15 border-red-500/30 text-red-400"
+                      : "bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/10 hover:border-white/20"
+                  )}
+                >
+                  {gitCodeSyncStatus === 'loading' ? (
+                    <>
+                      <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="60" strokeDashoffset="20" strokeLinecap="round" />
+                      </svg>
+                      <span className="hidden sm:inline">Syncing code...</span>
+                    </>
+                  ) : gitCodeSyncStatus === 'success' ? (
+                    <>
+                      <CheckIcon className="h-4 w-4" />
+                      <span className="hidden sm:inline">Code đồng bộ</span>
+                    </>
+                  ) : gitCodeSyncStatus === 'error' ? (
+                    <>
+                      <AlertCircle className="h-4 w-4" />
+                      <span className="hidden sm:inline">Lỗi code</span>
+                    </>
+                  ) : (
+                    <>
+                      <Code2 className="h-4 w-4" />
+                      <span className="hidden sm:inline">Đồng bộ code</span>
+                    </>
+                  )}
+                </button>
+              </div>
             )}
             {activeTab === 'products' && (
               <button
@@ -3274,6 +3493,23 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
             </div>
           )}
 
+          {activeTab === 'ai-workflow' && (
+            <AIWorkflowHub
+              blogPostCount={blogPosts.length}
+              productCount={products.length}
+              onOpen={(tab) => {
+                if (tab === 'ai-product') {
+                  setActiveTab('ai-product');
+                  setEditingProduct(null);
+                  setOpenProductAiWriterOnOpen(true);
+                  setIsAddModalOpen(true);
+                  return;
+                }
+                setActiveTab(tab);
+              }}
+            />
+          )}
+
           {/* ─── AI PRODUCT ASSISTANT ─── */}
           {activeTab === 'ai-product' && (
             <React.Suspense fallback={<AdminTabFallback />}>
@@ -3427,23 +3663,35 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
                       return (
                         <div key={category.id} className="space-y-3">
                           <div
-                            draggable
-                            onDragStart={() => handleBlogCategoryDragStart(category.id)}
                             onDragOver={(e) => handleBlogCategoryDragOver(category.id, e)}
+                            onDragEnter={() => handleBlogCategoryDragEnter(category.id)}
                             onDrop={() => handleBlogCategoryDrop(category.id)}
                             onDragEnd={handleBlogCategoryDragEnd}
                             className={cn(
-                              "bg-white/[0.02] border rounded-2xl p-4 flex gap-4",
-                              dragOverBlogCategoryId === category.id && "border-emerald-400 ring-2 ring-emerald-500/20"
+                              "group/category-card bg-white/[0.02] border rounded-2xl p-4 flex items-start gap-3 transition-all duration-200 ease-out",
+                              dragOverBlogCategoryId === category.id && "border-emerald-400 ring-2 ring-emerald-500/20 bg-emerald-500/[0.03]",
+                              draggedBlogCategoryId === category.id && "opacity-60 scale-[0.99]"
                             )}
                           >
-                            <div className="w-20 shrink-0">
+                            <button
+                              type="button"
+                              draggable
+                              onDragStart={(e) => handleBlogCategoryDragStart(category.id, e)}
+                              onDragEnd={handleBlogCategoryDragEnd}
+                              className="mt-1 flex h-10 w-8 shrink-0 cursor-grab items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] text-white/30 transition-all hover:border-[#4ca6d8]/40 hover:bg-[#1e4b64]/15 hover:text-white active:cursor-grabbing"
+                              title="Keo de sap xep"
+                            >
+                              <GripVertical className="h-4 w-4" />
+                            </button>
+                            <div className="w-14 shrink-0">
                               <ImageUpload
                                 folder="blog-categories"
                                 label=""
                                 compact={true}
+                                compactLayout="icon"
                                 externalPreview={category.icon}
                                 onUploadComplete={(url) => updateBlogCategoryItem(category.id, item => ({ ...item, icon: url }))}
+                                onRemove={() => updateBlogCategoryItem(category.id, item => ({ ...item, icon: '' }))}
                               />
                             </div>
                             <div className="flex-1 space-y-2">
@@ -3586,23 +3834,35 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
                             return (
                               <div
                               key={child.id}
-                              draggable
-                              onDragStart={() => handleBlogCategoryDragStart(child.id)}
                               onDragOver={(e) => handleBlogCategoryDragOver(child.id, e)}
+                              onDragEnter={() => handleBlogCategoryDragEnter(child.id)}
                               onDrop={() => handleBlogCategoryDrop(child.id)}
                               onDragEnd={handleBlogCategoryDragEnd}
                               className={cn(
-                                "ml-8 bg-[#1e4b64]/5 border border-[#1e4b64]/30 rounded-2xl p-4 flex gap-4",
-                                dragOverBlogCategoryId === child.id && "border-emerald-400 ring-2 ring-emerald-500/20"
+                                "ml-8 bg-[#1e4b64]/5 border border-[#1e4b64]/30 rounded-2xl p-4 flex items-start gap-3 transition-all duration-200 ease-out",
+                                dragOverBlogCategoryId === child.id && "border-emerald-400 ring-2 ring-emerald-500/20 bg-emerald-500/[0.03]",
+                                draggedBlogCategoryId === child.id && "opacity-60 scale-[0.99]"
                               )}
                             >
-                                <div className="w-16 shrink-0">
+                                <button
+                                  type="button"
+                                  draggable
+                                  onDragStart={(e) => handleBlogCategoryDragStart(child.id, e)}
+                                  onDragEnd={handleBlogCategoryDragEnd}
+                                  className="mt-1 flex h-10 w-8 shrink-0 cursor-grab items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] text-white/30 transition-all hover:border-[#4ca6d8]/40 hover:bg-[#1e4b64]/15 hover:text-white active:cursor-grabbing"
+                                  title="Keo de sap xep"
+                                >
+                                  <GripVertical className="h-4 w-4" />
+                                </button>
+                                <div className="w-14 shrink-0">
                                   <ImageUpload
                                     folder="blog-categories"
                                     label=""
                                     compact={true}
+                                    compactLayout="icon"
                                     externalPreview={child.icon}
                                     onUploadComplete={(url) => updateBlogCategoryItem(child.id, item => ({ ...item, icon: url }))}
+                                    onRemove={() => updateBlogCategoryItem(child.id, item => ({ ...item, icon: '' }))}
                                   />
                                 </div>
                                 <div className="flex-1 space-y-2">
@@ -4183,9 +4443,14 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
               onClose={() => {
                 setIsAddModalOpen(false);
                 setEditingProduct(null);
+                setOpenProductAiWriterOnOpen(false);
               }}
-              onSuccess={() => {}}
+              onSuccess={() => {
+                const sourceProducts = productSourceRef.current.length > 0 ? productSourceRef.current : STATIC_PRODUCTS;
+                setProducts(mergeLocalProducts(sourceProducts));
+              }}
               product={editingProduct}
+              openAiWriterOnOpen={openProductAiWriterOnOpen}
             />
           )}
 
@@ -4233,7 +4498,5 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
     </div>
   );
 };
-
-
 
 

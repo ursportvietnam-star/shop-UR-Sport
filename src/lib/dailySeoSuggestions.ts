@@ -230,22 +230,34 @@ const parsePlanFile = (raw: string, sourceFile: string): SeoSuggestion[] => {
       continue;
     }
 
-    if (!current) continue;
-
-    const fieldMatch = line.match(/^\*\*(.+?):\*\*\s*(.+?)\s*$/);
+    const fieldMatch = line.match(/^\*\*(.+?):\*\*\s*(.+?)\s*$/) || line.match(/^([A-Za-z][A-Za-z\s]+):\s*(.+?)\s*$/);
     if (fieldMatch) {
       const [, label, rawValue] = fieldMatch;
       const value = cleanInline(rawValue);
+      if (!current && label === 'Title') {
+        current = {
+          order: suggestions.length + 1,
+          title: value,
+          internalLinks: []
+        };
+        continue;
+      }
+      if (!current) continue;
+      if (label === 'Title' && !current.title) current.title = value;
       if (label === 'Slug') current.slug = cleanSlug(value);
       if (label === 'Primary keyword') current.keyword = value;
       if (label === 'Secondary keywords') current.secondaryKeywords = value;
       if (label === 'Search intent') current.intent = value;
-      if (label === 'Funnel stage') current.funnel = value;
+      if (label === 'Funnel stage' || label === 'Funnel') current.funnel = value;
       if (label === 'Content silo') current.cluster = SOURCE_CLUSTER[sourceFile] || value.replace(/^\d+\s+-\s+/, '');
       if (label === 'Priority') current.priority = value as SeoSuggestion['priority'];
-      if (label === 'Recommended URL') current.url = cleanSlug(value);
+      if (label === 'Recommended URL' || label === 'Canonical URL') current.url = cleanSlug(value);
+      if (label === 'SEO Title') current.seoTitle = value;
+      if (label === 'Meta Description') current.seoDescription = value;
       continue;
     }
+
+    if (!current) continue;
 
     if (/^-\s+`?\//.test(line)) {
       current.internalLinks = [
@@ -358,6 +370,21 @@ export const getDailySeoSuggestions = (blogPosts: BlogPost[], limit = 4) => {
     )
     .slice(0, limit)
     .map(item => withReasonAndLinks(item, blogPosts, publishedSlugs, latestPost));
+};
+
+export const getSeoSuggestionProgress = (blogPosts: BlogPost[]) => {
+  const publishedSlugs = getPublishedSlugs(blogPosts);
+  const written = SEO_DAILY_SUGGESTIONS.filter(item => publishedSlugs.has(normalizeText(item.slug)));
+  const pending = SEO_DAILY_SUGGESTIONS.filter(item => !publishedSlugs.has(normalizeText(item.slug)));
+
+  return {
+    total: SEO_DAILY_SUGGESTIONS.length,
+    written,
+    writtenCount: written.length,
+    pending,
+    pendingCount: pending.length,
+    lastCheckedAt: new Date()
+  };
 };
 
 export const buildSeoBlogPrompt = (suggestion: SeoSuggestion) => {

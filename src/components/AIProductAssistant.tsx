@@ -160,8 +160,8 @@ export function AIProductAssistant({ products = [], onApply }: AIProductAssistan
               <Sparkles className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-black text-zinc-900 leading-tight">AI CONTENT GEN v2</h2>
-              <p className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Product SEO Specialist</p>
+              <h2 className="text-xl font-black text-zinc-900 leading-tight">AI Product Writer</h2>
+              <p className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Draft {'->'} Review {'->'} Apply</p>
             </div>
           </div>
           <button onClick={() => setShowSettings(!showSettings)} className="p-2 hover:bg-zinc-100 rounded-full transition-colors">
@@ -218,7 +218,7 @@ export function AIProductAssistant({ products = [], onApply }: AIProductAssistan
               ) : (
                 <BrainCircuit className="h-6 w-6" />
               )}
-              {loading ? 'AI ĐANG PHÂN TÍCH...' : selectedProduct ? 'TỐI ƯU SẢN PHẨM NÀY' : 'GENERATE AI CONTENT'}
+              {loading ? 'AI đang phân tích...' : selectedProduct ? 'Tối ưu sản phẩm này' : 'Tạo nháp sản phẩm'}
             </Button>
           </div>
         </div>
@@ -229,13 +229,13 @@ export function AIProductAssistant({ products = [], onApply }: AIProductAssistan
         <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-bold text-zinc-900 flex items-center gap-2">
-              <CheckIcon className="h-5 w-5 text-green-500" /> Kết quả tạo bởi AI
+              <CheckIcon className="h-5 w-5 text-green-500" /> Nháp AI chờ duyệt
             </h3>
             <Button 
               onClick={() => onApply(result, selectedProduct)}
               className="bg-zinc-900 hover:bg-zinc-800 text-white font-bold h-10 px-6 gap-2 rounded-lg"
             >
-              <Send className="h-4 w-4" /> Áp dụng vào form
+              <Send className="h-4 w-4" /> Mở form duyệt
             </Button>
           </div>
 
