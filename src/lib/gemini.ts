@@ -1,23 +1,6 @@
 import { SEO_GUIDE_CONTEXT } from './seoGuide';
 import { auth } from '../firebase';
 
-export interface AIProductData {
-  name: string;
-  slug: string;
-  shortDescription: string;
-  descriptionHtml: string;
-  bulletBenefits: string[];
-  metaTitle: string;
-  metaDescription: string;
-  seoKeywords: string;
-  tags: string[];
-  faqSchema: string;
-  facebookCaption: string;
-  tiktokCaption: string;
-  shopeeTitle: string;
-  lazadaTitle: string;
-}
-
 export interface AIBlogData {
   title: string;
   slug: string;
@@ -251,6 +234,10 @@ export interface AIProductSeoFix {
   features: string[];
 }
 
+export interface AIProductDescriptionDraft {
+  contentHtml: string;
+}
+
 export interface AISeoActionPlan {
   page: string;
   query: string;
@@ -311,41 +298,6 @@ export const setAIProvider = (provider: 'gemini' | 'local') => {
   localStorage.setItem('ai_provider', provider);
 };
 
-export async function generateProductSEO(prompt: string): Promise<AIProductData> {
-  const systemPrompt = `Bạn là một chuyên gia bán hàng (Copywriter) và chuyên gia SEO hàng đầu cho thương mại điện tử Việt Nam.
-Nhiệm vụ: Tạo nội dung sản phẩm cho shop đồ thể thao nam UR Sport. Văn phong cần mạnh mẽ, chuyên nghiệp, tập trung vào lợi ích người dùng.
-
-Tuân thủ hướng dẫn chuẩn SEO của URSport (Product Skill File):
-${SEO_GUIDE_CONTEXT}
-
-TRẢ VỀ ĐÚNG FORMAT JSON, KHÔNG CÓ MARKDOWN:
-{
-  "name": "Tên sản phẩm chuẩn SEO, giật tít, thu hút khách bấm vào",
-  "slug": "slug-seo-khong-dau",
-  "shortDescription": "2-3 câu mô tả cực kỳ hấp dẫn, nêu bật ưu điểm lớn nhất",
-  "descriptionHtml": "Mô tả chi tiết (>700 từ) chuẩn HTML. Chia làm các mục <h2>: Đặc điểm nổi bật, Chất liệu cao cấp, Hướng dẫn chọn size, Cam kết từ UR Sport. Dùng <ul>, <li>, <strong>.",
-  "bulletBenefits": ["Lợi ích 1", "Lợi ích 2", "Lợi ích 3", "Lợi ích 4"],
-  "metaTitle": "SEO Title (dưới 60 ký tự, chứa từ khóa chính)",
-  "metaDescription": "Meta desc thu hút (dưới 160 ký tự)",
-  "seoKeywords": "keyword 1, keyword 2, keyword 3",
-  "tags": ["thời trang nam", "đồ thể thao", "ur sport"],
-  "faqSchema": "Script FAQ Schema chuẩn SEO",
-  "facebookCaption": "Caption FB kèm hashtag & emoji bắt mắt",
-  "tiktokCaption": "Caption TikTok ngắn gọn, viral",
-  "shopeeTitle": "Tên chuẩn Shopee kèm từ khóa hot",
-  "lazadaTitle": "Tên chuẩn Lazada"
-}`;
-
-  try {
-    return await callGemini(systemPrompt, prompt);
-  } catch (error: any) {
-    if (error.message.includes('API Key') || error.message.includes('not valid') || error.message.includes('unauthorized') || error.message.includes('Bearer')) {
-      throw new Error('Lỗi cấu hình AI hoặc chưa đăng nhập Admin. Vui lòng kiểm tra lại.');
-    }
-    throw error;
-  }
-}
-
 export async function generateProductSeoFix(prompt: string): Promise<AIProductSeoFix> {
   const systemPrompt = `Bạn là chuyên gia SEO thương mại điện tử cho UR Sport.
 Nhiệm vụ: Tối ưu lại SEO cho một sản phẩm đang có sẵn, KHÔNG đổi giá, KHÔNG bịa tồn kho, KHÔNG đổi thương hiệu.
@@ -373,31 +325,43 @@ Trả về đúng JSON, không markdown:
   }
 }
 
-export async function generateProductDescriptionFromMd(markdownContent: string, productName: string, keywords: string): Promise<{ contentHtml: string }> {
-  const provider = 'gemini';
+export async function generateProductDescriptionFromMd(
+  markdownContent: string,
+  productName: string,
+  keywords = ''
+): Promise<AIProductDescriptionDraft> {
+  const systemPrompt = `You are an ecommerce product copywriter for URSport Vietnam.
+Write a complete product description from the provided markdown/brief.
+
+Rules:
+- Return valid JSON only, no markdown fences.
+- Use Vietnamese ecommerce copy for mens sportswear.
+- Keep claims realistic; do not invent prices, stock, warranties, or material specs not present in the brief.
+- contentHtml must be clean semantic HTML, no <script>, no inline <style>.
+- Include useful <p>, <h2>, <ul><li>, and natural product benefits.
+- Mention product name and relevant keywords naturally.
+
+Return exactly:
+{
+  "contentHtml": "<p>...</p>"
+}`;
+
+  const prompt = [
+    `Product name: ${productName}`,
+    `Keywords: ${keywords}`,
+    '',
+    'Markdown/brief:',
+    markdownContent || 'No markdown file was provided. Build from product name and keywords only.',
+  ].join('\n');
 
   try {
-    const headers = await buildAIHeaders('Bạn cần đăng nhập admin để dùng AI.');
-    const response = await fetch('/api/generate-product-description', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        productName,
-        keywords,
-        brief: markdownContent,
-        provider
-      })
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `AI proxy error (${response.status})`);
-    }
-
-    return await response.json();
+    const data = await callGemini(systemPrompt, prompt);
+    return {
+      contentHtml: String(data?.contentHtml || data?.descriptionHtml || data?.html || '').trim(),
+    };
   } catch (error: any) {
     if (error.message.includes('API Key') || error.message.includes('not valid') || error.message.includes('unauthorized') || error.message.includes('Bearer')) {
-      throw new Error('Lỗi cấu hình AI hoặc chưa đăng nhập Admin. Vui lòng kiểm tra lại.');
+      throw new Error('Lá»—i cáº¥u hÃ¬nh AI hoáº·c chÆ°a Ä‘Äƒng nháº­p Admin. Vui lÃ²ng kiá»ƒm tra láº¡i.');
     }
     throw error;
   }
@@ -567,7 +531,8 @@ Yêu cầu bắt buộc:
   <figure><img src="CLOUDINARY_OR_UPLOADED_IMAGE_URL" alt="Mô tả ảnh tự nhiên có keyword và ngữ cảnh" height="800" width="1200" title="Title ảnh ngắn gọn"><figcaption>Ghi chú ảnh một câu hữu ích cho người đọc.</figcaption></figure>
 - 3 ảnh phải gồm: 1 ảnh hero/ngữ cảnh đầu bài, 1 ảnh chi tiết sản phẩm/chất liệu/form, 1 ảnh so sánh/checklist/lifestyle theo chủ đề. Không dùng markdown image, không dùng ảnh ngoài domain, không thêm style inline.
 - Không tự bịa đường dẫn /images/blog/. Chỉ dùng URL ảnh đã upload trực tiếp lên Cloudinary/thư viện ảnh, hoặc giữ placeholder CLOUDINARY_OR_UPLOADED_IMAGE_URL để admin thay bằng ảnh upload. Alt dưới 125 ký tự, mô tả đúng ảnh, không nhồi keyword. Title ngắn hơn alt. Figcaption phải bổ sung ý nghĩa thực tế, không lặp y nguyên alt.
-- Trả thêm imagePrompts gồm đúng 3 mục, mỗi mục có filename, alt, title, caption, prompt để tạo ảnh. Prompt tạo ảnh phải yêu cầu ảnh tỉ lệ 3:2, không chữ trên ảnh, phong cách ecommerce/lifestyle nam Việt Nam, sản phẩm rõ.
+- Trả thêm imagePrompts gồm đúng 3 mục, mỗi mục có filename, alt, title, caption, prompt để tạo ảnh. Trong đó prompt cho ảnh hero/ảnh đại diện bài viết blog phải mô tả rõ ràng bối cảnh, sản phẩm, phong cách ecommerce/lifestyle nam Việt Nam, tỉ lệ 3:2, không chữ trên ảnh.
+- Prompt tạo ảnh chung phải yêu cầu ảnh tỉ lệ 3:2, không chữ trên ảnh, phong cách ecommerce/lifestyle nam Việt Nam, sản phẩm rõ.
 - Khi bài có phần so sánh, khác nhau, ưu/nhược điểm, chọn giữa 2-4 lựa chọn hoặc prompt có các từ "so sánh", "vs", "khác gì", phải chèn 1 bảng HTML trong contentHtml theo đúng cấu trúc:
   <div class="table-wrap"><table class="compare-table"><thead><tr><th>Tiêu chí</th><th>Lựa chọn 1</th><th>Lựa chọn 2</th></tr></thead><tbody><tr><td>Tiêu chí cụ thể</td><td><span class="badge-good">Điểm mạnh</span></td><td><span class="badge-normal">Hạn chế</span></td></tr></tbody></table></div>
 - Bảng so sánh phải đặt ngay sau đoạn giới thiệu phần so sánh, dùng class table-wrap, compare-table, badge-good, badge-normal. Không dùng markdown table, không tự thêm thẻ <style>.
@@ -592,7 +557,7 @@ TRẢ VỀ JSON CHUẨN:
       "alt": "Mô tả ảnh tự nhiên, có keyword chính và đúng ngữ cảnh",
       "title": "Title ảnh ngắn gọn",
       "caption": "Ghi chú ảnh một câu hữu ích.",
-      "prompt": "Prompt tạo ảnh tỉ lệ 3:2, không chữ trên ảnh, phong cách ecommerce/lifestyle nam Việt Nam, sản phẩm rõ."
+      "prompt": "Prompt tạo ảnh đại diện bài viết blog tỉ lệ 3:2, không chữ trên ảnh, phong cách ecommerce/lifestyle nam Việt Nam, sản phẩm rõ."
     }
   ],
   "cta": "Lời kêu gọi mua hàng khéo léo",

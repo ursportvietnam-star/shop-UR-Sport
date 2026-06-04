@@ -3,6 +3,7 @@ import { useState, useEffect, type Dispatch, type ReactNode, type SetStateAction
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { ImageUpload } from '../ImageUpload';
+import { syncSiteFavicon } from '../../lib/localMediaUpload';
 
 import { CATEGORY_METADATA } from '../../data';
 import { saveAdminSetting, getAdminSetting } from '../../services/adminData';
@@ -11,6 +12,11 @@ import type { Product, BlogPost } from '../../types';
 import { DEFAULT_SEO_SUBCATEGORIES } from '../../lib/categoryConfig';
 import { getProductPath } from '../../lib/productUrls';
 import type { FirestoreTimestamp } from '../../types/firestore';
+
+const withCacheBust = (url: string) => {
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}v=${Date.now()}`;
+};
 
 interface AdminSettingsTabProps {
   activeSection?: 'settings' | 'settings-logo' | 'settings-footer' | 'settings-css' | 'settings-contact' | 'seo-sitemap' | 'seo-schema' | 'seo-robots' | 'seo-redirects';
@@ -1115,7 +1121,7 @@ export function AdminSettingsTab({
                       label="Tải lên Logo nền sáng"
                       compact={true}
                       externalPreview={logoSettings.logoLight}
-                      onUploadComplete={(url) => {
+                      onUploadComplete={async (url) => {
                         const updated = {...logoSettings, logoLight: url};
                         setLogoSettings(updated);
                         saveAdminSetting('logoSettings', updated);
@@ -1156,7 +1162,7 @@ export function AdminSettingsTab({
                       label="Tải lên Logo nền tối"
                       compact={true}
                       externalPreview={logoSettings.logoDark}
-                      onUploadComplete={(url) => {
+                      onUploadComplete={async (url) => {
                         const updated = {...logoSettings, logoDark: url};
                         setLogoSettings(updated);
                         saveAdminSetting('logoSettings', updated);
@@ -1199,11 +1205,18 @@ export function AdminSettingsTab({
                       label="Tải lên Favicon"
                       compact={true}
                       externalPreview={logoSettings.favicon}
-                      onUploadComplete={(url) => {
-                        const updated = {...logoSettings, favicon: url};
+                      allowedTypes={['image/x-icon', 'image/vnd.microsoft.icon', 'image/png', 'image/webp', 'image/jpeg', 'image/gif']}
+                      formatHint="ICO, PNG, WebP, JPG, GIF"
+                      onUploadComplete={async (url) => {
+                        const updated = {...logoSettings, favicon: withCacheBust(url)};
                         setLogoSettings(updated);
-                        saveAdminSetting('logoSettings', updated);
-                        toast.success('Đã tự động lưu Favicon!');
+                        try {
+                          await saveAdminSetting('logoSettings', updated);
+                          await syncSiteFavicon(updated.favicon);
+                          toast.success('Đã lưu và đồng bộ Favicon!');
+                        } catch (error: any) {
+                          toast.error(error.message || 'Lỗi khi đồng bộ Favicon');
+                        }
                       }}
                     />
                     <button
@@ -3261,4 +3274,3 @@ export function AdminSettingsTab({
             </div>
   );
 }
-

@@ -150,13 +150,26 @@ function AppContent() {
       const data = snap.data();
       setLogoSettings(data);
       if (data.favicon) {
-        let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement | null;
-        if (!link) {
-          link = document.createElement('link');
-          link.rel = 'icon';
-          document.head.appendChild(link);
-        }
-        link.href = data.favicon;
+        const faviconPath = String(data.favicon).split('?')[0].toLowerCase();
+        const faviconType =
+          faviconPath.endsWith('.ico') ? 'image/x-icon' :
+          faviconPath.endsWith('.png') ? 'image/png' :
+          faviconPath.endsWith('.webp') ? 'image/webp' :
+          faviconPath.endsWith('.gif') ? 'image/gif' :
+          faviconPath.endsWith('.jpg') || faviconPath.endsWith('.jpeg') ? 'image/jpeg' :
+          faviconPath.endsWith('.svg') ? 'image/svg+xml' :
+          '';
+        const iconLinks = Array.from(document.querySelectorAll("link[rel~='icon']")) as HTMLLinkElement[];
+        const linksToUpdate = iconLinks.length ? iconLinks : [document.createElement('link') as HTMLLinkElement];
+        linksToUpdate.forEach((iconLink) => {
+          if (!iconLink.parentElement) {
+            iconLink.rel = 'icon';
+            document.head.appendChild(iconLink);
+          }
+          iconLink.href = data.favicon;
+          if (faviconType) iconLink.type = faviconType;
+          iconLink.removeAttribute('sizes');
+        });
 
         let appleLink = document.querySelector("link[rel='apple-touch-icon']") as HTMLLinkElement | null;
         if (!appleLink) {
@@ -250,6 +263,7 @@ function AppContent() {
               <Route path="/quantri" element={<AdminPanel />} />
               <Route path="/admin" element={<AdminPanel />} />
               <Route path="/admin/seo" element={<AdminPanel initialTab="ai-seo-report" />} />
+              <Route path="/admin/ai/product-factory" element={<AdminPanel initialTab="ai-product-factory" />} />
               <Route path="/ao-thun-nam-cotton" element={<Navigate to="/ao-thun-cotton-nam" replace />} />
               
               {/* Clean Category URLs at root */}

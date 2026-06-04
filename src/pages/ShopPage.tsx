@@ -488,40 +488,40 @@ export function ShopPage({
   return (
     <div className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8">
       {/* Breadcrumbs */}
-      <nav className="flex items-center gap-2 text-sm text-zinc-400 mb-6">
+      <nav className="flex min-w-0 items-center gap-2 overflow-x-auto whitespace-nowrap text-sm text-zinc-400 mb-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <Link 
           to="/"
-          className="hover:text-black transition-colors"
+          className="shrink-0 hover:text-black transition-colors"
         >
           Trang chủ
         </Link>
-        <span>/</span>
+        <span className="shrink-0">/</span>
         <Link 
           to="/shop"
           onClick={() => {
             setActiveCategory('All');
             setSearchParams({});
           }}
-          className="hover:text-black transition-colors"
+          className="shrink-0 hover:text-black transition-colors"
         >
           Cửa hàng
         </Link>
         {brandFilter && (
           <>
-            <span>/</span>
-            <span className="text-zinc-500 font-medium">Thương hiệu: {brandFilter}</span>
+            <span className="shrink-0">/</span>
+            <span className="shrink-0 text-zinc-500 font-medium">Thương hiệu: {brandFilter}</span>
           </>
         )}
         {searchQuery && (
           <>
-            <span>/</span>
-            <span className="text-zinc-500 font-medium">Tìm kiếm: {searchQuery}</span>
+            <span className="shrink-0">/</span>
+            <span className="shrink-0 text-zinc-500 font-medium">Tìm kiếm: {searchQuery}</span>
           </>
         )}
         {currentCategory !== 'All' && !brandFilter && (
           <>
-            <span>/</span>
-            <span className="text-zinc-500 font-medium">{currentCategory}</span>
+            <span className="shrink-0">/</span>
+            <span className="shrink-0 text-zinc-500 font-medium">{currentCategory}</span>
           </>
         )}
       </nav>

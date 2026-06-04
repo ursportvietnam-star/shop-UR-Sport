@@ -10,7 +10,7 @@ import { PRODUCTS as STATIC_PRODUCTS, STATIC_BLOG_POSTS, STATIC_ORDERS, STATIC_C
 import { ImageUpload } from './ImageUpload';
 import { AddVoucherModal } from './AddVoucherModal';
 import { OrderDetailModal } from './OrderDetailModal';
-import { AIProductData, AIBlogData, AIProductSeoFix } from '../lib/gemini';
+import { AIBlogData, AIProductSeoFix } from '../lib/gemini';
 import { buildSeoBlogPrompt, SeoSuggestion } from '../lib/dailySeoSuggestions';
 import { auditProductSeo } from '../lib/seoAutomation';
 import { useAuth } from '../AuthContext';
@@ -55,10 +55,11 @@ import {
   updateAdminDocument,
 } from '../services/adminData';
 import { LOCAL_PRODUCTS_UPDATED_EVENT, mergeLocalProducts, removeLocalProduct } from '../lib/localProducts';
+import { syncSiteFavicon } from '../lib/localMediaUpload';
 import { getProductPath, normalizeProductSlug } from '../lib/productUrls';
  
-const AIProductAssistant = React.lazy(() =>
-  import('./AIProductAssistant').then(module => ({ default: module.AIProductAssistant }))
+const ProductFactoryPanel = React.lazy(() =>
+  import('./ProductFactoryPanel').then(module => ({ default: module.ProductFactoryPanel }))
 );
 const AddProductModal = React.lazy(() =>
   import('./AddProductModal').then(module => ({ default: module.AddProductModal }))
@@ -177,9 +178,9 @@ const AIWorkflowHub = ({
       step: '03',
       title: 'Tối ưu sản phẩm',
       description: 'Chọn sản phẩm thật trong kho, để AI viết lại mô tả và meta dựa trên dữ liệu đang có.',
-      tab: 'ai-product' as AdminTab,
-      action: 'Mở AI Product Writer',
-      icon: Bot,
+      tab: 'ai-product-factory' as AdminTab,
+      action: 'Mở Product Factory',
+      icon: Package,
     },
     {
       step: '04',
@@ -267,7 +268,7 @@ const AIWorkflowHub = ({
           <div className="mt-4 space-y-3 text-sm font-bold leading-6 text-white/55">
             <p>1. Mở AI SEO Audit để biết hôm nay nên sửa gì.</p>
             <p>2. Nếu cần bài mới, dùng AI Blog Writer từ gợi ý SEO.</p>
-            <p>3. Nếu cần sản phẩm, dùng AI Product Writer và chọn sản phẩm thật.</p>
+            <p>3. Nếu cần sản phẩm mới, dùng AI Product Factory để tạo draft đồng bộ.</p>
             <p>4. Apply chỉ mở form duyệt; bạn vẫn kiểm tra lần cuối trước khi lưu.</p>
           </div>
         </div>
@@ -335,8 +336,8 @@ const NAV_ITEMS: AdminNavigationItem[] = [
     children: [
       { id: 'ai-workflow', label: 'Quy trình AI', icon: Network },
       { id: 'ai-seo-report', label: 'AI SEO Audit', icon: BarChart2 },
+      { id: 'ai-product-factory', label: 'Product Factory', icon: Package },
       { id: 'ai-blog', label: 'AI Blog Writer', icon: Sparkles },
-      { id: 'ai-product', label: 'AI Product Writer', icon: Bot },
     ]
   },
   {
@@ -679,7 +680,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [openProductAiWriterOnOpen, setOpenProductAiWriterOnOpen] = useState(false);
   const [isBlogModalOpen, setIsBlogModalOpen] = useState(false);
   const [editingBlogPost, setEditingBlogPost] = useState<BlogPost | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -1218,8 +1218,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
 
   const handleSaveLogoSettings = async (settings: typeof logoSettings) => {
     try {
-      await saveAdminSetting('logoSettings', settings);
-      setLogoSettings(settings);
+      const normalizedSettings = settings.favicon && !/[?&]v=/.test(settings.favicon)
+        ? { ...settings, favicon: `${settings.favicon}${settings.favicon.includes('?') ? '&' : '?'}v=${Date.now()}` }
+        : settings;
+      await saveAdminSetting('logoSettings', normalizedSettings);
+      if (normalizedSettings.favicon) {
+        await syncSiteFavicon(normalizedSettings.favicon);
+      }
+      setLogoSettings(normalizedSettings);
       toast.success('Đã lưu cấu hình Logo & Favicon');
     } catch {
       toast.error('Lỗi khi lưu cấu hình Logo');
@@ -1490,41 +1496,6 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
     toast.success('Đã tải xuống robots.txt!');
   };
 
-  const handleApplyAIProduct = (data: AIProductData, sourceProduct?: Product | null) => {
-    const intro = data.shortDescription?.trim() ? `<p><strong>${data.shortDescription.trim()}</strong></p><p><br></p>` : '';
-    const fullDescHtml = `${intro}${data.descriptionHtml || ''}`;
-    const newProduct: Partial<Product> = {
-      ...(sourceProduct || {}),
-      id: sourceProduct?.id || `ai_${Date.now()}`,
-      name: data.name || sourceProduct?.name,
-      slug: data.slug || sourceProduct?.slug,
-      description: fullDescHtml,
-      seoTitle: data.metaTitle,
-      metaDescription: data.metaDescription,
-      keywords: data.seoKeywords,
-      specifications: sourceProduct?.specifications || fullDescHtml,
-      features: data.bulletBenefits?.length ? data.bulletBenefits : sourceProduct?.features,
-      brand: sourceProduct?.brand || 'UR SPORT',
-      origin: sourceProduct?.origin || 'Việt Nam',
-      material: sourceProduct?.material || 'Cotton Premium',
-      style: sourceProduct?.style || 'Slim Fit',
-      fashionStyle: sourceProduct?.fashionStyle || 'Thể thao, Cơ bản',
-      collarType: sourceProduct?.collarType || 'Cổ tròn',
-      price: sourceProduct?.price || 0,
-      stock: sourceProduct?.stock || 0,
-      colors: sourceProduct?.colors || [],
-      sizes: sourceProduct?.sizes || [],
-      images: sourceProduct?.images || [],
-      category: sourceProduct?.category || 'Áo thun nam',
-      rating: sourceProduct?.rating || 0,
-      reviewsCount: sourceProduct?.reviewsCount || 0,
-    };
-    setEditingProduct(newProduct as Product);
-    setOpenProductAiWriterOnOpen(false);
-    setIsAddModalOpen(true);
-    toast.success(sourceProduct ? 'Đã mở sản phẩm với nội dung AI để bạn duyệt!' : 'Đã áp dụng nội dung AI vào form sản phẩm!');
-  };
-
   const handleApplyAIBlog = (data: AIBlogData) => {
     if (!data.contentHtml?.trim()) {
       toast.error('AI chưa trả nội dung bài viết. Hãy tạo lại trong AI Blog Writer trước khi Apply.');
@@ -1614,7 +1585,6 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
   });
   const openProductEditor = (product: Product) => {
     setEditingProduct(product);
-    setOpenProductAiWriterOnOpen(false);
     setIsAddModalOpen(true);
   };
 
@@ -2137,11 +2107,6 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
                             setExpandedGroups(prev => 
                               prev.includes(item.id) ? prev : [...prev, item.id]
                             );
-                          } else if (id === 'ai-product') {
-                            setActiveTab('ai-product');
-                            setEditingProduct(null);
-                            setOpenProductAiWriterOnOpen(true);
-                            setIsAddModalOpen(true);
                           } else {
                             setActiveTab(id as AdminTab);
                           }
@@ -3498,22 +3463,14 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
               blogPostCount={blogPosts.length}
               productCount={products.length}
               onOpen={(tab) => {
-                if (tab === 'ai-product') {
-                  setActiveTab('ai-product');
-                  setEditingProduct(null);
-                  setOpenProductAiWriterOnOpen(true);
-                  setIsAddModalOpen(true);
-                  return;
-                }
                 setActiveTab(tab);
               }}
             />
           )}
 
-          {/* ─── AI PRODUCT ASSISTANT ─── */}
-          {activeTab === 'ai-product' && (
+          {activeTab === 'ai-product-factory' && (
             <React.Suspense fallback={<AdminTabFallback />}>
-              <AIProductAssistant products={products} onApply={handleApplyAIProduct} />
+              <ProductFactoryPanel />
             </React.Suspense>
           )}
 
@@ -4443,14 +4400,12 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
               onClose={() => {
                 setIsAddModalOpen(false);
                 setEditingProduct(null);
-                setOpenProductAiWriterOnOpen(false);
               }}
               onSuccess={() => {
                 const sourceProducts = productSourceRef.current.length > 0 ? productSourceRef.current : STATIC_PRODUCTS;
                 setProducts(mergeLocalProducts(sourceProducts));
               }}
               product={editingProduct}
-              openAiWriterOnOpen={openProductAiWriterOnOpen}
             />
           )}
 

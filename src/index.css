@@ -45,10 +45,10 @@
     @apply bg-[#1e4b64] text-white;
   }
 
-  /* FIX: đổi từ normal sang break-word để chữ tự xuống dòng */
+  /* Keep short labels from splitting; rich content has scoped overflow rules below. */
   p, span, div {
-    overflow-wrap: break-word;
-    word-break: break-word;
+    overflow-wrap: normal;
+    word-break: normal;
     hyphens: none;
   }
 

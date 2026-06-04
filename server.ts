@@ -8,11 +8,15 @@ import { execFile } from "child_process";
 import { promisify } from "util";
 import { createServer as createViteServer } from "vite";
 import { fileURLToPath } from "url";
+import { registerProductFactoryRoutes } from "./server/productFactory";
 
 const execFileAsync = promisify(execFile);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const publicRoot = path.resolve(process.cwd(), "public");
+const faviconConfigPath = path.resolve(publicRoot, "favicon-config.json");
+const defaultFaviconUrl = "/images/products/icon-logo-ursport.png";
 
 // In-memory rate limiting map
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
@@ -178,6 +182,43 @@ function getContentType(req: express.Request) {
   return String(req.headers["content-type"] || "").split(";")[0].trim().toLowerCase();
 }
 
+function getImageContentTypeFromPath(value: string) {
+  const cleanPath = value.split("?")[0].toLowerCase();
+  if (cleanPath.endsWith(".ico")) return "image/x-icon";
+  if (cleanPath.endsWith(".png")) return "image/png";
+  if (cleanPath.endsWith(".webp")) return "image/webp";
+  if (cleanPath.endsWith(".jpg") || cleanPath.endsWith(".jpeg")) return "image/jpeg";
+  if (cleanPath.endsWith(".gif")) return "image/gif";
+  if (cleanPath.endsWith(".svg")) return "image/svg+xml";
+  return "application/octet-stream";
+}
+
+function isSupportedFaviconPath(value: string) {
+  const cleanPath = value.split("?")[0].toLowerCase();
+  return [".ico", ".png", ".webp", ".jpg", ".jpeg", ".gif", ".svg"].some((ext) => cleanPath.endsWith(ext));
+}
+
+function resolvePublicUrlPath(url: string) {
+  const cleanUrl = String(url || "").split("?")[0].trim();
+  if (!cleanUrl.startsWith("/") || cleanUrl.startsWith("//")) return null;
+
+  const targetPath = path.resolve(publicRoot, decodeURIComponent(cleanUrl.slice(1)));
+  const relative = path.relative(publicRoot, targetPath);
+  if (relative.startsWith("..") || path.isAbsolute(relative)) return null;
+
+  return targetPath;
+}
+
+async function getConfiguredFaviconUrl() {
+  try {
+    const raw = await fs.readFile(faviconConfigPath, "utf8");
+    const data = JSON.parse(raw);
+    return String(data?.favicon || "").trim();
+  } catch {
+    return "";
+  }
+}
+
 function slugifyFileBase(value: string, fallbackName: string) {
   return (value || fallbackName)
     .split(/[\\/]/)
@@ -199,6 +240,8 @@ function buildSafeImageFileName(req: express.Request, fallbackName: string, useU
     "image/png": "png",
     "image/webp": "webp",
     "image/gif": "gif",
+    "image/x-icon": "ico",
+    "image/vnd.microsoft.icon": "ico",
   };
   const ext = mimeToExt[getContentType(req)];
   if (!ext) return null;
@@ -233,7 +276,7 @@ async function saveUploadedImage(
 
   const fileName = buildSafeImageFileName(req, fallbackName, options.useUniqueSuffix ?? true);
   if (!fileName) {
-    throw Object.assign(new Error("Unsupported image format. Allowed formats: JPG, PNG, WebP, GIF"), { statusCode: 400 });
+    throw Object.assign(new Error("Unsupported image format. Allowed formats: JPG, PNG, WebP, GIF, ICO"), { statusCode: 400 });
   }
 
   const imagesRoot = path.resolve(process.cwd(), "public", "images");
@@ -254,6 +297,17 @@ async function saveUploadedImage(
       ? `/images/${mediaFolder.replace(/\\/g, "/")}/${fileName}`
       : `/images/${fileName}`,
   };
+}
+
+async function syncRootFavicon(req: express.Request) {
+  const contentType = getContentType(req);
+  if (!["image/x-icon", "image/vnd.microsoft.icon"].includes(contentType)) {
+    return false;
+  }
+
+  const faviconPath = path.resolve(process.cwd(), "public", "favicon.ico");
+  await fs.writeFile(faviconPath, req.body);
+  return true;
 }
 
 async function runGit(args: string[], cwd: string) {
@@ -306,6 +360,23 @@ async function startServer() {
     next();
   });
 
+  app.get("/favicon.ico", async (_req, res, next) => {
+    try {
+      const configuredFavicon = await getConfiguredFaviconUrl();
+      const localFaviconPath = resolvePublicUrlPath(configuredFavicon);
+      const fallbackFaviconPath = resolvePublicUrlPath(defaultFaviconUrl) || path.resolve(publicRoot, "favicon.ico");
+      const faviconPath = localFaviconPath || fallbackFaviconPath;
+      const sourceForType = localFaviconPath ? configuredFavicon : defaultFaviconUrl;
+
+      const buffer = await fs.readFile(faviconPath);
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+      res.setHeader("Content-Type", getImageContentTypeFromPath(sourceForType));
+      return res.send(buffer);
+    } catch (error) {
+      return next(error);
+    }
+  });
+
   // 2. CORS Middleware
   app.use((req, res, next) => {
     const allowedOrigins = [
@@ -336,6 +407,11 @@ async function startServer() {
   app.use(express.json({ limit: "256kb" }));
 
   // API routes
+  registerProductFactoryRoutes(app, {
+    isAdminRequest: canWriteLocalMedia,
+    getGeminiApiKey,
+  });
+
   app.post("/api/csp-violation", express.json({ type: ["application/json", "application/csp-report"], limit: "10kb" }), (req, res) => {
     const report = req.body?.["csp-report"];
     if (report) {
@@ -350,6 +426,36 @@ async function startServer() {
 
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
+  app.post("/api/site-favicon", async (req, res) => {
+    try {
+      if (!(await canWriteLocalMedia(req))) {
+        return res.status(401).json({ error: "Unauthorized favicon update" });
+      }
+
+      const favicon = String(req.body?.favicon || "").trim();
+      if (!isSupportedFaviconPath(favicon)) {
+        return res.status(400).json({ error: "Favicon must be an ICO, PNG, WebP, JPG, GIF or SVG file" });
+      }
+
+      const localFaviconPath = resolvePublicUrlPath(favicon);
+      if (!localFaviconPath) {
+        return res.status(400).json({ error: "Favicon must be a local public URL" });
+      }
+
+      await fs.access(localFaviconPath);
+      await fs.writeFile(
+        faviconConfigPath,
+        JSON.stringify({ favicon, updatedAt: new Date().toISOString() }, null, 2)
+      );
+      return res.json({ success: true, favicon });
+    } catch (error: any) {
+      console.error("Site favicon update failed:", error);
+      return res.status(error.statusCode || 500).json({
+        error: error.message || "Failed to update site favicon",
+      });
+    }
   });
 
   // ─── Git Sync: Đồng bộ ảnh local lên GitHub → Vercel ───────────────────────
@@ -453,7 +559,7 @@ async function startServer() {
 
   app.post(
     "/api/upload-local-image/:folder",
-    express.raw({ type: ["image/jpeg", "image/png", "image/webp", "image/gif"], limit: "10mb" }),
+    express.raw({ type: ["image/jpeg", "image/png", "image/webp", "image/gif", "image/x-icon", "image/vnd.microsoft.icon"], limit: "10mb" }),
     async (req, res) => {
       try {
         if (!(await canWriteLocalMedia(req))) {
@@ -469,7 +575,8 @@ async function startServer() {
           useUniqueSuffix: false,
           overwrite: true,
         });
-        return res.json(saved);
+        const syncedRootFavicon = mediaFolder === "settings" ? await syncRootFavicon(req) : false;
+        return res.json({ ...saved, syncedRootFavicon });
       } catch (error: any) {
         console.error("Local image upload failed:", error);
         return res.status(error.statusCode || 500).json({
@@ -664,7 +771,7 @@ RÀO CHẮN NGÔN NGỮ VÀ CẤU TRÚC BẮT BUỘC:
 
       const compactBrief = compactAiContext(brief || '', 4500);
       const userPrompt = `[SYSTEM INSTRUCTION]\n${strictSystemInstruction}\n\n[USER PROMPT]\n${compactBrief || productName}`;
-      const selectedProvider = 'gemini';
+      const selectedProvider: string = 'gemini';
       const hasCjkText = (value: string) => /[\u3400-\u9FFF\uF900-\uFAFF]/.test(value);
       const parseAiJson = (value: string) => {
         const cleanText = value
@@ -874,7 +981,7 @@ ${String(parsed?.contentHtml || '').slice(0, 12000)}`;
 
   app.post(
     "/api/upload-blog-image",
-    express.raw({ type: ["image/jpeg", "image/png", "image/webp", "image/gif"], limit: "10mb" }),
+    express.raw({ type: ["image/jpeg", "image/png", "image/webp", "image/gif", "image/x-icon", "image/vnd.microsoft.icon"], limit: "10mb" }),
     async (req, res) => {
       try {
         console.log('[upload-blog-image] request received', { url: req.url, method: req.method, contentType: req.headers['content-type'], contentLength: req.headers['content-length'] });

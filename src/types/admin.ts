@@ -29,7 +29,7 @@ export type AdminTab =
   | 'blog-categories'
   | 'policy-pages'
   | 'ai-workflow'
-  | 'ai-product'
+  | 'ai-product-factory'
   | 'ai-blog'
   | 'ai-seo-report'
   | 'flash-sale'

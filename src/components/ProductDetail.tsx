@@ -572,17 +572,17 @@ export const ProductDetail: React.FC = () => {
       <motion.div
         initial={{ y: -10, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="mx-auto max-w-[1400px] px-4 h-10 sm:px-6 lg:px-8 flex items-center justify-between border-b border-zinc-100 mb-4"
+        className="mx-auto max-w-[1400px] px-4 h-10 sm:px-6 lg:px-8 flex items-center justify-between border-b border-zinc-100 mb-4 gap-3"
       >
-        <nav className="flex items-center gap-2 text-xs font-medium text-zinc-400 overflow-hidden">
+        <nav className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto whitespace-nowrap text-xs font-medium text-zinc-400 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <Link to="/" className="hover:text-black transition-colors shrink-0">Home</Link>
           <ChevronRight className="h-3 w-3 text-zinc-300 shrink-0" />
           <Link to={productCategorySlug === 'shop' ? '/shop' : `/${productCategorySlug}`} className="hover:text-black transition-colors shrink-0">{categoryName}</Link>
           <ChevronRight className="h-3 w-3 text-zinc-300 shrink-0" />
-          <span className="text-zinc-500 truncate">{product.name}</span>
+          <span className="min-w-[120px] max-w-[55vw] truncate text-zinc-500 sm:max-w-md">{product.name}</span>
         </nav>
 
-        <div className="flex items-center gap-2 h-full shrink-0 ml-4">
+        <div className="flex items-center gap-2 h-full shrink-0">
           <button
             onClick={() => prevProduct && navigate(`/${prevProduct.slug}`)}
             disabled={!prevProduct}

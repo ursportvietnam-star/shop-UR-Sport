@@ -942,10 +942,10 @@ export function NewsPage() {
         </AnimatePresence>
 
         {/* Breadcrumb Navigation */}
-        <nav className="flex items-center gap-2 text-xs font-bold text-zinc-400 mb-8 pb-4 border-b border-zinc-100">
-          <button onClick={() => navigate("/")} className="hover:text-zinc-900 transition-colors cursor-pointer">Trang chủ</button>
-          <ChevronRight className="h-3 w-3" />
-          <button onClick={() => navigate("/blog")} className="hover:text-zinc-900 transition-colors cursor-pointer">Blog</button>
+        <nav className="flex min-w-0 items-center gap-2 overflow-x-auto whitespace-nowrap text-xs font-bold text-zinc-400 mb-8 pb-4 border-b border-zinc-100 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <button onClick={() => navigate("/")} className="shrink-0 hover:text-zinc-900 transition-colors cursor-pointer">Trang chủ</button>
+          <ChevronRight className="h-3 w-3 shrink-0" />
+          <button onClick={() => navigate("/blog")} className="shrink-0 hover:text-zinc-900 transition-colors cursor-pointer">Blog</button>
           {selectedPost.category && (() => {
             const cat = blogCategories.find(c => 
               c.label.toLowerCase() === selectedPost.category.toLowerCase() ||
@@ -959,18 +959,18 @@ export function NewsPage() {
             const catLink = cat ? cat.link : `/blog/category/${slugifyCategory(selectedPost.category)}`;
             return (
               <>
-                <ChevronRight className="h-3 w-3" />
+                <ChevronRight className="h-3 w-3 shrink-0" />
                 <button 
                   onClick={() => navigate(catLink)} 
-                  className="hover:text-zinc-900 transition-colors cursor-pointer"
+                  className="shrink-0 hover:text-zinc-900 transition-colors cursor-pointer"
                 >
                   {selectedPost.category}
                 </button>
               </>
             );
           })()}
-          <ChevronRight className="h-3 w-3" />
-          <span className="text-zinc-600 truncate max-w-[200px] sm:max-w-md">{selectedPost.title}</span>
+          <ChevronRight className="h-3 w-3 shrink-0" />
+          <span className="min-w-[140px] max-w-[55vw] truncate text-zinc-600 sm:max-w-md">{selectedPost.title}</span>
         </nav>
 
         {/* Post Metadata Hero Block */}

@@ -15,12 +15,19 @@ interface ImageUploadProps {
   storage?: 'cloudinary' | 'blog-local' | 'local';
   multiple?: boolean;
   onRemove?: () => void;
+  allowedTypes?: string[];
+  formatHint?: string;
 }
 
 const CLOUDINARY_CLOUD_NAME = 'dcj4qhcfh';
 const CLOUDINARY_UPLOAD_PRESET = 'ursport_uploads';
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const DEFAULT_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+const getFileType = (file: File) => {
+  if (file.type) return file.type;
+  return file.name.toLowerCase().endsWith('.ico') ? 'image/x-icon' : '';
+};
 
 export const ImageUpload: React.FC<ImageUploadProps> = ({
   onUploadComplete,
@@ -31,7 +38,9 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   compactLayout = 'inline',
   storage = 'local',
   multiple = false,
-  onRemove
+  onRemove,
+  allowedTypes = DEFAULT_ALLOWED_TYPES,
+  formatHint = 'JPG, PNG, WebP'
 }) => {
   const DISABLE_UPLOADS = (import.meta as any).env?.VITE_DISABLE_MEDIA_UPLOADS === 'true';
   const [isUploading, setIsUploading] = useState(false);
@@ -40,6 +49,9 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isDone, setIsDone] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const acceptedFileTypes = allowedTypes.includes('image/x-icon')
+    ? [...allowedTypes, '.ico'].join(',')
+    : allowedTypes.join(',');
 
   const openFilePicker = (event: React.MouseEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -53,8 +65,8 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   };
 
   const validateFile = (file: File) => {
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return 'Vui long chon anh dinh dang JPG, PNG, WebP hoac GIF.';
+    if (!allowedTypes.includes(getFileType(file))) {
+      return `Vui long chon anh dinh dang ${formatHint}.`;
     }
     if (file.size > MAX_FILE_SIZE) {
       return 'File qua lon. Toi da 10MB.';
@@ -66,7 +78,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     setProgress(Math.round((index / total) * 100));
     const token = await auth.currentUser?.getIdToken();
     const headers: Record<string, string> = {
-      'Content-Type': file.type,
+      'Content-Type': getFileType(file),
       'X-File-Name': encodeURIComponent(file.name),
     };
 
@@ -118,6 +130,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
       // fixed site images
       'images': 'images',
       'root': 'images',
+      'settings': 'settings',
       // homepage banners
       'banners': 'banners',
     };
@@ -238,7 +251,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
             onChange={handleFileChange}
             onClick={(event) => event.stopPropagation()}
             className="hidden"
-            accept="image/*"
+            accept={acceptedFileTypes}
           />
 
           <div
@@ -309,7 +322,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
           onChange={handleFileChange}
           onClick={(event) => event.stopPropagation()}
           className="hidden"
-          accept="image/*"
+          accept={acceptedFileTypes}
         />
 
         <div
@@ -363,7 +376,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                   {label ? label : 'Tải ảnh lên'}
                 </span>
                 <span className="text-[8px] font-medium text-zinc-500 block">
-                  JPG, PNG, WebP
+                  {formatHint}
                 </span>
               </div>
             </div>
@@ -413,7 +426,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
           onChange={handleFileChange}
           onClick={(event) => event.stopPropagation()}
           className="hidden"
-          accept="image/*"
+          accept={acceptedFileTypes}
         />
 
         {(externalPreview || previewUrl) ? (
@@ -482,7 +495,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                 <p className="text-sm font-bold text-zinc-500 group-hover:text-zinc-700 text-center">
                   {multiple ? 'Keo tha hoac click de chon nhieu anh' : 'Keo tha hoac click de chon anh'}
                 </p>
-                <p className="text-xs text-zinc-400 mt-1">JPG, PNG, WebP - Toi da 10MB</p>
+                <p className="text-xs text-zinc-400 mt-1">{formatHint} - Toi da 10MB</p>
               </>
             )}
           </>

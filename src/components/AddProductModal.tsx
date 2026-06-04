@@ -779,8 +779,10 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         ? product.colorImages.map(ci => ({ name: ci.name, image: ci.image }))
         : (product.colors || []).map((c, i) => ({ name: c, image: product.images?.[i] || '' }));
 
-      const extraImages = [...(product.images || [])];
       const coverImage = product.images?.[0] || colorVariants[0]?.image || '';
+      // Exclude variant images from extraImages to prevent duplication on each save
+      const variantImageSet = new Set(colorVariants.map(v => v.image).filter(Boolean));
+      const extraImages = (product.images || []).filter(img => img && (!variantImageSet.has(img) || img === coverImage));
       const variants = (product.variants || []).map(toVariantForm);
 
       setFormData({
@@ -1196,11 +1198,11 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
           category: canonicalCategoryLabel(formData.category) as Category,
           colors: formData.colorVariants.filter(v => v.name.trim()).map(v => v.name.trim()),
           colorImages: formData.colorVariants.filter(v => v.name.trim()).map(v => ({ name: v.name.trim(), image: v.image })),
-          images: [
+          images: Array.from(new Set([
             formData.coverImage,
+            ...formData.extraImages,
             ...formData.colorVariants.map(v => v.image),
-            ...formData.extraImages
-          ].filter(Boolean),
+          ].filter(Boolean))),
           price: Number(formData.price),
           discountPrice: formData.discountPrice ? Number(formData.discountPrice) : undefined,
           stock: localProductVariants.length > 0 ? localTotalStock : Number(formData.stock),
