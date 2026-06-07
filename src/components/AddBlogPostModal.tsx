@@ -13,6 +13,8 @@ import beautify from 'js-beautify';
 import { removeEmptyMedia, sanitizeRichHtml } from '../lib/htmlContent';
 import { uploadLocalImage } from '../lib/localMediaUpload';
 import { generateBlogSEO } from '../lib/gemini';
+import aiBlogRewriteTemplate from '../content/ai-blog-rewrite-template.md?raw';
+import aiGoogleRewriteTemplate from '../content/ai-google-rewrite-template.md?raw';
 
 // ── Đăng ký blots cho <figure> và <figcaption> để Quill không strip các thẻ này ──
 const BlockEmbedClass = Quill.import('blots/block/embed') as any;
@@ -111,9 +113,13 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
   const quillRef = useRef<any>(null);
   const [isHtmlMode, setIsHtmlMode] = useState(false);
   const [htmlSource, setHtmlSource] = useState('');
+  const [aiEditedLineNumbers, setAiEditedLineNumbers] = useState<number[]>([]);
   const [seoTitle, setSeoTitle] = useState('');
   const [metaDescription, setMetaDescription] = useState('');
+  const [primaryKeyword, setPrimaryKeyword] = useState('');
+  const [secondaryKeywords, setSecondaryKeywords] = useState('');
   const [isAiRewriteLoading, setIsAiRewriteLoading] = useState(false);
+  const [isAiGoogleRewriteLoading, setIsAiGoogleRewriteLoading] = useState(false);
   const [isAiMarkdownLoading, setIsAiMarkdownLoading] = useState(false);
   const [captionDraft, setCaptionDraft] = useState('');
   const [altDraft, setAltDraft] = useState('');
@@ -145,6 +151,7 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
       setContent('');
       setIsHtmlMode(false);
       setHtmlSource('');
+      setAiEditedLineNumbers([]);
       setCoverImage('');
       setImageUrls([]);
       setVideoUrls([]);
@@ -152,6 +159,8 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
       setUploading(false);
       setSeoTitle('');
       setMetaDescription('');
+      setPrimaryKeyword('');
+      setSecondaryKeywords('');
       imageAltBySrcRef.current = {};
       imageCaptionBySrcRef.current = {};
       return;
@@ -176,12 +185,15 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
       setAuthor(post.author || 'UrSport Team');
       setContent(post.content || '');
       setHtmlSource(containsTableHtml(post.content || '') ? beautifyHtml(post.content || '') : post.content || '');
+      setAiEditedLineNumbers([]);
       setIsHtmlMode(containsTableHtml(post.content || ''));
       setCoverImage(post.image || '');
       setImageUrls(post.images || []);
       setVideoUrls(post.videos || []);
       setSeoTitle(post.seoTitle || '');
       setMetaDescription(post.metaDescription || '');
+      setPrimaryKeyword(post.primaryKeyword || '');
+      setSecondaryKeywords(post.secondaryKeywords || '');
     }
   }, [isOpen, post]);
 
@@ -346,6 +358,15 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
 
     removeEmptyMedia(wrapper);
 
+    const realImageSources = Array.from(new Set([coverImage, ...imageUrls].map(url => url.trim()).filter(Boolean)));
+    let fallbackImageIndex = 0;
+    const readNextRealImageSource = () => {
+      if (realImageSources.length === 0) return '';
+      const url = realImageSources[Math.min(fallbackImageIndex, realImageSources.length - 1)];
+      fallbackImageIndex += 1;
+      return url;
+    };
+
     wrapper.querySelectorAll('p.blog-image-caption').forEach((caption) => {
       const previous = caption.previousElementSibling as HTMLElement | null;
       const figure = previous?.tagName === 'FIGURE' ? previous : null;
@@ -363,8 +384,20 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
 
     wrapper.querySelectorAll('img').forEach((image) => {
       const src = image.getAttribute('src') || '';
-      const savedAlt = src ? imageAltBySrcRef.current[src] : '';
-      const savedCaption = src ? imageCaptionBySrcRef.current[src] : '';
+      if (/CLOUDINARY_OR_UPLOADED_IMAGE_URL/i.test(src)) {
+        const replacementSrc = readNextRealImageSource();
+        if (replacementSrc) {
+          image.setAttribute('src', replacementSrc);
+        } else {
+          image.closest('figure')?.remove();
+          image.remove();
+          return;
+        }
+      }
+
+      const currentSrc = image.getAttribute('src') || '';
+      const savedAlt = currentSrc ? imageAltBySrcRef.current[currentSrc] : '';
+      const savedCaption = currentSrc ? imageCaptionBySrcRef.current[currentSrc] : '';
       if (savedAlt) {
         image.setAttribute('alt', savedAlt);
         image.setAttribute('title', savedAlt);
@@ -832,6 +865,33 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
       unformatted: ['a', 'span', 'strong', 'b', 'em', 'i', 'u', 's', 'code', 'small'],
     });
 
+  const normalizeHtmlDiffLine = (line: string) => line.trim().replace(/\s+/g, ' ');
+
+  const getAiEditedLineNumbers = (beforeHtml: string, afterPrettyHtml: string) => {
+    const beforeCounts = new Map<string, number>();
+    beautifyHtml(beforeHtml)
+      .split('\n')
+      .map(normalizeHtmlDiffLine)
+      .filter(Boolean)
+      .forEach((line) => {
+        beforeCounts.set(line, (beforeCounts.get(line) || 0) + 1);
+      });
+
+    return afterPrettyHtml
+      .split('\n')
+      .map((line, index) => ({ line: normalizeHtmlDiffLine(line), lineNumber: index + 1 }))
+      .filter(({ line }) => {
+        if (!line) return false;
+        const count = beforeCounts.get(line) || 0;
+        if (count > 0) {
+          beforeCounts.set(line, count - 1);
+          return false;
+        }
+        return true;
+      })
+      .map(({ lineNumber }) => lineNumber);
+  };
+
   const getCurrentContentHtml = () => {
     if (isHtmlMode) return htmlSource;
     return getQuillEditor()?.root?.innerHTML || content;
@@ -846,34 +906,248 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
     return (parsed.body.textContent || '').replace(/\s+/g, ' ').trim();
   };
 
+  const cleanKeywordCandidate = (value: string) =>
+    value
+      .replace(/\s+/g, ' ')
+      .replace(/[“”"']/g, '')
+      .replace(/[.!?;:|]+$/g, '')
+      .trim();
+
+  const extractLabeledValue = (text: string, labels: string[]) => {
+    for (const label of labels) {
+      const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const match = text.match(new RegExp(`^\\s*(?:[-*]\\s*)?${escaped}\\s*[:：-]\\s*(.+)$`, 'im'));
+      const value = cleanKeywordCandidate(match?.[1] || '');
+      if (value) return value;
+    }
+    return '';
+  };
+
+  const extractFirstHeading = (text: string) => {
+    const htmlHeading = text.match(/<h1[^>]*>(.*?)<\/h1>|<h2[^>]*>(.*?)<\/h2>/i);
+    if (htmlHeading) return cleanKeywordCandidate((htmlHeading[1] || htmlHeading[2] || '').replace(/<[^>]*>/g, ' '));
+    const markdownHeading = text.match(/^\s*#{1,2}\s+(.+)$/m);
+    return cleanKeywordCandidate(markdownHeading?.[1] || '');
+  };
+
+  const deriveKeywordPhrase = (value = '') => {
+    const cleaned = cleanKeywordCandidate(value)
+      .replace(/\s+[-–|]\s+.*$/i, '')
+      .replace(/\s*[:：]\s+.*$/i, '')
+      .replace(/\b(nên chọn loại nào|nên mua loại nào|loại nào tốt|loại nào đẹp|mua ở đâu|có tốt không|là gì|như thế nào|mặc hàng ngày được không|nên chọn form rộng hay vừa)\b/gi, '')
+      .replace(/\b(cách chọn|hướng dẫn chọn|kinh nghiệm chọn|gợi ý chọn|top \d+)\s+/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (cleaned.length >= 5 && cleaned.length <= 45) return cleaned;
+    const words = cleaned.split(/\s+/).filter(Boolean);
+    if (words.length > 6) return words.slice(0, 6).join(' ');
+    return cleaned;
+  };
+
+  const isWeakKeyword = (value = '') => {
+    const normalized = value.toLowerCase();
+    return (
+      !normalized.trim() ||
+      normalized.length > 55 ||
+      /[?？]/.test(value) ||
+      /\b(nên chọn|nên mua|loại nào|mua ở đâu|có tốt không|là gì|như thế nào)\b/i.test(value)
+    );
+  };
+
+  const inferPrimaryKeyword = (fallbackText = '') => {
+    const explicitKeyword = extractLabeledValue(fallbackText, [
+      'Primary keyword',
+      'Từ khóa chính',
+      'Tu khoa chinh',
+      'Keyword chính',
+      'Keyword chinh',
+    ]);
+
+    const candidates = [
+      primaryKeyword,
+      explicitKeyword,
+      deriveKeywordPhrase(title),
+      deriveKeywordPhrase(seoTitle),
+      deriveKeywordPhrase(extractFirstHeading(fallbackText)),
+      metaDescription.split(/[.?]/)[0],
+      fallbackText.split(/[.?]/)[0],
+    ]
+      .map(cleanKeywordCandidate)
+      .map(deriveKeywordPhrase)
+      .filter(Boolean);
+
+    const best = candidates.find(item => item.length >= 5 && item.length <= 45 && !isWeakKeyword(item)) || candidates[0];
+    return best || 'blog URSport';
+  };
+
+  const inferSecondaryKeywords = (fallbackText = '') => {
+    const explicitKeywords = extractLabeledValue(fallbackText, [
+      'Secondary keywords',
+      'Từ khóa phụ',
+      'Tu khoa phu',
+      'Keyword phụ',
+      'Keyword phu',
+    ]);
+    if (explicitKeywords) {
+      return explicitKeywords.split(',').map(cleanKeywordCandidate).filter(Boolean).slice(0, 8);
+    }
+
+    const source = [seoTitle, title, metaDescription, fallbackText.slice(0, 700)].join(' ');
+    const primary = inferPrimaryKeyword(fallbackText).toLowerCase();
+    const phrases = source
+      .split(/[,;|.\n]/)
+      .map(cleanKeywordCandidate)
+      .map(deriveKeywordPhrase)
+      .filter(item => item.length >= 8 && item.length <= 70)
+      .filter(item => item.toLowerCase() !== primary)
+      .filter(item => !isWeakKeyword(item));
+
+    return Array.from(new Set(phrases)).slice(0, 5);
+  };
+
+  const isAiTemplatePlaceholder = (value = '') => {
+    const normalized = value.toLowerCase();
+    return (
+      /\[[^\]]*(tieu de|tu khoa|loi ich|keyword|title|slug|meta|url)[^\]]*\]/i.test(value) ||
+      normalized.includes('tieu de chua tu khoa') ||
+      normalized.includes('url-than-thien-seo') ||
+      normalized.includes('tu khoa 1') ||
+      normalized.includes('tu khoa 2') ||
+      normalized.includes('tu khoa 3')
+    );
+  };
+
+  const replaceAiTemplatePlaceholders = (value = '') => {
+    const lockedTitle = title.trim() || seoTitle.trim() || primaryKeyword.trim();
+    if (!lockedTitle) return value;
+
+    return value
+      .replace(/"\s*\[Tieu de chua tu khoa \+ loi ich\]\s*"\s+la chu de nhieu nam gioi quan tam[^.]*\.\s*/gi, '')
+      .replace(/"\s*\[Tieu de chua tu khoa \+ loi ich\]\s*"\s+là chủ đề nhiều nam giới quan tâm[^.]*\.\s*/gi, '')
+      .replace(/\[Tieu de chua tu khoa \+ loi ich\]/gi, lockedTitle)
+      .replace(/\[url-than-thien-seo\]/gi, slug || slugify(lockedTitle))
+      .replace(/\burl-than-thien-seo\b/gi, slug || slugify(lockedTitle))
+      .replace(/\btu khoa 1\b/gi, primaryKeyword.trim() || lockedTitle)
+      .replace(/\btu khoa 2\b/gi, secondaryKeywords.split(',')[0]?.trim() || lockedTitle)
+      .replace(/\btu khoa 3\b/gi, secondaryKeywords.split(',')[1]?.trim() || lockedTitle)
+      .trim();
+  };
+
+  const optimizeSeoTitleForChecklist = (value = '') => {
+    const cleaned = replaceAiTemplatePlaceholders(value).trim();
+    const lockedTitle = title.trim() || cleaned;
+    if (cleaned.length >= 60 && cleaned.length <= 65) return cleaned;
+    if (lockedTitle.length >= 50 && lockedTitle.length <= 70) return lockedTitle;
+
+    const base = lockedTitle || primaryKeyword.trim() || 'Blog URSport';
+    if (base.length > 65) return base.slice(0, 65).replace(/\s+\S*$/, '').trim();
+    return `${base} | URSport`.slice(0, 65).replace(/\s+\S*$/, '').trim();
+  };
+
+  const optimizeMetaDescriptionForChecklist = (value = '') => {
+    const cleaned = replaceAiTemplatePlaceholders(value).replace(/\s+/g, ' ').trim();
+    if (cleaned.length >= 100 && cleaned.length <= 160) return cleaned;
+
+    const lockedTitle = title.trim() || seoTitle.trim() || primaryKeyword.trim() || 'bài viết URSport';
+    const keyword = primaryKeyword.trim() || inferPrimaryKeyword(cleaned || lockedTitle);
+    const generated = `Khám phá ${lockedTitle.toLowerCase()} với mẹo chọn, phối đồ và gợi ý URSport giúp nam giới mặc thoải mái, lịch sự mỗi ngày.`;
+    const fallback = generated.includes(keyword.toLowerCase()) ? generated : `${generated} Từ khóa: ${keyword}.`;
+
+    if (fallback.length <= 160) return fallback;
+    return fallback.slice(0, 160).replace(/\s+\S*$/, '').replace(/[,.!?;:]+$/, '').trim();
+  };
+
+  const buildAiBriefContext = (plainText: string, modeName: string) => {
+    const selectedPrimaryKeyword = primaryKeyword.trim() || inferPrimaryKeyword(plainText);
+    const selectedSecondaryKeywords = secondaryKeywords.trim() || inferSecondaryKeywords(plainText).join(', ');
+    const lockedTitle = title.trim() || seoTitle.trim() || selectedPrimaryKeyword;
+    const availableImages = Array.from(new Set([coverImage, ...imageUrls].map(url => url.trim()).filter(Boolean)));
+
+    return [
+      'Brief truoc khi AI thuc hien:',
+      `- Che do: ${modeName}`,
+      `- Danh muc bai viet: ${category || 'Blog'}`,
+      `- Tieu de hien tai/de xuat: ${lockedTitle}`,
+      `- Tu khoa chinh bat buoc: ${selectedPrimaryKeyword}`,
+      `- Tu khoa phu: ${selectedSecondaryKeywords || 'AI tu suy luan tu tieu de, meta description va noi dung bai viet'}`,
+      '- Duoc phep toi uu lai title cho tu nhien, de doc va co y mua/tim hieu ro hon, nhung khong duoc doi intent/chuyen chu de.',
+      '- Tu khoa chinh phai la cum danh tu ngan 2-6 tu, vi du "ao the thao nam"; khong duoc la cau hoi dai nhu "ao the thao nam nen chon loai nao".',
+      '- keywordCluster[0] bat buoc la tu khoa chinh ngan; keywordCluster[1..] la 3-8 tu khoa phu lien quan, khong lap lai title.',
+      '- Neu tieu de la cau hoi co dau "?", mo bai phai tra loi thang cau hoi trong 1-2 cau dau, khong viet kieu "... la chu de nhieu nguoi quan tam".',
+      '- Khong doi chu de, khong doi goc bai. Co the bien cau hoi thanh title tu nhien hon neu van giu dung intent.',
+      '- Neu tieu de co them phan sau dau ":", "-", "?" hoac cum nhu "Meo phoi", phai xem do la goc trien khai chinh cua bai.',
+      '- Doi tuong: Nam gioi Viet Nam 18-35 tuoi, quan tam do the thao, thoi trang nam va mua sam online.',
+      '- Muc dich: Giao duc nguoi doc + dieu huong mua hang/san pham URSport mot cach tu nhien.',
+      '- Do dai muc tieu: contentHtml toi thieu 2500 ky tu plain text, uu tien 1200-2000 tu neu du thong tin; khong viet dai bang cach lap y.',
+      '- Muc tieu publish: SEO Score checklist phai dat 90-100 diem truoc khi tra ket qua.',
+      '- Bat buoc SEO Title dai 60-65 ky tu neu co the; Meta description dai 100-160 ky tu; noi dung plain text toi thieu 2500 ky tu.',
+      '- Bat buoc lien ket: them 3-5 internal link toi bai viet/category/san pham lien quan tren website va it nhat 1 external link toi nguon uy tin khi co thong tin can dan nguon.',
+      '- Giong van: Than thien, de hieu, thuc te, co chuyen mon vua du.',
+      `- Anh co san de chen vao bai: ${availableImages.length ? availableImages.join(', ') : 'Chua co anh that, khong chen figure anh gia.'}`,
+      '- Khi chen anh, bat buoc dung src anh that trong danh sach tren. Khong dung CLOUDINARY_OR_UPLOADED_IMAGE_URL trong ket qua cuoi.',
+      '- Cau truc anh dung: <figure><img src="/images/products/ten-anh.webp" alt="Mo ta anh tu nhien" title="Title anh ngan" width="1200" height="1600"><figcaption>Chu thich huu ich.</figcaption></figure>',
+      '',
+      'Truoc khi viet/sua, hay doc lai brief tren va bam sat no. Uu tien tieu de goc va tu khoa nhap tay hon moi suy luan cua AI.',
+    ].join('\n');
+  };
+
   const applyAiBlogDraft = (data: Awaited<ReturnType<typeof generateBlogSEO>>) => {
-    const nextContent = normalizeImageFigures(data.contentHtml || '');
+    const beforeAiContent = normalizeImageFigures(getCurrentContentHtml());
+    const nextContent = replaceAiTemplatePlaceholders(normalizeImageFigures(data.contentHtml || ''));
     if (!nextContent.trim()) {
       throw new Error('AI khong tra ve noi dung HTML');
     }
+    const nextPrettyContent = beautifyHtml(nextContent);
 
     setContent(nextContent);
+    setAiEditedLineNumbers(getAiEditedLineNumbers(beforeAiContent, nextPrettyContent));
     if (isHtmlMode) {
-      setHtmlSource(beautifyHtml(nextContent));
+      setHtmlSource(nextPrettyContent);
     }
 
-    if (data.title?.trim()) setTitle(data.title.trim());
-    if (data.slug?.trim()) setSlug(data.slug.trim());
-    if (data.metaTitle?.trim()) setSeoTitle(data.metaTitle.trim());
-    if (data.metaDescription?.trim()) setMetaDescription(data.metaDescription.trim());
+    const nextTitle = replaceAiTemplatePlaceholders(data.title?.trim() || '');
+    const nextSlug = replaceAiTemplatePlaceholders(data.slug?.trim() || '');
+    const nextMetaTitle = optimizeSeoTitleForChecklist(data.metaTitle?.trim() || data.title?.trim() || seoTitle || title);
+    const nextMetaDescription = optimizeMetaDescriptionForChecklist(data.metaDescription?.trim() || metaDescription);
+
+    if (nextTitle && !isAiTemplatePlaceholder(data.title)) setTitle(nextTitle);
+    if (!slug.trim() && nextSlug && !isAiTemplatePlaceholder(data.slug)) setSlug(nextSlug);
+    if (nextMetaTitle) setSeoTitle(nextMetaTitle);
+    if (nextMetaDescription) setMetaDescription(nextMetaDescription);
+    if ((!primaryKeyword.trim() || isWeakKeyword(primaryKeyword)) && data.keywordCluster?.[0] && !isAiTemplatePlaceholder(data.keywordCluster[0])) {
+      setPrimaryKeyword(deriveKeywordPhrase(data.keywordCluster[0]));
+    }
+    if ((!secondaryKeywords.trim() || inferSecondaryKeywords(nextContent).length < 3) && data.keywordCluster?.length > 1) {
+      setSecondaryKeywords(data.keywordCluster.slice(1).filter(item => !isAiTemplatePlaceholder(item)).join(', '));
+    }
   };
 
-  const buildAiRewritePrompt = (sourceHtml: string) => {
+  const buildAiRewritePrompt = (sourceHtml: string, template: string, modeName: string) => {
     const plainText = getPlainTextFromHtml(sourceHtml);
     return [
-      `Primary keyword: ${seoTitle || title || 'blog URSport'}`,
+      `Che do sua: ${modeName}`,
+      buildAiBriefContext(plainText, modeName),
+      `Primary keyword: ${primaryKeyword.trim() || inferPrimaryKeyword(plainText)}`,
+      `Secondary keywords: ${secondaryKeywords.trim() || inferSecondaryKeywords(plainText).join(', ') || 'AI tu suy luan'}`,
+      `Tieu de hien tai cua nguoi dung: ${title || seoTitle || 'Chua co'}`,
+      'Rang buoc title: Duoc phep viet lai title cho tu nhien/chuan SEO hon, nhung phai giu dung intent. Noi dung phai tra loi dung cau hoi/goc bai cua tieu de hien tai.',
+      'Rang buoc keyword: keywordCluster[0] phai la tu khoa chinh ngan 2-6 tu, khong phai nguyen cau hoi/title dai.',
+      'Rang buoc mo bai: Khong mo dau bang cong thuc "[tieu de] la chu de...". Hay vao thang cau tra loi va loi ich thuc te.',
+      'Rang buoc template: File mau chi la cau truc. Tuyet doi khong copy placeholder nhu [Tieu de chua tu khoa + loi ich], [url-than-thien-seo], tu khoa 1, tu khoa 2, tu khoa 3 vao ket qua.',
+      'Neu title/meta/content co chuoi trong dau ngoac vuong tu file mau, ket qua se bi xem la sai.',
+      'Rang buoc anh: Khong tra src="CLOUDINARY_OR_UPLOADED_IMAGE_URL". Neu can anh, dung dung URL anh co san trong brief; neu khong co anh that thi bo figure.',
+      'Rang buoc checklist diem SEO: Ket qua sau AI Sua phai co SEO Score muc publish 90-100. Neu thieu, tu bo sung truoc khi tra JSON.',
+      'Bat buoc: title bai viet hap dan va co the chinh sua rieng voi SEO title; SEO Title 60-65 ky tu neu co the, Meta description 100-160 ky tu, contentHtml plain text toi thieu 2500 ky tu, FAQ du 3 cau, internal link 3-5 cai, external link it nhat 1 nguon uy tin.',
       `Slug bat buoc: ${slug || slugify(title || 'bai-viet-ursport')}`,
       `SEO title hien tai: ${seoTitle || title || 'Chua co'}`,
       `Meta description hien tai: ${metaDescription || 'Chua co'}`,
       `Danh muc: ${category || 'Blog'}`,
       `Tac gia: ${author || 'UR SPORT Team'}`,
+      'File mau Markdown can doc va bam theo:',
+      template.slice(0, 6000),
       'Outline H2/H3: Giu dung chu de hien tai, toi uu lai bo cuc, FAQ, CTA, internal links va cac block anh.',
-      'Yeu cau: Sua lai bai blog hien tai thanh HTML SEO chuyen sau cho URSport. Giu dung thong tin cot loi, khong doi chu de, khong chen markdown.',
+      'Yeu cau: Sua lai bai blog hien tai thanh HTML SEO chuyen sau cho URSport. Giu dung thong tin cot loi, khong doi chu de, khong chen markdown vao contentHtml.',
       `Noi dung hien tai:\n${plainText.slice(0, 8000)}`,
     ].join('\n');
   };
@@ -886,10 +1160,10 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
       return;
     }
 
-    const toastId = toast.loading('AI dang sua bai blog theo chuan SEO...');
+    const toastId = toast.loading('AI dang sua bai blog theo file mau...');
     setIsAiRewriteLoading(true);
     try {
-      const data = await generateBlogSEO(buildAiRewritePrompt(sourceHtml));
+      const data = await generateBlogSEO(buildAiRewritePrompt(sourceHtml, aiBlogRewriteTemplate, 'AI Sua Blog'));
       applyAiBlogDraft(data);
       toast.success('AI da cap nhat bai viet tren editor.', { id: toastId });
     } catch (error: any) {
@@ -897,7 +1171,28 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
     } finally {
       setIsAiRewriteLoading(false);
     }
-  }, [author, category, content, htmlSource, isAiRewriteLoading, isHtmlMode, metaDescription, seoTitle, slug, title]);
+  }, [author, category, content, htmlSource, isAiRewriteLoading, isHtmlMode, metaDescription, primaryKeyword, secondaryKeywords, seoTitle, slug, title]);
+
+  const handleAiRewriteGoogle = React.useCallback(async () => {
+    if (isAiGoogleRewriteLoading) return;
+    const sourceHtml = getCurrentContentHtml();
+    if (!getPlainTextFromHtml(sourceHtml).trim()) {
+      toast.error('Vui long nhap noi dung bai viet truoc khi dung AI Sua Google.');
+      return;
+    }
+
+    const toastId = toast.loading('AI dang toi uu bai viet rieng cho Google...');
+    setIsAiGoogleRewriteLoading(true);
+    try {
+      const data = await generateBlogSEO(buildAiRewritePrompt(sourceHtml, aiGoogleRewriteTemplate, 'AI Sua Google'));
+      applyAiBlogDraft(data);
+      toast.success('AI da toi uu bai viet cho Google.', { id: toastId });
+    } catch (error: any) {
+      toast.error(error.message || 'AI chua the toi uu Google.', { id: toastId });
+    } finally {
+      setIsAiGoogleRewriteLoading(false);
+    }
+  }, [author, category, content, htmlSource, isAiGoogleRewriteLoading, isHtmlMode, metaDescription, primaryKeyword, secondaryKeywords, seoTitle, slug, title]);
 
   const handleAiMarkdownBlog = React.useCallback(() => {
     if (isAiMarkdownLoading) return;
@@ -913,11 +1208,24 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
       try {
         const markdown = await file.text();
         const data = await generateBlogSEO([
-          `Primary keyword: ${seoTitle || title || file.name.replace(/\.[^.]+$/, '')}`,
+          buildAiBriefContext(markdown, 'AI Markdown'),
+          `Primary keyword: ${primaryKeyword.trim() || inferPrimaryKeyword(markdown) || file.name.replace(/\.[^.]+$/, '')}`,
+          `Secondary keywords: ${secondaryKeywords.trim() || inferSecondaryKeywords(markdown).join(', ') || 'AI tu suy luan'}`,
+          `Tieu de hien tai cua nguoi dung: ${title || seoTitle || file.name.replace(/\.[^.]+$/, '')}`,
+          'Rang buoc title: Hay tao title bai viet de doc, tu nhien va dung intent; khong can lay nguyen cau hoi trong Markdown neu title moi ro hon.',
+          'Rang buoc keyword: Tu khoa chinh khong duoc lay nguyen title/cau hoi. Phai la cum danh tu ngan 2-6 tu; keywordCluster[0] phai la tu khoa chinh do.',
+          'Rang buoc mo bai: Neu title la cau hoi, cau dau phai tra loi thang cau hoi; khong viet kieu "... la chu de nhieu nam gioi quan tam".',
+          'Rang buoc template: File mau chi la cau truc. Tuyet doi khong copy placeholder nhu [Tieu de chua tu khoa + loi ich], [url-than-thien-seo], tu khoa 1, tu khoa 2, tu khoa 3 vao ket qua.',
+          'Neu title/meta/content co chuoi trong dau ngoac vuong tu file mau, ket qua se bi xem la sai.',
+          'Rang buoc anh: Khong tra src="CLOUDINARY_OR_UPLOADED_IMAGE_URL". Neu can anh, dung dung URL anh co san trong brief; neu khong co anh that thi bo figure.',
+          'Rang buoc checklist diem SEO: Ket qua sau AI Sua phai co SEO Score muc publish 90-100. Neu thieu, tu bo sung truoc khi tra JSON.',
+          'Bat buoc: title bai viet rieng biet voi keyword, SEO Title 60-65 ky tu neu co the, Meta description 100-160 ky tu, contentHtml plain text toi thieu 2500 ky tu, FAQ du 3 cau, internal link 3-5 cai, external link it nhat 1 nguon uy tin.',
           `Slug bat buoc: ${slug || slugify(title || file.name.replace(/\.[^.]+$/, ''))}`,
           `SEO title: ${seoTitle || title || 'Chua co'}`,
           `Meta description: ${metaDescription || 'Chua co'}`,
           `Danh muc: ${category || 'Blog'}`,
+          'File mau Markdown can doc va bam theo:',
+          aiBlogRewriteTemplate.slice(0, 6000),
           'Outline H2/H3: Trich xuat tu file Markdown ben duoi, giu dung y chinh va toi uu thanh bai blog HTML.',
           'Yeu cau: Bien file Markdown thanh bai blog URSport co contentHtml, FAQ, CTA, internal links va imagePrompts. Khong tra markdown.',
           `Markdown source:\n${markdown.slice(0, 12000)}`,
@@ -932,7 +1240,7 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
       }
     };
     input.click();
-  }, [category, isAiMarkdownLoading, metaDescription, seoTitle, slug, title]);
+  }, [category, isAiMarkdownLoading, metaDescription, primaryKeyword, secondaryKeywords, seoTitle, slug, title]);
 
   const handleImageInsert = React.useCallback(async () => {
     if (imagePickerOpenRef.current) return;
@@ -1207,6 +1515,8 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
         content: cleanedContent,
         seoTitle: seoTitle.trim(),
         metaDescription: metaDescription.trim(),
+        primaryKeyword: primaryKeyword.trim(),
+        secondaryKeywords: secondaryKeywords.trim(),
         customSchema: extractedSchema || post?.customSchema || '',
         images: imageUrls,
         videos: videoUrls,
@@ -1242,6 +1552,78 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
   };
 
   const editorWrapRef = useRef<HTMLDivElement | null>(null);
+
+  const currentSeoContentHtml = isHtmlMode ? htmlSource : content;
+  const currentSeoPlainText = getPlainTextFromHtml(currentSeoContentHtml);
+  const seoLinkStats = (() => {
+    if (typeof window === 'undefined' || !window.DOMParser) {
+      const internalCount = (currentSeoContentHtml.match(/href=["']\/(?!\/)[^"']+["']/gi) || []).length;
+      const externalCount = (currentSeoContentHtml.match(/href=["']https?:\/\/(?![^"']*ursport\.vn)[^"']+["']/gi) || []).length;
+      return { internalCount, externalCount };
+    }
+
+    const parsed = new DOMParser().parseFromString(`<div>${currentSeoContentHtml}</div>`, 'text/html');
+    const links = Array.from(parsed.querySelectorAll('a[href]'));
+    const internalCount = links.filter((link) => {
+      const href = link.getAttribute('href') || '';
+      return href.startsWith('/') || href.includes('ursport.vn') || href.includes('localhost');
+    }).length;
+    const externalCount = links.filter((link) => {
+      const href = link.getAttribute('href') || '';
+      return /^https?:\/\//i.test(href) && !href.includes('ursport.vn') && !href.includes('localhost');
+    }).length;
+    return { internalCount, externalCount };
+  })();
+  const seoChecklistItems = [
+    {
+      label: 'Tiêu đề bài viết',
+      detail: `${title.trim().length}/70 ký tự, nên có 60-65 ký tự`,
+      passed: title.trim().length >= 60 && title.trim().length <= 65,
+    },
+    {
+      label: 'Slug URL',
+      detail: slug.trim() ? slugify(slug) : 'Cần slug rõ ràng, không dấu',
+      passed: slug.trim().length >= 8,
+    },
+    {
+      label: 'SEO Title',
+      detail: `${seoTitle.trim().length}/65 ký tự, nên có 60-65 ký tự`,
+      passed: seoTitle.trim().length >= 60 && seoTitle.trim().length <= 65,
+    },
+    {
+      label: 'SEO Description',
+      detail: `${metaDescription.trim().length}/165 ký tự, nên có 100-160 ký tự`,
+      passed: metaDescription.trim().length >= 100 && metaDescription.trim().length <= 160,
+    },
+    {
+      label: 'Từ khóa chính',
+      detail: primaryKeyword.trim() || 'Cần nhập từ khóa chính cho AI đọc',
+      passed: primaryKeyword.trim().length >= 5,
+    },
+    {
+      label: 'Từ khóa phụ',
+      detail: secondaryKeywords.trim() || 'Nên có 3-8 cụm từ khóa phụ',
+      passed: secondaryKeywords.split(',').map(item => item.trim()).filter(Boolean).length >= 3,
+    },
+    {
+      label: 'Ảnh đại diện',
+      detail: coverImage ? 'Đã có ảnh đại diện' : 'Cần ảnh đại diện cho bài viết',
+      passed: Boolean(coverImage),
+    },
+    {
+      label: 'Nội dung bài viết',
+      detail: `${currentSeoPlainText.length} ký tự, nên có ít nhất 2500 ký tự`,
+      passed: currentSeoPlainText.length >= 2500,
+    },
+    {
+      label: 'Liên kết Internal & External',
+      detail: `${seoLinkStats.internalCount} internal, ${seoLinkStats.externalCount} external - cần 3-5 internal và ít nhất 1 external uy tín`,
+      passed: seoLinkStats.internalCount >= 3 && seoLinkStats.internalCount <= 5 && seoLinkStats.externalCount >= 1,
+    },
+  ];
+  const seoScore = Math.round((seoChecklistItems.filter(item => item.passed).length / seoChecklistItems.length) * 100);
+  const aiEditedLineSet = React.useMemo(() => new Set(aiEditedLineNumbers), [aiEditedLineNumbers]);
+  const htmlPreviewLines = React.useMemo(() => htmlSource.split('\n'), [htmlSource]);
 
   if (!isOpen) return null;
 
@@ -1427,7 +1809,19 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
                         disabled={isAiRewriteLoading}
                       >
                         <Sparkles className="h-3.5 w-3.5 text-[#10b981]" />
-                        <span className="text-[11px] font-black text-[#10b981]">AI Sửa</span>
+                        <span className="text-[11px] font-black text-[#10b981]">AI Sửa Blog</span>
+                      </button>
+                    </span>
+                    <span className="ql-formats">
+                      <button
+                        type="button"
+                        onClick={handleAiRewriteGoogle}
+                        title="AI tối ưu riêng cho Google theo file mẫu"
+                        className="ai-toolbar-button hover:!text-[#f97316]"
+                        disabled={isAiGoogleRewriteLoading}
+                      >
+                        <Sparkles className="h-3.5 w-3.5 text-[#f97316]" />
+                        <span className="text-[11px] font-black text-[#f97316]">AI Sửa Google</span>
                       </button>
                     </span>
                     <span className="ql-formats">
@@ -1461,6 +1855,46 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
                         {htmlSource.split('\n').length} dòng
                       </span>
                     </div>
+
+                    {aiEditedLineNumbers.length > 0 && (
+                      <div className="border-b border-emerald-400/20 bg-[#10251f]">
+                        <div className="flex items-center justify-between gap-3 px-4 py-2">
+                          <div>
+                            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-emerald-300">
+                              AI đã sửa
+                            </p>
+                            <p className="mt-0.5 text-[11px] font-semibold text-emerald-100/70">
+                              Các dòng nền xanh là phần AI vừa thêm hoặc thay đổi. HTML lưu bên dưới vẫn sạch, không dính màu.
+                            </p>
+                          </div>
+                          <span className="shrink-0 rounded-full bg-emerald-400/15 px-3 py-1 text-[11px] font-mono font-bold text-emerald-200">
+                            {aiEditedLineNumbers.length} dòng
+                          </span>
+                        </div>
+                        <div className="max-h-64 overflow-auto border-t border-emerald-400/10 bg-[#0b1513]">
+                          <div className="grid grid-cols-[3.5rem_1fr] text-[12px] font-mono leading-6">
+                            {htmlPreviewLines.map((line, index) => {
+                              const lineNumber = index + 1;
+                              const isAiEdited = aiEditedLineSet.has(lineNumber);
+                              return (
+                                <React.Fragment key={`${lineNumber}-${line}`}>
+                                  <div className={cn(
+                                    "select-none border-r border-white/5 px-3 text-right text-[#64748b]",
+                                    isAiEdited && "bg-emerald-400/15 text-emerald-200"
+                                  )}>
+                                    {lineNumber}
+                                  </div>
+                                  <pre className={cn(
+                                    "min-h-6 overflow-visible whitespace-pre-wrap break-words px-3 text-[#a9b1d6]",
+                                    isAiEdited && "bg-emerald-400/15 text-emerald-50 ring-1 ring-inset ring-emerald-300/10"
+                                  )}>{line || ' '}</pre>
+                                </React.Fragment>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Editor with line numbers */}
                     <div className="relative flex bg-[#1e1e2e]">
@@ -1630,6 +2064,39 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
           </div>
 
           <div className="h-full space-y-6 overflow-y-auto rounded-[32px] border border-zinc-200 bg-zinc-50 p-6 shadow-sm pb-10">
+            <div className="rounded-3xl border border-amber-100 bg-[#fff8e8] p-5 shadow-sm">
+              <div className="flex items-center justify-between gap-4">
+                <div className="rounded-2xl bg-white/55 px-5 py-4 text-center">
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#c75a00]">SEO SCORE</p>
+                  <p className={cn(
+                    "mt-1 text-4xl font-black leading-none",
+                    seoScore >= 80 ? "text-emerald-600" : seoScore >= 50 ? "text-[#c75a00]" : "text-orange-700"
+                  )}>
+                    {seoScore}
+                  </p>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-black text-zinc-900">Checklist điểm SEO</p>
+                  <p className="mt-1 text-xs font-semibold leading-5 text-zinc-500">
+                    Hoàn thiện các mục bên dưới để AI đọc đúng keyword và tối ưu bài viết tốt hơn.
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 space-y-2">
+                {seoChecklistItems.map((item) => (
+                  <div key={item.label} className="flex items-start gap-2 rounded-2xl bg-white/60 px-3 py-2">
+                    <span className={cn(
+                      "mt-1 h-2.5 w-2.5 shrink-0 rounded-full",
+                      item.passed ? "bg-emerald-500" : "bg-orange-300"
+                    )} />
+                    <div className="min-w-0">
+                      <p className="text-xs font-black text-zinc-800">{item.label}</p>
+                      <p className="mt-0.5 text-[11px] font-semibold leading-4 text-zinc-500">{item.detail}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.25em] text-zinc-500">Cài đặt bài viết</p>
             </div>
@@ -1706,26 +2173,23 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
                 </div>
               )}
             </div>
-
             <div className="grid gap-4">
               <label className="space-y-2 text-sm font-semibold text-zinc-700">
-                Ảnh bài viết
+                Từ khóa chính cho AI đọc
                 <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={(e) => handleMediaUpload(e, 'image')}
-                  className="block w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none file:mr-4 file:border-0 file:bg-[#1e4b64] file:px-4 file:py-2 file:text-white file:font-semibold file:rounded-full"
+                  value={primaryKeyword}
+                  onChange={(e) => setPrimaryKeyword(e.target.value)}
+                  className="block w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-normal outline-none focus:border-[#1e4b64]"
+                  placeholder="Ví dụ: quần thể thao nam mặc hằng ngày"
                 />
               </label>
               <label className="space-y-2 text-sm font-semibold text-zinc-700">
-                Video bài viết
-                <input
-                  type="file"
-                  accept="video/*"
-                  multiple
-                  onChange={(e) => handleMediaUpload(e, 'video')}
-                  className="block w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none file:mr-4 file:border-0 file:bg-[#1e4b64] file:px-4 file:py-2 file:text-white file:font-semibold file:rounded-full"
+                Từ khóa phụ cho AI đọc
+                <textarea
+                  value={secondaryKeywords}
+                  onChange={(e) => setSecondaryKeywords(e.target.value)}
+                  className="h-24 w-full resize-none rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-normal outline-none focus:border-[#1e4b64]"
+                  placeholder="Ví dụ: quần short thể thao nam, quần jogger nam, đồ thể thao mặc đi chơi"
                 />
               </label>
             </div>

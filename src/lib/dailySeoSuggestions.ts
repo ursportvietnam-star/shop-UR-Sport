@@ -1,4 +1,5 @@
 import { BlogPost } from '../types';
+import { URSPORT_BLOG_FULL_GUIDELINES } from './ursportBlogGuidelines';
 
 import aoThunPlan from '../content/01-ao-thun-nam.md?raw';
 import quanTheThaoPlan from '../content/02-quan-the-thao.md?raw';
@@ -54,7 +55,7 @@ const SEO_GLOBAL_CONTEXT_FILES = [
 const SOURCE_CLUSTER: Record<string, string> = {
   '01-ao-thun-nam.md': 'Áo thun nam',
   '02-quan-the-thao.md': 'Quần thể thao nam',
-  '03-do-gym.md': 'Đồ tập gym nam',
+  '03-do-gym.md': 'Áo thể thao nam / Áo tập gym nam / Áo thun lạnh',
   '04-chat-lieu.md': 'Chất liệu vải',
   '05-size.md': 'Size & bảng size',
   '06-phoi-do.md': 'Phối đồ nam',
@@ -76,7 +77,7 @@ const PRIORITY_SCORE: Record<SeoSuggestion['priority'], number> = {
 const CLUSTER_LINKS: Record<string, string[]> = {
   'Áo thun nam': ['/ao-thun-nam', '/ao-thun-the-thao-nam'],
   'Quần thể thao nam': ['/quan-the-thao-nam', '/ao-thun-nam'],
-  'Đồ tập gym nam': ['/ao-thun-the-thao-nam', '/quan-the-thao-nam'],
+  'Áo thể thao nam / Áo tập gym nam / Áo thun lạnh': ['/ao-thun-the-thao-nam', '/ao-thun-nam', '/ao-polo-nam', '/quan-the-thao-nam', '/phu-kien-the-thao'],
   'Chất liệu vải': ['/ao-thun-nam', '/ao-thun-the-thao-nam'],
   'Size & bảng size': ['/ao-thun-nam', '/quan-the-thao-nam'],
   'Phối đồ nam': ['/ao-thun-nam', '/quan-the-thao-nam'],
@@ -426,6 +427,9 @@ export const buildSeoBlogPrompt = (suggestion: SeoSuggestion) => {
     '```md',
     getGlobalMarkdownContext(),
     '```',
+    '',
+    'Quy chuan giong van, du lieu san pham va claim cua URSport:',
+    URSPORT_BLOG_FULL_GUIDELINES,
     '',
     'Yêu cầu chất lượng:',
     '- Không đổi slug.',

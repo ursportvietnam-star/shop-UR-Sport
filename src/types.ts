@@ -123,6 +123,8 @@ export interface BlogPost {
   content: string;
   seoTitle?: string;
   metaDescription?: string;
+  primaryKeyword?: string;
+  secondaryKeywords?: string;
   customSchema?: string;
   images?: string[];
   videos?: string[];

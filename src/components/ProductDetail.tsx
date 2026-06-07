@@ -44,7 +44,8 @@ import {
   RefreshCcw,
   MessageCircle,
   Zap,
-  Clock
+  Clock,
+  ZoomIn
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
@@ -53,6 +54,7 @@ import { formatFaqContentHtml } from '../lib/faqHtml';
 import { sanitizeRichHtml } from '../lib/htmlContent';
 import { showAddToCartToast } from './AddToCartToast';
 import { ProductCard } from './ProductCard';
+import { ImageLightbox } from './ImageLightbox';
 import { getProductPath, normalizeProductSlug } from '../lib/productUrls';
 import { canonicalCategoryLabel, isSameCategoryLabel } from '../lib/categoryConfig';
 
@@ -82,6 +84,8 @@ export const ProductDetail: React.FC = () => {
   const [selectedSize, setSelectedSize] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [mainImage, setMainImage] = useState('');
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [uploadType, setUploadType] = useState<'image' | 'video'>('image');
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
@@ -615,7 +619,15 @@ export const ProductDetail: React.FC = () => {
             transition={{ delay: 0.1 }}
             className="lg:col-span-5 space-y-6"
           >
-            <div className="relative aspect-square w-full overflow-hidden bg-white border border-zinc-100 rounded-2xl shadow-sm">
+            <div 
+              onClick={() => {
+                const imagesList = product.images || [];
+                const idx = imagesList.indexOf(mainImage);
+                setLightboxIndex(idx !== -1 ? idx : 0);
+                setIsLightboxOpen(true);
+              }}
+              className="relative aspect-square w-full overflow-hidden bg-white border border-zinc-100 rounded-2xl shadow-sm cursor-zoom-in group animate-in fade-in duration-300"
+            >
               {mainImage && (
                 <motion.img
                   key={mainImage}
@@ -623,17 +635,29 @@ export const ProductDetail: React.FC = () => {
                   animate={{ opacity: 1, scale: 1 }}
                   src={mainImage}
                   alt={product.name}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   loading="eager"
                   decoding="async"
                   fetchPriority="high"
                   referrerPolicy="no-referrer"
                 />
               )}
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300 flex items-center justify-center pointer-events-none">
+                <div className="p-3 rounded-full bg-white/95 text-zinc-800 shadow-lg scale-90 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all duration-300">
+                  <ZoomIn className="h-5 w-5" />
+                </div>
+              </div>
             </div>
             <div className="flex gap-3 overflow-x-auto pb-2">
               {(product.images || []).map((img, i) => (
-                <button key={i} onClick={() => setMainImage(img)} className="w-20 h-20 rounded-xl border-2 border-zinc-100 overflow-hidden shrink-0">
+                <button 
+                  key={i} 
+                  onClick={() => setMainImage(img)} 
+                  className={cn(
+                    "w-20 h-20 rounded-xl border-2 overflow-hidden shrink-0 transition-all duration-200",
+                    mainImage === img ? "border-[#1e4b64] scale-[1.03]" : "border-zinc-100 hover:border-zinc-300"
+                  )}
+                >
                   <img src={img} alt={`${product.name} - Ảnh ${i + 1}`} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                 </button>
               ))}
@@ -933,6 +957,25 @@ export const ProductDetail: React.FC = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Image Lightbox */}
+        <ImageLightbox
+          isOpen={isLightboxOpen}
+          onClose={() => setIsLightboxOpen(false)}
+          images={product.images || []}
+          currentIndex={lightboxIndex}
+          onChangeIndex={setLightboxIndex}
+          productName={product.name}
+          price={product.price}
+          discountPrice={
+            flashSaleCountdown.active && flashSaleSettings
+              ? flashSaleSettings.products?.find((p: any) => p.id === product.id)?.flashSalePrice
+              : product.discountPrice
+          }
+          selectedVariantOutOfStock={selectedVariantOutOfStock}
+          onAddToCart={handleAddToCart}
+          onBuyNow={handleBuyNow}
+        />
 
         {/* Bottom: Description & Details */}
         <div className="mt-8 pt-8 border-t border-zinc-100 sm:mt-12 sm:pt-10">

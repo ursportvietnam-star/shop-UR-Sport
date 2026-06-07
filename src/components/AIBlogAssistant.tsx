@@ -95,7 +95,9 @@ export function AIBlogAssistant({ onApply, blogPosts = [], initialPrompt = '', i
     { label: 'Có keyword chính', passed: /primary keyword|keyword:/i.test(prompt) },
     { label: 'Có intent/funnel', passed: /intent|funnel|TOFU|MOFU|BOFU/i.test(prompt) },
     { label: 'Có internal link', passed: /internal links|\/ao-|\/quan-|\/blog\//i.test(prompt) },
-    { label: 'Có outline H2/H3', passed: /H2:|H3:/i.test(prompt) }
+    { label: 'Có outline H2/H3', passed: /H2:|H3:/i.test(prompt) },
+    { label: 'Brand voice URSport', passed: /URSPORT BLOG BRAND GUIDELINES|giong van/i.test(prompt) },
+    { label: 'Claim rules', passed: /CLAIM RULES|khong tu bia|khong invent/i.test(prompt) }
   ];
 
   const figureCount = result ? (result.contentHtml.match(/<figure[\s>]/gi) || []).length : 0;
@@ -197,7 +199,7 @@ export function AIBlogAssistant({ onApply, blogPosts = [], initialPrompt = '', i
               <AlertCircle className="h-4 w-4 text-purple-500" />
               <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Checklist trước khi viết</p>
             </div>
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-7">
               {promptChecklist.map(item => (
                 <div
                   key={item.label}

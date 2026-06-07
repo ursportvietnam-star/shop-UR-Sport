@@ -1,4 +1,5 @@
 import { SEO_GUIDE_CONTEXT } from './seoGuide';
+import { URSPORT_BLOG_FULL_GUIDELINES } from './ursportBlogGuidelines';
 import { auth } from '../firebase';
 
 export interface AIBlogData {
@@ -63,6 +64,7 @@ const compactLocalBlogPrompt = (prompt: string) => {
   const cluster = pickPromptLine(prompt, 'Content silo');
   const internalLinksMatch = prompt.match(/Internal links[\s\S]*?(?=\n\nOutline|\nOutline|$)/i);
   const outlineMatch = prompt.match(/Outline H2\/H3[\s\S]*?(?=\n\nNguon|\nNguồn|\n```|$)/i);
+  const templateMatch = prompt.match(/File mau Markdown can doc va bam theo:[\s\S]*?(?=\nOutline H2\/H3|Markdown source:|Noi dung hien tai:|$)/i);
 
   return [
     'Viet 1 ban nhap blog URSport ngan gon. Chi tra JSON hop le, khong markdown, khong giai thich.',
@@ -81,10 +83,14 @@ const compactLocalBlogPrompt = (prompt: string) => {
     '',
     outlineMatch?.[0]?.slice(0, 1400) || 'Outline: mở bài trả lời intent, 3 H2 chính, FAQ cuối bài.',
     '',
+    templateMatch?.[0]?.slice(0, 1800) || '',
+    '',
+    URSPORT_BLOG_FULL_GUIDELINES,
+    '',
     'Bắt buộc JSON schema:',
     '{"title":"","slug":"","contentHtml":"","keywordCluster":[],"metaTitle":"","metaDescription":"","internalLinkMap":[],"imagePrompts":[{"filename":"","alt":"","title":"","caption":"","prompt":""},{"filename":"","alt":"","title":"","caption":"","prompt":""},{"filename":"","alt":"","title":"","caption":"","prompt":""}],"cta":"","faqSchema":"","socialCaption":""}',
     '',
-    'Yeu cau contentHtml: 250-450 tu, dung <p>, <h2>, <h3>, <ul><li>, <strong>, 3 <figure> placeholder CLOUDINARY_OR_UPLOADED_IMAGE_URL, FAQ cuoi bai, CTA tu nhien, internal links bang <a href="/...">.',
+    'Yeu cau contentHtml: plain text toi thieu 2500 ky tu, dung <p>, <h2>, <h3>, <ul><li>, <strong>, FAQ cuoi bai, CTA tu nhien, 3-5 internal links bang <a href="/..."> va it nhat 1 external link uy tin neu co thong tin can dan nguon. Chi chen <figure> khi prompt co san URL anh that; khong dung CLOUDINARY_OR_UPLOADED_IMAGE_URL.',
   ].join('\n');
 };
 
@@ -521,6 +527,9 @@ export async function generateBlogSEO(prompt: string): Promise<AIBlogData> {
 Viết 1 bài blog chuyên sâu, hữu ích và có khả năng chuyển đổi mềm cho URSport. Nội dung phải bám đúng brief, không viết hàng loạt, không tự đổi chủ đề.
 Tuân thủ SEO.md của URSport:
 ${SEO_GUIDE_CONTEXT}
+
+Quy chuan giong van, du lieu san pham va claim cua URSport:
+${URSPORT_BLOG_FULL_GUIDELINES}
 
 Yêu cầu bắt buộc:
 - Nếu prompt có slug bắt buộc, phải trả về đúng slug đó, không tự rút gọn hoặc đổi URL.
