@@ -203,7 +203,7 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_0%,rgba(0,71,255,0.1),transparent_34%),linear-gradient(135deg,rgba(15,23,42,0.96),rgba(2,6,23,1))]" />
 
       <div className="relative mx-auto max-w-[1440px] px-4 pt-8 pb-12 sm:px-6 lg:px-8 lg:pt-10 lg:pb-16">
-        <div className="grid gap-10 md:grid-cols-2 lg:flex lg:flex-wrap lg:items-start lg:justify-between xl:gap-14">
+        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-[1.45fr_1fr_1fr_1fr_1fr] lg:items-start xl:gap-14">
           {(footerSettings.columnOrder || ['intro', 'custom_0', 'custom_1', 'contact', 'social']).map((colId) => {
             if (colId === 'intro') {
               return (

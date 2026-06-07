@@ -224,7 +224,7 @@ function AppContent() {
         <RecentlyViewedProvider>
         <ComparisonProvider>
         <PromotionProvider>
-        <div className="min-h-screen bg-white font-sans selection:bg-black selection:text-white w-full relative">
+        <div className="min-h-screen flex flex-col bg-white font-sans selection:bg-black selection:text-white w-full relative">
           {!isAdminRoute && (
             <Navbar 
               onCartClick={() => setIsCartOpen(true)} 
@@ -235,7 +235,7 @@ function AppContent() {
             />
           )}
           
-          <main className={!isAdminRoute ? "pt-16" : ""}>
+          <main className={!isAdminRoute ? "flex-1 pt-16" : "flex-1"}>
             <React.Suspense fallback={<div className="min-h-[50vh] flex items-center justify-center"><div className="h-10 w-10 rounded-full border-4 border-[#1e4b64] border-t-transparent animate-spin" /></div>}>
             <Routes>
               <Route path="/" element={<HomePage onCategorySelect={handleCategorySelect} onPageChange={onPageChange} />} />

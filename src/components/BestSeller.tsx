@@ -11,6 +11,31 @@ interface BestSellerProps {
   products: Product[];
 }
 
+const getTimestamp = (value: Product['createdAt']): number => {
+  if (!value) return 0;
+  if (value instanceof Date) return value.getTime();
+  if (typeof value.toDate === 'function') return value.toDate().getTime();
+  if (typeof value.getTime === 'function') return value.getTime();
+  if (typeof value.seconds === 'number') {
+    return (value.seconds * 1000) + ((value.nanoseconds || 0) / 1e6);
+  }
+  return 0;
+};
+
+const sortNewProducts = (a: Product, b: Product) => {
+  const diff = getTimestamp(b.createdAt) - getTimestamp(a.createdAt);
+  if (diff !== 0) return diff;
+  return (b.reviewsCount - a.reviewsCount) || (b.rating - a.rating) || a.name.localeCompare(b.name);
+};
+
+const sortBestSellers = (a: Product, b: Product) => {
+  const popularityA = (a.reviewsCount || 0) * 2 + (a.rating || 0) * 10;
+  const popularityB = (b.reviewsCount || 0) * 2 + (b.rating || 0) * 10;
+  const diff = popularityB - popularityA;
+  if (diff !== 0) return diff;
+  return sortNewProducts(a, b);
+};
+
 export function BestSeller({ products }: BestSellerProps) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'new' | 'best_seller'>('new');
@@ -19,12 +44,11 @@ export function BestSeller({ products }: BestSellerProps) {
     best_seller: PRODUCTS_PER_ROW
   });
 
-  const newProducts = products.filter(p => p.isNew);
-  const bestSellers = products.filter(p => p.isBestSeller);
+  const newProducts = products.slice().sort(sortNewProducts);
+  const bestSellers = products.filter(p => p.isBestSeller).slice().sort(sortBestSellers);
   
-  // Fallback if no specific new/bestseller
-  const displayNew = newProducts.length > 0 ? newProducts : products;
-  const displayBest = bestSellers.length > 0 ? bestSellers : products;
+  const displayNew = newProducts;
+  const displayBest = bestSellers.length > 0 ? bestSellers : products.slice().sort(sortBestSellers);
 
   const sourceProducts = activeTab === 'new' ? displayNew : displayBest;
   const displayProducts = sourceProducts.slice(0, visibleCounts[activeTab]);
