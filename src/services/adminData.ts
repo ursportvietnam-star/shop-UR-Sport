@@ -59,7 +59,10 @@ export const subscribeAdminCollection = <T extends { id: string }>(
     setTimeout(() => onData([]), 0);
     return () => {};
   }
-  const collectionQuery = query(collection(db, collectionName), orderBy('createdAt', 'desc'));
+  const collectionRef = collection(db, collectionName);
+  const collectionQuery = collectionName === 'products'
+    ? collectionRef
+    : query(collectionRef, orderBy('createdAt', 'desc'));
 
   return onSnapshot(
     collectionQuery,

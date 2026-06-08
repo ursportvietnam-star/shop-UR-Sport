@@ -19,6 +19,21 @@ interface ProductCardProps {
   onClick: () => void;
 }
 
+const PROMO_FRAME_IMAGE_PATTERNS = [
+  '22-1779891967421-99983947',
+  'qs-adi01'
+];
+
+const hasPromoFrame = (image: string) => {
+  const normalized = image.toLowerCase();
+  return PROMO_FRAME_IMAGE_PATTERNS.some(pattern => normalized.includes(pattern));
+};
+
+const getPrimaryProductImage = (images?: string[]) => {
+  const validImages = images?.filter(image => image?.trim()) || [];
+  return validImages.find(image => !hasPromoFrame(image)) || validImages[0] || null;
+};
+
 export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onClick }) => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
@@ -29,7 +44,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [isHovered, setIsHovered] = useState(false);
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
-  const primaryImage = product.images?.find(image => image?.trim()) || null;
+  const primaryImage = getPrimaryProductImage(product.images);
   const [quickViewImage, setQuickViewImage] = useState(primaryImage || '');
   const liked = isWishlisted(product.id);
   const compared = isCompared(product.id);
@@ -101,7 +116,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
   return (
     <div 
       className={cn(
-        "group relative z-0 h-full w-full hover:z-30",
+        "product-card group relative z-0 h-full w-full min-w-0 hover:z-30",
         isHovered && "z-30"
       )}
       onMouseEnter={() => setIsHovered(true)}
@@ -109,14 +124,14 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
       onClick={onClick}
     >
       <div className={cn(
-        "flex h-full flex-col bg-white rounded-2xl transition-all duration-300 ease-out border border-zinc-100 overflow-hidden",
+        "flex h-full min-w-0 flex-col bg-white rounded-2xl transition-all duration-300 ease-out border border-zinc-100 overflow-hidden",
         isHovered 
           ? "shadow-[0_18px_36px_rgba(0,0,0,0.10)] -translate-y-1" 
           : "shadow-none"
       )}>
         
         {/* Image Section */}
-        <div className="relative aspect-[4/5] w-full overflow-hidden rounded-t-2xl bg-[#f8f8f8]">
+        <div className="product-card-media relative aspect-[4/5] w-full overflow-hidden rounded-t-2xl bg-[#f8f8f8]">
           <AnimatePresence mode="wait">
             <motion.img
               key={primaryImage || product.id}
@@ -125,7 +140,12 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
               alt={product.name}
               loading="lazy"
               decoding="async"
-              className="h-full w-full scale-[1.06] object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.09]"
+              className={cn(
+                "h-full w-full object-cover object-center transition-transform duration-700 ease-out",
+                primaryImage && hasPromoFrame(primaryImage)
+                  ? "origin-top scale-[1.24] object-top group-hover:scale-[1.28]"
+                  : "scale-[1.06] group-hover:scale-[1.09]"
+              )}
             />
           </AnimatePresence>
           <Link
@@ -182,7 +202,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
         </div>
 
         {/* Info Section */}
-        <div className="flex flex-col p-3 sm:p-4 flex-grow">
+        <div className="flex min-w-0 flex-grow flex-col p-3 sm:p-4">
           <div className="flex items-center gap-1 mb-1.5">
             <Star className="h-3 w-3 fill-[#ffa800] text-[#ffa800]" />
             <span className="text-[11px] font-bold text-zinc-500">{product.rating || '5.0'}</span>
@@ -298,4 +318,3 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
     </div>
   );
 });
-

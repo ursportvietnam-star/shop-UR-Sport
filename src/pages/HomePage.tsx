@@ -435,61 +435,75 @@ export default function HomePage({
       const selectedPosts = selectedIds
         .map(id => sourcePosts.find(post => post.id === id || post.slug === id))
         .filter((post): post is BlogPost => Boolean(post));
-      if (selectedPosts.length > 0) return selectedPosts.slice(0, 5);
+      if (selectedPosts.length > 0) return selectedPosts.slice(0, 8);
     }
 
     return [...sourcePosts]
       .sort((a, b) => getBlogPostTime(b) - getBlogPostTime(a))
-      .slice(0, 5);
+      .slice(0, 8);
   };
 
   const renderNewsSection = (key: string, posts: BlogPost[]) => {
     const [featuredPost, ...sidePosts] = posts;
     if (!featuredPost) return null;
+    const featuredPath = `/blog/${featuredPost.slug || featuredPost.id}`;
+    const topSidePosts = sidePosts.slice(0, 2);
+    const latestPosts = sidePosts.slice(0, 6);
+    const quickLinks = Array.from(new Set(posts.map(post => post.category).filter(Boolean))).slice(0, 6);
+    const getPostPath = (post: BlogPost) => `/blog/${post.slug || post.id}`;
+    const getPostDate = (post: BlogPost) => post.date || 'Mới cập nhật';
+    const getPostExcerpt = (post: BlogPost) => post.excerpt || post.metaDescription || 'Khám phá góc nhìn mới từ UR Sport.';
+    const getCategorySlug = (label: string) => label
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
 
     return (
-      <section key={key} className="container-custom section-padding border-t border-zinc-100">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="flex flex-col items-center text-center mb-16"
-        >
-          <span className="section-subtitle">Tạp chí UR SPORT</span>
-          <h2 className="section-title homepage-heading-center">
-            Stay updated with <span className="text-[#1e4b64]">UR NEWS</span>
-          </h2>
-          <div className="h-1 w-12 bg-[#1e4b64] mt-6 rounded-full" />
-        </motion.div>
+      <section key={key} className="container-custom border-t border-zinc-100 bg-white py-12 sm:py-14">
+        <div className="mb-5 flex flex-wrap items-center gap-2.5">
+          <span className="mr-1 text-sm font-black text-zinc-900">Quick Links</span>
+          {(quickLinks.length > 0 ? quickLinks : ['Áo thun nam', 'Bảng size', 'Phối đồ', 'Chất liệu']).map(label => (
+            <Link
+              key={label}
+              to={`/blog/category/${getCategorySlug(label)}`}
+              className="rounded bg-zinc-100 px-5 py-2.5 text-sm font-black text-[#005594] transition-colors hover:bg-[#e4eef6] hover:text-[#003e6e]"
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        <div className="grid grid-cols-1 gap-7 lg:grid-cols-[1.45fr_0.72fr_0.72fr]">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="lg:col-span-5 group cursor-pointer"
-            onClick={() => navigate(`/blog/${featuredPost.slug || featuredPost.id}`)}
+            className="group cursor-pointer"
+            onClick={() => navigate(featuredPath)}
           >
-            <div className="relative aspect-[4/3] sm:aspect-square lg:aspect-auto lg:h-[500px] overflow-hidden rounded-[32px] mb-6 shadow-2xl">
+            <div className="relative min-h-[360px] overflow-hidden bg-zinc-900 sm:min-h-[430px]">
               <LazyImage
                 src={featuredPost.image}
                 alt={featuredPost.title}
-                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
-              <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
-              <div className="absolute bottom-8 left-8">
-                <div className="bg-[#1e4b64] px-4 py-1.5 rounded-full text-[10px] font-black text-white uppercase tracking-widest mb-3 inline-block">
-                  {featuredPost.date}
-                </div>
-                <h3 className="text-2xl sm:text-3xl font-black text-white leading-tight uppercase tracking-tighter">
+              <div className="absolute inset-0 bg-linear-to-t from-[#061c35] via-[#061c35]/55 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8">
+                <h3 className="max-w-2xl text-3xl font-black leading-tight text-white sm:text-4xl">
                   {featuredPost.title}
                 </h3>
+                <p className="mt-3 max-w-2xl text-sm font-bold leading-6 text-white">
+                  {getPostExcerpt(featuredPost)}
+                </p>
               </div>
             </div>
           </motion.div>
 
-          <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-12">
-            {sidePosts.slice(0, 4).map((item, i) => (
+          <div className="grid gap-7">
+            {topSidePosts.map((item, i) => (
               <motion.div
                 key={item.id || i}
                 initial={{ opacity: 0, y: 20 }}
@@ -497,24 +511,53 @@ export default function HomePage({
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
                 className="group cursor-pointer"
-                onClick={() => navigate(`/blog/${item.slug || item.id}`)}
+                onClick={() => navigate(getPostPath(item))}
               >
-                <div className="relative aspect-[1024/682] overflow-hidden rounded-2xl mb-4 shadow-lg">
+                <div className="relative mb-3 aspect-[16/9] overflow-hidden bg-zinc-100">
                   <LazyImage
                     src={item.image}
                     alt={item.title}
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
-                  <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black text-zinc-900 tracking-widest leading-none">
-                    {item.date}
-                  </div>
                 </div>
-                <h4 className="text-[16px] font-black text-zinc-900 group-hover:text-[#1e4b64] transition-colors leading-tight line-clamp-2 uppercase italic tracking-tight">
+                <h4 className="text-xl font-black leading-tight text-zinc-950 transition-colors group-hover:text-[#005594]">
                   {item.title}
                 </h4>
+                {i === 1 && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className="bg-red-500 px-1.5 py-0.5 text-[9px] font-black uppercase text-white">Live</span>
+                    <span className="text-[11px] font-black uppercase tracking-wider text-zinc-500">{getPostDate(item)}</span>
+                  </div>
+                )}
               </motion.div>
             ))}
           </div>
+
+          <aside className="border-t border-zinc-300 pt-3 lg:border-t-0 lg:pt-0">
+            <div className="mb-3 border-t-4 border-[#0077c8] pt-2">
+              <h3 className="text-xl font-black uppercase tracking-tight text-[#061c35]">Latest News</h3>
+            </div>
+            <div className="max-h-[430px] overflow-y-auto border-b-4 border-[#061c35] pr-2">
+              {latestPosts.map((item, index) => (
+                <button
+                  key={item.id || index}
+                  type="button"
+                  onClick={() => navigate(getPostPath(item))}
+                  className="group flex w-full gap-3 border-t border-zinc-200 py-4 text-left first:border-t-0"
+                >
+                  <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-amber-400" />
+                  <span>
+                    <span className="mb-1 block text-[11px] font-black uppercase tracking-widest text-zinc-500">
+                      {getPostDate(item)}
+                    </span>
+                    <span className="block text-base font-black leading-tight text-zinc-950 transition-colors group-hover:text-[#005594]">
+                      {item.title}
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </aside>
         </div>
       </section>
     );

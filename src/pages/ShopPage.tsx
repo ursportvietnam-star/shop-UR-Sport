@@ -58,6 +58,26 @@ const normalizeSearchText = (value: string) =>
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
 
+const getTimestamp = (value: Product['createdAt']): number => {
+  if (!value) return 0;
+  if (typeof value === 'string' || value instanceof String) {
+    const date = new Date(value as string);
+    return Number.isFinite(date.getTime()) ? date.getTime() : 0;
+  }
+  if (typeof value === 'object') {
+    if (typeof (value as any).toDate === 'function') {
+      return (value as any).toDate().getTime();
+    }
+    if (typeof (value as any).getTime === 'function') {
+      return (value as any).getTime();
+    }
+    if (typeof (value as any).seconds === 'number') {
+      return (value as any).seconds * 1000 + ((value as any).nanoseconds || 0) / 1e6;
+    }
+  }
+  return 0;
+};
+
 const getProductUrl = (product: Product) => {
   return getProductPath(product);
 };
@@ -373,11 +393,7 @@ export function ShopPage({
     filteredProducts.sort((a, b) => (b.rating || 0) - (a.rating || 0));
   } else {
     // Newest first by default
-    filteredProducts.sort((a, b) => {
-       const dateA = a.createdAt?.seconds || 0;
-       const dateB = b.createdAt?.seconds || 0;
-       return dateB - dateA;
-     });
+    filteredProducts.sort((a, b) => getTimestamp(b.createdAt) - getTimestamp(a.createdAt));
   }
 
   const hasActiveFacetedParams = Boolean(

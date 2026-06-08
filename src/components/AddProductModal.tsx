@@ -1224,7 +1224,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
           id: localId,
           rating: product?.rating || 0,
           reviewsCount: product?.reviewsCount || 0,
-          createdAt: product?.createdAt
+          createdAt: product?.createdAt || new Date()
         }) as Product;
         saveLocalProduct(localProduct);
         toast.success('Đã lưu sản phẩm trên local');

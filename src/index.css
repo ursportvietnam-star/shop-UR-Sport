@@ -56,6 +56,18 @@
     @apply max-w-full h-auto;
   }
 
+  .product-card,
+  .product-card * {
+    max-width: 100%;
+  }
+
+  .product-card-media img {
+    display: block;
+    height: 100%;
+    width: 100%;
+    max-width: none;
+  }
+
   /* Prevent horizontal bounce on iOS */
   html, body {
     overscroll-behavior-x: none;

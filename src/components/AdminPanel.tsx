@@ -32,6 +32,7 @@ import type {
 } from '../types/admin';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { assignProductPublishTimes, getProductTimestamp, sortNewProducts } from '../lib/productSorting';
 import {
   DEFAULT_SEO_SUBCATEGORIES,
   belongsToCategory,
@@ -105,6 +106,7 @@ const UsersRolesTab = React.lazy(() =>
 );
 
 const SITE_IMAGE_HOSTS = new Set(['shop-ur-sport.vercel.app', 'ursport.vn', 'www.ursport.vn']);
+const PRODUCTS_PER_PAGE = 50;
 const normalizeMediaUrlForStorage = (url: string) => {
   if (url.startsWith('/images/')) return url;
 
@@ -588,6 +590,22 @@ const formatDateTimePreview = (value: string) => {
   });
 };
 
+const formatProductPublishedDate = (createdAt: Product['createdAt']) => {
+  const timestamp = getProductTimestamp(createdAt);
+  if (!timestamp) {
+    return {
+      date: 'Chưa có',
+      time: 'Thiếu thời gian'
+    };
+  }
+
+  const date = new Date(timestamp);
+  return {
+    date: date.toLocaleDateString('vi-VN'),
+    time: date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+  };
+};
+
 type CampaignDateTimePickerProps = {
   label: string;
   value: string;
@@ -685,8 +703,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [productCategoryFilter, setProductCategoryFilter] = useState('all');
+  const [productPage, setProductPage] = useState(1);
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>('all');
   const [blogSearchQuery, setBlogSearchQuery] = useState('');
+  const [selectedBlogPostIds, setSelectedBlogPostIds] = useState<string[]>([]);
   const [manualNewsletterEmail, setManualNewsletterEmail] = useState('');
   const [selectedNewsletterIds, setSelectedNewsletterIds] = useState<string[]>([]);
   const [newsletterSubject, setNewsletterSubject] = useState('Ưu đãi mới từ UR Sport');
@@ -785,15 +806,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
     if (!isAdmin) return;
     const refreshLocalProducts = () => {
       const sourceProducts = productSourceRef.current.length > 0 ? productSourceRef.current : STATIC_PRODUCTS;
-      setProducts(mergeLocalProducts(sourceProducts));
+      setProducts(assignProductPublishTimes(mergeLocalProducts(sourceProducts)));
     };
     const unsubscribe = subscribeAdminCollection<Product>('products', (data) => {
-      productSourceRef.current = data.length > 0 ? data : STATIC_PRODUCTS;
-      setProducts(mergeLocalProducts(productSourceRef.current));
+      productSourceRef.current = assignProductPublishTimes(data.length > 0 ? data : STATIC_PRODUCTS);
+      setProducts(assignProductPublishTimes(mergeLocalProducts(productSourceRef.current)));
       setLoading(false);
     }, () => {
-      productSourceRef.current = STATIC_PRODUCTS;
-      setProducts(mergeLocalProducts(STATIC_PRODUCTS));
+      productSourceRef.current = assignProductPublishTimes(STATIC_PRODUCTS);
+      setProducts(assignProductPublishTimes(mergeLocalProducts(STATIC_PRODUCTS)));
       setLoading(false);
     });
     window.addEventListener(LOCAL_PRODUCTS_UPDATED_EVENT, refreshLocalProducts);
@@ -1056,7 +1077,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
     } catch {
       if (removeLocalProduct(id)) {
         const sourceProducts = productSourceRef.current.length > 0 ? productSourceRef.current : STATIC_PRODUCTS;
-        setProducts(mergeLocalProducts(sourceProducts));
+        setProducts(assignProductPublishTimes(mergeLocalProducts(sourceProducts)));
         toast.success('Đã xóa sản phẩm local');
         return;
       }
@@ -1064,13 +1085,91 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
     }
   };
 
+  const handleBulkDeleteProducts = async () => {
+    const existingSelectedIds = selectedProductIds.filter(id => products.some(product => product.id === id));
+
+    if (existingSelectedIds.length === 0) {
+      setSelectedProductIds([]);
+      return;
+    }
+
+    if (!window.confirm(`Bạn có chắc muốn xóa ${existingSelectedIds.length} sản phẩm đã chọn?`)) return;
+
+    const failedIds: string[] = [];
+    let deletedCount = 0;
+    let localChanged = false;
+
+    for (const id of existingSelectedIds) {
+      try {
+        await deleteAdminDocument('products', id);
+        deletedCount += 1;
+      } catch {
+        if (removeLocalProduct(id)) {
+          deletedCount += 1;
+          localChanged = true;
+        } else {
+          failedIds.push(id);
+        }
+      }
+    }
+
+    if (localChanged) {
+      const sourceProducts = productSourceRef.current.length > 0 ? productSourceRef.current : STATIC_PRODUCTS;
+      setProducts(assignProductPublishTimes(mergeLocalProducts(sourceProducts)));
+    }
+
+    setSelectedProductIds(failedIds);
+
+    if (deletedCount > 0) {
+      toast.success(`Đã xóa ${deletedCount} sản phẩm`);
+    }
+
+    if (failedIds.length > 0) {
+      toast.error(`Không thể xóa ${failedIds.length} sản phẩm`);
+    }
+  };
+
   const handleDeleteBlogPost = async (id: string) => {
     if (!window.confirm('Bạn có chắc muốn xóa bài viết này?')) return;
     try {
       await deleteAdminDocument('blogPosts', id);
+      setSelectedBlogPostIds(prev => prev.filter(item => item !== id));
       toast.success('Đã xóa bài viết');
     } catch {
       toast.error('Lỗi khi xóa bài viết');
+    }
+  };
+
+  const handleBulkDeleteBlogPosts = async () => {
+    const existingSelectedIds = selectedBlogPostIds.filter(id => blogPosts.some(post => post.id === id));
+
+    if (existingSelectedIds.length === 0) {
+      setSelectedBlogPostIds([]);
+      return;
+    }
+
+    if (!window.confirm(`Bạn có chắc muốn xóa ${existingSelectedIds.length} bài viết đã chọn?`)) return;
+
+    const failedIds: string[] = [];
+    let deletedCount = 0;
+
+    for (const id of existingSelectedIds) {
+      try {
+        await deleteAdminDocument('blogPosts', id);
+        deletedCount += 1;
+      } catch {
+        failedIds.push(id);
+      }
+    }
+
+    setSelectedBlogPostIds(failedIds);
+
+    if (deletedCount > 0) {
+      toast.success(`Đã xóa ${deletedCount} bài viết`);
+    }
+
+    if (failedIds.length > 0) {
+      toast.error(`Không thể xóa ${failedIds.length} bài viết`);
     }
   };
 
@@ -1153,6 +1252,28 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
     } catch (error) {
       console.error('Copy product failed:', error);
       toast.error('Lỗi khi sao chép sản phẩm lên Firestore');
+    }
+  };
+
+  const handleCopyBlogPost = async (post: BlogPost) => {
+    const now = Date.now();
+    const { id: _postId, ...postData } = post;
+    const copyData = stripUndefinedValues({
+      ...postData,
+      title: `${post.title} (Copy)`,
+      slug: `${slugifyVietnamese(post.slug || post.title || post.id)}-copy-${now}`,
+      date: new Date().toLocaleDateString('vi-VN'),
+    });
+
+    try {
+      await addAdminDocument('blogPosts', {
+        ...copyData,
+        createdAt: adminTimestamp(),
+      });
+      toast.success('Bài viết đã được sao chép thành công!');
+    } catch (error) {
+      console.error('Copy blog post failed:', error);
+      toast.error('Lỗi khi sao chép bài viết lên Firestore');
     }
   };
 
@@ -1576,13 +1697,64 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
     );
   };
 
-  const filteredProducts = products.filter(p => {
-    const matchesSearch =
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.category.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredProducts = products
+    .filter(p => {
+      const matchesSearch =
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.category.toLowerCase().includes(searchQuery.toLowerCase());
 
-    return matchesSearch && categoryMatchesProductFilter(p.category);
-  });
+      return matchesSearch && categoryMatchesProductFilter(p.category);
+    })
+    .sort(sortNewProducts);
+  const productPageCount = Math.max(1, Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE));
+  const currentProductPage = Math.min(productPage, productPageCount);
+  const paginatedProducts = filteredProducts.slice(
+    (currentProductPage - 1) * PRODUCTS_PER_PAGE,
+    currentProductPage * PRODUCTS_PER_PAGE
+  );
+  const currentPageProductIds = paginatedProducts.map(product => product.id);
+  const selectedExistingProductCount = selectedProductIds.filter(id => products.some(product => product.id === id)).length;
+  const selectedCurrentPageCount = currentPageProductIds.filter(id => selectedProductIds.includes(id)).length;
+  const allCurrentPageProductsSelected = currentPageProductIds.length > 0 && selectedCurrentPageCount === currentPageProductIds.length;
+  const toggleCurrentPageProducts = (checked: boolean) => {
+    setSelectedProductIds(prev => {
+      if (checked) {
+        return Array.from(new Set([...prev, ...currentPageProductIds]));
+      }
+
+      return prev.filter(id => !currentPageProductIds.includes(id));
+    });
+  };
+  const toggleProductSelection = (id: string, checked: boolean) => {
+    setSelectedProductIds(prev => {
+      if (checked) return prev.includes(id) ? prev : [...prev, id];
+      return prev.filter(item => item !== id);
+    });
+  };
+  const filteredBlogPosts = blogPosts.filter(post =>
+    post.title.toLowerCase().includes(blogSearchQuery.toLowerCase()) ||
+    (post.category || '').toLowerCase().includes(blogSearchQuery.toLowerCase()) ||
+    (post.author || '').toLowerCase().includes(blogSearchQuery.toLowerCase())
+  );
+  const filteredBlogPostIds = filteredBlogPosts.map(post => post.id);
+  const selectedExistingBlogPostCount = selectedBlogPostIds.filter(id => blogPosts.some(post => post.id === id)).length;
+  const selectedFilteredBlogPostCount = filteredBlogPostIds.filter(id => selectedBlogPostIds.includes(id)).length;
+  const allFilteredBlogPostsSelected = filteredBlogPostIds.length > 0 && selectedFilteredBlogPostCount === filteredBlogPostIds.length;
+  const toggleFilteredBlogPosts = (checked: boolean) => {
+    setSelectedBlogPostIds(prev => {
+      if (checked) {
+        return Array.from(new Set([...prev, ...filteredBlogPostIds]));
+      }
+
+      return prev.filter(id => !filteredBlogPostIds.includes(id));
+    });
+  };
+  const toggleBlogPostSelection = (id: string, checked: boolean) => {
+    setSelectedBlogPostIds(prev => {
+      if (checked) return prev.includes(id) ? prev : [...prev, id];
+      return prev.filter(item => item !== id);
+    });
+  };
   const openProductEditor = (product: Product) => {
     setEditingProduct(product);
     setIsAddModalOpen(true);
@@ -1670,6 +1842,7 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
 
   const totalRevenue = products.reduce((sum, p) => sum + p.price, 0);
   const avgRating = products.length > 0 ? (products.reduce((sum, p) => sum + (p.rating || 0), 0) / products.length).toFixed(1) : '0';
+  const newestProducts = products.slice().sort(sortNewProducts);
 
   const lowStockProducts = products.filter(p => (p.stock || 0) < 10);
   const activeNewsletterSubscribers = newsletterSubscribers.filter(item => item.status !== 'unsubscribed');
@@ -2090,11 +2263,16 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
                           const id = child.id;
                           if (id.startsWith('products-cat-')) {
                             setActiveTab('products');
+                            setProductPage(1);
                             if (id === 'products-cat-thun') setProductCategoryFilter('Áo thun nam');
                             else if (id === 'products-cat-thethao') setProductCategoryFilter('Áo thun thể thao nam');
                             else if (id === 'products-cat-polo') setProductCategoryFilter('Áo polo nam');
                             else if (id === 'products-cat-quan') setProductCategoryFilter('Quần thể thao nam');
                             else if (id === 'products-cat-phukien') setProductCategoryFilter('Phụ kiện thể thao');
+                          } else if (id === 'products') {
+                            setActiveTab('products');
+                            setProductCategoryFilter('all');
+                            setProductPage(1);
                           } else if (id.startsWith('orders-')) {
                             setActiveTab('orders');
                             if (id === 'orders-all') setOrderStatusFilter('all');
@@ -2389,7 +2567,7 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
                   <button onClick={() => setActiveTab('products')} className="text-[#1e4b64] text-xs font-bold hover:underline">Xem tất cả →</button>
                 </div>
                 <div className="divide-y divide-white/5">
-                  {products.slice(0, 5).map(p => (
+                  {newestProducts.slice(0, 5).map(p => (
                     <div key={p.id} className="flex items-center gap-4 px-6 py-4 hover:bg-white/[0.02] transition-all">
                       <div className="h-10 w-10 rounded-xl overflow-hidden bg-white/5 shrink-0">
                         {p.images?.[0] ? <img src={p.images[0]} alt={p.name} loading="lazy" className="h-full w-full object-cover" /> : <ImageIcon className="h-full w-full p-2.5 text-white/20" />}
@@ -2592,7 +2770,10 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
                   type="text"
                   placeholder="Tìm kiếm sản phẩm..."
                   value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
+                  onChange={e => {
+                    setSearchQuery(e.target.value);
+                    setProductPage(1);
+                  }}
                   className="w-full bg-[#13161f] border border-white/5 rounded-xl pl-11 pr-4 py-3 text-white text-sm font-medium placeholder:text-white/25 focus:outline-none focus:border-[#1e4b64]/50 transition-all"
                 />
               </div>
@@ -2600,7 +2781,10 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
                   <Filter className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
                   <select
                     value={productCategoryFilter}
-                    onChange={e => setProductCategoryFilter(e.target.value)}
+                    onChange={e => {
+                      setProductCategoryFilter(e.target.value);
+                      setProductPage(1);
+                    }}
                     className="w-full appearance-none bg-[#13161f] border border-white/5 rounded-xl pl-11 pr-10 py-3 text-white text-sm font-bold focus:outline-none focus:border-[#1e4b64]/50 transition-all"
                   >
                     <option value="all">Tất cả danh mục</option>
@@ -2622,10 +2806,58 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
               </div>
 
               {/* Info bar */}
-              <div className="flex items-center justify-between">
-                <p className="text-white/40 text-sm font-medium">
-                  Hiển thị <span className="text-white font-bold">{filteredProducts.length}</span> sản phẩm
-                </p>
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="text-white/40 text-sm font-medium">
+                    Hiển thị <span className="text-white font-bold">{paginatedProducts.length}</span>/<span className="text-white font-bold">{filteredProducts.length}</span> sản phẩm
+                  </p>
+                  {selectedExistingProductCount > 0 && (
+                    <p className="mt-1 text-xs font-bold text-white/30">
+                      Đang chọn <span className="text-white/70">{selectedExistingProductCount}</span> sản phẩm.
+                    </p>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => toggleCurrentPageProducts(!allCurrentPageProductsSelected)}
+                    disabled={paginatedProducts.length === 0}
+                    className={cn(
+                      "inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-xs font-black transition-all disabled:cursor-not-allowed disabled:opacity-40",
+                      allCurrentPageProductsSelected
+                        ? "border-[#4ca6d8]/40 bg-[#1e4b64]/25 text-white"
+                        : "border-white/10 bg-white/[0.03] text-white/55 hover:border-[#4ca6d8]/35 hover:text-white"
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={allCurrentPageProductsSelected}
+                      onChange={e => toggleCurrentPageProducts(e.target.checked)}
+                      onClick={e => e.stopPropagation()}
+                      className="h-4 w-4 accent-[#1e4b64]"
+                    />
+                    {allCurrentPageProductsSelected ? 'Bỏ chọn trang này' : `Chọn ${paginatedProducts.length} sản phẩm`}
+                  </button>
+                  {selectedExistingProductCount > 0 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedProductIds([])}
+                        className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-xs font-black text-white/55 transition-all hover:border-white/20 hover:text-white"
+                      >
+                        Bỏ tick
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleBulkDeleteProducts}
+                        className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2 text-xs font-black text-red-300 transition-all hover:bg-red-500/20 hover:text-red-200"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Xóa đã chọn
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
 
               {/* Table */}
@@ -2644,8 +2876,23 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
                     <table className="w-full text-left">
                       <thead>
                         <tr className="border-b border-white/5">
+                          <th className="w-12 px-4 py-4">
+                            <input
+                              type="checkbox"
+                              checked={allCurrentPageProductsSelected}
+                              ref={input => {
+                                if (input) {
+                                  input.indeterminate = selectedCurrentPageCount > 0 && !allCurrentPageProductsSelected;
+                                }
+                              }}
+                              onChange={e => toggleCurrentPageProducts(e.target.checked)}
+                              aria-label="Chọn tất cả sản phẩm trên trang"
+                              className="h-4 w-4 accent-[#1e4b64]"
+                            />
+                          </th>
                           <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Sản phẩm</th>
                           <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30 hidden md:table-cell">Danh mục</th>
+                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30 hidden xl:table-cell">Đăng lúc</th>
                           <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Giá</th>
                           <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30 hidden lg:table-cell">Kho</th>
                           <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30 hidden xl:table-cell">SEO</th>
@@ -2655,8 +2902,21 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-white/[0.04]">
-                        {filteredProducts.map(product => (
-                          <tr key={product.id} className="hover:bg-white/[0.02] transition-all group">
+                        {paginatedProducts.map(product => {
+                          const publishedDate = formatProductPublishedDate(product.createdAt);
+                          const isSelected = selectedProductIds.includes(product.id);
+
+                          return (
+                          <tr key={product.id} className={cn("hover:bg-white/[0.02] transition-all group", isSelected && "bg-[#1e4b64]/10")}>
+                            <td className="px-4 py-4 align-middle">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={e => toggleProductSelection(product.id, e.target.checked)}
+                                aria-label={`Chọn ${product.name}`}
+                                className="h-4 w-4 accent-[#1e4b64]"
+                              />
+                            </td>
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-3">
                                 <div className="h-11 w-11 rounded-xl overflow-hidden bg-white/5 border border-white/5 shrink-0">
@@ -2675,6 +2935,15 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
                               <span className="inline-block px-3 py-1 bg-white/5 border border-white/5 text-white/50 text-[10px] font-black uppercase tracking-wider rounded-lg whitespace-nowrap">
                                 {product.category}
                               </span>
+                            </td>
+                            <td className="px-6 py-4 hidden xl:table-cell">
+                              <div className="flex items-center gap-2 text-white/55">
+                                <Clock className="h-3.5 w-3.5 text-white/25" />
+                                <div className="leading-tight">
+                                  <p className="whitespace-nowrap text-xs font-black text-white/70">{publishedDate.date}</p>
+                                  <p className="mt-0.5 whitespace-nowrap text-[10px] font-bold text-white/30">{publishedDate.time}</p>
+                                </div>
+                              </div>
                             </td>
                             <td className="px-6 py-4">
                               <p className="text-[#10b981] font-black text-sm">{(product.discountPrice || product.price).toLocaleString('vi-VN')}₫</p>
@@ -2753,9 +3022,55 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
                               </div>
                             </td>
                           </tr>
-                        ))}
+                          );
+                        })}
                       </tbody>
                     </table>
+                    {productPageCount > 1 && (
+                      <div className="flex flex-col gap-3 border-t border-white/5 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-xs font-bold text-white/35">
+                          Trang <span className="text-white/70">{currentProductPage}</span>/<span className="text-white/70">{productPageCount}</span>
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setProductPage(page => Math.max(1, page - 1))}
+                            disabled={currentProductPage === 1}
+                            className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-xs font-black text-white/55 transition-all hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            Trước
+                          </button>
+                          {Array.from({ length: productPageCount }).map((_, index) => {
+                            const page = index + 1;
+                            const isActive = page === currentProductPage;
+
+                            return (
+                              <button
+                                key={page}
+                                type="button"
+                                onClick={() => setProductPage(page)}
+                                className={cn(
+                                  "h-9 min-w-9 rounded-lg border px-3 text-xs font-black transition-all",
+                                  isActive
+                                    ? "border-[#4ca6d8]/40 bg-[#1e4b64]/30 text-white"
+                                    : "border-white/10 bg-white/[0.03] text-white/45 hover:text-white"
+                                )}
+                              >
+                                {page}
+                              </button>
+                            );
+                          })}
+                          <button
+                            type="button"
+                            onClick={() => setProductPage(page => Math.min(productPageCount, page + 1))}
+                            disabled={currentProductPage === productPageCount}
+                            className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-xs font-black text-white/55 transition-all hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            Sau
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -2776,13 +3091,61 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
               </div>
 
               <div className="flex items-center justify-between gap-4">
-                <p className="text-white/40 text-sm font-medium">
-                  Hiển thị <span className="text-white font-bold">{blogPosts.filter(post => post.title.toLowerCase().includes(blogSearchQuery.toLowerCase()) || post.category.toLowerCase().includes(blogSearchQuery.toLowerCase()) || post.author.toLowerCase().includes(blogSearchQuery.toLowerCase())).length}</span> bài viết
-                </p>
+                <div>
+                  <p className="text-white/40 text-sm font-medium">
+                    Hiển thị <span className="text-white font-bold">{filteredBlogPosts.length}</span> bài viết
+                  </p>
+                  {selectedExistingBlogPostCount > 0 && (
+                    <p className="mt-1 text-xs font-bold text-white/30">
+                      Đang chọn <span className="text-white/70">{selectedExistingBlogPostCount}</span> bài viết.
+                    </p>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => toggleFilteredBlogPosts(!allFilteredBlogPostsSelected)}
+                    disabled={filteredBlogPosts.length === 0}
+                    className={cn(
+                      "inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-xs font-black transition-all disabled:cursor-not-allowed disabled:opacity-40",
+                      allFilteredBlogPostsSelected
+                        ? "border-[#4ca6d8]/40 bg-[#1e4b64]/25 text-white"
+                        : "border-white/10 bg-white/[0.03] text-white/55 hover:border-[#4ca6d8]/35 hover:text-white"
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={allFilteredBlogPostsSelected}
+                      onChange={e => toggleFilteredBlogPosts(e.target.checked)}
+                      onClick={e => e.stopPropagation()}
+                      className="h-4 w-4 accent-[#1e4b64]"
+                    />
+                    {allFilteredBlogPostsSelected ? 'Bỏ chọn bài viết' : `Chọn ${filteredBlogPosts.length} bài viết`}
+                  </button>
+                  {selectedExistingBlogPostCount > 0 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedBlogPostIds([])}
+                        className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-xs font-black text-white/55 transition-all hover:border-white/20 hover:text-white"
+                      >
+                        Bỏ tick
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleBulkDeleteBlogPosts}
+                        className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2 text-xs font-black text-red-300 transition-all hover:bg-red-500/20 hover:text-red-200"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Xóa đã chọn
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
 
               <div className="bg-[#13161f] border border-white/5 rounded-2xl overflow-hidden">
-                {blogPosts.filter(post => post.title.toLowerCase().includes(blogSearchQuery.toLowerCase()) || post.category.toLowerCase().includes(blogSearchQuery.toLowerCase()) || post.author.toLowerCase().includes(blogSearchQuery.toLowerCase())).length === 0 ? (
+                {filteredBlogPosts.length === 0 ? (
                   <div className="py-20 flex items-center justify-center">
                     <MessageSquare className="h-12 w-12 text-white/10 mx-auto mb-3" />
                     <p className="text-white/30 font-bold text-sm">Không tìm thấy bài viết</p>
@@ -2792,6 +3155,20 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
                     <table className="w-full text-left">
                       <thead>
                         <tr className="border-b border-white/5">
+                          <th className="w-12 px-4 py-4">
+                            <input
+                              type="checkbox"
+                              checked={allFilteredBlogPostsSelected}
+                              ref={input => {
+                                if (input) {
+                                  input.indeterminate = selectedFilteredBlogPostCount > 0 && !allFilteredBlogPostsSelected;
+                                }
+                              }}
+                              onChange={e => toggleFilteredBlogPosts(e.target.checked)}
+                              aria-label="Chọn tất cả bài viết"
+                              className="h-4 w-4 accent-[#1e4b64]"
+                            />
+                          </th>
                           <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Tiêu đề</th>
                           <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30 hidden md:table-cell">Chuyên mục</th>
                           <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">Tác giả</th>
@@ -2800,11 +3177,34 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-white/[0.04]">
-                        {blogPosts.filter(post => post.title.toLowerCase().includes(blogSearchQuery.toLowerCase()) || post.category.toLowerCase().includes(blogSearchQuery.toLowerCase()) || post.author.toLowerCase().includes(blogSearchQuery.toLowerCase())).map(post => (
-                          <tr key={post.id} className="hover:bg-white/[0.02] transition-all group">
+                        {filteredBlogPosts.map(post => {
+                          const isSelected = selectedBlogPostIds.includes(post.id);
+
+                          return (
+                          <tr key={post.id} className={cn("hover:bg-white/[0.02] transition-all group", isSelected && "bg-[#1e4b64]/10")}>
+                            <td className="px-4 py-4 align-middle">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={e => toggleBlogPostSelection(post.id, e.target.checked)}
+                                aria-label={`Chọn ${post.title}`}
+                                className="h-4 w-4 accent-[#1e4b64]"
+                              />
+                            </td>
                             <td className="px-6 py-4 w-[40%]">
-                              <p className="text-white text-sm font-bold line-clamp-1">{post.title}</p>
-                              <p className="text-white/30 text-[11px] mt-1">{post.excerpt.slice(0, 80)}...</p>
+                              <div className="flex items-center gap-3">
+                                <div className="h-12 w-16 shrink-0 overflow-hidden rounded-xl border border-white/5 bg-white/5">
+                                  {post.image ? (
+                                    <img src={post.image} alt={post.title} loading="lazy" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110" />
+                                  ) : (
+                                    <ImageIcon className="h-full w-full p-3 text-white/20" />
+                                  )}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-white text-sm font-bold line-clamp-1">{post.title}</p>
+                                  <p className="text-white/30 text-[11px] mt-1 line-clamp-1">{(post.excerpt || '').slice(0, 80)}...</p>
+                                </div>
+                              </div>
                             </td>
                             <td className="px-6 py-4 hidden md:table-cell">
                               <span className="inline-block px-3 py-1 bg-white/5 border border-white/5 text-white/50 text-[10px] font-black uppercase tracking-wider rounded-lg whitespace-nowrap">
@@ -2827,6 +3227,13 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
                                   <Eye className="h-3.5 w-3.5" />
                                 </button>
                                 <button
+                                  onClick={() => handleCopyBlogPost(post)}
+                                  title="Sao chép bài viết"
+                                  className="h-8 w-8 flex items-center justify-center rounded-lg text-white/30 hover:text-yellow-400 hover:bg-yellow-500/10 transition-all"
+                                >
+                                  <Copy className="h-3.5 w-3.5" />
+                                </button>
+                                <button
                                   onClick={() => {
                                     setEditingBlogPost(post);
                                     setIsBlogModalOpen(true);
@@ -2846,7 +3253,8 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
                               </div>
                             </td>
                           </tr>
-                        ))}
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -4403,7 +4811,7 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
               }}
               onSuccess={() => {
                 const sourceProducts = productSourceRef.current.length > 0 ? productSourceRef.current : STATIC_PRODUCTS;
-                setProducts(mergeLocalProducts(sourceProducts));
+                setProducts(assignProductPublishTimes(mergeLocalProducts(sourceProducts)));
               }}
               product={editingProduct}
             />

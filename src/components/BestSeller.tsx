@@ -4,37 +4,13 @@ import { ProductCard } from './ProductCard';
 import { ChevronRight, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getProductPath } from '../lib/productUrls';
+import { sortBestSellers, sortNewProducts } from '../lib/productSorting';
 
 const PRODUCTS_PER_ROW = 6;
 
 interface BestSellerProps {
   products: Product[];
 }
-
-const getTimestamp = (value: Product['createdAt']): number => {
-  if (!value) return 0;
-  if (value instanceof Date) return value.getTime();
-  if (typeof value.toDate === 'function') return value.toDate().getTime();
-  if (typeof value.getTime === 'function') return value.getTime();
-  if (typeof value.seconds === 'number') {
-    return (value.seconds * 1000) + ((value.nanoseconds || 0) / 1e6);
-  }
-  return 0;
-};
-
-const sortNewProducts = (a: Product, b: Product) => {
-  const diff = getTimestamp(b.createdAt) - getTimestamp(a.createdAt);
-  if (diff !== 0) return diff;
-  return (b.reviewsCount - a.reviewsCount) || (b.rating - a.rating) || a.name.localeCompare(b.name);
-};
-
-const sortBestSellers = (a: Product, b: Product) => {
-  const popularityA = (a.reviewsCount || 0) * 2 + (a.rating || 0) * 10;
-  const popularityB = (b.reviewsCount || 0) * 2 + (b.rating || 0) * 10;
-  const diff = popularityB - popularityA;
-  if (diff !== 0) return diff;
-  return sortNewProducts(a, b);
-};
 
 export function BestSeller({ products }: BestSellerProps) {
   const navigate = useNavigate();
@@ -121,5 +97,4 @@ export function BestSeller({ products }: BestSellerProps) {
     </section>
   );
 }
-
 

@@ -1,6 +1,7 @@
 import { PRODUCTS as STATIC_PRODUCTS } from '../data';
 import { Product } from '../types';
 import { normalizeProductSlug } from './productUrls';
+import { assignProductPublishTimes } from './productSorting';
 
 export const LOCAL_PRODUCT_COPIES_STORAGE_KEY = 'ursport_local_product_copies_v1';
 export const LOCAL_PRODUCTS_UPDATED_EVENT = 'ursport:local-products-updated';
@@ -24,13 +25,13 @@ export const loadLocalProducts = (): Product[] => {
 
 export const mergeLocalProducts = (products: Product[] = STATIC_PRODUCTS): Product[] => {
   const localProducts = loadLocalProducts();
-  if (localProducts.length === 0) return products.map(normalizeLocalProduct);
+  if (localProducts.length === 0) return assignProductPublishTimes(products.map(normalizeLocalProduct));
 
   const localIds = new Set(localProducts.map(product => product.id));
-  return [
+  return assignProductPublishTimes([
     ...localProducts,
     ...products.filter(product => !localIds.has(product.id)).map(normalizeLocalProduct),
-  ];
+  ]);
 };
 
 export const saveLocalProduct = (product: Product) => {

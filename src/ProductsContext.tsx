@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import { db } from './firebase';
 import { PRODUCTS as STATIC_PRODUCTS } from './data';
 import { Product } from './types';
 import { normalizeProductSlug } from './lib/productUrls';
 import { LOCAL_PRODUCTS_UPDATED_EVENT, mergeLocalProducts } from './lib/localProducts';
+import { assignProductPublishTimes } from './lib/productSorting';
 
 interface ProductsContextType {
   products: Product[];
@@ -28,15 +29,14 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     const loadProducts = async () => {
       if (!db) {
-        productSourceRef.current = STATIC_PRODUCTS.map(normalizeProduct);
-        setProducts(mergeLocalProducts(productSourceRef.current));
+        productSourceRef.current = assignProductPublishTimes(STATIC_PRODUCTS.map(normalizeProduct));
+        setProducts(assignProductPublishTimes(mergeLocalProducts(productSourceRef.current)));
         setLoading(false);
         return;
       }
 
       try {
-        const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
-        const snapshot = await getDocs(q);
+        const snapshot = await getDocs(collection(db, 'products'));
         if (!mounted) return;
 
         if (!snapshot.empty) {
@@ -44,17 +44,17 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             id: d.id,
             ...d.data()
           } as Product)).map(normalizeProduct);
-          productSourceRef.current = data;
-          setProducts(mergeLocalProducts(data));
+          productSourceRef.current = assignProductPublishTimes(data);
+          setProducts(assignProductPublishTimes(mergeLocalProducts(productSourceRef.current)));
         } else {
-          productSourceRef.current = STATIC_PRODUCTS.map(normalizeProduct);
-          setProducts(mergeLocalProducts(productSourceRef.current));
+          productSourceRef.current = assignProductPublishTimes(STATIC_PRODUCTS.map(normalizeProduct));
+          setProducts(assignProductPublishTimes(mergeLocalProducts(productSourceRef.current)));
         }
       } catch (error) {
         console.error('Error fetching products:', error);
         if (mounted) {
-          productSourceRef.current = STATIC_PRODUCTS.map(normalizeProduct);
-          setProducts(mergeLocalProducts(productSourceRef.current));
+          productSourceRef.current = assignProductPublishTimes(STATIC_PRODUCTS.map(normalizeProduct));
+          setProducts(assignProductPublishTimes(mergeLocalProducts(productSourceRef.current)));
         }
       } finally {
         if (mounted) setLoading(false);
@@ -67,7 +67,7 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const sourceProducts = productSourceRef.current.length > 0
         ? productSourceRef.current
         : STATIC_PRODUCTS.map(normalizeProduct);
-      setProducts(mergeLocalProducts(sourceProducts));
+      setProducts(assignProductPublishTimes(mergeLocalProducts(sourceProducts)));
     };
     window.addEventListener(LOCAL_PRODUCTS_UPDATED_EVENT, refreshLocalProducts);
 
