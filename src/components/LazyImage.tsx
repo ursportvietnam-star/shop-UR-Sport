@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 interface LazyImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src?: string;
   alt: string;
+  fallbackSrc?: string;
   placeholderColor?: string;
   /** Distance from viewport to start loading (default: '200px') */
   rootMargin?: string;
@@ -44,6 +45,7 @@ function generateSrcSet(url: string | undefined): string | undefined {
 export const LazyImage: React.FC<LazyImageProps> = ({
   src,
   alt,
+  fallbackSrc,
   placeholderColor = '#f4f4f5',
   rootMargin = '200px',
   className = '',
@@ -58,6 +60,8 @@ export const LazyImage: React.FC<LazyImageProps> = ({
   const [hasError, setHasError] = useState(false);
   const imgRef = useRef<HTMLDivElement>(null);
   const imageSrc = src?.trim();
+  const fallbackImageSrc = fallbackSrc?.trim();
+  const displaySrc = hasError && fallbackImageSrc && fallbackImageSrc !== imageSrc ? fallbackImageSrc : imageSrc;
 
   useEffect(() => {
     setIsLoaded(false);
@@ -97,17 +101,25 @@ export const LazyImage: React.FC<LazyImageProps> = ({
         ...style,
       }}
     >
-      {isInView && imageSrc && !hasError && (
+      {isInView && displaySrc && (
         <img
-          src={imageSrc}
-          srcSet={generateSrcSet(imageSrc)}
+          src={displaySrc}
+          srcSet={generateSrcSet(displaySrc)}
           sizes={sizes || "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"}
           width={width}
           height={height}
           decoding="async"
           alt={alt}
           onLoad={handleLoad}
-          onError={() => setHasError(true)}
+          onError={() => {
+            if (!hasError && fallbackImageSrc && fallbackImageSrc !== imageSrc) {
+              setIsLoaded(false);
+              setHasError(true);
+              return;
+            }
+
+            setHasError(true);
+          }}
           className={className}
           style={{
             position: 'absolute',

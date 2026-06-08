@@ -453,6 +453,26 @@ export default function HomePage({
     const getPostPath = (post: BlogPost) => `/blog/${post.slug || post.id}`;
     const getPostDate = (post: BlogPost) => post.date || 'Mới cập nhật';
     const getPostExcerpt = (post: BlogPost) => post.excerpt || post.metaDescription || 'Khám phá góc nhìn mới từ UR Sport.';
+    const getFirstContentImage = (html?: string) => {
+      if (!html) return '';
+      return html.match(/<img[^>]+src=["']([^"']+)["']/i)?.[1] || '';
+    };
+    const getFallbackBlogImage = (post: BlogPost) => {
+      const haystack = `${post.title} ${post.category} ${post.slug}`.toLowerCase();
+      if (haystack.includes('quần') || haystack.includes('quan')) return '/images/blog/quan-the-thao-nam.webp';
+      if (haystack.includes('size')) return '/images/blog/bang-size-ao-thun-nam-ursport-chuan-form.png';
+      if (haystack.includes('polo')) return '/images/blog/ao-polo-nam.webp';
+      if (haystack.includes('quick') || haystack.includes('gym') || haystack.includes('thể thao') || haystack.includes('the thao')) {
+        return '/images/blog/ao-thun-nam-the-thao-ursport.webp';
+      }
+
+      return '/images/blog/ao-thun-nam-mac-hang-ngay-ursport.webp';
+    };
+    const getBlogImage = (post: BlogPost) =>
+      post.image?.trim() ||
+      post.images?.find(image => image?.trim()) ||
+      getFirstContentImage(post.content) ||
+      getFallbackBlogImage(post);
     const getCategorySlug = (label: string) => label
       .toLowerCase()
       .normalize('NFD')
@@ -462,7 +482,7 @@ export default function HomePage({
       .replace(/^-|-$/g, '');
 
     return (
-      <section key={key} className="container-custom border-t border-zinc-100 bg-white py-12 sm:py-14">
+      <section key={key} className="container-custom border-t border-zinc-100 bg-white py-8 sm:py-10">
         <div className="mb-5 flex flex-wrap items-center gap-2.5">
           <span className="mr-1 text-sm font-black text-zinc-900">Quick Links</span>
           {(quickLinks.length > 0 ? quickLinks : ['Áo thun nam', 'Bảng size', 'Phối đồ', 'Chất liệu']).map(label => (
@@ -476,7 +496,7 @@ export default function HomePage({
           ))}
         </div>
 
-        <div className="grid grid-cols-1 gap-7 lg:grid-cols-[1.45fr_0.72fr_0.72fr]">
+        <div className="grid grid-cols-1 gap-7 lg:grid-cols-[1.65fr_0.78fr_0.78fr] lg:gap-7">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -484,25 +504,26 @@ export default function HomePage({
             className="group cursor-pointer"
             onClick={() => navigate(featuredPath)}
           >
-            <div className="relative min-h-[360px] overflow-hidden bg-zinc-900 sm:min-h-[430px]">
+            <div className="relative min-h-[360px] overflow-hidden bg-zinc-900 sm:min-h-[430px] lg:h-[515px]">
               <LazyImage
-                src={featuredPost.image}
+                src={getBlogImage(featuredPost)}
+                fallbackSrc={getFallbackBlogImage(featuredPost)}
                 alt={featuredPost.title}
                 className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-linear-to-t from-[#061c35] via-[#061c35]/55 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8">
-                <h3 className="max-w-2xl text-3xl font-black leading-tight text-white sm:text-4xl">
+              <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8 lg:p-10">
+                <h3 className="max-w-2xl text-3xl font-black leading-tight text-white sm:text-4xl lg:text-[34px]">
                   {featuredPost.title}
                 </h3>
-                <p className="mt-3 max-w-2xl text-sm font-bold leading-6 text-white">
+                <p className="mt-3 max-w-2xl text-sm font-bold leading-5 text-white">
                   {getPostExcerpt(featuredPost)}
                 </p>
               </div>
             </div>
           </motion.div>
 
-          <div className="grid gap-7">
+          <div className="grid gap-7 lg:h-[515px] lg:grid-rows-2">
             {topSidePosts.map((item, i) => (
               <motion.div
                 key={item.id || i}
@@ -510,17 +531,18 @@ export default function HomePage({
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="group cursor-pointer"
+                className="group flex min-h-0 cursor-pointer flex-col"
                 onClick={() => navigate(getPostPath(item))}
               >
-                <div className="relative mb-3 aspect-[16/9] overflow-hidden bg-zinc-100">
+                <div className="relative mb-3 aspect-[16/9] overflow-hidden bg-zinc-100 lg:h-[178px] lg:shrink-0">
                   <LazyImage
-                    src={item.image}
+                    src={getBlogImage(item)}
+                    fallbackSrc={getFallbackBlogImage(item)}
                     alt={item.title}
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                 </div>
-                <h4 className="text-xl font-black leading-tight text-zinc-950 transition-colors group-hover:text-[#005594]">
+                <h4 className="text-xl font-black leading-tight text-zinc-950 transition-colors group-hover:text-[#005594] lg:text-[19px]">
                   {item.title}
                 </h4>
                 {i === 1 && (
@@ -533,11 +555,12 @@ export default function HomePage({
             ))}
           </div>
 
-          <aside className="border-t border-zinc-300 pt-3 lg:border-t-0 lg:pt-0">
-            <div className="mb-3 border-t-4 border-[#0077c8] pt-2">
-              <h3 className="text-xl font-black uppercase tracking-tight text-[#061c35]">Latest News</h3>
+          <aside className="border-t border-zinc-300 pt-3 lg:h-[515px] lg:border-t-0 lg:pt-0">
+            <div className="border-t border-zinc-500">
+              <div className="h-1 w-28 bg-[#0077c8]" />
+              <h3 className="pt-2 text-xl font-black uppercase tracking-tight text-[#061c35]">LATEST NEWS</h3>
             </div>
-            <div className="max-h-[430px] overflow-y-auto border-b-4 border-[#061c35] pr-2">
+            <div className="mt-2 max-h-[465px] overflow-y-auto border-b-4 border-[#061c35] pr-2 lg:h-[465px]">
               {latestPosts.map((item, index) => (
                 <button
                   key={item.id || index}
