@@ -208,6 +208,7 @@ function AppContent() {
   };
 
   const isAdminRoute = location.pathname === '/quan-tri' || location.pathname === '/quantri' || location.pathname.startsWith('/admin');
+  const isBlogRoute = location.pathname === '/blog' || location.pathname.startsWith('/blog/');
 
   const commonShopProps = {
     activeCategory,
@@ -264,6 +265,7 @@ function AppContent() {
               <Route path="/admin" element={<AdminPanel />} />
               <Route path="/admin/seo" element={<AdminPanel initialTab="ai-seo-report" />} />
               <Route path="/admin/ai/product-factory" element={<AdminPanel initialTab="ai-product-factory" />} />
+              <Route path="/ao-thun-nam-the-thao" element={<Navigate to="/ao-thun-the-thao-nam" replace />} />
               <Route path="/ao-thun-nam-cotton" element={<Navigate to="/ao-thun-cotton-nam" replace />} />
               
               {/* Clean Category URLs at root */}
@@ -286,9 +288,11 @@ function AppContent() {
 
           {!isAdminRoute && location.pathname !== '/' && (
             <>
-              <React.Suspense fallback={null}>
-                <TrustBadgesSection />
-              </React.Suspense>
+              {!isBlogRoute && (
+                <React.Suspense fallback={null}>
+                  <TrustBadgesSection />
+                </React.Suspense>
+              )}
               
               <Footer 
                 onPageChange={onPageChange}

@@ -32,6 +32,14 @@ import { STATIC_BLOG_POSTS as POSTS } from '../data';
 import { useProducts } from '../ProductsContext';
 import { LazyImage } from './LazyImage';
 import { getProductPath } from '../lib/productUrls';
+import {
+  DEFAULT_BLOG_PAGE_SECTIONS,
+  mergeBlogPageSections,
+  normalizeBlogPageSection,
+  readLocalBlogPageSections,
+  type BlogPageSectionType,
+  type BlogPageSectionConfig,
+} from '../lib/blogPageConfig';
 
 interface TocHeading {
   id: string;
@@ -47,6 +55,15 @@ const POST_CATEGORIES = [
   { label: 'Dáng người', path: '/blog/chon-ao-theo-dang' },
   { label: 'Thể thao', path: '/blog/ao-thun-the-thao' },
   { label: 'Hướng dẫn', path: '/blog/huong-dan-mua-ao' }
+];
+
+const BLOG_HUB_CATEGORIES = [
+  { label: 'Tất cả', path: '/blog' },
+  { label: 'Áo thun nam', path: '/blog/ao-thun-nam' },
+  { label: 'Áo thun thể thao nam', path: '/blog/ao-thun-the-thao-nam' },
+  { label: 'Quần thể thao nam', path: '/blog/quan-the-thao-nam' },
+  { label: 'Chất liệu vải thể thao', path: '/blog/chat-lieu-vai-the-thao' },
+  { label: 'Phối đồ thể thao nam', path: '/blog/phoi-do-the-thao-nam' }
 ];
 
 const slugifyCategory = (text: string) =>
@@ -74,7 +91,7 @@ type BlogCategoryItem = {
   metaDescription?: string;
 };
 
-const BLOG_CATEGORIES_STORAGE_KEY = 'ursport_blog_categories_final_v1';
+const BLOG_CATEGORIES_STORAGE_KEY = 'ursport_blog_categories_final_v2';
 
 const normalizeTextForMatch = (text: string) =>
   text
@@ -153,6 +170,39 @@ const BLOG_CATEGORY_SEO_DEFAULTS: Record<string, { h1: string; description: stri
   }
 };
 
+const BLOG_HUB_SEO_DEFAULTS: Record<string, { h1: string; description: string; seoTitle: string; metaDescription: string }> = {
+  'ao-thun-nam': {
+    h1: 'Áo thun nam',
+    description: 'Cẩm nang chọn áo thun nam mát, bền form, không xù lông, dễ phối đồ và phù hợp mặc hằng ngày.',
+    seoTitle: 'Áo thun nam | Blog UR Sport',
+    metaDescription: 'Hướng dẫn chọn áo thun nam theo chất liệu, form dáng, size, màu sắc và cách phối đồ để mặc đẹp, thoải mái hằng ngày.'
+  },
+  'ao-thun-the-thao-nam': {
+    h1: 'Áo thun thể thao nam',
+    description: 'Kinh nghiệm chọn áo thun thể thao nam cho tập gym, chạy bộ, vận động ngoài trời và mặc hằng ngày.',
+    seoTitle: 'Áo thun thể thao nam | Blog UR Sport',
+    metaDescription: 'Hướng dẫn chọn áo thun thể thao nam theo chất liệu quick dry, độ co giãn, khả năng thấm hút mồ hôi, form áo và nhu cầu tập luyện.'
+  },
+  'quan-the-thao-nam': {
+    h1: 'Quần thể thao nam',
+    description: 'Cẩm nang chọn quần thể thao nam, quần short, jogger và quần gym theo dáng người, chất liệu và mục đích sử dụng.',
+    seoTitle: 'Quần thể thao nam | Blog UR Sport',
+    metaDescription: 'Tìm hiểu cách chọn quần thể thao nam, quần short, jogger và quần tập gym theo form dáng, chất liệu, size và cách phối đồ.'
+  },
+  'chat-lieu-vai-the-thao': {
+    h1: 'Chất liệu vải thể thao',
+    description: 'So sánh cotton, polyester, spandex, quick dry và các chất liệu áo quần thể thao nam thoáng mát, bền form, chống mùi.',
+    seoTitle: 'Chất liệu vải thể thao nam | Blog UR Sport',
+    metaDescription: 'Phân tích chất liệu vải thể thao như cotton, polyester, spandex, quick dry, khả năng thấm hút, độ co giãn, chống mùi và độ bền.'
+  },
+  'phoi-do-the-thao-nam': {
+    h1: 'Phối đồ thể thao nam',
+    description: 'Gợi ý outfit thể thao nam khi đi gym, đi chơi, đi làm, chạy bộ và mặc mùa hè theo phong cách gọn gàng, năng động.',
+    seoTitle: 'Phối đồ thể thao nam | Blog UR Sport',
+    metaDescription: 'Gợi ý phối đồ thể thao nam với áo thun, áo polo, quần short, jogger và phụ kiện cho đi gym, đi chơi, đi làm hoặc mùa hè.'
+  }
+};
+
 const getSlugFromCategoryPath = (path: string) => {
   if (!path || path === '/blog') return 'blog';
   const parts = path.split('/').filter(Boolean);
@@ -163,7 +213,8 @@ const normalizeBlogCategoryItem = (item: Partial<BlogCategoryItem>, index = 0): 
   const label = item.label?.trim() || 'Blog';
   const link = item.link || (index === 0 ? '/blog' : `/blog/${slugifyCategory(label)}`);
   const group = item.group === 'category' || item.group === 'subcategory' ? item.group : 'main';
-  const defaults = BLOG_CATEGORY_SEO_DEFAULTS[getSlugFromCategoryPath(link)] || BLOG_CATEGORY_SEO_DEFAULTS[slugifyCategory(label)] || BLOG_CATEGORY_SEO_DEFAULTS.blog;
+  const routeSlug = getSlugFromCategoryPath(link);
+  const defaults = BLOG_HUB_SEO_DEFAULTS[routeSlug] || BLOG_HUB_SEO_DEFAULTS[slugifyCategory(label)] || BLOG_CATEGORY_SEO_DEFAULTS[routeSlug] || BLOG_CATEGORY_SEO_DEFAULTS[slugifyCategory(label)] || BLOG_CATEGORY_SEO_DEFAULTS.blog;
   const savedH1 = item.h1?.trim();
   const hasMainBlogH1 = group !== 'main' && savedH1 && slugifyCategory(savedH1) === slugifyCategory(BLOG_CATEGORY_SEO_DEFAULTS.blog.h1);
   const h1 = savedH1 && !hasMainBlogH1
@@ -184,7 +235,7 @@ const normalizeBlogCategoryItem = (item: Partial<BlogCategoryItem>, index = 0): 
   };
 };
 
-const DEFAULT_BLOG_CATEGORY_ITEMS = POST_CATEGORIES.map((item, index) => normalizeBlogCategoryItem({
+const DEFAULT_BLOG_CATEGORY_ITEMS = BLOG_HUB_CATEGORIES.map((item, index) => normalizeBlogCategoryItem({
   id: index + 1,
   label: item.label,
   link: item.path,
@@ -199,8 +250,146 @@ const findBlogCategoryBySlug = (items: BlogCategoryItem[], routeSlug?: string) =
     || DEFAULT_BLOG_CATEGORY_ITEMS.find(item => item.group !== 'main' && slugifyCategory(item.label) === routeSlug);
 };
 
+const findBlogCategoryLabelByPostSlug = (posts: any[], routeSlug?: string) => {
+  if (!routeSlug) return undefined;
+  const postWithCategory = posts.find(post => slugifyCategory(post.category || '') === routeSlug);
+  return postWithCategory?.category?.trim();
+};
+
 const getBlogPostSlug = (post: any) => String(post?.slug || post?.id || '').trim();
 const getBlogPostPath = (post: any) => `/blog/${getBlogPostSlug(post)}`;
+
+const BLOG_HOME_SEO = {
+  h1: 'Blog Đồ Thể Thao Nam: Áo Thun, Quần Thể Thao & Đồ Gym Nam',
+  title: 'Blog Đồ Thể Thao Nam: Áo Thun, Đồ Gym | UR Sport',
+  description: 'Blog UR Sport chia sẻ cách chọn áo thun nam, áo thun thể thao nam, quần thể thao nam và đồ gym nam theo chất liệu, form dáng, size và phối đồ.',
+  primaryKeyword: 'đồ thể thao nam',
+  secondaryKeywords: [
+    'áo thun nam',
+    'áo thun thể thao nam',
+    'quần thể thao nam',
+    'đồ gym nam',
+    'chất liệu áo thể thao',
+    'phối đồ thể thao nam'
+  ]
+};
+
+const BLOG_SEO_HUBS = [
+  {
+    title: 'Áo thun nam',
+    description: 'Cách chọn áo thun nam mát, bền form, không xù lông và dễ mặc hằng ngày.',
+    href: '/ao-thun-nam',
+    keywords: ['áo thun nam', 'áo thun cotton nam', 'áo thun nam mùa hè']
+  },
+  {
+    title: 'Áo thun thể thao nam',
+    description: 'Gợi ý chọn áo tập gym, chạy bộ, quick dry, co giãn và thấm hút mồ hôi.',
+    href: '/ao-thun-the-thao-nam',
+    keywords: ['áo thun thể thao nam', 'áo gym nam', 'áo chạy bộ nam']
+  },
+  {
+    title: 'Quần thể thao nam',
+    description: 'Kinh nghiệm chọn quần short, jogger, quần gym theo dáng người và mục đích sử dụng.',
+    href: '/quan-the-thao-nam',
+    keywords: ['quần thể thao nam', 'quần jogger nam', 'quần tập gym nam']
+  },
+  {
+    title: 'Chất liệu & form dáng',
+    description: 'So sánh cotton, polyester, spandex, quick dry và các form slim, regular, oversize.',
+    href: '/blog',
+    keywords: ['vải quick dry là gì', 'cotton compact là gì', 'form áo thun nam']
+  }
+];
+
+const BLOG_HOME_HUBS = [
+  {
+    title: 'Áo thun nam',
+    description: 'Chọn áo thun nam mát, bền form, không xù lông và dễ phối hằng ngày.',
+    href: '/blog/ao-thun-nam',
+    keywords: ['áo thun nam', 'áo thun cotton nam', 'áo thun nam mùa hè']
+  },
+  {
+    title: 'Áo thun thể thao nam',
+    description: 'Áo tập gym, chạy bộ, quick dry, co giãn và thấm hút mồ hôi.',
+    href: '/blog/ao-thun-the-thao-nam',
+    keywords: ['áo thun thể thao nam', 'áo gym nam', 'áo chạy bộ nam']
+  },
+  {
+    title: 'Quần thể thao nam',
+    description: 'Quần short, jogger, quần gym theo dáng người và mục đích sử dụng.',
+    href: '/blog/quan-the-thao-nam',
+    keywords: ['quần thể thao nam', 'quần jogger nam', 'quần tập gym nam']
+  },
+  {
+    title: 'Chất liệu vải thể thao',
+    description: 'Cotton, polyester, spandex, quick dry, thấm hút và chống mùi.',
+    href: '/blog/chat-lieu-vai-the-thao',
+    keywords: ['vải quick dry', 'cotton compact', 'spandex']
+  },
+  {
+    title: 'Phối đồ thể thao nam',
+    description: 'Outfit đi gym, đi chơi, đi làm, chạy bộ và mặc mùa hè.',
+    href: '/blog/phoi-do-the-thao-nam',
+    keywords: ['phối đồ thể thao nam', 'outfit đi gym', 'đồ nam mùa hè']
+  }
+];
+
+const BLOG_HUB_MATCH_TERMS: Record<string, string[]> = {
+  'ao-thun-nam': ['áo thun nam', 'ao thun nam', 'áo phông', 'ao phong', 't-shirt', 'cotton', 'oversize', 'regular fit', 'slim fit'],
+  'ao-thun-the-thao-nam': ['áo thun thể thao', 'ao thun the thao', 'áo gym', 'ao gym', 'chạy bộ', 'chay bo', 'quick dry', 'thấm hút', 'tham hut'],
+  'quan-the-thao-nam': ['quần thể thao', 'quan the thao', 'quần short', 'quan short', 'jogger', 'quần gym', 'quan gym'],
+  'chat-lieu-vai-the-thao': ['chất liệu', 'chat lieu', 'vải', 'vai', 'cotton', 'polyester', 'spandex', 'quick dry', 'thấm hút', 'tham hut', 'chống mùi', 'chong mui'],
+  'phoi-do-the-thao-nam': ['phối đồ', 'phoi do', 'outfit', 'đi gym', 'di gym', 'đi chơi', 'di choi', 'đi làm', 'di lam', 'mùa hè', 'mua he']
+};
+
+const BLOG_HUB_PRODUCT_LINKS: Record<string, { href: string; label: string; shortLabel: string }> = {
+  'ao-thun-nam': {
+    href: '/ao-thun-nam',
+    label: 'Xem sản phẩm áo thun nam',
+    shortLabel: 'Áo thun nam'
+  },
+  'ao-thun-the-thao-nam': {
+    href: '/ao-thun-the-thao-nam',
+    label: 'Xem áo thun thể thao nam',
+    shortLabel: 'Áo thun thể thao nam'
+  },
+  'quan-the-thao-nam': {
+    href: '/quan-the-thao-nam',
+    label: 'Xem quần thể thao nam',
+    shortLabel: 'Quần thể thao nam'
+  },
+  'chat-lieu-vai-the-thao': {
+    href: '/shop',
+    label: 'Xem đồ thể thao nam',
+    shortLabel: 'Đồ thể thao nam'
+  },
+  'phoi-do-the-thao-nam': {
+    href: '/shop',
+    label: 'Xem outfit thể thao nam',
+    shortLabel: 'Outfit thể thao nam'
+  }
+};
+
+const blogPostMatchesHub = (post: any, categoryLabel: string) => {
+  const categorySlug = slugifyCategory(categoryLabel);
+  if (categorySlug === 'tat-ca' || categorySlug === 'blog') return true;
+
+  const postCategorySlug = slugifyCategory(post.category || '');
+  if (postCategorySlug === categorySlug) return true;
+
+  const terms = BLOG_HUB_MATCH_TERMS[categorySlug] || [];
+  if (terms.length === 0) return false;
+
+  const haystack = normalizeTextForMatch([
+    post.title,
+    post.slug,
+    post.category,
+    post.excerpt,
+    post.metaDescription
+  ].filter(Boolean).join(' '));
+
+  return terms.some(term => haystack.includes(normalizeTextForMatch(term)));
+};
 
 const loadCachedBlogCategories = () => {
   if (typeof window === 'undefined') return null;
@@ -228,6 +417,7 @@ export function NewsPage() {
   const [selectedPost, setSelectedPost] = useState<any>(null);
   const [posts, setPosts] = useState<any[]>(POSTS);
   const [blogCategories, setBlogCategories] = useState<BlogCategoryItem[]>(() => loadCachedBlogCategories() || DEFAULT_BLOG_CATEGORY_ITEMS);
+  const [blogPageSections, setBlogPageSections] = useState<BlogPageSectionConfig[]>(() => readLocalBlogPageSections() || DEFAULT_BLOG_PAGE_SECTIONS);
   const [blogCategoriesLoaded, setBlogCategoriesLoaded] = useState(false);
   const [postsLoaded, setPostsLoaded] = useState(false);
   const [contentHtml, setContentHtml] = useState('');
@@ -243,6 +433,7 @@ export function NewsPage() {
   const { products } = useProducts();
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [homeHubVisibleCounts, setHomeHubVisibleCounts] = useState<Record<string, number>>({});
   const [readProgress, setReadProgress] = useState(0);
   const [shouldHideSidebar, setShouldHideSidebar] = useState(false);
   const [liked, setLiked] = useState(false);
@@ -356,23 +547,68 @@ export function NewsPage() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
+    const loadBlogPageSections = async () => {
+      try {
+        const localSections = readLocalBlogPageSections();
+        if (localSections?.length && !cancelled) {
+          setBlogPageSections(localSections);
+        }
+
+        if (!db || !isFirebaseConfigured) return;
+
+        const snap = await getDoc(doc(db, 'settings', 'blogPage'));
+        if (cancelled || !snap.exists()) return;
+
+        const sections = Array.isArray(snap.data().sections)
+          ? mergeBlogPageSections(snap.data().sections.map(normalizeBlogPageSection))
+          : DEFAULT_BLOG_PAGE_SECTIONS;
+        setBlogPageSections(sections);
+      } catch (error) {
+        console.error('Failed to load blog page sections:', error);
+        if (!cancelled) {
+          setBlogPageSections(readLocalBlogPageSections() || DEFAULT_BLOG_PAGE_SECTIONS);
+        }
+      }
+    };
+
+    loadBlogPageSections();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     const effectiveCategorySlug = categorySlug || slug;
     const categoryFromRoute = findBlogCategoryBySlug(blogCategories, effectiveCategorySlug);
 
     if (categoryFromRoute) {
       setActiveCategory(categoryFromRoute.label);
-    } else if (categorySlug) {
+      return;
+    }
+
+    if (effectiveCategorySlug && postsLoaded) {
+      const postCategoryLabel = findBlogCategoryLabelByPostSlug(posts, effectiveCategorySlug);
+      if (postCategoryLabel) {
+        setActiveCategory(postCategoryLabel);
+        return;
+      }
+    }
+
+    if (categorySlug) {
       const category = findBlogCategoryBySlug(blogCategories, categorySlug);
       setActiveCategory(category?.label || DEFAULT_BLOG_CATEGORY_ITEMS[0].label);
     } else if (!slug) {
       setActiveCategory(blogCategories.find(item => item.group === 'main')?.label || DEFAULT_BLOG_CATEGORY_ITEMS[0].label);
     }
-  }, [blogCategories, categorySlug, slug]);
+  }, [blogCategories, categorySlug, slug, posts, postsLoaded]);
 
   useEffect(() => {
     if (slug) {
       const categoryFromSlug = findBlogCategoryBySlug(blogCategories, slug);
-      if (categoryFromSlug) {
+      const postCategoryLabel = !categoryFromSlug && postsLoaded ? findBlogCategoryLabelByPostSlug(posts, slug) : undefined;
+      if (categoryFromSlug || postCategoryLabel) {
         setSelectedPost(null);
         return;
       }
@@ -780,9 +1016,18 @@ export function NewsPage() {
   const activeBlogCategory = effectiveCategorySlug
     ? findBlogCategoryBySlug(blogCategories, effectiveCategorySlug)
     : mainBlogCategory;
-  const currentBlogMeta = activeBlogCategory || mainBlogCategory;
+  const syntheticBlogCategory = !activeBlogCategory && activeCategory && effectiveCategorySlug && activeCategory !== 'Tất cả'
+    ? normalizeBlogCategoryItem({ label: activeCategory, link: `/blog/${effectiveCategorySlug}`, group: 'category' }, -1)
+    : undefined;
+  const currentBlogMeta = activeBlogCategory || syntheticBlogCategory || mainBlogCategory;
   const blogCanonical = currentBlogMeta?.link || '/blog';
   const postCanonical = selectedPost ? getBlogPostPath(selectedPost) : blogCanonical;
+  const isBlogHome = !selectedPost && blogCanonical === '/blog';
+  const currentBlogHubSlug = !selectedPost && !isBlogHome ? getSlugFromCategoryPath(blogCanonical) : '';
+  const currentBlogHubProductLink = currentBlogHubSlug ? BLOG_HUB_PRODUCT_LINKS[currentBlogHubSlug] : undefined;
+  const currentBlogHubTitle = currentBlogMeta?.h1 || activeCategory;
+  const blogHomeTitle = isBlogHome ? BLOG_HOME_SEO.h1 : currentBlogMeta?.h1;
+  const blogHomeDescription = isBlogHome ? BLOG_HOME_SEO.description : currentBlogMeta?.description;
   const blogSchema = selectedPost ? buildSeoGraph(
     {
       '@type': 'Article',
@@ -816,14 +1061,15 @@ export function NewsPage() {
     '@type': 'Blog',
     '@id': `${absoluteUrl(blogCanonical)}#blog`,
     url: absoluteUrl(blogCanonical),
-    name: currentBlogMeta?.h1 || 'Blog UR Sport',
+    name: blogHomeTitle || 'Blog UR Sport',
+    description: blogHomeDescription,
     inLanguage: 'vi-VN',
     publisher: { '@id': `${SITE_URL}/#organization` }
   });
 
   useSEO({
-    title: selectedPost ? (selectedPost.seoTitle || `${selectedPost.title} | Blog UR Sport`) : (currentBlogMeta?.seoTitle || `${currentBlogMeta?.h1 || 'Blog'} | UR Sport`),
-    description: selectedPost ? (selectedPost.metaDescription || selectedPost.excerpt || selectedPost.title) : (currentBlogMeta?.metaDescription || currentBlogMeta?.description || ''),
+    title: selectedPost ? (selectedPost.seoTitle || `${selectedPost.title} | Blog UR Sport`) : (isBlogHome ? BLOG_HOME_SEO.title : (currentBlogMeta?.seoTitle || `${currentBlogMeta?.h1 || 'Blog'} | UR Sport`)),
+    description: selectedPost ? (selectedPost.metaDescription || selectedPost.excerpt || selectedPost.title) : (isBlogHome ? BLOG_HOME_SEO.description : (currentBlogMeta?.metaDescription || currentBlogMeta?.description || '')),
     canonical: postCanonical,
     image: selectedPost?.image,
     type: selectedPost ? "article" : "website",
@@ -832,7 +1078,7 @@ export function NewsPage() {
   });
 
   const filteredPosts = posts.filter(post => {
-    const isInCategory = activeCategory === mainBlogCategory.label || slugifyCategory(post.category || '') === slugifyCategory(activeCategory);
+    const isInCategory = isBlogHome || blogPostMatchesHub(post, activeCategory);
     if (!isInCategory) return false;
 
     if (!searchQuery) return true;
@@ -845,6 +1091,26 @@ export function NewsPage() {
     );
   });
   const mobileFeaturedPosts = filteredPosts.slice(0, 3);
+  const homeBlogHubSections = BLOG_HOME_HUBS.map((hub) => {
+    const hubSlug = getSlugFromCategoryPath(hub.href);
+    const hubPosts = posts.filter(post => blogPostMatchesHub(post, hub.title));
+    const visibleCount = homeHubVisibleCounts[hubSlug] || 3;
+
+    return {
+      ...hub,
+      slug: hubSlug,
+      posts: hubPosts,
+      visiblePosts: hubPosts.slice(0, visibleCount),
+      visibleCount,
+      hasMore: hubPosts.length > visibleCount
+    };
+  });
+  const showMoreHomeHubPosts = (hubSlug: string) => {
+    setHomeHubVisibleCounts(prev => ({
+      ...prev,
+      [hubSlug]: (prev[hubSlug] || 3) + 3
+    }));
+  };
   const getFirstPostContentImage = (html?: string) => {
     if (!html) return '';
     return html.match(/<img[^>]+src=["']([^"']+)["']/i)?.[1] || '';
@@ -1375,65 +1641,121 @@ export function NewsPage() {
     );
   }
 
+  const getBlogSectionOrder = (type: BlogPageSectionType) => {
+    const index = blogPageSections.findIndex(section => section.type === type && section.enabled);
+    return index >= 0 ? index : 99;
+  };
+
+  const getBlogSection = (type: BlogPageSectionType) => blogPageSections.find(item => item.type === type && item.enabled);
+
+  const isBlogSectionEnabled = (type: BlogPageSectionType) => {
+    const section = getBlogSection(type);
+    return section ? section.enabled : true;
+  };
+
+  const categoryTabsSection = getBlogSection('category-tabs');
+  const selectedTabLinks = categoryTabsSection?.settings?.selectedTabLinks;
+  const blogCategoryTabs = blogCategories
+    .filter(c => !selectedTabLinks?.length || selectedTabLinks.includes(c.link))
+    .map(c => ({ id: c.id, label: c.label, link: c.link }));
+  const featuredSection = getBlogSection('featured');
+  const normalizeSavedCategorySlug = (value?: string) => value?.toString().split('/').filter(Boolean).pop() || '';
+  const selectedFeaturedCategorySlug = normalizeSavedCategorySlug(featuredSection?.settings?.featuredCategorySlug);
+  const featuredPosts = featuredSection?.settings?.featuredMode === 'manual'
+    ? (featuredSection.settings.selectedPostIds || [])
+      .map(id => posts.find(post => post.id === id))
+      .filter(Boolean) as any[]
+    : posts.filter(post => {
+      if (!selectedFeaturedCategorySlug) return true;
+      return slugifyCategory(post.category || '') === selectedFeaturedCategorySlug;
+    });
+  const featuredMobilePosts = featuredPosts.slice(0, 3);
+  const categorySectionsConfig = getBlogSection('category-sections');
+  const normalizeCategorySectionSlug = (value?: string) => {
+  if (!value) return '';
+  return value.toString().split('/').filter(Boolean).pop() || '';
+};
+
+  const configuredHomeBlogHubSections = categorySectionsConfig?.settings?.categoryMode === 'single'
+    ? homeBlogHubSections.filter(section => {
+      const selectedSlug = normalizeCategorySectionSlug(categorySectionsConfig.settings?.categorySlug);
+      const sectionSlug = normalizeCategorySectionSlug(section.href);
+      return selectedSlug && sectionSlug === selectedSlug;
+    })
+    : homeBlogHubSections;
+  const visibleHomeBlogHubSections = categorySectionsConfig?.settings?.postMode === 'manual'
+    ? configuredHomeBlogHubSections.map(section => {
+      const selectedPosts = (categorySectionsConfig.settings?.selectedPostIds || [])
+        .map(id => posts.find(post => post.id === id))
+        .filter(Boolean) as any[];
+      return {
+        ...section,
+        posts: selectedPosts,
+        visiblePosts: selectedPosts.slice(0, section.visibleCount),
+        hasMore: selectedPosts.length > section.visibleCount,
+      };
+    })
+    : configuredHomeBlogHubSections;
+
   return (
-    <div className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-8">
-      {/* Premium Hero section with live search props */}
-      <BlogHero 
-        title={currentBlogMeta?.h1 || mainBlogCategory.label} 
-        subtitle={currentBlogMeta?.description} 
-        searchValue={searchQuery}
-        onSearchChange={setSearchQuery}
-        onSearchSubmit={() => setSearchQuery(searchQuery.trim())}
-        onTagClick={setSearchQuery}
-      />
+    <div className="mx-auto flex max-w-[1440px] flex-col px-4 py-8 sm:px-6 lg:px-8">
+      {isBlogSectionEnabled('hero') && (
+        <div style={{ order: getBlogSectionOrder('hero') }}>
+          <BlogHero
+            title={blogHomeTitle || mainBlogCategory.label}
+            subtitle={blogHomeDescription}
+            searchValue={searchQuery}
+            onSearchChange={setSearchQuery}
+            onSearchSubmit={() => setSearchQuery(searchQuery.trim())}
+            onTagClick={setSearchQuery}
+          />
+        </div>
+      )}
 
       {/* Categories Tabs filter */}
-      <CategoryTabs
-        categories={blogCategories.filter(cat => cat.group !== 'subcategory').map(c => ({ id: c.id, label: c.label, link: c.link }))}
-        active={activeCategory}
-        onSelect={(c) => { setActiveCategory(c.label); navigate(c.link); }}
-      />
+      {isBlogSectionEnabled('category-tabs') && (
+        <div style={{ order: getBlogSectionOrder('category-tabs') }}>
+          <CategoryTabs
+            categories={blogCategoryTabs}
+            active={activeCategory}
+            onSelect={(c) => { setActiveCategory(c.label); navigate(c.link); }}
+          />
+        </div>
+      )}
 
       {/* Featured articles grid - hidden during searching to highlight search results */}
-      {!searchQuery && mobileFeaturedPosts.length > 0 && (
-        <div className="mx-auto mb-10 w-full max-w-[430px] lg:hidden">
-          <div className="mb-5 text-center">
-            <h2 className="text-[30px] font-black leading-tight tracking-tight text-zinc-950">
-              Stay updated with the
-              <span className="block text-[#ff5a00]">latest news</span>
-            </h2>
-          </div>
-
+      {isBlogSectionEnabled('featured') && isBlogHome && !searchQuery && featuredMobilePosts.length > 0 && (
+        <div className="mx-auto mb-10 w-full max-w-[430px] lg:hidden" style={{ order: getBlogSectionOrder('featured') }}>
           <article
-            onClick={() => navigate(getBlogPostPath(mobileFeaturedPosts[0]))}
+            onClick={() => navigate(getBlogPostPath(featuredMobilePosts[0]))}
             className="cursor-pointer"
           >
             <div className="relative aspect-[1.08/1] overflow-hidden rounded-2xl bg-zinc-100">
               <img
-                src={getMobilePostImage(mobileFeaturedPosts[0])}
-                alt={mobileFeaturedPosts[0].title}
+                src={getMobilePostImage(featuredMobilePosts[0])}
+                alt={featuredMobilePosts[0].title}
                 className="h-full w-full object-cover"
                 loading="eager"
                 onError={(event) => {
                   event.currentTarget.onerror = null;
-                  event.currentTarget.src = getMobilePostFallbackImage(mobileFeaturedPosts[0]);
+                  event.currentTarget.src = getMobilePostFallbackImage(featuredMobilePosts[0]);
                 }}
               />
               <span className="absolute bottom-3 left-3 rounded-full bg-[#1e4b64] px-3 py-1 text-[10px] font-black text-white">
-                {mobileFeaturedPosts[0].date || 'Má»›i'}
+                {featuredMobilePosts[0].date || 'Mới'}
               </span>
             </div>
             <h3 className="mt-3 text-[17px] font-semibold leading-tight text-zinc-950">
-              {mobileFeaturedPosts[0].title}
+              {featuredMobilePosts[0].title}
             </h3>
             <p className="mt-1 line-clamp-2 text-sm font-medium leading-5 text-zinc-700">
-              {getMobilePostText(mobileFeaturedPosts[0])}
+              {getMobilePostText(featuredMobilePosts[0])}
             </p>
           </article>
 
-          {mobileFeaturedPosts.length > 1 && (
+          {featuredMobilePosts.length > 1 && (
             <div className="mt-4 grid grid-cols-2 gap-4">
-              {mobileFeaturedPosts.slice(1, 3).map((post, index) => (
+              {featuredMobilePosts.slice(1, 3).map((post, index) => (
                 <article
                   key={post.id || index}
                   onClick={() => navigate(getBlogPostPath(post))}
@@ -1451,7 +1773,7 @@ export function NewsPage() {
                       }}
                     />
                     <span className="absolute bottom-2 left-2 rounded-full bg-[#1e4b64] px-2.5 py-0.5 text-[9px] font-black text-white">
-                      {post.date || 'Má»›i'}
+                      {post.date || 'Mới'}
                     </span>
                   </div>
                   <h4 className="mt-2 line-clamp-3 text-[14px] font-semibold leading-tight text-zinc-950">
@@ -1463,18 +1785,88 @@ export function NewsPage() {
           )}
         </div>
       )}
-      {!searchQuery && (
-        <div className="hidden lg:block">
-          <FeaturedCarousel posts={posts} />
+      {isBlogSectionEnabled('featured') && isBlogHome && !searchQuery && (
+        <div className="hidden lg:block" style={{ order: getBlogSectionOrder('featured') }}>
+          <FeaturedCarousel posts={featuredPosts} />
+        </div>
+      )}
+
+      {isBlogSectionEnabled('category-sections') && isBlogHome && !searchQuery && (
+        <div className="space-y-16 pb-8" style={{ order: getBlogSectionOrder('category-sections') }}>
+            {visibleHomeBlogHubSections.map((hubSection) => (
+            <section key={hubSection.slug} className="w-full">
+              <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-[0.28em] text-[#1e4b64]">
+                    Danh mục blog
+                  </span>
+                  <h2 className="mt-2 text-2xl font-extrabold leading-tight text-zinc-950 sm:text-3xl">
+                    {hubSection.title}
+                  </h2>
+                  <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-zinc-600">
+                    {hubSection.description}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate(hubSection.href)}
+                  className="inline-flex w-fit items-center gap-1.5 text-sm font-black text-[#1e4b64] transition-colors hover:text-[#153446]"
+                >
+                  <span>Xem danh mục</span>
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+
+              {hubSection.visiblePosts.length > 0 ? (
+                <>
+                  <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                    {hubSection.visiblePosts.map(post => (
+                      <div
+                        key={post.id}
+                        className="cursor-pointer"
+                        onClick={() => navigate(getBlogPostPath(post))}
+                      >
+                        <BlogCard post={post} />
+                      </div>
+                    ))}
+                  </div>
+
+                  {hubSection.hasMore && (
+                    <div className="mt-8 flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => showMoreHomeHubPosts(hubSection.slug)}
+                        className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-7 py-3 text-sm font-black text-zinc-950 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#1e4b64] hover:text-[#1e4b64] hover:shadow-md"
+                      >
+                        <span>Xem thêm</span>
+                        <ChevronDown className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="rounded-[24px] border border-dashed border-zinc-200 bg-zinc-50 px-6 py-10 text-center">
+                  <h3 className="text-lg font-black text-zinc-900">Chưa có bài viết {hubSection.title}</h3>
+                  <p className="mx-auto mt-2 max-w-xl text-sm font-semibold leading-6 text-zinc-500">
+                    Khi thêm bài blog có danh mục, tiêu đề hoặc mô tả chứa từ khóa liên quan đến {hubSection.title.toLowerCase()}, bài sẽ tự hiển thị tại đây.
+                  </p>
+                </div>
+              )}
+            </section>
+          ))}
         </div>
       )}
 
       {/* Main articles listing */}
-      <div className="w-full">
+      {isBlogSectionEnabled('article-list') && (!isBlogHome || searchQuery) && <div className="w-full" style={{ order: getBlogSectionOrder('article-list') }}>
         {!searchQuery && (
           <div className="flex flex-col items-start mb-8">
-            <span className="text-[10px] font-black uppercase text-[#1e4b64] tracking-[0.28em] mb-2">TẤT CẢ BÀI VIẾT</span>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 leading-none">Danh Sách Tin Tức</h2>
+            <span className="text-[10px] font-black uppercase text-[#1e4b64] tracking-[0.28em] mb-2">
+              {isBlogHome ? 'BÀI VIẾT MỚI' : 'BÀI VIẾT THEO DANH MỤC'}
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 leading-none">
+              {isBlogHome ? 'Bài viết mới về đồ thể thao nam' : `Bài viết ${currentBlogHubTitle}`}
+            </h2>
           </div>
         )}
         
@@ -1495,18 +1887,28 @@ export function NewsPage() {
             <div className="h-16 w-16 bg-zinc-100 rounded-full flex items-center justify-center text-zinc-400 mb-6 shadow-inner border border-zinc-150">
               <Search className="h-7 w-7" />
             </div>
-            <h3 className="text-xl font-extrabold text-zinc-955 mb-2">Không tìm thấy bài viết</h3>
+            <h3 className="text-xl font-extrabold text-zinc-955 mb-2">
+              {searchQuery ? 'Không tìm thấy bài viết' : `Chưa có bài viết ${currentBlogHubTitle}`}
+            </h3>
             <p className="text-zinc-500 text-sm max-w-sm mb-6 font-semibold">
-              Chúng tôi không tìm thấy bài viết nào phù hợp với từ khóa "${searchQuery}". Bạn hãy thử tìm kiếm với từ khóa khác như "size", "chất liệu", "đồ tập"...
+              {searchQuery
+                ? `Chúng tôi không tìm thấy bài viết nào phù hợp với từ khóa "${searchQuery}". Bạn hãy thử tìm kiếm với từ khóa khác như "size", "chất liệu", "đồ tập"...`
+                : `Danh mục ${currentBlogHubTitle} đã sẵn cấu trúc SEO. Khi thêm bài viết có tiêu đề, danh mục hoặc mô tả chứa cụm từ liên quan, bài sẽ tự hiển thị tại đây.`}
             </p>
-            <button 
-              onClick={() => setSearchQuery('')}
+            <button
+              onClick={() => {
+                if (searchQuery) {
+                  setSearchQuery('');
+                  return;
+                }
+                navigate(currentBlogHubProductLink?.href || '/blog');
+              }}
               className="px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest bg-zinc-900 hover:bg-[#1e4b64] text-white transition-all shadow-sm cursor-pointer border border-zinc-955 hover:border-[#1e4b64]"
             >
-              Xóa tìm kiếm
+              {searchQuery ? 'Xóa tìm kiếm' : (currentBlogHubProductLink?.label || 'Về trang blog')}
             </button>
           </div>
         )}
-      </div>
+      </div>}
     </div>
   );}

@@ -200,12 +200,25 @@ const staticBlogCategoryRoutes: SitemapRoute[] = Array.from(
   changefreq: 'monthly'
 }));
 
+const blogHubRoutes: SitemapRoute[] = [
+  '/blog/ao-thun-nam',
+  '/blog/ao-thun-the-thao-nam',
+  '/blog/quan-the-thao-nam',
+  '/blog/chat-lieu-vai-the-thao',
+  '/blog/phoi-do-the-thao-nam'
+].map(path => ({
+  path,
+  priority: '0.65',
+  changefreq: 'weekly'
+}));
+
 const routes: SitemapRoute[] = [
   { path: '/', priority: '1.0', changefreq: 'daily', images: imageList(['/images/og-ursport.jpg'], 'UR Sport') },
   { path: '/shop', priority: '0.9', changefreq: 'daily', images: imageList(PRODUCTS.slice(0, 6).map(product => product.images?.[0]), 'Shop đồ thể thao nam UR Sport') },
   { path: '/blog', priority: '0.7', changefreq: 'weekly', images: imageList(STATIC_BLOG_POSTS.slice(0, 6).map(post => post.image), 'Blog UR Sport') },
   ...categoryRoutes,
   ...seoSubcategoryRoutes,
+  ...blogHubRoutes,
   ...staticBlogCategoryRoutes,
   ...(firestoreRoutes?.productRoutes?.length ? firestoreRoutes.productRoutes : staticProductRoutes),
   ...(firestoreRoutes?.blogRoutes?.length ? firestoreRoutes.blogRoutes : staticBlogRoutes)

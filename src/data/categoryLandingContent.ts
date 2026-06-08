@@ -57,6 +57,57 @@ export const CATEGORY_LANDING_CONTENT: Record<string, CategoryLandingConfig> = {
         answer: 'Trắng, đen, xám và xanh navy là các màu dễ phối nhất. Các màu này đi tốt với jean, kaki, jogger, quần short và áo khoác nhẹ.'
       }
     ]
+  },
+  'ao-thun-the-thao-nam': {
+    quickLinks: [
+      {
+        label: 'Áo thun chạy bộ nam',
+        href: '/shop?q=chạy+bộ',
+        description: 'Thoáng khí, phản quang, siêu nhẹ cho runner'
+      },
+      {
+        label: 'Áo ba lỗ tanktop nam',
+        href: '/shop?q=tanktop',
+        description: 'Khoét nách sâu, co giãn tối đa cho tập gym'
+      },
+      {
+        label: 'Áo polo thể thao nam',
+        href: '/ao-polo-nam',
+        description: 'Thanh lịch, thoáng mát, phù hợp chơi golf'
+      }
+    ],
+    buyingGuides: [
+      {
+        title: 'Chất liệu thun lạnh Pro-Dry',
+        body: 'Chọn áo thun thể thao UR Sport dệt từ sợi polyester & spandex co giãn 4 chiều, hỗ trợ thoát ẩm nhanh và kháng khuẩn vượt trội.'
+      },
+      {
+        title: 'Form dáng và độ nâng đỡ',
+        body: 'Chọn dòng Slim-fit tôn dáng hoặc các mẫu áo compression bó sát hỗ trợ nén cơ khi tập gym cường độ cao.'
+      },
+      {
+        title: 'Lựa chọn theo bộ môn',
+        body: 'Chạy bộ cần áo phản quang mỏng nhẹ; tập gym cần áo tanktop thoáng vai; đá bóng cần áo có độ bền vải tốt.'
+      }
+    ],
+    faqs: [
+      {
+        question: 'Áo thun thể thao UR Sport dùng chất liệu gì và có mát không?',
+        answer: 'Áo thun thể thao UR Sport được làm từ chất liệu thun lạnh cao cấp (90% Polyester và 10% Spandex) tích hợp công nghệ Pro-Dry dệt 3D siêu thoáng khí, thấm hút mồ hôi cực nhanh và đem lại cảm giác mát lạnh tức thì khi mặc.'
+      },
+      {
+        question: 'Làm thế nào để chọn size áo thun thể thao nam chuẩn nhất?',
+        answer: 'Bạn nên dựa vào chiều cao, cân nặng và tham khảo bảng size chi tiết của UR Sport. Nếu bạn muốn mặc ôm body để tập luyện tốt hơn, hãy chọn đúng size. Nếu muốn thoải mái khi vận động hằng ngày, nên tăng 1 size.'
+      },
+      {
+        question: 'Áo thun thể thao nam của shop có bị bay màu hay co rút sau khi giặt không?',
+        answer: 'Không. Với công nghệ hoàn tất sợi hiện đại, các dòng áo thun thể thao UR Sport giữ màu cực tốt, không bị co rút hay xơ vải sau khi giặt máy nhiều lần.'
+      },
+      {
+        question: 'Mua áo thun thể thao UR Sport ở đâu uy tín và có được đổi trả không?',
+        answer: 'Bạn có thể mua trực tiếp tại website chính thức ursport.vn. UR Sport hỗ trợ đổi trả miễn phí trong vòng 7 ngày nếu sản phẩm có lỗi từ nhà sản xuất hoặc không vừa size.'
+      }
+    ]
   }
 };
 

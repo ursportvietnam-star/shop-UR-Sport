@@ -77,6 +77,9 @@ const CategorySeoManager = React.lazy(() =>
 const HomepageConfigManager = React.lazy(() =>
   import('./HomepageConfigManager').then(module => ({ default: module.HomepageConfigManager }))
 );
+const BlogPageConfigManager = React.lazy(() =>
+  import('./BlogPageConfigManager').then(module => ({ default: module.BlogPageConfigManager }))
+);
 const ContentMapSeoPanel = React.lazy(() =>
   import('./ContentMapSeoPanel').then(module => ({ default: module.ContentMapSeoPanel }))
 );
@@ -376,6 +379,7 @@ const NAV_ITEMS: AdminNavigationItem[] = [
     isGroup: true,
     children: [
       { id: 'homepage', label: 'Trang chủ', icon: PanelsTopLeft },
+      { id: 'blog-page', label: 'Blog', icon: FileText },
       { id: 'menu-navigation', label: 'Menu website', icon: Menu },
     ]
   },
@@ -926,12 +930,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
     });
     getAdminSetting<{ items?: BlogCategoryItem[] }>('blogCategories').then(data => {
       const cached = loadCachedBlogCategories();
-      if (isLocalhost) {
-        cacheBlogCategories(cached || DEFAULT_BLOG_CATEGORIES);
-        if (!cached && !blogCategoriesDirtyRef.current) {
-          setBlogCategories(DEFAULT_BLOG_CATEGORIES);
-        }
-        return;
+      if (cached) {
+        setBlogCategories(cached);
+      } else if (isLocalhost && !blogCategoriesDirtyRef.current) {
+        setBlogCategories(DEFAULT_BLOG_CATEGORIES);
       }
 
       if (data) {
@@ -3266,6 +3268,12 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
           {activeTab === 'homepage' && (
             <React.Suspense fallback={<AdminTabFallback />}>
               <HomepageConfigManager blogPosts={blogPosts} products={products} navigation={navigation} />
+            </React.Suspense>
+          )}
+
+          {activeTab === 'blog-page' && (
+            <React.Suspense fallback={<AdminTabFallback />}>
+              <BlogPageConfigManager blogPosts={blogPosts} blogCategories={blogCategories.map(category => ({ label: category.label, link: category.link }))} />
             </React.Suspense>
           )}
 

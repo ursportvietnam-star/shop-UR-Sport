@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { CATEGORY_METADATA, PRODUCTS, STATIC_BLOG_POSTS } from '../src/data';
+import { CATEGORY_DEFAULT_SEO } from '../src/data/categoryLandingContent';
 import {
   SITE_NAME,
   SITE_URL,
@@ -68,6 +69,24 @@ const CATEGORY_FAQS: Record<string, { question: string; answer: string }[]> = {
     {
       question: 'Áo thun nam màu nào dễ phối đồ nhất?',
       answer: 'Trắng, đen, xám và xanh navy là các màu dễ phối nhất. Các màu này đi tốt với jean, kaki, jogger, quần short và áo khoác nhẹ.'
+    }
+  ],
+  'ao-thun-the-thao-nam': [
+    {
+      question: 'Áo thun thể thao UR Sport dùng chất liệu gì và có mát không?',
+      answer: 'Áo thun thể thao UR Sport được làm từ chất liệu thun lạnh cao cấp (90% Polyester và 10% Spandex) tích hợp công nghệ Pro-Dry dệt 3D siêu thoáng khí, thấm hút mồ hôi cực nhanh và đem lại cảm giác mát lạnh tức thì khi mặc.'
+    },
+    {
+      question: 'Làm thế nào để chọn size áo thun thể thao nam chuẩn nhất?',
+      answer: 'Bạn nên dựa vào chiều cao, cân nặng và tham khảo bảng size chi tiết của UR Sport. Nếu bạn muốn mặc ôm body để tập luyện tốt hơn, hãy chọn đúng size. Nếu muốn thoải mái khi vận động hằng ngày, nên tăng 1 size.'
+    },
+    {
+      question: 'Áo thun thể thao nam của shop có bị bay màu hay co rút sau khi giặt không?',
+      answer: 'Không. Với công nghệ hoàn tất sợi hiện đại, các dòng áo thun thể thao UR Sport giữ màu cực tốt, không bị co rút hay xơ vải sau khi giặt máy nhiều lần.'
+    },
+    {
+      question: 'Mua áo thun thể thao UR Sport ở đâu uy tín và có được đổi trả không?',
+      answer: 'Bạn có thể mua trực tiếp tại website chính thức ursport.vn. UR Sport hỗ trợ đổi trả miễn phí trong vòng 7 ngày nếu sản phẩm có lỗi từ nhà sản xuất hoặc không vừa size.'
     }
   ]
 };
@@ -259,12 +278,17 @@ const productSnapshot = (product: (typeof PRODUCTS)[number]): Snapshot => {
 const categorySnapshot = (category: (typeof CATEGORY_METADATA)[number]): Snapshot => {
   const route = `/${category.slug}`;
   const categoryProducts = PRODUCTS.filter(product => product.category === category.name).slice(0, 12);
+  const defaultSeo = CATEGORY_DEFAULT_SEO[category.slug] || {
+    title: `${category.name} | ${SITE_NAME}`,
+    description: `Mua ${category.name.toLowerCase()} tại ${SITE_NAME}. Sản phẩm thể thao nam dễ mặc, thoải mái, có nhiều lựa chọn size và màu.`,
+    keywords: `${category.name}, thời trang thể thao nam, UR Sport`
+  };
 
   return {
     route,
-    title: `${category.name} | ${SITE_NAME}`,
-    description: `Mua ${category.name.toLowerCase()} tại ${SITE_NAME}. Sản phẩm thể thao nam dễ mặc, thoải mái, có nhiều lựa chọn size và màu.`,
-    keywords: `${category.name}, thời trang thể thao nam, UR Sport`,
+    title: defaultSeo.title,
+    description: defaultSeo.description,
+    keywords: defaultSeo.keywords,
     image: category.icon,
     type: 'website',
     schema: buildSeoGraph(
@@ -273,7 +297,7 @@ const categorySnapshot = (category: (typeof CATEGORY_METADATA)[number]): Snapsho
         '@id': `${absoluteUrl(route)}#collection`,
         name: category.name,
         url: absoluteUrl(route),
-        description: `Bộ sưu tập ${category.name} tại ${SITE_NAME}.`
+        description: defaultSeo.description
       },
       {
         '@type': 'ItemList',
@@ -293,6 +317,39 @@ const categorySnapshot = (category: (typeof CATEGORY_METADATA)[number]): Snapsho
     )
   };
 };
+
+const seoSubcategorySnapshots = (): Snapshot[] => [
+  {
+    route: '/ao-thun-cotton-nam',
+    title: 'Áo Thun Cotton Nam Mềm Mát, Thoáng Khí | UR Sport',
+    description: 'Khám phá áo thun cotton nam mềm mát tại UR Sport. Chất vải dễ chịu, thoáng khí, dễ phối đồ, phù hợp mặc hằng ngày trong thời tiết nóng.',
+    keywords: 'áo thun cotton nam, áo thun nam cotton, áo cotton nam, áo thun nam thoáng mát'
+  },
+  {
+    route: '/ao-thun-nam-form-rong',
+    title: 'Áo Thun Nam Form Rộng, Oversize Cá Tính | UR Sport',
+    description: 'Mua áo thun nam form rộng tại UR Sport. Kiểu dáng oversize thoải mái, trẻ trung, dễ phối streetwear, phù hợp đi chơi và mặc hằng ngày.',
+    keywords: 'áo thun nam form rộng, áo thun oversize nam, áo form rộng nam, áo thun nam streetwear'
+  }
+].map(snapshot => ({
+  ...snapshot,
+  image: '/images/og-ursport.jpg',
+  type: 'website',
+  schema: buildSeoGraph(
+    {
+      '@type': 'CollectionPage',
+      '@id': `${absoluteUrl(snapshot.route)}#collection`,
+      name: snapshot.title,
+      url: absoluteUrl(snapshot.route),
+      description: snapshot.description
+    },
+    buildBreadcrumbSchema([
+      { name: 'Trang chủ', url: '/' },
+      { name: 'Áo thun nam', url: '/ao-thun-nam' },
+      { name: snapshot.title.split(' | ')[0], url: snapshot.route }
+    ])
+  )
+}));
 
 const blogSnapshot = (post: (typeof STATIC_BLOG_POSTS)[number]): Snapshot => {
   const slug = post.slug || post.id;
@@ -374,13 +431,76 @@ const blogIndexSnapshot = (): Snapshot => ({
   })
 });
 
+const optimizedBlogIndexSnapshot = (): Snapshot => ({
+  route: '/blog',
+  title: `Blog Đồ Thể Thao Nam: Áo Thun, Đồ Gym | ${SITE_NAME}`,
+  description: `Blog ${SITE_NAME} chia sẻ cách chọn áo thun nam, áo thun thể thao nam, quần thể thao nam và đồ gym nam theo chất liệu, form dáng, size và phối đồ.`,
+  keywords: 'đồ thể thao nam, áo thun nam, áo thun thể thao nam, quần thể thao nam, đồ gym nam, chất liệu áo thể thao, phối đồ thể thao nam',
+  image: '/images/og-ursport.jpg',
+  schema: buildSeoGraph({
+    '@type': 'Blog',
+    '@id': `${absoluteUrl('/blog')}#blog`,
+    name: `Blog Đồ Thể Thao Nam ${SITE_NAME}`,
+    url: absoluteUrl('/blog'),
+    description: `Cẩm nang chọn áo thun nam, quần thể thao nam và đồ gym nam từ ${SITE_NAME}.`,
+    inLanguage: 'vi-VN'
+  })
+});
+
+const blogHubSnapshots = (): Snapshot[] => [
+  {
+    route: '/blog/ao-thun-nam',
+    title: `Áo thun nam | Blog ${SITE_NAME}`,
+    description: 'Cẩm nang chọn áo thun nam mát, bền form, không xù lông, dễ phối đồ và phù hợp mặc hằng ngày.',
+    keywords: 'áo thun nam, áo thun cotton nam, áo thun nam mùa hè, form áo thun nam, áo thun nam bền form'
+  },
+  {
+    route: '/blog/ao-thun-the-thao-nam',
+    title: `Áo thun thể thao nam | Blog ${SITE_NAME}`,
+    description: 'Hướng dẫn chọn áo thun thể thao nam cho tập gym, chạy bộ, quick dry, co giãn và thấm hút mồ hôi.',
+    keywords: 'áo thun thể thao nam, áo gym nam, áo chạy bộ nam, áo quick dry nam, áo thấm hút mồ hôi nam'
+  },
+  {
+    route: '/blog/quan-the-thao-nam',
+    title: `Quần thể thao nam | Blog ${SITE_NAME}`,
+    description: 'Kinh nghiệm chọn quần thể thao nam, quần short, jogger và quần gym theo dáng người, chất liệu và mục đích sử dụng.',
+    keywords: 'quần thể thao nam, quần jogger nam, quần short thể thao nam, quần tập gym nam, quần chạy bộ nam'
+  },
+  {
+    route: '/blog/chat-lieu-vai-the-thao',
+    title: `Chất liệu vải thể thao nam | Blog ${SITE_NAME}`,
+    description: 'So sánh cotton, polyester, spandex, quick dry và các chất liệu áo quần thể thao nam thoáng mát, bền form, chống mùi.',
+    keywords: 'chất liệu vải thể thao, cotton, polyester, spandex, quick dry, vải thấm hút mồ hôi, vải chống mùi'
+  },
+  {
+    route: '/blog/phoi-do-the-thao-nam',
+    title: `Phối đồ thể thao nam | Blog ${SITE_NAME}`,
+    description: 'Gợi ý outfit thể thao nam khi đi gym, đi chơi, đi làm, chạy bộ và mặc mùa hè theo phong cách gọn gàng, năng động.',
+    keywords: 'phối đồ thể thao nam, outfit đi gym nam, đồ nam mùa hè, phối áo thun nam, phối quần jogger nam'
+  }
+].map(snapshot => ({
+  ...snapshot,
+  image: '/images/og-ursport.jpg',
+  schema: buildSeoGraph({
+    '@type': 'CollectionPage',
+    '@id': `${absoluteUrl(snapshot.route)}#blog-hub`,
+    name: snapshot.title,
+    url: absoluteUrl(snapshot.route),
+    description: snapshot.description,
+    isPartOf: { '@id': `${absoluteUrl('/blog')}#blog` },
+    inLanguage: 'vi-VN'
+  })
+}));
+
 const run = async () => {
   const indexHtml = await fs.readFile(indexPath, 'utf8');
   const snapshots: Snapshot[] = [
     homeSnapshot(),
     shopSnapshot(),
-    blogIndexSnapshot(),
+    optimizedBlogIndexSnapshot(),
+    ...blogHubSnapshots(),
     ...CATEGORY_METADATA.map(categorySnapshot),
+    ...seoSubcategorySnapshots(),
     ...PRODUCTS.filter(product => product.slug).map(productSnapshot),
     ...STATIC_BLOG_POSTS.filter(post => post.slug || post.id).map(blogSnapshot)
   ];

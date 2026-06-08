@@ -19,12 +19,6 @@ export type ProductCategoryOption = {
 
 export const DEFAULT_SEO_SUBCATEGORIES = [
   {
-    label: 'Áo thun nam thể thao',
-    slug: 'ao-thun-nam-the-thao',
-    link: '/ao-thun-nam-the-thao',
-    parentLabel: 'Áo thun nam'
-  },
-  {
     label: 'Áo thun nam cotton',
     slug: 'ao-thun-cotton-nam',
     link: '/ao-thun-cotton-nam',
@@ -39,7 +33,7 @@ export const DEFAULT_SEO_SUBCATEGORIES = [
 ] as const;
 
 export const PRODUCT_SUBCATEGORY_PARENT: Record<string, string> = {
-  'Áo thun nam thể thao': 'Áo thun nam',
+  'Áo thun nam thể thao': 'Áo thun thể thao nam',
   'Áo thể thao nam': 'Áo thun thể thao nam',
   'Áo thun nam cotton': 'Áo thun nam',
   'Áo thun nam form rộng': 'Áo thun nam'
@@ -73,7 +67,9 @@ export const slugifyVietnamese = (value: string) =>
 
 const CATEGORY_LABEL_ALIASES: Record<string, string> = {
   [normalizeMenuLabel('Áo thể thao nam')]: 'Áo thun thể thao nam',
-  [normalizeMenuLabel('ao the thao nam')]: 'Áo thun thể thao nam'
+  [normalizeMenuLabel('ao the thao nam')]: 'Áo thun thể thao nam',
+  [normalizeMenuLabel('Áo thun nam thể thao')]: 'Áo thun thể thao nam',
+  [normalizeMenuLabel('ao thun nam the thao')]: 'Áo thun thể thao nam'
 };
 
 export const canonicalCategoryLabel = (value?: string) => {

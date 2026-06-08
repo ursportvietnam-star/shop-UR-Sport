@@ -1,5 +1,4 @@
 import React from 'react';
-import { cn } from '@/lib/utils';
 import { Search } from 'lucide-react';
 
 interface BlogHeroProps {
@@ -13,58 +12,53 @@ interface BlogHeroProps {
 }
 
 export const BlogHero: React.FC<BlogHeroProps> = ({
-  title = 'Tạp chí Thể thao UR SPORT',
-  subtitle = 'Khám phá bí quyết chọn size, chất liệu vải cao cấp và phong cách phối đồ thể thao nam thời thượng dẫn đầu xu hướng.',
+  title = 'Blog Đồ Thể Thao Nam: Áo Thun, Quần Thể Thao & Đồ Gym Nam',
+  subtitle = 'Kiến thức chọn áo thun nam, áo thun thể thao nam, quần thể thao nam và đồ gym nam theo chất liệu, form dáng, cách phối đồ và nhu cầu tập luyện hằng ngày.',
   searchValue = '',
   onSearchChange,
   onSearchSubmit,
-  trendingTags = ['Áo thun nam', 'Chất liệu', 'Oversize', 'Chạy bộ', 'Tập gym'],
+  trendingTags = ['Áo thun nam', 'Áo thun thể thao nam', 'Quần thể thao nam', 'Đồ gym nam', 'Chất liệu quick dry'],
   onTagClick
 }) => {
   return (
-    <header className="relative w-full rounded-[32px] overflow-hidden mb-12 shadow-xl border border-zinc-100 bg-[#0f172a]">
-      {/* Decorative Blur Blobs */}
-      <div className="absolute top-[-20%] left-[-10%] w-[50%] aspect-square rounded-full bg-sky-500/10 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-30%] right-[-10%] w-[60%] aspect-square rounded-full bg-emerald-500/10 blur-[150px] pointer-events-none" />
-      
-      {/* Visual Pattern overlay */}
-      <div className="absolute inset-0 bg-[radial-gradient(#ffffff08_1px,transparent_1px)] [background-size:24px_24px] opacity-70" />
+    <header className="relative mb-12 w-full overflow-hidden rounded-[32px] border border-zinc-100 bg-[#0f172a] shadow-xl">
+      <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(30,75,100,0.95),rgba(15,23,42,0.96)),url('/images/og-ursport.jpg')] bg-cover bg-center" />
+      <div className="absolute inset-0 bg-[radial-gradient(#ffffff12_1px,transparent_1px)] [background-size:24px_24px] opacity-60" />
 
-      <div className="relative z-10 px-6 py-16 md:px-12 md:py-24 text-center max-w-4xl mx-auto flex flex-col items-center">
-        <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-black tracking-widest text-sky-400 bg-sky-500/10 border border-sky-500/20 mb-6 uppercase">
-          UR SPORT MAGAZINE
+      <div className="relative z-10 mx-auto flex max-w-5xl flex-col items-center px-6 py-16 text-center md:px-12 md:py-24">
+        <span className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-sky-300/25 bg-sky-300/10 px-4 py-1.5 text-xs font-black uppercase tracking-widest text-sky-200">
+          UR SPORT BLOG
         </span>
-        
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-white leading-tight tracking-tight mb-6 text-balance">
+
+        <h1 className="mb-6 text-balance text-4xl font-black leading-tight tracking-tight text-white sm:text-5xl md:text-6xl">
           {title}
         </h1>
 
-        <p className="text-zinc-300 text-base sm:text-lg md:text-xl font-medium max-w-2xl mb-10 leading-relaxed text-balance">
+        <p className="mb-10 max-w-3xl text-balance text-base font-medium leading-relaxed text-zinc-200 sm:text-lg md:text-xl">
           {subtitle}
         </p>
 
-        {/* Glassmorphic Search Bar */}
         <form
-          onSubmit={(e) => {
-            e.preventDefault();
+          onSubmit={(event) => {
+            event.preventDefault();
             onSearchSubmit?.();
           }}
-          className="w-full max-w-xl relative flex items-center mb-6 group"
+          className="group relative mb-6 flex w-full max-w-xl items-center"
         >
-          <div className="absolute left-4 text-zinc-400 group-focus-within:text-sky-400 transition-colors">
+          <div className="absolute left-4 text-zinc-400 transition-colors group-focus-within:text-sky-300">
             <Search className="h-5 w-5" />
           </div>
           <input
             type="text"
             value={searchValue}
-            onChange={(e) => onSearchChange?.(e.target.value)}
+            onChange={(event) => onSearchChange?.(event.target.value)}
             aria-label="Tìm kiếm bài viết"
-            className="w-full h-14 pl-12 pr-28 rounded-2xl bg-white/5 hover:bg-white/8 backdrop-blur-md border border-white/10 text-white placeholder-zinc-400 text-base font-semibold focus:outline-none focus:ring-2 focus:ring-sky-400/50 focus:border-sky-400 transition-all shadow-2xl"
-            placeholder="Tìm bài viết: size, chất liệu, cách phối..."
+            className="h-14 w-full rounded-2xl border border-white/10 bg-white/8 pl-12 pr-28 text-base font-semibold text-white shadow-2xl backdrop-blur-md transition-all placeholder:text-zinc-400 hover:bg-white/10 focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-300/50"
+            placeholder="Tìm bài viết: áo thun nam, đồ gym, chất liệu..."
           />
           <button
             type="submit"
-            className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center gap-2 rounded-full bg-sky-500 px-4 py-2 text-[11px] font-black uppercase tracking-[0.3em] text-white transition-all hover:bg-sky-400"
+            className="absolute right-2 top-1/2 inline-flex -translate-y-1/2 items-center gap-2 rounded-full bg-sky-500 px-4 py-2 text-[11px] font-black uppercase tracking-[0.24em] text-white transition-all hover:bg-sky-400"
             aria-label="Tìm kiếm bài viết"
           >
             <Search className="h-4 w-4" />
@@ -72,15 +66,15 @@ export const BlogHero: React.FC<BlogHeroProps> = ({
           </button>
         </form>
 
-        {/* Trending Tags */}
         {trendingTags.length > 0 && (
-          <div className="flex flex-wrap items-center justify-center gap-2.5 max-w-2xl">
-            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Xu hướng:</span>
+          <div className="flex max-w-3xl flex-wrap items-center justify-center gap-2.5">
+            <span className="text-xs font-bold uppercase tracking-wider text-zinc-300">Từ khóa nổi bật:</span>
             {trendingTags.map((tag) => (
               <button
                 key={tag}
+                type="button"
                 onClick={() => onTagClick?.(tag)}
-                className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-white/5 hover:bg-white/10 text-zinc-200 hover:text-white border border-white/5 hover:border-white/10 transition-all shadow-sm"
+                className="rounded-full border border-white/10 bg-white/8 px-3.5 py-1.5 text-xs font-bold text-zinc-100 shadow-sm transition-all hover:border-white/20 hover:bg-white/15 hover:text-white"
               >
                 #{tag}
               </button>
