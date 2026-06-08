@@ -844,6 +844,29 @@ export function NewsPage() {
       normalizeTextForMatch(post.category || '').includes(queryNormalized)
     );
   });
+  const mobileFeaturedPosts = filteredPosts.slice(0, 3);
+  const getFirstPostContentImage = (html?: string) => {
+    if (!html) return '';
+    return html.match(/<img[^>]+src=["']([^"']+)["']/i)?.[1] || '';
+  };
+  const getMobilePostFallbackImage = (post: any) => {
+    const haystack = `${post?.title || ''} ${post?.category || ''} ${post?.slug || ''}`.toLowerCase();
+    if (haystack.includes('quáº§n') || haystack.includes('quan')) return '/images/blog/quan-the-thao-nam.webp';
+    if (haystack.includes('size')) return '/images/blog/bang-size-ao-thun-nam-ursport-chuan-form.png';
+    if (haystack.includes('polo')) return '/images/blog/ao-polo-nam.webp';
+    if (haystack.includes('gym') || haystack.includes('thá»ƒ thao') || haystack.includes('the thao')) {
+      return '/images/blog/ao-thun-nam-the-thao-ursport.webp';
+    }
+
+    return '/images/blog/ao-thun-nam-mac-hang-ngay-ursport.webp';
+  };
+  const getMobilePostImage = (post: any) =>
+    post?.image?.trim?.() ||
+    post?.images?.find((image: string) => image?.trim?.()) ||
+    getFirstPostContentImage(post?.content) ||
+    getMobilePostFallbackImage(post);
+  const getMobilePostText = (post: any) =>
+    post?.excerpt || post?.metaDescription || post?.title || '';
 
   const scrollToTocHeading = (headingId: string, offset = 100) => {
     setIsExpanded(true);
@@ -1372,7 +1395,79 @@ export function NewsPage() {
       />
 
       {/* Featured articles grid - hidden during searching to highlight search results */}
-      {!searchQuery && <FeaturedCarousel posts={posts} />}
+      {!searchQuery && mobileFeaturedPosts.length > 0 && (
+        <div className="mx-auto mb-10 w-full max-w-[430px] lg:hidden">
+          <div className="mb-5 text-center">
+            <h2 className="text-[30px] font-black leading-tight tracking-tight text-zinc-950">
+              Stay updated with the
+              <span className="block text-[#ff5a00]">latest news</span>
+            </h2>
+          </div>
+
+          <article
+            onClick={() => navigate(getBlogPostPath(mobileFeaturedPosts[0]))}
+            className="cursor-pointer"
+          >
+            <div className="relative aspect-[1.08/1] overflow-hidden rounded-2xl bg-zinc-100">
+              <img
+                src={getMobilePostImage(mobileFeaturedPosts[0])}
+                alt={mobileFeaturedPosts[0].title}
+                className="h-full w-full object-cover"
+                loading="eager"
+                onError={(event) => {
+                  event.currentTarget.onerror = null;
+                  event.currentTarget.src = getMobilePostFallbackImage(mobileFeaturedPosts[0]);
+                }}
+              />
+              <span className="absolute bottom-3 left-3 rounded-full bg-[#1e4b64] px-3 py-1 text-[10px] font-black text-white">
+                {mobileFeaturedPosts[0].date || 'Má»›i'}
+              </span>
+            </div>
+            <h3 className="mt-3 text-[17px] font-semibold leading-tight text-zinc-950">
+              {mobileFeaturedPosts[0].title}
+            </h3>
+            <p className="mt-1 line-clamp-2 text-sm font-medium leading-5 text-zinc-700">
+              {getMobilePostText(mobileFeaturedPosts[0])}
+            </p>
+          </article>
+
+          {mobileFeaturedPosts.length > 1 && (
+            <div className="mt-4 grid grid-cols-2 gap-4">
+              {mobileFeaturedPosts.slice(1, 3).map((post, index) => (
+                <article
+                  key={post.id || index}
+                  onClick={() => navigate(getBlogPostPath(post))}
+                  className="min-w-0 cursor-pointer"
+                >
+                  <div className="relative aspect-[1.35/1] overflow-hidden rounded-xl bg-zinc-100">
+                    <img
+                      src={getMobilePostImage(post)}
+                      alt={post.title}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                      onError={(event) => {
+                        event.currentTarget.onerror = null;
+                        event.currentTarget.src = getMobilePostFallbackImage(post);
+                      }}
+                    />
+                    <span className="absolute bottom-2 left-2 rounded-full bg-[#1e4b64] px-2.5 py-0.5 text-[9px] font-black text-white">
+                      {post.date || 'Má»›i'}
+                    </span>
+                  </div>
+                  <h4 className="mt-2 line-clamp-3 text-[14px] font-semibold leading-tight text-zinc-950">
+                    {post.title}
+                  </h4>
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {!searchQuery && (
+        <div className="hidden lg:block">
+          <FeaturedCarousel posts={posts} />
+        </div>
+      )}
 
       {/* Main articles listing */}
       <div className="w-full">

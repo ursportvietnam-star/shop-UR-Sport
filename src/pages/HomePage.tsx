@@ -449,6 +449,7 @@ export default function HomePage({
     const featuredPath = `/blog/${featuredPost.slug || featuredPost.id}`;
     const topSidePosts = sidePosts.slice(0, 2);
     const latestPosts = sidePosts.slice(0, 6);
+    const mobileNewsPosts = [featuredPost, ...sidePosts].slice(0, 3);
     const quickLinks = Array.from(new Set(posts.map(post => post.category).filter(Boolean))).slice(0, 6);
     const getPostPath = (post: BlogPost) => `/blog/${post.slug || post.id}`;
     const getPostDate = (post: BlogPost) => post.date || 'Mới cập nhật';
@@ -483,7 +484,7 @@ export default function HomePage({
 
     return (
       <section key={key} className="container-custom border-t border-zinc-100 bg-white py-8 sm:py-10">
-        <div className="mb-5 flex flex-wrap items-center gap-2.5">
+        <div className="mb-5 hidden flex-wrap items-center gap-2.5 lg:flex">
           <span className="mr-1 text-sm font-black text-zinc-900">Quick Links</span>
           {(quickLinks.length > 0 ? quickLinks : ['Áo thun nam', 'Bảng size', 'Phối đồ', 'Chất liệu']).map(label => (
             <Link
@@ -496,7 +497,76 @@ export default function HomePage({
           ))}
         </div>
 
-        <div className="grid grid-cols-1 gap-7 lg:grid-cols-[1.65fr_0.78fr_0.78fr] lg:gap-7">
+        <div className="mb-5 text-center lg:hidden">
+          <h2 className="text-[30px] font-black leading-tight tracking-tight text-zinc-950">
+            Stay updated with the
+            <span className="block text-[#ff5a00]">latest news</span>
+          </h2>
+        </div>
+
+        <div className="mx-auto w-full max-w-[430px] lg:hidden">
+          {mobileNewsPosts[0] && (
+            <article
+              onClick={() => navigate(getPostPath(mobileNewsPosts[0]))}
+              className="cursor-pointer"
+            >
+              <div className="relative aspect-[1.08/1] overflow-hidden rounded-2xl bg-zinc-100">
+                <img
+                  src={getBlogImage(mobileNewsPosts[0])}
+                  alt={mobileNewsPosts[0].title}
+                  className="h-full w-full object-cover"
+                  loading="eager"
+                  onError={(event) => {
+                    event.currentTarget.onerror = null;
+                    event.currentTarget.src = getFallbackBlogImage(mobileNewsPosts[0]);
+                  }}
+                />
+                <span className="absolute bottom-3 left-3 rounded-full bg-[#1e4b64] px-3 py-1 text-[10px] font-black text-white">
+                  {getPostDate(mobileNewsPosts[0])}
+                </span>
+              </div>
+              <h3 className="mt-3 text-[17px] font-semibold leading-tight text-zinc-950">
+                {mobileNewsPosts[0].title}
+              </h3>
+              <p className="mt-1 text-sm font-medium leading-5 text-zinc-700 line-clamp-2">
+                {getPostExcerpt(mobileNewsPosts[0])}
+              </p>
+            </article>
+          )}
+
+          {mobileNewsPosts.length > 1 && (
+            <div className="mt-4 grid grid-cols-2 gap-4">
+              {mobileNewsPosts.slice(1, 3).map((post, index) => (
+                <article
+                  key={post.id || index}
+                  onClick={() => navigate(getPostPath(post))}
+                  className="min-w-0 cursor-pointer"
+                >
+                  <div className="relative aspect-[1.35/1] overflow-hidden rounded-xl bg-zinc-100">
+                    <img
+                      src={getBlogImage(post)}
+                      alt={post.title}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                      onError={(event) => {
+                        event.currentTarget.onerror = null;
+                        event.currentTarget.src = getFallbackBlogImage(post);
+                      }}
+                    />
+                    <span className="absolute bottom-2 left-2 rounded-full bg-[#1e4b64] px-2.5 py-0.5 text-[9px] font-black text-white">
+                      {getPostDate(post)}
+                    </span>
+                  </div>
+                  <h4 className="mt-2 line-clamp-3 text-[14px] font-semibold leading-tight text-zinc-950">
+                    {post.title}
+                  </h4>
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="hidden lg:grid lg:grid-cols-[1.65fr_0.78fr_0.78fr] lg:gap-7">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
