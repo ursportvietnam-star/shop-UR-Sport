@@ -804,3 +804,28 @@ html {
 .pb-safe-area {
   padding-bottom: env(safe-area-inset-bottom);
 }
+
+/* Bottom Navigation Bar auto-fit optimizations */
+.bottom-nav-container {
+  width: 100vw !important;
+  max-width: 100vw !important;
+  overflow: hidden !important;
+}
+
+.bottom-nav-btn {
+  width: 0 !important;
+  flex: 1 1 0% !important;
+  min-width: 0 !important;
+  padding-left: 2px !important;
+  padding-right: 2px !important;
+}
+
+.bottom-nav-text {
+  font-size: clamp(8px, 2.5vw, 10px) !important;
+}
+
+.bottom-nav-icon {
+  width: 20px !important;
+  height: 20px !important;
+}
+

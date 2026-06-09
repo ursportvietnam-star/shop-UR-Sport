@@ -72,48 +72,48 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 flex bg-white border-t border-zinc-200/80 shadow-[0_-4px_16px_rgba(0,0,0,0.04)] md:hidden pt-2 pb-2 pb-safe-area">
+    <div className="fixed bottom-0 left-0 right-0 z-50 flex bg-white border-t border-zinc-200/80 shadow-[0_-4px_16px_rgba(0,0,0,0.04)] md:hidden pt-2 pb-2 pb-safe-area bottom-nav-container">
       {/* Menu Tab */}
       <button
         onClick={onMenuClick}
-        className="flex flex-1 min-w-0 flex-col items-center justify-center text-zinc-500 active:bg-zinc-50 transition-colors cursor-pointer px-1"
+        className="flex flex-1 min-w-0 flex-col items-center justify-center text-zinc-500 active:bg-zinc-50 transition-colors cursor-pointer px-1 bottom-nav-btn"
       >
-        <Menu className="h-5.5 w-5.5 text-[#f97316]" />
-        <span className="text-[clamp(8px,2.5vw,10px)] font-semibold mt-0.5 text-zinc-500 whitespace-nowrap tracking-tight">Menu</span>
+        <Menu className="bottom-nav-icon text-[#f97316]" />
+        <span className="bottom-nav-text font-semibold mt-0.5 text-zinc-500 whitespace-nowrap tracking-tight">Menu</span>
       </button>
 
       {/* Search Tab */}
       <button
         onClick={onSearchClick}
-        className="flex flex-1 min-w-0 flex-col items-center justify-center text-zinc-500 active:bg-zinc-50 transition-colors cursor-pointer px-1"
+        className="flex flex-1 min-w-0 flex-col items-center justify-center text-zinc-500 active:bg-zinc-50 transition-colors cursor-pointer px-1 bottom-nav-btn"
       >
-        <Search className="h-5.5 w-5.5 text-[#f97316]" />
-        <span className="text-[clamp(8px,2.5vw,10px)] font-semibold mt-0.5 text-zinc-500 whitespace-nowrap tracking-tight">Tìm kiếm</span>
+        <Search className="bottom-nav-icon text-[#f97316]" />
+        <span className="bottom-nav-text font-semibold mt-0.5 text-zinc-500 whitespace-nowrap tracking-tight">Tìm kiếm</span>
       </button>
 
       {/* Cart Tab */}
       <button
         onClick={onCartClick}
-        className="flex flex-1 min-w-0 flex-col items-center justify-center text-zinc-500 active:bg-zinc-50 transition-colors relative cursor-pointer px-1"
+        className="flex flex-1 min-w-0 flex-col items-center justify-center text-zinc-500 active:bg-zinc-50 transition-colors relative cursor-pointer px-1 bottom-nav-btn"
       >
-        <div className="relative">
-          <ShoppingCart className="h-5.5 w-5.5 text-[#f97316]" />
+        <div className="relative flex flex-col items-center">
+          <ShoppingCart className="bottom-nav-icon text-[#f97316]" />
           {cartCount > 0 && (
             <span className="absolute -top-1.5 -right-2 h-4 w-4 bg-[#00a651] text-white text-[9px] font-black rounded-full flex items-center justify-center border border-white">
               {cartCount}
             </span>
           )}
         </div>
-        <span className="text-[clamp(8px,2.5vw,10px)] font-semibold mt-0.5 text-zinc-500 whitespace-nowrap tracking-tight">Giỏ hàng</span>
+        <span className="bottom-nav-text font-semibold mt-0.5 text-zinc-500 whitespace-nowrap tracking-tight">Giỏ hàng</span>
       </button>
 
       {/* Account Tab */}
       <button
         onClick={onAccountClick}
-        className="flex flex-1 min-w-0 flex-col items-center justify-center text-zinc-500 active:bg-zinc-50 transition-colors cursor-pointer px-1"
+        className="flex flex-1 min-w-0 flex-col items-center justify-center text-zinc-500 active:bg-zinc-50 transition-colors cursor-pointer px-1 bottom-nav-btn"
       >
-        <User className={`h-5.5 w-5.5 text-[#f97316] ${location.pathname === '/tai-khoan' ? 'stroke-[2.5px]' : ''}`} />
-        <span className={`text-[clamp(8px,2.5vw,10px)] font-semibold mt-0.5 whitespace-nowrap tracking-tight ${location.pathname === '/tai-khoan' ? 'text-[#f97316] font-bold' : 'text-zinc-500'}`}>
+        <User className={`bottom-nav-icon text-[#f97316] ${location.pathname === '/tai-khoan' ? 'stroke-[2.5px]' : ''}`} />
+        <span className={`bottom-nav-text font-semibold mt-0.5 whitespace-nowrap tracking-tight ${location.pathname === '/tai-khoan' ? 'text-[#f97316] font-bold' : 'text-zinc-500'}`}>
           Tài khoản
         </span>
       </button>
@@ -121,10 +121,10 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       {/* Zalo Tab */}
       <button
         onClick={handleContactClick}
-        className="flex flex-1 min-w-0 flex-col items-center justify-center text-zinc-500 active:bg-zinc-50 transition-colors cursor-pointer px-1"
+        className="flex flex-1 min-w-0 flex-col items-center justify-center text-zinc-500 active:bg-zinc-50 transition-colors cursor-pointer px-1 bottom-nav-btn"
       >
-        <MessageCircle className="h-5.5 w-5.5 text-[#f97316]" />
-        <span className="text-[clamp(8px,2.5vw,10px)] font-semibold mt-0.5 text-zinc-500 whitespace-nowrap tracking-tight">Zalo</span>
+        <MessageCircle className="bottom-nav-icon text-[#f97316]" />
+        <span className="bottom-nav-text font-semibold mt-0.5 text-zinc-500 whitespace-nowrap tracking-tight">Zalo</span>
       </button>
     </div>
   );
