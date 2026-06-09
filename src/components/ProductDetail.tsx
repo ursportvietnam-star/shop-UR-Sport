@@ -110,6 +110,8 @@ export const ProductDetail: React.FC = () => {
   const [flashSaleSettings, setFlashSaleSettings] = useState<any>(null);
   const [flashSaleCountdown, setFlashSaleCountdown] = useState({ h: '00', m: '00', s: '00', active: false });
   const [showStickyBar, setShowStickyBar] = useState(false);
+  const [isMobilePickerOpen, setIsMobilePickerOpen] = useState(false);
+  const [mobilePickerMode, setMobilePickerMode] = useState<'cart' | 'buy'>('cart');
   const productCanonical = product ? getProductPath(product) : '/shop';
   const primaryImage = product?.images?.find(image => image?.trim()) || null;
   const recentlyViewedProducts = React.useMemo(() => {
@@ -1001,7 +1003,10 @@ export const ProductDetail: React.FC = () => {
 
           {/* Add to Cart Icon Button */}
           <button
-            onClick={handleAddToCart}
+            onClick={() => {
+              setMobilePickerMode('cart');
+              setIsMobilePickerOpen(true);
+            }}
             disabled={selectedVariantOutOfStock}
             className="flex flex-col items-center justify-center w-14 h-14 text-teal-600 border-r border-zinc-100 active:bg-zinc-50 shrink-0 disabled:opacity-50"
           >
@@ -1011,7 +1016,10 @@ export const ProductDetail: React.FC = () => {
 
           {/* Buy Now Button */}
           <button
-            onClick={handleBuyNow}
+            onClick={() => {
+              setMobilePickerMode('buy');
+              setIsMobilePickerOpen(true);
+            }}
             disabled={selectedVariantOutOfStock}
             className="flex-1 h-14 bg-[#ff3b30] text-white flex flex-col items-center justify-center active:opacity-90 transition-all disabled:bg-zinc-300"
           >
@@ -1024,6 +1032,194 @@ export const ProductDetail: React.FC = () => {
             </span>
           </button>
         </div>
+
+        {/* Mobile Shopee-style Variant Selection Drawer */}
+        <AnimatePresence>
+          {isMobilePickerOpen && (
+            <>
+              {/* Dark Overlay */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsMobilePickerOpen(false)}
+                className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm md:hidden"
+              />
+
+              {/* Bottom Sheet */}
+              <motion.div
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 220 }}
+                className="fixed bottom-0 left-0 right-0 z-[101] bg-white rounded-t-3xl p-5 pb-safe-area flex flex-col md:hidden max-h-[85vh] shadow-[0_-12px_36px_rgba(0,0,0,0.15)]"
+              >
+                {/* Header Section */}
+                <div className="flex gap-4 pb-4 border-b border-zinc-100 relative">
+                  <div className="w-24 h-24 rounded-2xl overflow-hidden bg-zinc-50 border border-zinc-100 shrink-0">
+                    <img src={mainImage} alt={product.name} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1 flex flex-col justify-end min-w-0 pr-8">
+                    <div className="flex items-baseline gap-2 flex-wrap">
+                      <span className="text-2xl font-black text-[#ff3b30] tracking-tight">
+                        {(flashSaleCountdown.active && flashSaleSettings
+                          ? flashSaleSettings.products?.find((p: any) => p.id === product.id)?.flashSalePrice
+                          : (product.discountPrice || product.price)
+                        ).toLocaleString('vi-VN')}₫
+                      </span>
+                      {(product.discountPrice || flashSaleCountdown.active) && (
+                        <span className="text-sm text-zinc-300 line-through font-bold">
+                          {product.price.toLocaleString('vi-VN')}₫
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[12px] font-bold text-zinc-400 mt-1">
+                      {selectedVariantStock !== null ? `Kho: ${selectedVariantStock}` : `Kho: ${product.stock}`}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setIsMobilePickerOpen(false)}
+                    className="absolute top-0 right-0 w-8 h-8 rounded-full bg-zinc-50 border border-zinc-100 flex items-center justify-center text-zinc-400 active:bg-zinc-100"
+                  >
+                    <X className="h-4.5 w-4.5" />
+                  </button>
+                </div>
+
+                {/* Scrollable Selector Area */}
+                <div className="flex-1 overflow-y-auto py-4 space-y-5 -mx-5 px-5 select-none scrollbar-none">
+                  {/* Colors Section */}
+                  <div className="space-y-3">
+                    <p className="text-[13px] font-bold text-zinc-800 uppercase tracking-wider">Màu sắc</p>
+                    <div className="flex flex-wrap gap-2">
+                      {(product.colors || []).map((color) => {
+                        const unavailable = isColorUnavailable(color);
+                        const colorImgObj = product.colorImages?.find(
+                          ci => ci.name.trim().toLowerCase() === color.trim().toLowerCase()
+                        );
+                        const colorImg = colorImgObj?.image || product.images?.[0] || '';
+
+                        return (
+                          <button
+                            key={`sheet-color-${color}`}
+                            disabled={unavailable}
+                            onClick={() => {
+                              if (unavailable) return;
+                              setSelectedColor(color);
+                            }}
+                            className={cn(
+                              "relative pl-1.5 pr-3 h-10 rounded-xl border transition-all font-semibold text-[12px] overflow-hidden flex items-center gap-2",
+                              selectedColor === color
+                                ? "border-[#ff3b30] bg-red-50/10 text-[#ff3b30] font-bold"
+                                : "border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-zinc-300",
+                              unavailable && "cursor-not-allowed border-zinc-100 bg-zinc-50 text-zinc-300 opacity-55 hover:border-zinc-100 after:absolute after:left-3 after:right-3 after:top-1/2 after:h-px after:-rotate-12 after:bg-zinc-300 after:content-['']"
+                            )}
+                          >
+                            {colorImg && (
+                              <img
+                                src={colorImg}
+                                alt={color}
+                                className="w-7 h-7 rounded-lg object-cover bg-zinc-100 flex-shrink-0"
+                              />
+                            )}
+                            <span className="normal-case tracking-normal">{color}</span>
+                            {selectedColor === color && (
+                              <div
+                                className="absolute bottom-0 right-0 w-3 h-3 bg-[#ff3b30] flex items-center justify-center"
+                                style={{ clipPath: 'polygon(100% 0, 0 100%, 100% 100%)' }}
+                              >
+                                <Check className="h-1.5 w-1.5 text-white absolute bottom-px right-px" />
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Size Section */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[13px] font-bold text-zinc-800 uppercase tracking-wider">Size</p>
+                      <button onClick={() => { setIsSizeGuideOpen(true); setIsMobilePickerOpen(false); }} className="text-[12px] font-bold text-zinc-400 hover:text-zinc-800 flex items-center gap-0.5">
+                        Hướng dẫn chọn kích cỡ <ChevronRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    <div className={cn(
+                      "w-full",
+                      (product.sizes || []).includes('4XL') || (product.sizes || []).includes('XXXXL') || (product.sizes || []).length >= 6
+                        ? "grid grid-cols-3 gap-2" 
+                        : "flex flex-row flex-nowrap gap-1.5 sm:gap-2"
+                    )}>
+                      {(product.sizes || []).map(size => {
+                        const unavailable = isSizeUnavailable(size);
+                        const sizes = product.sizes || [];
+                        const has4XLOrMore = sizes.includes('4XL') || sizes.includes('XXXXL') || sizes.length >= 6;
+                        const shouldStretch = sizes.length >= 4;
+
+                        return (
+                          <button
+                            key={`sheet-size-${size}`}
+                            disabled={unavailable}
+                            onClick={() => {
+                              if (unavailable) return;
+                              setSelectedSize(size);
+                            }}
+                            className={cn(
+                              "relative h-11 rounded-xl text-[13px] font-bold transition-all border-2 flex items-center justify-center overflow-hidden",
+                              selectedSize === size ? "border-[#ff3b30] text-[#ff3b30] bg-red-50/10" : "border-zinc-200 bg-zinc-50 text-zinc-500 hover:border-zinc-300",
+                              unavailable && "cursor-not-allowed border-zinc-100 bg-zinc-50 text-zinc-300 opacity-55 hover:border-zinc-100 after:absolute after:left-2 after:right-2 after:top-1/2 after:h-px after:-rotate-12 after:bg-zinc-300 after:content-['']",
+                              has4XLOrMore 
+                                ? "w-full" 
+                                : (shouldStretch ? "flex-1 min-w-0" : "px-5")
+                            )}
+                          >
+                            {size}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Quantity Section */}
+                  <div className="flex items-center justify-between py-2">
+                    <span className="text-[13px] font-bold text-zinc-800 uppercase tracking-wider">Số lượng</span>
+                    <div className="flex items-center border border-zinc-200 rounded-xl bg-white overflow-hidden h-9">
+                      <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-10 h-full flex items-center justify-center text-zinc-400 active:bg-zinc-50">
+                        <Minus className="h-3.5 w-3.5" />
+                      </button>
+                      <div className="w-10 h-full flex items-center justify-center font-bold text-zinc-900 text-sm border-x border-zinc-100">{quantity}</div>
+                      <button onClick={() => setQuantity(quantity + 1)} className="w-10 h-full flex items-center justify-center text-zinc-400 active:bg-zinc-50">
+                        <Plus className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Final Drawer Action Button */}
+                <div className="pt-4 border-t border-zinc-100">
+                  <button
+                    onClick={() => {
+                      if (!selectedColor || !selectedSize) {
+                        toast.error('Vui lòng chọn đầy đủ phân loại trước khi tiếp tục', { position: 'top-center' });
+                        return;
+                      }
+                      if (mobilePickerMode === 'cart') {
+                        handleAddToCart();
+                      } else {
+                        handleBuyNow();
+                      }
+                      setIsMobilePickerOpen(false);
+                    }}
+                    disabled={selectedVariantOutOfStock}
+                    className="w-full h-12 bg-[#ff3b30] text-white font-black text-[14px] uppercase tracking-wider rounded-2xl flex items-center justify-center transition-all active:scale-[0.99] disabled:bg-zinc-300"
+                  >
+                    {mobilePickerMode === 'cart' ? 'Thêm vào giỏ hàng' : 'Mua ngay'}
+                  </button>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
 
         {/* Image Lightbox */}
         <ImageLightbox
