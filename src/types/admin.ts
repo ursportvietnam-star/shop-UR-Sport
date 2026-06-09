@@ -28,6 +28,7 @@ export type AdminTab =
   | 'menu-navigation'
   | 'blog-categories'
   | 'policy-pages'
+  | 'blog-page'
   | 'ai-workflow'
   | 'ai-product-factory'
   | 'ai-blog'

@@ -860,7 +860,7 @@ export const ProductDetail: React.FC = () => {
                           selectedSize === size ? "border-[#ff3b30] text-[#ff3b30] bg-red-50/10" : "border-zinc-200 bg-zinc-50 text-zinc-500 hover:border-zinc-300",
                           unavailable && "cursor-not-allowed border-zinc-100 bg-zinc-50 text-zinc-300 opacity-55 hover:border-zinc-100 after:absolute after:left-2 after:right-2 after:top-1/2 after:h-px after:-rotate-12 after:bg-zinc-300 after:content-['']",
                           has4XLOrMore 
-                            ? "w-full sm:min-w-[70px] sm:px-4" 
+                            ? "w-full sm:w-auto sm:min-w-[70px] sm:px-4" 
                             : (shouldStretch ? "flex-1 min-w-0" : "px-5 sm:px-6")
                         )}
                         title={unavailable ? `Size ${size} hết hàng với màu đang chọn` : `Size ${size}`}

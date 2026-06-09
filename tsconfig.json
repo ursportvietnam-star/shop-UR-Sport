@@ -22,5 +22,7 @@
     },
     "allowImportingTsExtensions": true,
     "noEmit": true
-  }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "scripts", "*.mjs", "server.ts", "ai-advisor.mjs", "fetch_logs.cjs", "fix_ranges.mjs", "rewrite_upload.mjs", "test.cjs", "upgrade_seo.mjs"]
 }

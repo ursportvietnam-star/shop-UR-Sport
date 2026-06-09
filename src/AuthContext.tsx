@@ -22,8 +22,20 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<void>;
   loginWithEmail: (email: string, password: string) => Promise<void>;
   registerWithEmail: (email: string, password: string, displayName: string) => Promise<void>;
+  updateCustomerProfile: (profile: CustomerProfileInput) => Promise<void>;
   devLogin: () => void;
   logout: () => Promise<void>;
+}
+
+export interface CustomerProfileInput {
+  displayName: string;
+  phone: string;
+  address: string;
+  provinceCode?: string;
+  provinceName?: string;
+  wardCode?: string;
+  wardName?: string;
+  addressDetail?: string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -275,6 +287,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsAdmin(true);
   };
 
+  const updateCustomerProfile = async ({ displayName, phone, address, provinceCode = '', provinceName = '', wardCode = '', wardName = '', addressDetail = '' }: CustomerProfileInput) => {
+    const cleanDisplayName = displayName.trim();
+    const cleanPhone = phone.trim();
+    const cleanAddress = address.trim();
+
+    if (!cleanDisplayName) {
+      throw new Error('Vui lòng nhập họ tên.');
+    }
+
+    if (isLocalhost && localStorage.getItem(DEV_ADMIN_KEY) === '1') {
+      setUser({ ...fakeAdminUser, displayName: cleanDisplayName } as User);
+      return;
+    }
+
+    if (!auth?.currentUser || !db || !isFirebaseConfigured) {
+      throw new Error('Không thể cập nhật hồ sơ do hệ thống chưa sẵn sàng.');
+    }
+
+    await updateProfile(auth.currentUser, { displayName: cleanDisplayName });
+    await setDoc(doc(db, 'users', auth.currentUser.uid), {
+      uid: auth.currentUser.uid,
+      email: auth.currentUser.email,
+      displayName: cleanDisplayName,
+      photoURL: auth.currentUser.photoURL || null,
+      phone: cleanPhone,
+      address: cleanAddress,
+      provinceCode: provinceCode.trim(),
+      provinceName: provinceName.trim(),
+      wardCode: wardCode.trim(),
+      wardName: wardName.trim(),
+      addressDetail: addressDetail.trim(),
+      updatedAt: serverTimestamp(),
+      status: 'active',
+      role: 'customer'
+    }, { merge: true });
+
+    setUser({ ...auth.currentUser, displayName: cleanDisplayName } as User);
+  };
+
   const logout = async () => {
     localStorage.removeItem(DEV_ADMIN_KEY);
     try {
@@ -287,7 +338,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAdmin, loading, loginWithGoogle, loginWithEmail, registerWithEmail, devLogin, logout }}>
+    <AuthContext.Provider value={{ user, isAdmin, loading, loginWithGoogle, loginWithEmail, registerWithEmail, updateCustomerProfile, devLogin, logout }}>
       {children}
     </AuthContext.Provider>
   );

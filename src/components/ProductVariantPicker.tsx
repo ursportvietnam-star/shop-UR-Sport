@@ -175,7 +175,7 @@ export function ProductVariantPicker({
                   unavailable && "cursor-not-allowed border-zinc-100 bg-zinc-50 text-zinc-300 opacity-55 hover:border-zinc-100 after:absolute after:left-1 after:right-1 after:top-1/2 after:h-px after:-rotate-12 after:bg-zinc-300 after:content-['']",
                   sizeStyle !== 'compact' && (
                     has4XLOrMore 
-                      ? "w-full sm:min-w-[70px] sm:px-4" 
+                      ? "w-full sm:w-auto sm:min-w-[70px] sm:px-4" 
                       : (shouldStretch ? "flex-1 min-w-0" : "px-5 sm:px-6")
                   )
                 )}

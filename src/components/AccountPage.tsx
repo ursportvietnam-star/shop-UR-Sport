@@ -1,12 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { addDoc, collection, onSnapshot, query, serverTimestamp, where } from 'firebase/firestore';
-import { CalendarDays, Camera, LogIn, Package, PackageCheck, ReceiptText, ShoppingBag, Star, Truck, UserRound, Video, X } from 'lucide-react';
+import { addDoc, collection, doc, getDoc, onSnapshot, query, serverTimestamp, where } from 'firebase/firestore';
+import { CalendarDays, Camera, Edit3, LogIn, MapPin, Package, PackageCheck, Phone, ReceiptText, Save, ShoppingBag, Star, Truck, UserRound, Video, X } from 'lucide-react';
 import { db, isFirebaseConfigured } from '../firebase';
 import { useAuth } from '../AuthContext';
 import { CartItem, Order } from '../types';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { composeVietnamAddress, fetchVietnamProvinces, fetchVietnamWards, ProvinceOption, WardOption } from '@/lib/vietnamRegions';
 
 const statusInfo: Record<Order['status'], { label: string; className: string; step: number }> = {
   pending: { label: 'Chờ xử lý', className: 'bg-amber-50 text-amber-700 border-amber-100', step: 1 },
@@ -33,9 +34,27 @@ const getLoyaltyTier = (totalSpent: number) => {
 };
 
 export const AccountPage: React.FC = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, updateCustomerProfile } = useAuth();
   const [orders, setOrders] = React.useState<Order[]>([]);
   const [isLoadingOrders, setIsLoadingOrders] = React.useState(true);
+  const [profile, setProfile] = React.useState({
+    displayName: '',
+    email: '',
+    phone: '',
+    address: '',
+    provinceCode: '',
+    provinceName: '',
+    wardCode: '',
+    wardName: '',
+    addressDetail: ''
+  });
+  const [provinces, setProvinces] = React.useState<ProvinceOption[]>([]);
+  const [wards, setWards] = React.useState<WardOption[]>([]);
+  const [isLoadingProvinces, setIsLoadingProvinces] = React.useState(false);
+  const [isLoadingWards, setIsLoadingWards] = React.useState(false);
+  const [isEditingProfile, setIsEditingProfile] = React.useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = React.useState(false);
+  const [isSavingProfile, setIsSavingProfile] = React.useState(false);
   const [reviewTarget, setReviewTarget] = React.useState<{ order: Order; item: CartItem } | null>(null);
   const [reviewRating, setReviewRating] = React.useState(5);
   const [reviewComment, setReviewComment] = React.useState('');
@@ -71,6 +90,113 @@ export const AccountPage: React.FC = () => {
     });
 
     return () => unsubscribe();
+  }, [user]);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    setIsLoadingProvinces(true);
+    fetchVietnamProvinces()
+      .then(data => {
+        if (isMounted) setProvinces(data);
+      })
+      .catch(error => {
+        console.error('Error loading Vietnam provinces:', error);
+        toast.error('Không tải được danh sách tỉnh/thành Việt Nam.');
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingProvinces(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (!profile.provinceCode) {
+      setWards([]);
+      return;
+    }
+
+    let isMounted = true;
+    setIsLoadingWards(true);
+    fetchVietnamWards(profile.provinceCode)
+      .then(data => {
+        if (isMounted) setWards(data);
+      })
+      .catch(error => {
+        console.error('Error loading Vietnam wards:', error);
+        if (isMounted) setWards([]);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingWards(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [profile.provinceCode]);
+
+  React.useEffect(() => {
+    if (!user) {
+      setProfile({ displayName: '', email: '', phone: '', address: '', provinceCode: '', provinceName: '', wardCode: '', wardName: '', addressDetail: '' });
+      return;
+    }
+
+    let isMounted = true;
+    const fallbackProfile = {
+      displayName: user.displayName || '',
+      email: user.email || '',
+      phone: '',
+      address: '',
+      provinceCode: '',
+      provinceName: '',
+      wardCode: '',
+      wardName: '',
+      addressDetail: ''
+    };
+
+    setProfile(prev => ({
+      displayName: fallbackProfile.displayName,
+      email: fallbackProfile.email,
+      phone: prev.phone,
+      address: prev.address,
+      provinceCode: prev.provinceCode,
+      provinceName: prev.provinceName,
+      wardCode: prev.wardCode,
+      wardName: prev.wardName,
+      addressDetail: prev.addressDetail
+    }));
+
+    if (!db || !isFirebaseConfigured) return;
+
+    setIsLoadingProfile(true);
+    getDoc(doc(db, 'users', user.uid))
+      .then(snapshot => {
+        if (!isMounted) return;
+        const data = snapshot.exists() ? snapshot.data() : {};
+        setProfile({
+          displayName: (data.displayName as string) || fallbackProfile.displayName,
+          email: (data.email as string) || fallbackProfile.email,
+          phone: (data.phone as string) || '',
+          address: (data.address as string) || '',
+          provinceCode: (data.provinceCode as string) || '',
+          provinceName: (data.provinceName as string) || '',
+          wardCode: (data.wardCode as string) || '',
+          wardName: (data.wardName as string) || '',
+          addressDetail: (data.addressDetail as string) || (data.address as string) || ''
+        });
+      })
+      .catch(error => {
+        console.error('Error loading customer profile:', error);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingProfile(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, [user]);
 
   if (loading) {
@@ -115,6 +241,60 @@ export const AccountPage: React.FC = () => {
     setReviewComment('');
     setReviewFiles([]);
     setReviewPreviews([]);
+  };
+
+  const handleProfileSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!user || isSavingProfile) return;
+
+    const displayName = profile.displayName.trim();
+    const phone = profile.phone.trim();
+    const provinceName = profile.provinceName.trim();
+    const wardName = profile.wardName.trim();
+    const addressDetail = profile.addressDetail.trim();
+    const address = composeVietnamAddress(addressDetail, wardName, provinceName);
+
+    if (!displayName) {
+      toast.error('Vui lòng nhập họ tên.');
+      return;
+    }
+    if (!phone || phone.replace(/\D/g, '').length < 10) {
+      toast.error('Vui lòng nhập số điện thoại nhận hàng hợp lệ.');
+      return;
+    }
+    if (!profile.provinceCode || !provinceName) {
+      toast.error('Vui lòng chọn tỉnh/thành phố.');
+      return;
+    }
+    if (!wardName) {
+      toast.error('Vui lòng nhập hoặc chọn phường/xã.');
+      return;
+    }
+    if (!addressDetail || addressDetail.length < 5) {
+      toast.error('Vui lòng nhập số nhà, tên đường hoặc địa chỉ chi tiết.');
+      return;
+    }
+
+    setIsSavingProfile(true);
+    try {
+      await updateCustomerProfile({
+        displayName,
+        phone,
+        address,
+        provinceCode: profile.provinceCode,
+        provinceName,
+        wardCode: profile.wardCode,
+        wardName,
+        addressDetail
+      });
+      setProfile(prev => ({ ...prev, displayName, phone, address, provinceName, wardName, addressDetail }));
+      setIsEditingProfile(false);
+      toast.success('Đã cập nhật thông tin tài khoản.');
+    } catch (error: any) {
+      toast.error(error?.message || 'Không thể cập nhật thông tin tài khoản.');
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
   const closeReviewModal = () => {
@@ -204,14 +384,14 @@ export const AccountPage: React.FC = () => {
             <div className="flex items-center gap-4">
               <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-white/10 text-xl font-black ring-1 ring-white/10">
                 {user.photoURL ? (
-                  <img src={user.photoURL} alt={user.displayName || 'Tài khoản'} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                  <img src={user.photoURL} alt={profile.displayName || user.displayName || 'Tài khoản'} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                 ) : (
-                  (user.displayName || user.email || 'U').charAt(0).toUpperCase()
+                  (profile.displayName || user.displayName || user.email || 'U').charAt(0).toUpperCase()
                 )}
               </div>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.25em] text-white/40">Tài khoản UR Sport</p>
-                <h1 className="mt-1 text-2xl font-black tracking-tight">{user.displayName || 'Khách hàng'}</h1>
+                <h1 className="mt-1 text-2xl font-black tracking-tight">{profile.displayName || user.displayName || 'Khách hàng'}</h1>
                 <p className="mt-1 text-sm font-medium text-white/55">{user.email}</p>
               </div>
             </div>
@@ -237,6 +417,164 @@ export const AccountPage: React.FC = () => {
               </div>
             </div>
           </div>
+        </section>
+
+        <section className="mb-8 rounded-[28px] border border-zinc-100 bg-white p-5 shadow-sm sm:p-6">
+          <form onSubmit={handleProfileSubmit}>
+            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#1e4b64]">Thông tin tài khoản</p>
+                <h2 className="mt-2 text-2xl font-black uppercase tracking-tight text-zinc-950">Hồ sơ & nhận hàng</h2>
+                <p className="mt-2 text-sm font-medium leading-6 text-zinc-500">
+                  Cập nhật họ tên, số điện thoại và địa chỉ để đặt hàng nhanh hơn.
+                </p>
+              </div>
+              {!isEditingProfile ? (
+                <button
+                  type="button"
+                  onClick={() => setIsEditingProfile(true)}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-zinc-200 bg-white px-4 text-sm font-black text-zinc-900 transition-colors hover:bg-zinc-100"
+                >
+                  <Edit3 className="h-4 w-4" />
+                  Chỉnh sửa
+                </button>
+              ) : (
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingProfile(false)}
+                    className="inline-flex h-10 items-center justify-center rounded-full border border-zinc-200 bg-white px-4 text-sm font-black text-zinc-700 transition-colors hover:bg-zinc-100"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSavingProfile}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[#1e4b64] px-4 text-sm font-black text-white transition-colors hover:bg-[#153446] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Save className="h-4 w-4" />
+                    {isSavingProfile ? 'Đang lưu...' : 'Lưu'}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="block">
+                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Họ và tên</span>
+                <input
+                  value={profile.displayName}
+                  onChange={event => setProfile(prev => ({ ...prev, displayName: event.target.value }))}
+                  disabled={!isEditingProfile || isLoadingProfile}
+                  className="mt-2 h-12 w-full rounded-2xl border border-zinc-100 bg-zinc-50 px-4 text-sm font-bold text-zinc-900 outline-none transition-colors focus:border-[#1e4b64] focus:bg-white disabled:text-zinc-500"
+                  placeholder="Tên của bạn"
+                />
+              </label>
+              <label className="block">
+                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Email đăng nhập</span>
+                <input
+                  value={profile.email}
+                  disabled
+                  className="mt-2 h-12 w-full rounded-2xl border border-zinc-100 bg-zinc-50 px-4 text-sm font-bold text-zinc-500 outline-none"
+                />
+              </label>
+              <label className="block">
+                <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                  <Phone className="h-3.5 w-3.5 text-[#1e4b64]" />
+                  Số điện thoại nhận hàng
+                </span>
+                <input
+                  value={profile.phone}
+                  onChange={event => setProfile(prev => ({ ...prev, phone: event.target.value }))}
+                  disabled={!isEditingProfile || isLoadingProfile}
+                  className="mt-2 h-12 w-full rounded-2xl border border-zinc-100 bg-zinc-50 px-4 text-sm font-bold text-zinc-900 outline-none transition-colors focus:border-[#1e4b64] focus:bg-white disabled:text-zinc-500"
+                  placeholder="09xx xxx xxx"
+                />
+              </label>
+              <label className="block">
+                <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                  <MapPin className="h-3.5 w-3.5 text-[#1e4b64]" />
+                  Tỉnh / Thành phố
+                </span>
+                <select
+                  value={profile.provinceCode}
+                  onChange={event => {
+                    const province = provinces.find(item => item.code === event.target.value);
+                    setProfile(prev => ({
+                      ...prev,
+                      provinceCode: province?.code || '',
+                      provinceName: province?.name || '',
+                      wardCode: '',
+                      wardName: ''
+                    }));
+                  }}
+                  disabled={!isEditingProfile || isLoadingProfile || isLoadingProvinces}
+                  className="mt-2 h-12 w-full rounded-2xl border border-zinc-100 bg-zinc-50 px-4 text-sm font-bold text-zinc-900 outline-none transition-colors focus:border-[#1e4b64] focus:bg-white disabled:text-zinc-500"
+                >
+                  <option value="">{isLoadingProvinces ? 'Đang tải tỉnh/thành...' : 'Chọn tỉnh/thành phố'}</option>
+                  {provinces.map(province => (
+                    <option key={province.code} value={province.code}>{province.name}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                  <MapPin className="h-3.5 w-3.5 text-[#1e4b64]" />
+                  Phường / Xã / Đặc khu
+                </span>
+                {wards.length > 1 ? (
+                  <select
+                    value={profile.wardCode}
+                    onChange={event => {
+                      const ward = wards.find(item => item.code === event.target.value);
+                      setProfile(prev => ({
+                        ...prev,
+                        wardCode: ward?.code || '',
+                        wardName: ward?.name || ''
+                      }));
+                    }}
+                    disabled={!isEditingProfile || isLoadingProfile || !profile.provinceCode || isLoadingWards}
+                    className="mt-2 h-12 w-full rounded-2xl border border-zinc-100 bg-zinc-50 px-4 text-sm font-bold text-zinc-900 outline-none transition-colors focus:border-[#1e4b64] focus:bg-white disabled:text-zinc-500"
+                  >
+                    <option value="">
+                      {!profile.provinceCode ? 'Chọn tỉnh/thành trước' : isLoadingWards ? 'Đang tải phường/xã...' : 'Chọn phường/xã'}
+                    </option>
+                    {wards.map(ward => (
+                      <option key={ward.code} value={ward.code}>{ward.name}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    value={profile.wardName}
+                    onChange={event => setProfile(prev => ({ ...prev, wardCode: '', wardName: event.target.value }))}
+                    disabled={!isEditingProfile || isLoadingProfile || !profile.provinceCode || isLoadingWards}
+                    className="mt-2 h-12 w-full rounded-2xl border border-zinc-100 bg-zinc-50 px-4 text-sm font-bold text-zinc-900 outline-none transition-colors focus:border-[#1e4b64] focus:bg-white disabled:text-zinc-500"
+                    placeholder={!profile.provinceCode ? 'Chọn tỉnh/thành trước' : isLoadingWards ? 'Đang tải phường/xã...' : 'Nhập phường/xã'}
+                    list="account-vietnam-wards"
+                  />
+                )}
+                <datalist id="account-vietnam-wards">
+                  {wards.map(ward => (
+                    <option key={ward.code} value={ward.name} />
+                  ))}
+                </datalist>
+              </label>
+              <label className="block md:col-span-2">
+                <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                  <MapPin className="h-3.5 w-3.5 text-[#1e4b64]" />
+                  Địa chỉ chi tiết
+                </span>
+                <textarea
+                  value={profile.addressDetail}
+                  onChange={event => setProfile(prev => ({ ...prev, addressDetail: event.target.value }))}
+                  disabled={!isEditingProfile || isLoadingProfile}
+                  rows={3}
+                  className="mt-2 w-full resize-none rounded-2xl border border-zinc-100 bg-zinc-50 px-4 py-3 text-sm font-bold leading-6 text-zinc-900 outline-none transition-colors focus:border-[#1e4b64] focus:bg-white disabled:text-zinc-500"
+                  placeholder="Số nhà, tên đường, tòa nhà, ghi chú vị trí..."
+                />
+              </label>
+            </div>
+          </form>
         </section>
 
         <div className="mb-5 flex items-end justify-between gap-4">
