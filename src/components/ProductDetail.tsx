@@ -642,6 +642,10 @@ export const ProductDetail: React.FC = () => {
                   referrerPolicy="no-referrer"
                 />
               )}
+              {/* App-like Page Indicator for Mobile */}
+              <div className="absolute bottom-4 right-4 bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full text-white text-[11px] font-bold md:hidden">
+                {Math.max(1, (product.images || []).indexOf(mainImage) + 1)} / {(product.images || []).length}
+              </div>
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300 flex items-center justify-center pointer-events-none">
                 <div className="p-3 rounded-full bg-white/95 text-zinc-800 shadow-lg scale-90 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all duration-300">
                   <ZoomIn className="h-5 w-5" />
@@ -677,7 +681,7 @@ export const ProductDetail: React.FC = () => {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.3 }}
-                  className="text-[13px] font-bold text-[#00a651] uppercase tracking-widest"
+                  className="hidden md:block text-[13px] font-bold text-[#00a651] uppercase tracking-widest"
                 >
                   UR SPORT Official
                 </motion.p>
@@ -747,6 +751,17 @@ export const ProductDetail: React.FC = () => {
                     </span>
                   )}
                 </div>
+
+                {/* Member VIP Banner inspired by Shopee */}
+                <div className="flex items-center justify-between bg-gradient-to-r from-red-50 to-orange-50/50 border border-red-100 rounded-xl px-3 py-2.5 mt-3 text-xs md:hidden">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">VIP</span>
+                    <span className="text-zinc-600 truncate">
+                      Mua ngay với giá <strong className="text-[#ff3b30]">{(Math.round((flashSaleCountdown.active ? (flashSaleSettings.products.find((p: any) => p.id === product.id)?.flashSalePrice) : (product.discountPrice || product.price)) * 0.95)).toLocaleString('vi-VN')}đ</strong> khi là thành viên UR VIP!
+                    </span>
+                  </div>
+                  <ChevronRight className="h-3 w-3 text-red-500 shrink-0 animate-pulse" />
+                </div>
               </div>
             </div>
 
@@ -754,11 +769,17 @@ export const ProductDetail: React.FC = () => {
             <div className="space-y-8">
               <div className="space-y-4">
                 <p className="text-[14px] font-bold text-zinc-900 uppercase tracking-wider">
-                  Màu sắc: <span className="text-[#1e4b64] font-bold ml-1">{selectedColor}</span>
+                  Màu sắc: <span className="text-[#ff3b30] font-bold ml-1">{selectedColor}</span>
                 </p>
-                <div className="flex flex-wrap gap-3">
+
+                <div className="flex flex-wrap gap-2">
                   {(product.colors || []).map((color) => {
                     const unavailable = isColorUnavailable(color);
+                    const colorImgObj = product.colorImages?.find(
+                      ci => ci.name.trim().toLowerCase() === color.trim().toLowerCase()
+                    );
+                    const colorImg = colorImgObj?.image || product.images?.[0] || '';
+
                     return (
                       <button
                         key={color}
@@ -768,13 +789,30 @@ export const ProductDetail: React.FC = () => {
                           setSelectedColor(color);
                         }}
                         className={cn(
-                          "relative px-6 h-12 rounded-xl border-2 transition-all font-bold uppercase text-[13px] tracking-wide overflow-hidden",
-                          selectedColor === color ? "border-[#1e4b64] bg-blue-50/30 text-[#1e4b64]" : "border-zinc-100 text-zinc-600 hover:border-zinc-300",
+                          "relative pl-1.5 pr-3 h-10 rounded-xl border transition-all font-semibold text-[12px] overflow-hidden flex items-center gap-2",
+                          selectedColor === color
+                            ? "border-[#ff3b30] bg-red-50/10 text-[#ff3b30] font-bold"
+                            : "border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-zinc-300",
                           unavailable && "cursor-not-allowed border-zinc-100 bg-zinc-50 text-zinc-300 opacity-55 hover:border-zinc-100 after:absolute after:left-3 after:right-3 after:top-1/2 after:h-px after:-rotate-12 after:bg-zinc-300 after:content-['']"
                         )}
                         title={unavailable ? `${color} hết hàng với size đang chọn` : color}
                       >
-                        {color}
+                        {colorImg && (
+                          <img
+                            src={colorImg}
+                            alt={color}
+                            className="w-7 h-7 rounded-lg object-cover bg-zinc-100 flex-shrink-0"
+                          />
+                        )}
+                        <span className="normal-case tracking-normal">{color}</span>
+                        {selectedColor === color && (
+                          <div
+                            className="absolute bottom-0 right-0 w-3 h-3 bg-[#ff3b30] flex items-center justify-center"
+                            style={{ clipPath: 'polygon(100% 0, 0 100%, 100% 100%)' }}
+                          >
+                            <Check className="h-1.5 w-1.5 text-white absolute bottom-px right-px" />
+                          </div>
+                        )}
                       </button>
                     );
                   })}
@@ -784,7 +822,7 @@ export const ProductDetail: React.FC = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <p className="text-[14px] font-bold text-zinc-900 uppercase tracking-wider">
-                    Kích cỡ: <span className="text-[#1e4b64] font-bold ml-1">{selectedSize}</span>
+                    Kích cỡ: <span className="text-[#ff3b30] font-bold ml-1">{selectedSize}</span>
                     {selectedVariantStock !== null && !selectedVariantOutOfStock && (
                       <span className="ml-2 text-[11px] font-bold normal-case tracking-normal text-zinc-400">
                         Còn {selectedVariantStock}
@@ -795,9 +833,18 @@ export const ProductDetail: React.FC = () => {
                     Size Guide
                   </button>
                 </div>
-                <div className="flex flex-wrap gap-3">
+                <div className={cn(
+                  "w-full",
+                  (product.sizes || []).includes('4XL') || (product.sizes || []).includes('XXXXL') || (product.sizes || []).length >= 6
+                    ? "grid grid-cols-3 sm:flex sm:flex-wrap gap-2" 
+                    : "flex flex-row flex-nowrap gap-1.5 sm:gap-2"
+                )}>
                   {(product.sizes || []).map(size => {
                     const unavailable = isSizeUnavailable(size);
+                    const sizes = product.sizes || [];
+                    const has4XLOrMore = sizes.includes('4XL') || sizes.includes('XXXXL') || sizes.length >= 6;
+                    const shouldStretch = sizes.length >= 4;
+
                     return (
                       <button
                         key={size}
@@ -807,9 +854,12 @@ export const ProductDetail: React.FC = () => {
                           setSelectedSize(size);
                         }}
                         className={cn(
-                          "relative min-w-[70px] h-12 rounded-xl text-[14px] font-bold transition-all border-2 flex items-center justify-center overflow-hidden",
-                          selectedSize === size ? "border-[#1e4b64] text-[#1e4b64] bg-blue-50/30" : "border-zinc-100 text-zinc-600 hover:border-zinc-300",
-                          unavailable && "cursor-not-allowed border-zinc-100 bg-zinc-50 text-zinc-300 opacity-55 hover:border-zinc-100 after:absolute after:left-2 after:right-2 after:top-1/2 after:h-px after:-rotate-12 after:bg-zinc-300 after:content-['']"
+                          "relative h-11 sm:h-12 rounded-xl text-[13px] sm:text-[14px] font-bold transition-all border-2 flex items-center justify-center overflow-hidden",
+                          selectedSize === size ? "border-[#ff3b30] text-[#ff3b30] bg-red-50/10" : "border-zinc-200 bg-zinc-50 text-zinc-500 hover:border-zinc-300",
+                          unavailable && "cursor-not-allowed border-zinc-100 bg-zinc-50 text-zinc-300 opacity-55 hover:border-zinc-100 after:absolute after:left-2 after:right-2 after:top-1/2 after:h-px after:-rotate-12 after:bg-zinc-300 after:content-['']",
+                          has4XLOrMore 
+                            ? "w-full sm:min-w-[70px] sm:px-4" 
+                            : (shouldStretch ? "flex-1 min-w-0" : "px-5 sm:px-6")
                         )}
                         title={unavailable ? `Size ${size} hết hàng với màu đang chọn` : `Size ${size}`}
                       >
@@ -817,6 +867,20 @@ export const ProductDetail: React.FC = () => {
                       </button>
                     );
                   })}
+                </div>
+              </div>
+
+              {/* Mobile Quantity Selector Row */}
+              <div className="flex items-center justify-between py-4 border-t border-b border-zinc-100 md:hidden">
+                <span className="text-[14px] font-bold text-zinc-900 uppercase tracking-wider">Số lượng</span>
+                <div className="flex items-center border border-zinc-200 rounded-xl bg-white overflow-hidden h-9">
+                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-10 h-full flex items-center justify-center text-zinc-400 active:bg-zinc-50">
+                    <Minus className="h-3.5 w-3.5" />
+                  </button>
+                  <div className="w-10 h-full flex items-center justify-center font-bold text-zinc-900 text-sm border-x border-zinc-100">{quantity}</div>
+                  <button onClick={() => setQuantity(quantity + 1)} className="w-10 h-full flex items-center justify-center text-zinc-400 active:bg-zinc-50">
+                    <Plus className="h-3.5 w-3.5" />
+                  </button>
                 </div>
               </div>
 
@@ -922,41 +986,44 @@ export const ProductDetail: React.FC = () => {
           </section>
         )}
 
-        {/* Mobile Sticky Bar */}
-        <AnimatePresence>
-          {showStickyBar && (
-            <motion.div
-              initial={{ y: 100 }}
-              animate={{ y: 0 }}
-              exit={{ y: 100 }}
-              className="fixed bottom-0 left-0 right-0 z-[60] bg-white border-t border-zinc-100 p-4 pb-safe-area shadow-[0_-10px_30px_rgba(0,0,0,0.05)] md:hidden"
-            >
-              <div className="flex items-center gap-3">
-                {mainImage && (
-                  <div className="w-12 h-12 rounded-lg bg-zinc-100 overflow-hidden shrink-0">
-                    <img src={mainImage} alt={product.name} loading="lazy" decoding="async" className="w-full h-full object-cover" />
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-bold text-zinc-900 truncate">{product.name}</p>
-                  <p className="text-[14px] font-black text-[#ff3b30]">
-                    {(flashSaleCountdown.active 
-                      ? flashSaleSettings.products.find((p: any) => p.id === product.id)?.flashSalePrice 
-                      : (product.discountPrice || product.price)
-                    ).toLocaleString('vi-VN')}₫
-                  </p>
-                </div>
-                <Button 
-                  onClick={handleBuyNow}
-                  disabled={selectedVariantOutOfStock}
-                  className="bg-[#1e4b64] text-white font-black uppercase text-[12px] tracking-widest px-6 h-12 rounded-xl shadow-lg shadow-blue-900/20 active:scale-95 transition-all disabled:bg-zinc-300 disabled:shadow-none"
-                >
-                  Mua ngay
-                </Button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Permanent Mobile Action Bar (Shopee Style) */}
+        <div className="fixed bottom-0 left-0 right-0 z-[60] bg-white border-t border-zinc-100 flex items-center md:hidden pb-safe-area shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
+          {/* Chat Icon Button (linking to Zalo) */}
+          <a
+            href="https://zalo.me/0917722425"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex flex-col items-center justify-center w-14 h-14 text-teal-600 border-r border-zinc-100 active:bg-zinc-50 shrink-0"
+          >
+            <MessageCircle className="h-5 w-5" />
+            <span className="text-[9px] font-bold mt-0.5">Chat</span>
+          </a>
+
+          {/* Add to Cart Icon Button */}
+          <button
+            onClick={handleAddToCart}
+            disabled={selectedVariantOutOfStock}
+            className="flex flex-col items-center justify-center w-14 h-14 text-teal-600 border-r border-zinc-100 active:bg-zinc-50 shrink-0 disabled:opacity-50"
+          >
+            <ShoppingCart className="h-5 w-5" />
+            <span className="text-[9px] font-bold mt-0.5">Thêm giỏ</span>
+          </button>
+
+          {/* Buy Now Button */}
+          <button
+            onClick={handleBuyNow}
+            disabled={selectedVariantOutOfStock}
+            className="flex-1 h-14 bg-[#ff3b30] text-white flex flex-col items-center justify-center active:opacity-90 transition-all disabled:bg-zinc-300"
+          >
+            <span className="text-[13px] font-black uppercase tracking-wider leading-none">MUA NGAY</span>
+            <span className="text-[10px] font-bold opacity-80 mt-0.5">
+              {(flashSaleCountdown.active && flashSaleSettings
+                ? flashSaleSettings.products?.find((p: any) => p.id === product.id)?.flashSalePrice
+                : (product.discountPrice || product.price)
+              ).toLocaleString('vi-VN')}₫
+            </span>
+          </button>
+        </div>
 
         {/* Image Lightbox */}
         <ImageLightbox

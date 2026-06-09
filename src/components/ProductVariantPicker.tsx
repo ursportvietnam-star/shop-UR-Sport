@@ -1,6 +1,7 @@
 import React from 'react';
 import { Product } from '../types';
 import { cn } from '@/lib/utils';
+import { Check } from 'lucide-react';
 
 type ColorOption = string | { name: string; image: string };
 
@@ -58,10 +59,12 @@ export function ProductVariantPicker({
           {colorStyle === 'chip' && (
             <p className="mb-2 text-[11px] font-black uppercase tracking-widest text-zinc-400">Màu sắc</p>
           )}
-          <div className={cn("flex flex-wrap", colorStyle === 'swatch' ? "gap-2" : "gap-2")}>
+          <div className={cn("flex flex-wrap gap-2")}>
             {colorOptions.map((colorOption, idx) => {
               const colorName = typeof colorOption === 'string' ? colorOption : colorOption.name;
-              const colorImage = typeof colorOption === 'string' ? '' : colorOption.image?.trim();
+              const colorImage = typeof colorOption === 'string'
+                ? (product.colorImages?.find(ci => ci.name.trim().toLowerCase() === colorOption.trim().toLowerCase())?.image || product.images?.[0] || '')
+                : colorOption.image?.trim();
               const unavailable = isColorUnavailable(colorName);
 
               if (colorStyle === 'swatch') {
@@ -103,16 +106,31 @@ export function ProductVariantPicker({
                       onColorChange(colorName);
                     }}
                     className={cn(
-                      "relative rounded-full border px-3 py-1.5 text-xs font-bold transition-colors",
+                      "relative pl-2 pr-4 h-12 rounded-xl border-2 transition-all font-bold uppercase text-[12px] tracking-wide overflow-hidden flex items-center gap-2",
                       selectedColor === colorName
-                        ? "border-[#1e4b64] bg-blue-50 text-[#1e4b64]"
+                        ? "border-[#ff3b30] bg-red-50/10 text-[#ff3b30]"
                         : "border-zinc-200 text-zinc-500 hover:border-zinc-300",
                       unavailable && "cursor-not-allowed border-zinc-100 bg-zinc-50 text-zinc-300 opacity-60 after:absolute after:left-2 after:right-2 after:top-1/2 after:h-px after:-rotate-12 after:bg-zinc-300 after:content-['']"
                     )}
                     title={unavailable ? `${colorName} hết hàng` : colorName}
                   >
-                  {colorName}
-                </button>
+                    {colorImage && (
+                      <img
+                        src={colorImage}
+                        alt={colorName}
+                        className="w-8 h-8 rounded-lg object-cover bg-zinc-100 flex-shrink-0"
+                      />
+                    )}
+                    <span>{colorName}</span>
+                    {selectedColor === colorName && (
+                      <div
+                        className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-[#ff3b30] flex items-center justify-center"
+                        style={{ clipPath: 'polygon(100% 0, 0 100%, 100% 100%)' }}
+                      >
+                        <Check className="h-2 w-2 text-white absolute bottom-[1px] right-[1px]" />
+                      </div>
+                    )}
+                  </button>
               );
             })}
           </div>
@@ -123,9 +141,19 @@ export function ProductVariantPicker({
         {sizeStyle === 'large' && (
           <p className="mb-2 text-[11px] font-black uppercase tracking-widest text-zinc-400">Kích cỡ</p>
         )}
-        <div className={cn("flex flex-wrap", sizeStyle === 'compact' ? "gap-1 sm:gap-1.5" : "gap-2")}>
+        <div className={cn(
+          "w-full",
+          sizeStyle === 'compact'
+            ? "flex flex-wrap gap-1 sm:gap-1.5"
+            : (sizeOptions.includes('4XL') || sizeOptions.includes('XXXXL') || sizeOptions.length >= 6
+                ? "grid grid-cols-3 sm:flex sm:flex-wrap gap-2" 
+                : "flex flex-row flex-nowrap gap-1.5 sm:gap-2")
+        )}>
           {sizeOptions.map((size) => {
             const unavailable = isSizeUnavailable(size);
+            const has4XLOrMore = sizeOptions.includes('4XL') || sizeOptions.includes('XXXXL') || sizeOptions.length >= 6;
+            const shouldStretch = sizeOptions.length >= 4;
+
             return (
               <button
                 key={size}
@@ -140,11 +168,16 @@ export function ProductVariantPicker({
                   "relative flex items-center justify-center overflow-hidden border font-bold transition-all",
                   sizeStyle === 'compact'
                     ? "h-7 min-w-[28px] rounded-lg px-1.5 text-[10px] sm:h-8 sm:min-w-[34px] sm:px-2 sm:text-[11px]"
-                    : "h-10 min-w-10 rounded-xl px-3 text-sm font-black",
+                    : "h-11 sm:h-12 rounded-xl text-[13px] sm:text-[14px]",
                   selectedSize === size
-                    ? "border-[#1e4b64] bg-[#1e4b64] text-white"
-                    : "border-zinc-100 bg-zinc-50 text-zinc-500 hover:border-zinc-300",
-                  unavailable && "cursor-not-allowed border-zinc-100 bg-zinc-50 text-zinc-300 opacity-55 hover:border-zinc-100 after:absolute after:left-1 after:right-1 after:top-1/2 after:h-px after:-rotate-12 after:bg-zinc-300 after:content-['']"
+                    ? (sizeStyle === 'compact' ? "border-[#ff3b30] bg-[#ff3b30] text-white" : "border-[#ff3b30] text-[#ff3b30] bg-red-50/10")
+                    : "border-zinc-200 bg-zinc-50 text-zinc-500 hover:border-zinc-300",
+                  unavailable && "cursor-not-allowed border-zinc-100 bg-zinc-50 text-zinc-300 opacity-55 hover:border-zinc-100 after:absolute after:left-1 after:right-1 after:top-1/2 after:h-px after:-rotate-12 after:bg-zinc-300 after:content-['']",
+                  sizeStyle !== 'compact' && (
+                    has4XLOrMore 
+                      ? "w-full sm:min-w-[70px] sm:px-4" 
+                      : (shouldStretch ? "flex-1 min-w-0" : "px-5 sm:px-6")
+                  )
                 )}
                 title={unavailable ? `Size ${size} hết hàng` : `Size ${size}`}
               >
