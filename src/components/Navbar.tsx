@@ -27,9 +27,31 @@ interface NavbarProps {
   onCategorySelect: (category: Category) => void;
   activeCategory: Category;
   logoSettings?: { logoLight?: string; logoDark?: string; favicon?: string } | null;
+  isSidebarOpen: boolean;
+  setIsSidebarOpen: (open: boolean) => void;
+  isMobileSearchOpen: boolean;
+  setIsMobileSearchOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  isAuthModalOpen: boolean;
+  setIsAuthModalOpen: (open: boolean) => void;
+  authMode: 'login' | 'register';
+  setAuthMode: (mode: 'login' | 'register') => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCategorySelect, activeCategory, logoSettings }) => {
+export const Navbar: React.FC<NavbarProps> = ({ 
+  onCartClick, 
+  onPageChange, 
+  onCategorySelect, 
+  activeCategory, 
+  logoSettings,
+  isSidebarOpen,
+  setIsSidebarOpen,
+  isMobileSearchOpen,
+  setIsMobileSearchOpen,
+  isAuthModalOpen,
+  setIsAuthModalOpen,
+  authMode,
+  setAuthMode
+}) => {
   const { user, loading, logout } = useAuth();
   const { cart } = useCart();
   const { wishlistCount } = useWishlist();
@@ -38,16 +60,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
-  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [topPanelSection, setTopPanelSection] = useState<HomepageSectionConfig | null>(() => getHomepageTopPanelSection([]) || null);
   const [searchHistory, setSearchHistory] = useState<string[]>(() => {
-    if (typeof window === 'undefined') return [];
     try {
       return JSON.parse(window.localStorage.getItem('ursport_search_history') || '[]');
     } catch {

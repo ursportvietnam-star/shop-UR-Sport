@@ -6,7 +6,8 @@ import { FloatingContactMenu } from './components/FloatingContactMenu';
 import { Footer } from './components/Footer';
 import { Toaster } from 'sonner';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from './firebase';
+import { db, auth } from './firebase';
+import { MobileBottomNav } from './components/MobileBottomNav';
 import { AuthProvider } from './AuthContext';
 import { CartProvider } from './CartContext';
 import { WishlistProvider } from './WishlistContext';
@@ -142,6 +143,19 @@ export default function App() {
 
 function AppContent() {
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  useEffect(() => {
+    if (!auth) return;
+    return auth.onAuthStateChanged((user) => {
+      setCurrentUser(user);
+    });
+  }, []);
+
   const location = useLocation();
   const [activeCategory, setActiveCategory] = useState(() => {
     const path = location.pathname.substring(1);
@@ -281,10 +295,18 @@ function AppContent() {
               onCategorySelect={handleCategorySelect}
               activeCategory={activeCategory as any}
               logoSettings={logoSettings}
+              isSidebarOpen={isSidebarOpen}
+              setIsSidebarOpen={setIsSidebarOpen}
+              isMobileSearchOpen={isMobileSearchOpen}
+              setIsMobileSearchOpen={setIsMobileSearchOpen}
+              isAuthModalOpen={isAuthModalOpen}
+              setIsAuthModalOpen={setIsAuthModalOpen}
+              authMode={authMode}
+              setAuthMode={setAuthMode}
             />
           )}
           
-          <main className={!isAdminRoute ? (hasTopPanel ? "flex-1 pt-16 md:pt-24" : "flex-1 pt-16") : "flex-1"}>
+          <main className={!isAdminRoute ? (hasTopPanel ? "flex-1 pt-16 md:pt-24 pb-16 md:pb-0" : "flex-1 pt-16 pb-16 md:pb-0") : "flex-1"}>
             <React.Suspense fallback={<div className="min-h-[50vh] flex items-center justify-center"><div className="h-10 w-10 rounded-full border-4 border-[#1e4b64] border-t-transparent animate-spin" /></div>}>
             <Routes>
               <Route path="/" element={<HomePage onCategorySelect={handleCategorySelect} onPageChange={onPageChange} />} />
@@ -354,6 +376,21 @@ function AppContent() {
           
           <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} onCheckout={handleCheckout} />
           {!isAdminRoute && <FloatingContactMenu />}
+          {!isAdminRoute && (
+            <MobileBottomNav
+              onMenuClick={() => setIsSidebarOpen(true)}
+              onSearchClick={() => setIsMobileSearchOpen(v => !v)}
+              onCartClick={() => setIsCartOpen(true)}
+              onAccountClick={() => {
+                if (currentUser) {
+                  navigate('/tai-khoan');
+                } else {
+                  setAuthMode('login');
+                  setIsAuthModalOpen(true);
+                }
+              }}
+            />
+          )}
           <React.Suspense fallback={null}>
             <CompareFloatingBar />
           </React.Suspense>
