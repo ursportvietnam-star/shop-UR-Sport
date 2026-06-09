@@ -1646,11 +1646,11 @@ export function NewsPage() {
     return index >= 0 ? index : 99;
   };
 
-  const getBlogSection = (type: BlogPageSectionType) => blogPageSections.find(item => item.type === type && item.enabled);
+  const getBlogSection = (type: BlogPageSectionType) => blogPageSections.find(item => item.type === type);
 
   const isBlogSectionEnabled = (type: BlogPageSectionType) => {
     const section = getBlogSection(type);
-    return section ? section.enabled : true;
+    return section ? section.enabled !== false : true;
   };
 
   const categoryTabsSection = getBlogSection('category-tabs');
@@ -1659,8 +1659,13 @@ export function NewsPage() {
     .filter(c => !selectedTabLinks?.length || selectedTabLinks.includes(c.link))
     .map(c => ({ id: c.id, label: c.label, link: c.link }));
   const featuredSection = getBlogSection('featured');
+  const heroSection = getBlogSection('hero');
   const normalizeSavedCategorySlug = (value?: string) => value?.toString().split('/').filter(Boolean).pop() || '';
   const selectedFeaturedCategorySlug = normalizeSavedCategorySlug(featuredSection?.settings?.featuredCategorySlug);
+  const blogHeroTitle = heroSection?.settings?.title || blogHomeTitle;
+  const blogHeroSubtitle = heroSection?.settings?.subtitle || blogHomeDescription;
+  const blogHeroTrendingTags = heroSection?.settings?.trendingTags;
+  const blogHeroSearchPlaceholder = heroSection?.settings?.searchPlaceholder;
   const featuredPosts = featuredSection?.settings?.featuredMode === 'manual'
     ? (featuredSection.settings.selectedPostIds || [])
       .map(id => posts.find(post => post.id === id))
@@ -1702,9 +1707,11 @@ export function NewsPage() {
       {isBlogSectionEnabled('hero') && (
         <div style={{ order: getBlogSectionOrder('hero') }}>
           <BlogHero
-            title={blogHomeTitle || mainBlogCategory.label}
-            subtitle={blogHomeDescription}
+            title={blogHeroTitle || mainBlogCategory.label}
+            subtitle={blogHeroSubtitle}
             searchValue={searchQuery}
+            searchPlaceholder={blogHeroSearchPlaceholder}
+            trendingTags={blogHeroTrendingTags}
             onSearchChange={setSearchQuery}
             onSearchSubmit={() => setSearchQuery(searchQuery.trim())}
             onTagClick={setSearchQuery}

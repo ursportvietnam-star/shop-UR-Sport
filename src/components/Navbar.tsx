@@ -1,16 +1,25 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Search, Menu, LogOut, Phone, LogIn, UserPlus, X, UserRound, Heart, Clock, Mic, PackageSearch } from 'lucide-react';
+import React, { type ReactNode, useState, useRef, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { ShoppingCart, Search, Menu, LogOut, Phone, LogIn, UserPlus, X, UserRound, Heart, Clock, Mic, PackageSearch, MapPin, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { doc, getDoc } from 'firebase/firestore';
 import { useAuth } from '../AuthContext';
 import { useCart } from '../CartContext';
 import { useWishlist } from '../WishlistContext';
 import { useRecentlyViewed } from '../RecentlyViewedContext';
 import { useProducts } from '../ProductsContext';
+import { db } from '../firebase';
 import { MobileSidebar } from './MobileSidebar';
 import { AuthModal } from './AuthModal';
 import { Category, Product } from '../types';
 import { getProductPath } from '../lib/productUrls';
+import {
+  getHomepageTopPanelSection,
+  getTopPanelSettings,
+  readLocalHomepageSections,
+  type HomepageSectionConfig,
+  type TopPanelItem,
+} from '../lib/homepageConfig';
 
 interface NavbarProps {
   onCartClick: () => void;
@@ -27,6 +36,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
   const { recentCount } = useRecentlyViewed();
   const { products } = useProducts();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -35,6 +45,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [topPanelSection, setTopPanelSection] = useState<HomepageSectionConfig | null>(() => getHomepageTopPanelSection([]) || null);
   const [searchHistory, setSearchHistory] = useState<string[]>(() => {
     if (typeof window === 'undefined') return [];
     try {
@@ -59,6 +70,36 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadTopPanel = async () => {
+      const localSections = readLocalHomepageSections();
+      if (localSections && mounted) {
+        setTopPanelSection(getHomepageTopPanelSection(localSections) || null);
+      }
+
+      if (!db) return;
+
+      try {
+        const snap = await getDoc(doc(db, 'settings', 'homepage'));
+        if (!mounted) return;
+        const data = snap.exists() ? snap.data() : null;
+        const remoteSections = Array.isArray(data?.sections) ? data.sections as HomepageSectionConfig[] : [];
+        if (!localSections || remoteSections.length > 0) {
+          setTopPanelSection(getHomepageTopPanelSection(remoteSections) || null);
+        }
+      } catch (error) {
+        if (!localSections) console.error('Failed to load top panel config:', error);
+      }
+    };
+
+    loadTopPanel();
+    return () => {
+      mounted = false;
     };
   }, []);
 
@@ -153,6 +194,47 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
   const iconBtn = "flex items-center justify-center h-10 w-10 rounded-full transition-all active:scale-90 shrink-0";
   const shouldShowSuggestions = trimmedSearchQuery.length >= 2 && searchSuggestions.length > 0;
   const trendingSearches = ['áo thun cotton', 'áo thun thể thao', 'áo polo nam', 'quần jogger'];
+  const topPanelSettings = getTopPanelSettings(topPanelSection);
+
+  const renderTopPanelLink = (href: string | undefined, className: string, content: ReactNode, key?: string) => {
+    const normalizedHref = href?.trim() || '';
+
+    if (!normalizedHref) {
+      return (
+        <button key={key} type="button" className={className}>
+          {content}
+        </button>
+      );
+    }
+
+    if (/^https?:\/\//i.test(normalizedHref) || normalizedHref.startsWith('#')) {
+      return (
+        <a key={key} href={normalizedHref} className={className}>
+          {content}
+        </a>
+      );
+    }
+
+    return (
+      <Link key={key} to={normalizedHref} className={className}>
+        {content}
+      </Link>
+    );
+  };
+
+  const renderTopPanelItem = (item: TopPanelItem, index: number) => {
+    const href = item.href?.trim() || '';
+    const isActive = href && !/^https?:\/\//i.test(href) && !href.startsWith('#') && location.pathname === href;
+    const className = `flex cursor-pointer items-center gap-1 transition-colors hover:text-[#1e4b64] ${isActive ? 'text-[#1e4b64]' : ''}`;
+    const content = (
+      <>
+        {item.label}
+        {item.hasDropdown && <ChevronDown className="h-3 w-3" />}
+      </>
+    );
+
+    return renderTopPanelLink(item.href, className, content, `${item.label}-${index}`);
+  };
 
   const renderSearchSuggestions = (isMobile = false) => (
     <AnimatePresence>
@@ -225,6 +307,26 @@ export const Navbar: React.FC<NavbarProps> = ({ onCartClick, onPageChange, onCat
           ? 'bg-white/95 backdrop-blur-md border-b border-zinc-200 shadow-sm'
           : 'bg-white border-b border-zinc-100'
       }`}>
+        {topPanelSection?.enabled !== false && (
+          <div className="tygh-top-panel hidden h-8 items-center border-b border-zinc-100 bg-white px-4 text-[13px] font-medium text-zinc-500 md:flex">
+            <div className="flex flex-1 items-center">
+              {renderTopPanelLink(
+                topPanelSettings.topPanelLocationHref,
+                "flex cursor-pointer items-center gap-1.5 transition-colors hover:text-[#1e4b64]",
+                <>
+                  <MapPin className="h-3.5 w-3.5 fill-[#20a464] text-[#20a464]" />
+                  <span>{topPanelSettings.topPanelLocationLabel}</span>
+                </>,
+                'top-panel-location'
+              )}
+            </div>
+
+            <div className="flex items-center gap-6">
+              {topPanelSettings.topPanelItems.map(renderTopPanelItem)}
+            </div>
+          </div>
+        )}
+
         {/* Main Navbar Row */}
         <div className="flex h-16 items-center px-4 gap-0">
 

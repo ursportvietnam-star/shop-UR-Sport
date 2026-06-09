@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { CartSidebar } from './components/CartSidebar';
@@ -17,6 +17,7 @@ import { PromotionProvider } from './PromotionContext';
 import { CATEGORY_METADATA } from './data';
 import { Category } from './types';
 import { DEFAULT_SEO_SUBCATEGORIES, CATEGORY_PRODUCT_MATCH_TERMS, slugifyVietnamese } from './lib/categoryConfig';
+import { getHomepageTopPanelSection, readLocalHomepageSections, type HomepageSectionConfig } from './lib/homepageConfig';
 
 // Lazy loaded pages
 const HomePage = React.lazy(() => import('./pages/HomePage'));
@@ -24,6 +25,7 @@ const ShopPage = React.lazy(() => import('./pages/ShopPage'));
 const OrderLookupPage = React.lazy(() => import('./pages/OrderLookupPage'));
 const ProductComparisonPage = React.lazy(() => import('./pages/ProductComparisonPage'));
 const PolicyPage = React.lazy(() => import('./pages/PolicyPage'));
+const ContactPage = React.lazy(() => import('./pages/ContactPage'));
 
 // Other lazy-loaded components
 const ProductDetail = React.lazy(() => import('./components/ProductDetail').then(module => ({ default: module.ProductDetail })));
@@ -125,11 +127,26 @@ function AppContent() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [logoSettings, setLogoSettings] = useState<{ logoLight?: string; logoDark?: string; favicon?: string } | null>(null);
+  const [hasTopPanel, setHasTopPanel] = useState(true);
+  const previousPathRef = useRef(location.pathname);
   const navigate = useNavigate();
 
   // Inject custom CSS từ Firestore vào mọi trang
   useEffect(() => {
     if (!db) return;
+
+    const localHomepageSections = readLocalHomepageSections();
+    if (localHomepageSections) {
+      setHasTopPanel(Boolean(getHomepageTopPanelSection(localHomepageSections)));
+    }
+
+    getDoc(doc(db, 'settings', 'homepage')).then(snap => {
+      if (!snap.exists()) return;
+      const sections = Array.isArray(snap.data().sections) ? snap.data().sections as HomepageSectionConfig[] : [];
+      if (sections.length) {
+        setHasTopPanel(Boolean(getHomepageTopPanelSection(sections)));
+      }
+    }).catch(() => {});
 
     getDoc(doc(db, 'settings', 'customCss')).then(snap => {
       if (!snap.exists()) return;
@@ -210,6 +227,14 @@ function AppContent() {
   const isAdminRoute = location.pathname === '/quan-tri' || location.pathname === '/quantri' || location.pathname.startsWith('/admin');
   const isBlogRoute = location.pathname === '/blog' || location.pathname.startsWith('/blog/');
 
+  useEffect(() => {
+    if (previousPathRef.current === location.pathname) return;
+    previousPathRef.current = location.pathname;
+    if (!isAdminRoute) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [location.pathname, isAdminRoute]);
+
   const commonShopProps = {
     activeCategory,
     setActiveCategory,
@@ -236,7 +261,7 @@ function AppContent() {
             />
           )}
           
-          <main className={!isAdminRoute ? "flex-1 pt-16" : "flex-1"}>
+          <main className={!isAdminRoute ? (hasTopPanel ? "flex-1 pt-16 md:pt-24" : "flex-1 pt-16") : "flex-1"}>
             <React.Suspense fallback={<div className="min-h-[50vh] flex items-center justify-center"><div className="h-10 w-10 rounded-full border-4 border-[#1e4b64] border-t-transparent animate-spin" /></div>}>
             <Routes>
               <Route path="/" element={<HomePage onCategorySelect={handleCategorySelect} onPageChange={onPageChange} />} />
@@ -250,9 +275,11 @@ function AppContent() {
               <Route path="/tai-khoan" element={<AccountPage />} />
               <Route path="/yeu-thich" element={<WishlistPage />} />
               <Route path="/da-xem" element={<RecentlyViewedPage />} />
-              <Route path="/chinh-sach-giao-hang" element={<PolicyPage type="shipping" />} />
-              <Route path="/chinh-sach-doi-tra" element={<PolicyPage type="returns" />} />
+              <Route path="/chinh-sach-giao-hang" element={<PolicyPage key="shipping-policy" type="shipping" />} />
+              <Route path="/chinh-sach-doi-tra" element={<PolicyPage key="returns-policy" type="returns" />} />
               <Route path="/chinh-sach/:policySlug" element={<PolicyPage />} />
+              <Route path="/lien-he" element={<ContactPage />} />
+              <Route path="/contact" element={<Navigate to="/lien-he" replace />} />
               <Route path="/blog" element={<NewsPage />} />
               <Route path="/blog/category/:categorySlug" element={<NewsPage />} />
               <Route path="/blog/:slug" element={<NewsPage />} />

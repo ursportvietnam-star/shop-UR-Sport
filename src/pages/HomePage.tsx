@@ -31,6 +31,7 @@ const getProductUrl = (product: Product) => {
 };
 
 type HomepageSectionType =
+  | 'top-panel'
   | 'hero'
   | 'promo'
   | 'recommend'
@@ -84,6 +85,7 @@ export default function HomePage({
   });
 
   const DEFAULT_HOMEPAGE_SECTIONS: HomepageSectionConfig[] = [
+    { id: 'top-panel', type: 'top-panel', name: 'Top panel', enabled: true },
     { id: 'hero', type: 'hero', name: 'Hero Banner', enabled: true },
     { id: 'promo', type: 'promo', name: 'Siêu ưu đãi / Coupon', enabled: true },
     { id: 'recommend', type: 'recommend', name: 'Gợi ý dành riêng', enabled: true },
@@ -100,6 +102,7 @@ export default function HomePage({
 
   const getSectionLabel = (type: HomepageSectionType) => {
     switch (type) {
+      case 'top-panel': return 'Top panel';
       case 'hero': return 'Hero Banner';
       case 'promo': return 'Siêu ưu đãi / Coupon';
       case 'recommend': return 'Gợi ý dành riêng';
@@ -132,6 +135,7 @@ export default function HomePage({
       section.id.startsWith('news') ? 'news' :
       section.id.startsWith('trust-badges') ? 'trust-badges' :
       section.id.startsWith('footer') ? 'footer' :
+      section.id.startsWith('top-panel') ? 'top-panel' :
       defaultType
     ) : defaultType);
     return {
@@ -689,6 +693,8 @@ export default function HomePage({
       {homepageSections.map((s, idx) => {
         if (s.enabled === false) return null;
         switch (s.type) {
+          case 'top-panel':
+            return null;
           case 'hero':
             return <Hero key={s.id} headingOverride={homeSeo.heading} onShopClick={() => navigate('/shop')} />;
           case 'promo':

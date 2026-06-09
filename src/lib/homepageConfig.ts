@@ -1,4 +1,5 @@
 export type HomepageSectionType =
+  | 'top-panel'
   | 'hero'
   | 'promo'
   | 'recommend'
@@ -20,6 +21,9 @@ export type HomepageSectionConfig = {
   enabled: boolean;
   content?: string;
   settings?: {
+    topPanelLocationLabel?: string;
+    topPanelLocationHref?: string;
+    topPanelItems?: TopPanelItem[];
     newsMode?: 'auto' | 'manual';
     selectedPostIds?: string[];
     customLayout?: 'html' | 'products';
@@ -33,11 +37,32 @@ export type HomepageSectionConfig = {
   };
 };
 
+export type TopPanelItem = {
+  label: string;
+  href?: string;
+  hasDropdown?: boolean;
+};
+
+export const DEFAULT_TOP_PANEL_SETTINGS = {
+  topPanelLocationLabel: 'TP. Hồ Chí Minh',
+  topPanelLocationHref: '/chinh-sach/lien-he',
+  topPanelItems: [
+    { label: 'Giao hàng và thanh toán', href: '/chinh-sach-giao-hang' },
+    { label: 'Đổi trả', href: '/chinh-sach-doi-tra' },
+    { label: 'Cửa hàng', href: '/chinh-sach/he-thong-cua-hang' },
+    { label: 'Liên hệ', href: '/chinh-sach/lien-he' },
+    { label: 'Thông tin', href: '/chinh-sach', hasDropdown: true },
+    { label: '₫', href: '#', hasDropdown: true },
+    { label: 'Tiếng Việt', href: '#', hasDropdown: true },
+  ] as TopPanelItem[],
+};
+
 export const HOMEPAGE_CONFIG_STORAGE_KEY = 'ursport_homepage_config_v1';
 export const HOMEPAGE_BANNERS_STORAGE_KEY = 'ursport_homepage_banners_v1';
 export const HOMEPAGE_MOBILE_BANNERS_STORAGE_KEY = 'ursport_homepage_mobile_banners_v1';
 
 export const HOMEPAGE_SECTION_TYPES: { value: HomepageSectionType; label: string }[] = [
+  { value: 'top-panel', label: 'Top panel' },
   { value: 'hero', label: 'Banner' },
   { value: 'promo', label: 'Mã giảm giá' },
   { value: 'recommend', label: 'Gợi ý dành riêng cho bạn' },
@@ -54,6 +79,13 @@ export const HOMEPAGE_SECTION_TYPES: { value: HomepageSectionType; label: string
 ];
 
 export const DEFAULT_HOMEPAGE_SECTIONS: HomepageSectionConfig[] = [
+  {
+    id: 'top-panel',
+    type: 'top-panel',
+    name: 'Top panel',
+    enabled: true,
+    settings: DEFAULT_TOP_PANEL_SETTINGS,
+  },
   { id: 'hero', type: 'hero', name: 'Banner', enabled: true },
   { id: 'promo', type: 'promo', name: 'Mã giảm giá', enabled: true },
   { id: 'recommend', type: 'recommend', name: 'Gợi ý dành riêng cho bạn', enabled: true },
@@ -80,6 +112,7 @@ const inferSectionType = (section: Partial<HomepageSectionConfig> & { id?: strin
   if (HOMEPAGE_SECTION_TYPES.some(item => item.value === candidate)) return candidate as HomepageSectionType;
 
   const id = section.id || '';
+  if (id.startsWith('top-panel')) return 'top-panel';
   if (id.startsWith('hero')) return 'hero';
   if (id.startsWith('promo')) return 'promo';
   if (id.startsWith('recommend')) return 'recommend';
@@ -116,6 +149,11 @@ export const mergeHomepageSections = (sections: HomepageSectionConfig[]) => {
     .map(normalizeHomepageSection)
     .filter(section => !ids.has(section.id))
     .reduce((result, defaultSection) => {
+      if (defaultSection.id === 'top-panel') {
+        result.unshift(defaultSection);
+        return result;
+      }
+
       if (defaultSection.id === 'trust-badges') {
         const footerIndex = result.findIndex(section => section.id === 'footer');
         if (footerIndex >= 0) {
@@ -127,6 +165,35 @@ export const mergeHomepageSections = (sections: HomepageSectionConfig[]) => {
       result.push(defaultSection);
       return result;
     }, [...normalized]);
+};
+
+export const getHomepageTopPanelSection = (sections: HomepageSectionConfig[]) =>
+  mergeHomepageSections(sections).find(section => section.type === 'top-panel' && section.enabled !== false);
+
+export const getTopPanelSettings = (section?: HomepageSectionConfig | null) => {
+  const settings = section?.settings || {};
+  const savedItems = Array.isArray(settings.topPanelItems) ? settings.topPanelItems : [];
+
+  return {
+    ...DEFAULT_TOP_PANEL_SETTINGS,
+    ...settings,
+    topPanelLocationHref:
+      typeof settings.topPanelLocationHref === 'string' && settings.topPanelLocationHref.trim()
+        ? settings.topPanelLocationHref
+        : DEFAULT_TOP_PANEL_SETTINGS.topPanelLocationHref,
+    topPanelItems: savedItems.length > 0
+      ? savedItems.map((item, index) => {
+          const defaultItem = DEFAULT_TOP_PANEL_SETTINGS.topPanelItems[index];
+          if (!defaultItem) return item;
+
+          return {
+            ...defaultItem,
+            ...item,
+            href: typeof item.href === 'string' && item.href.trim() ? item.href : defaultItem.href,
+          };
+        })
+      : DEFAULT_TOP_PANEL_SETTINGS.topPanelItems,
+  };
 };
 
 export const readLocalHomepageSections = () => {
@@ -214,4 +281,3 @@ export const writeLocalHomepageMobileBanners = (items: LocalHomepageBanner[]) =>
     }),
   );
 };
-

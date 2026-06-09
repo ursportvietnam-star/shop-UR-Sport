@@ -7,17 +7,19 @@ interface BlogHeroProps {
   searchValue?: string;
   onSearchChange?: (val: string) => void;
   onSearchSubmit?: () => void;
+  searchPlaceholder?: string;
   trendingTags?: string[];
   onTagClick?: (tag: string) => void;
 }
 
 export const BlogHero: React.FC<BlogHeroProps> = ({
-  title = 'Blog Đồ Thể Thao Nam: Áo Thun, Quần Thể Thao & Đồ Gym Nam',
-  subtitle = 'Kiến thức chọn áo thun nam, áo thun thể thao nam, quần thể thao nam và đồ gym nam theo chất liệu, form dáng, cách phối đồ và nhu cầu tập luyện hằng ngày.',
+  title = '',
+  subtitle = '',
   searchValue = '',
   onSearchChange,
   onSearchSubmit,
-  trendingTags = ['Áo thun nam', 'Áo thun thể thao nam', 'Quần thể thao nam', 'Đồ gym nam', 'Chất liệu quick dry'],
+  searchPlaceholder = '',
+  trendingTags = [],
   onTagClick
 }) => {
   return (
@@ -54,7 +56,7 @@ export const BlogHero: React.FC<BlogHeroProps> = ({
             onChange={(event) => onSearchChange?.(event.target.value)}
             aria-label="Tìm kiếm bài viết"
             className="h-14 w-full rounded-2xl border border-white/10 bg-white/8 pl-12 pr-28 text-base font-semibold text-white shadow-2xl backdrop-blur-md transition-all placeholder:text-zinc-400 hover:bg-white/10 focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-300/50"
-            placeholder="Tìm bài viết: áo thun nam, đồ gym, chất liệu..."
+            placeholder={searchPlaceholder}
           />
           <button
             type="submit"

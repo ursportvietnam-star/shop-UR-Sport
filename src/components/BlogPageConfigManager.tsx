@@ -175,6 +175,51 @@ export function BlogPageConfigManager({ blogPosts = [], blogCategories = [] }: B
         Bạn có thể kéo thả để đổi vị trí hoặc tắt block nếu chưa muốn hiển thị.
       </p>
 
+      {section.type === 'hero' && (
+        <div className="mt-5 grid gap-4">
+          <div>
+            <label className="mb-2 block text-[11px] font-black uppercase tracking-widest text-white/35">Tiêu đề H1</label>
+            <input
+              value={section.settings?.title || ''}
+              onChange={event => updateSectionSettings(index, { title: event.target.value })}
+              className="h-11 w-full rounded-xl border border-white/10 bg-white/5 px-4 text-sm font-bold text-white outline-none placeholder:text-white/25"
+              placeholder="Blog Đồ Thể Thao Nam: Áo Thun, Quần Thể Thao & Đồ Gym Nam"
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-[11px] font-black uppercase tracking-widest text-white/35">Đoạn mô tả</label>
+            <textarea
+              value={section.settings?.subtitle || ''}
+              onChange={event => updateSectionSettings(index, { subtitle: event.target.value })}
+              className="min-h-[96px] w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white outline-none placeholder:text-white/25"
+              placeholder="Kiến thức chọn áo thun nam, áo thun thể thao nam, quần thể thao nam và đồ gym nam theo chất liệu, form dáng, cách phối đồ và nhu cầu tập luyện hằng ngày."
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-[11px] font-black uppercase tracking-widest text-white/35">Placeholder tìm kiếm</label>
+            <input
+              value={section.settings?.searchPlaceholder || ''}
+              onChange={event => updateSectionSettings(index, { searchPlaceholder: event.target.value })}
+              className="h-11 w-full rounded-xl border border-white/10 bg-white/5 px-4 text-sm font-bold text-white outline-none placeholder:text-white/25"
+              placeholder="Tìm bài viết: áo thun nam, đồ gym, chất liệu..."
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-[11px] font-black uppercase tracking-widest text-white/35">Từ khóa nổi bật</label>
+            <textarea
+              value={(section.settings?.trendingTags || []).join(', ')}
+              onChange={event => updateSectionSettings(index, { trendingTags: event.target.value.split(',').map(tag => tag.trim()).filter(Boolean) })}
+              className="min-h-[96px] w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white outline-none placeholder:text-white/25"
+              placeholder="Áo thun nam, Áo thun thể thao nam, Quần thể thao nam, Đồ gym nam, Chất liệu quick dry"
+            />
+            <p className="mt-2 text-xs font-semibold leading-5 text-white/35">Nhập các từ khóa, cách nhau bởi dấu phẩy. Những từ khóa này sẽ hiển thị dưới block.</p>
+          </div>
+        </div>
+      )}
+
       {section.type === 'category-tabs' && (
         <div className="mt-5 rounded-2xl border border-white/5 bg-white/[0.03] p-4">
           <h4 className="text-xs font-black uppercase tracking-widest text-white/60">Tab danh mục hiển thị</h4>

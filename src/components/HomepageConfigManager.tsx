@@ -17,6 +17,7 @@ import type { BannerItem } from '../types/admin';
 import type { BlogPost, Product } from '../types';
 import {
   DEFAULT_HOMEPAGE_SECTIONS,
+  getTopPanelSettings,
   getHomepageSectionLabel,
   HOMEPAGE_SECTION_TYPES,
   isLocalhost,
@@ -48,6 +49,12 @@ type ReadyBlockTemplate = {
 };
 
 const READY_BLOCK_TEMPLATES: ReadyBlockTemplate[] = [
+  {
+    id: 'top-panel',
+    type: 'top-panel',
+    name: 'Top panel',
+    description: 'Thanh thông tin nhỏ phía trên header, có thể sửa từng link.'
+  },
   {
     id: 'custom-products',
     type: 'custom',
@@ -103,6 +110,7 @@ const READY_BLOCK_TEMPLATES: ReadyBlockTemplate[] = [
 
 const readyBlockIcons: Partial<Record<HomepageSectionType | ReadyBlockTemplate['id'], typeof LayoutTemplate>> = {
   'custom-products': Package,
+  'top-panel': LayoutTemplate,
   custom: LayoutTemplate,
   flashsale: Flame,
   'trust-badges': ShieldCheck,
@@ -444,6 +452,101 @@ export function HomepageConfigManager({ blogPosts = [], products = [], navigatio
             className="h-11 w-full rounded-xl border border-white/10 bg-white/5 px-4 text-sm font-bold text-white outline-none"
           />
         </div>
+
+        {section.type === 'top-panel' && (() => {
+          const topPanel = getTopPanelSettings(section);
+          const topPanelItems = topPanel.topPanelItems;
+          const updateTopPanelItem = (itemIndex: number, patch: Partial<(typeof topPanelItems)[number]>) => {
+            updateSectionSettings(index, {
+              topPanelItems: topPanelItems.map((item, currentIndex) => (
+                currentIndex === itemIndex ? { ...item, ...patch } : item
+              ))
+            });
+          };
+
+          return (
+            <div className="space-y-4 rounded-2xl border border-white/10 bg-black/10 p-4">
+              <div>
+                <p className="text-sm font-black text-white">Top panel phía trên header</p>
+                <p className="mt-1 text-xs font-semibold text-white/35">
+                  Sửa chữ và link từng mục. Để trống link nếu mục chỉ dùng để hiển thị.
+                </p>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-[11px] font-black uppercase tracking-widest text-white/35">Vị trí bên trái</label>
+                  <input
+                    value={topPanel.topPanelLocationLabel}
+                    onChange={event => updateSectionSettings(index, { topPanelLocationLabel: event.target.value })}
+                    placeholder="VD: TP. Hồ Chí Minh"
+                    className="h-11 w-full rounded-xl border border-white/10 bg-white/5 px-4 text-sm font-bold text-white outline-none placeholder:text-white/25"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-[11px] font-black uppercase tracking-widest text-white/35">Link vị trí</label>
+                  <input
+                    value={topPanel.topPanelLocationHref}
+                    onChange={event => updateSectionSettings(index, { topPanelLocationHref: event.target.value })}
+                    placeholder="VD: /chinh-sach/lien-he"
+                    className="h-11 w-full rounded-xl border border-white/10 bg-white/5 px-4 text-sm font-bold text-white outline-none placeholder:text-white/25"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-black text-white">Danh sách link bên phải</p>
+                  <Button
+                    type="button"
+                    onClick={() => updateSectionSettings(index, {
+                      topPanelItems: [...topPanelItems, { label: 'Mục mới', href: '/' }]
+                    })}
+                    className="h-9 gap-2 rounded-xl bg-white/10 px-3 text-xs font-black text-white hover:bg-white/15"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Thêm link
+                  </Button>
+                </div>
+
+                {topPanelItems.map((item, itemIndex) => (
+                  <div key={`${item.label}-${itemIndex}`} className="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3 lg:grid-cols-[1fr_1fr_auto_auto]">
+                    <input
+                      value={item.label}
+                      onChange={event => updateTopPanelItem(itemIndex, { label: event.target.value })}
+                      placeholder="Tên hiển thị"
+                      className="h-10 rounded-xl border border-white/10 bg-white/5 px-3 text-sm font-bold text-white outline-none placeholder:text-white/25"
+                    />
+                    <input
+                      value={item.href || ''}
+                      onChange={event => updateTopPanelItem(itemIndex, { href: event.target.value })}
+                      placeholder="Link, VD: /shop hoặc https://..."
+                      className="h-10 rounded-xl border border-white/10 bg-white/5 px-3 text-sm font-bold text-white outline-none placeholder:text-white/25"
+                    />
+                    <label className="flex h-10 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 text-xs font-black text-white/60">
+                      <input
+                        type="checkbox"
+                        checked={!!item.hasDropdown}
+                        onChange={event => updateTopPanelItem(itemIndex, { hasDropdown: event.target.checked })}
+                      />
+                      Mũi tên
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => updateSectionSettings(index, {
+                        topPanelItems: topPanelItems.filter((_, currentIndex) => currentIndex !== itemIndex)
+                      })}
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3 text-xs font-black text-red-300"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Xóa
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
 
         {section.type === 'hero' && (
           <div className="space-y-4 rounded-2xl border border-white/10 bg-black/10 p-4">

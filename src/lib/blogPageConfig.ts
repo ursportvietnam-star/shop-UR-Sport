@@ -13,6 +13,8 @@ export type BlogPageSectionConfig = {
   settings?: {
     title?: string;
     subtitle?: string;
+    searchPlaceholder?: string;
+    trendingTags?: string[];
     selectedTabLinks?: string[];
     featuredMode?: 'latest' | 'manual';
     selectedPostIds?: string[];
@@ -25,6 +27,13 @@ export type BlogPageSectionConfig = {
 };
 
 export const BLOG_PAGE_CONFIG_STORAGE_KEY = 'ursport_blog_page_config_v1';
+
+export const DEFAULT_BLOG_HERO_SETTINGS = {
+  title: 'Blog Đồ Thể Thao Nam: Áo Thun, Quần Thể Thao & Đồ Gym Nam',
+  subtitle: 'Kiến thức chọn áo thun nam, áo thun thể thao nam, quần thể thao nam và đồ gym nam theo chất liệu, form dáng, cách phối đồ và nhu cầu tập luyện hằng ngày.',
+  searchPlaceholder: 'Tìm bài viết: áo thun nam, đồ gym, chất liệu...',
+  trendingTags: ['Áo thun nam', 'Áo thun thể thao nam', 'Quần thể thao nam', 'Đồ gym nam', 'Chất liệu quick dry'],
+};
 
 export const isLocalhost = () =>
   typeof window !== 'undefined' &&
@@ -39,7 +48,7 @@ export const BLOG_PAGE_SECTION_TYPES: { value: BlogPageSectionType; label: strin
 ];
 
 export const DEFAULT_BLOG_PAGE_SECTIONS: BlogPageSectionConfig[] = [
-  { id: 'hero', type: 'hero', name: 'Hero Blog', enabled: true },
+  { id: 'hero', type: 'hero', name: 'Hero Blog', enabled: true, settings: DEFAULT_BLOG_HERO_SETTINGS },
   { id: 'category-tabs', type: 'category-tabs', name: 'Tab danh mục', enabled: true },
   { id: 'featured', type: 'featured', name: 'Bài Viết Nổi Bật', enabled: true },
   { id: 'category-sections', type: 'category-sections', name: 'Cụm bài theo danh mục', enabled: true },
@@ -66,12 +75,13 @@ export const normalizeBlogPageSection = (
   section: Partial<BlogPageSectionConfig> & { id?: string; type?: string },
 ): BlogPageSectionConfig => {
   const type = inferBlogSectionType(section);
+  const defaultSettings = type === 'hero' ? DEFAULT_BLOG_HERO_SETTINGS : {};
   return {
     id: section.id || `${type}-${Date.now()}`,
     type,
     name: section.name || getBlogPageSectionLabel(type),
     enabled: section.enabled !== false,
-    settings: section.settings || {},
+    settings: { ...defaultSettings, ...(section.settings || {}) },
   };
 };
 
