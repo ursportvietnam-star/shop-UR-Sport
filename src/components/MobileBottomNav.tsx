@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Menu, Search, ShoppingCart, User, Phone } from 'lucide-react';
+import { Menu, Search, ShoppingCart, User, MessageCircle } from 'lucide-react';
 import { useCart } from '../CartContext';
 import { db, isFirebaseConfigured } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
@@ -118,13 +118,13 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         </span>
       </button>
 
-      {/* Contacts Tab */}
+      {/* Zalo Tab */}
       <button
         onClick={handleContactClick}
         className="flex flex-1 flex-col items-center justify-center text-zinc-500 active:bg-zinc-50 transition-colors cursor-pointer"
       >
-        <Phone className="h-5.5 w-5.5 text-[#f97316]" />
-        <span className="text-[10px] font-semibold mt-0.5 text-zinc-500">Liên hệ</span>
+        <MessageCircle className="h-5.5 w-5.5 text-[#f97316]" />
+        <span className="text-[10px] font-semibold mt-0.5 text-zinc-500">Zalo</span>
       </button>
     </div>
   );

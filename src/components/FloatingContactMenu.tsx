@@ -41,7 +41,7 @@ export function FloatingContactMenu() {
   return (
     <div
       ref={menuRef}
-      className="floating-contact-menu fixed bottom-24 right-4 z-[100] flex flex-col items-center sm:bottom-8 sm:right-8"
+      className="floating-contact-menu fixed bottom-24 right-4 z-[100] hidden md:flex flex-col items-center sm:bottom-8 sm:right-8"
     >
       {/* Expanded Menu */}
       <div
