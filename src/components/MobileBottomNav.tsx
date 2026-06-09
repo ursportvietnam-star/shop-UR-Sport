@@ -76,25 +76,25 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       {/* Menu Tab */}
       <button
         onClick={onMenuClick}
-        className="flex flex-1 flex-col items-center justify-center text-zinc-500 active:bg-zinc-50 transition-colors cursor-pointer px-1"
+        className="flex flex-1 min-w-0 flex-col items-center justify-center text-zinc-500 active:bg-zinc-50 transition-colors cursor-pointer px-1"
       >
         <Menu className="h-5.5 w-5.5 text-[#f97316]" />
-        <span className="text-[10px] font-semibold mt-0.5 text-zinc-500 whitespace-nowrap tracking-tight">Menu</span>
+        <span className="text-[clamp(8px,2.5vw,10px)] font-semibold mt-0.5 text-zinc-500 whitespace-nowrap tracking-tight">Menu</span>
       </button>
 
       {/* Search Tab */}
       <button
         onClick={onSearchClick}
-        className="flex flex-1 flex-col items-center justify-center text-zinc-500 active:bg-zinc-50 transition-colors cursor-pointer px-1"
+        className="flex flex-1 min-w-0 flex-col items-center justify-center text-zinc-500 active:bg-zinc-50 transition-colors cursor-pointer px-1"
       >
         <Search className="h-5.5 w-5.5 text-[#f97316]" />
-        <span className="text-[10px] font-semibold mt-0.5 text-zinc-500 whitespace-nowrap tracking-tight">Tìm kiếm</span>
+        <span className="text-[clamp(8px,2.5vw,10px)] font-semibold mt-0.5 text-zinc-500 whitespace-nowrap tracking-tight">Tìm kiếm</span>
       </button>
 
       {/* Cart Tab */}
       <button
         onClick={onCartClick}
-        className="flex flex-1 flex-col items-center justify-center text-zinc-500 active:bg-zinc-50 transition-colors relative cursor-pointer px-1"
+        className="flex flex-1 min-w-0 flex-col items-center justify-center text-zinc-500 active:bg-zinc-50 transition-colors relative cursor-pointer px-1"
       >
         <div className="relative">
           <ShoppingCart className="h-5.5 w-5.5 text-[#f97316]" />
@@ -104,16 +104,16 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             </span>
           )}
         </div>
-        <span className="text-[10px] font-semibold mt-0.5 text-zinc-500 whitespace-nowrap tracking-tight">Giỏ hàng</span>
+        <span className="text-[clamp(8px,2.5vw,10px)] font-semibold mt-0.5 text-zinc-500 whitespace-nowrap tracking-tight">Giỏ hàng</span>
       </button>
 
       {/* Account Tab */}
       <button
         onClick={onAccountClick}
-        className="flex flex-1 flex-col items-center justify-center text-zinc-500 active:bg-zinc-50 transition-colors cursor-pointer px-1"
+        className="flex flex-1 min-w-0 flex-col items-center justify-center text-zinc-500 active:bg-zinc-50 transition-colors cursor-pointer px-1"
       >
         <User className={`h-5.5 w-5.5 text-[#f97316] ${location.pathname === '/tai-khoan' ? 'stroke-[2.5px]' : ''}`} />
-        <span className={`text-[10px] font-semibold mt-0.5 whitespace-nowrap tracking-tight ${location.pathname === '/tai-khoan' ? 'text-[#f97316] font-bold' : 'text-zinc-500'}`}>
+        <span className={`text-[clamp(8px,2.5vw,10px)] font-semibold mt-0.5 whitespace-nowrap tracking-tight ${location.pathname === '/tai-khoan' ? 'text-[#f97316] font-bold' : 'text-zinc-500'}`}>
           Tài khoản
         </span>
       </button>
@@ -121,10 +121,10 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       {/* Zalo Tab */}
       <button
         onClick={handleContactClick}
-        className="flex flex-1 flex-col items-center justify-center text-zinc-500 active:bg-zinc-50 transition-colors cursor-pointer px-1"
+        className="flex flex-1 min-w-0 flex-col items-center justify-center text-zinc-500 active:bg-zinc-50 transition-colors cursor-pointer px-1"
       >
         <MessageCircle className="h-5.5 w-5.5 text-[#f97316]" />
-        <span className="text-[10px] font-semibold mt-0.5 text-zinc-500 whitespace-nowrap tracking-tight">Zalo</span>
+        <span className="text-[clamp(8px,2.5vw,10px)] font-semibold mt-0.5 text-zinc-500 whitespace-nowrap tracking-tight">Zalo</span>
       </button>
     </div>
   );
