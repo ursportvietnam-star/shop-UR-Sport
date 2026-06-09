@@ -1038,19 +1038,23 @@ export const ProductDetail: React.FC = () => {
             href={`https://zalo.me/${contactSettings.zaloPhone}`}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => {
+              const productUrl = window.location.href;
+              navigator.clipboard.writeText(`Chào shop, tôi muốn được tư vấn sản phẩm này: ${productUrl}`)
+                .then(() => {
+                  toast.success('Đã copy link sản phẩm! Hãy dán (Paste) vào ô chat Zalo để gửi.', {
+                    position: 'top-center',
+                    duration: 4000
+                  });
+                })
+                .catch(err => {
+                  console.error('Failed to copy link: ', err);
+                });
+            }}
             className="flex flex-col items-center justify-center w-14 h-14 text-[#0068ff] border-r border-zinc-100 active:bg-zinc-50 shrink-0"
           >
             <MessageCircle className="h-5 w-5" />
             <span className="text-[9px] font-bold mt-0.5">Zalo</span>
-          </a>
-
-          {/* Call Button */}
-          <a
-            href={`tel:${contactSettings.callPhone}`}
-            className="flex flex-col items-center justify-center w-14 h-14 text-[#0068ff] border-r border-zinc-100 active:bg-zinc-50 shrink-0"
-          >
-            <Phone className="h-5 w-5" />
-            <span className="text-[9px] font-bold mt-0.5">Gọi</span>
           </a>
 
           {/* Add to Cart Icon Button */}
