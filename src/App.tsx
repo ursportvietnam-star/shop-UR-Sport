@@ -109,6 +109,29 @@ const SEO_LANDING_PAGES = DEFAULT_SEO_SUBCATEGORIES
     matchTerms: CATEGORY_PRODUCT_MATCH_TERMS[page.slug] || []
   }));
 
+function NotFoundPage() {
+  const navigate = useNavigate();
+
+  return (
+    <div className="mx-auto flex min-h-[60vh] max-w-xl flex-col items-center justify-center px-4 py-20 text-center">
+      <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-[#1e4b64]/10 text-lg font-black text-[#1e4b64]">
+        UR
+      </div>
+      <h1 className="text-2xl font-black text-zinc-950 sm:text-3xl">Trang này chưa sẵn sàng</h1>
+      <p className="mt-3 text-sm font-medium leading-6 text-zinc-500 sm:text-base">
+        Đường dẫn có thể đã được đổi tên hoặc sản phẩm đã ngừng hiển thị. Bạn có thể quay lại cửa hàng để tiếp tục mua sắm.
+      </p>
+      <button
+        type="button"
+        onClick={() => navigate('/shop')}
+        className="mt-8 rounded-full bg-[#1e4b64] px-6 py-3 text-sm font-black text-white shadow-sm transition-colors hover:bg-[#153a4d]"
+      >
+        Về cửa hàng
+      </button>
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <Router basename={import.meta.env.BASE_URL}>
@@ -308,7 +331,7 @@ function AppContent() {
               ))}
               {/* Shopee-style clean URLs for products at root */}
               <Route path="/:productSlug" element={<ProductDetail />} />
-              <Route path="*" element={<div className="py-20 text-center font-black text-4xl">404 - PAGE NOT FOUND</div>} />
+              <Route path="*" element={<NotFoundPage />} />
             </Routes>
             </React.Suspense>
           </main>

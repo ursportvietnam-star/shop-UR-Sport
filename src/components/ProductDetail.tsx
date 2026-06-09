@@ -43,6 +43,7 @@ import {
   ShieldCheck,
   RefreshCcw,
   MessageCircle,
+  Phone,
   Zap,
   Clock,
   ZoomIn
@@ -112,6 +113,10 @@ export const ProductDetail: React.FC = () => {
   const [showStickyBar, setShowStickyBar] = useState(false);
   const [isMobilePickerOpen, setIsMobilePickerOpen] = useState(false);
   const [mobilePickerMode, setMobilePickerMode] = useState<'cart' | 'buy'>('cart');
+  const [contactSettings, setContactSettings] = useState({
+    zaloPhone: '0917722425',
+    callPhone: '0917722425',
+  });
   const productCanonical = product ? getProductPath(product) : '/shop';
   const primaryImage = product?.images?.find(image => image?.trim()) || null;
   const recentlyViewedProducts = React.useMemo(() => {
@@ -205,6 +210,36 @@ export const ProductDetail: React.FC = () => {
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    if (!db || !isFirebaseConfigured) return;
+    getDoc(doc(db, 'settings', 'floatingMenu')).then(snap => {
+      if (snap.exists()) {
+        const data = snap.data();
+        setContactSettings({
+          zaloPhone: data.zaloPhone || '0917722425',
+          callPhone: data.callPhone || '0917722425',
+        });
+      }
+    }).catch(err => console.error(err));
+  }, []);
+
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.id = 'hide-floating-menu-mobile';
+    style.innerHTML = `
+      @media (max-width: 767px) {
+        .floating-contact-menu {
+          display: none !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      const el = document.getElementById('hide-floating-menu-mobile');
+      if (el) el.remove();
+    };
   }, []);
 
   const SHIRT_SIZES = [
@@ -496,8 +531,16 @@ export const ProductDetail: React.FC = () => {
   if (!product) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center p-4">
-        <h2 className="text-2xl font-bold mb-4">PRODUCT NOT FOUND</h2>
-        <Button onClick={() => navigate('/shop')}>Back to Shop</Button>
+        <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-[#1e4b64]/10 text-lg font-black text-[#1e4b64]">
+          UR
+        </div>
+        <h2 className="mb-3 text-center text-2xl font-black text-zinc-950">Không tìm thấy sản phẩm</h2>
+        <p className="mb-7 max-w-md text-center text-sm font-medium leading-6 text-zinc-500">
+          Sản phẩm có thể đã đổi đường dẫn hoặc tạm ngừng hiển thị. Bạn quay lại cửa hàng để xem các mẫu đang có nhé.
+        </p>
+        <Button onClick={() => navigate('/shop')} className="rounded-full bg-[#1e4b64] px-6 font-black hover:bg-[#153a4d]">
+          Về cửa hàng
+        </Button>
       </div>
     );
   }
@@ -990,15 +1033,24 @@ export const ProductDetail: React.FC = () => {
 
         {/* Permanent Mobile Action Bar (Shopee Style) */}
         <div className="fixed bottom-0 left-0 right-0 z-[60] bg-white border-t border-zinc-100 flex items-center md:hidden pb-safe-area shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
-          {/* Chat Icon Button (linking to Zalo) */}
+          {/* Zalo Button */}
           <a
-            href="https://zalo.me/0917722425"
+            href={`https://zalo.me/${contactSettings.zaloPhone}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex flex-col items-center justify-center w-14 h-14 text-teal-600 border-r border-zinc-100 active:bg-zinc-50 shrink-0"
+            className="flex flex-col items-center justify-center w-14 h-14 text-[#0068ff] border-r border-zinc-100 active:bg-zinc-50 shrink-0"
           >
             <MessageCircle className="h-5 w-5" />
-            <span className="text-[9px] font-bold mt-0.5">Chat</span>
+            <span className="text-[9px] font-bold mt-0.5">Zalo</span>
+          </a>
+
+          {/* Call Button */}
+          <a
+            href={`tel:${contactSettings.callPhone}`}
+            className="flex flex-col items-center justify-center w-14 h-14 text-[#0068ff] border-r border-zinc-100 active:bg-zinc-50 shrink-0"
+          >
+            <Phone className="h-5 w-5" />
+            <span className="text-[9px] font-bold mt-0.5">Gọi</span>
           </a>
 
           {/* Add to Cart Icon Button */}
@@ -1008,7 +1060,7 @@ export const ProductDetail: React.FC = () => {
               setIsMobilePickerOpen(true);
             }}
             disabled={selectedVariantOutOfStock}
-            className="flex flex-col items-center justify-center w-14 h-14 text-teal-600 border-r border-zinc-100 active:bg-zinc-50 shrink-0 disabled:opacity-50"
+            className="flex flex-col items-center justify-center w-14 h-14 text-[#0068ff] border-r border-zinc-100 active:bg-zinc-50 shrink-0 disabled:opacity-50"
           >
             <ShoppingCart className="h-5 w-5" />
             <span className="text-[9px] font-bold mt-0.5">Thêm giỏ</span>
