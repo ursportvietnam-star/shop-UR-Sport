@@ -412,7 +412,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
   const transferMsg = getTransferContent(generatedOrderCode);
 
   return (
-    <div className="bg-[#f8fafc] min-h-screen pb-28 md:pb-16">
+    <div className="bg-[#f8fafc] pb-8 md:min-h-screen md:pb-16">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         
         {/* Header Breadcrumb & Status */}
@@ -677,7 +677,9 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                   <div className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-[#f0f9ff] text-[#1e4b64] font-black text-sm md:text-lg shadow-sm shrink-0">2</div>
                   <div className="min-w-0">
                     <h2 className="text-xs sm:text-sm md:text-lg font-black uppercase tracking-tight text-zinc-900 truncate whitespace-nowrap">PHƯƠNG THỨC THANH TOÁN</h2>
-                    <p className="text-[10px] sm:text-xs text-zinc-400 font-medium truncate hidden sm:block">Lựa chọn cách thanh toán phù hợp</p>
+                    <p className="mt-1 max-w-[210px] whitespace-normal text-[9px] font-bold leading-3 text-emerald-600 sm:max-w-[560px] sm:text-[10px] sm:leading-4">
+                      Chuyển khoản, ZaloPay, ShopeePay: miễn phí vận chuyển
+                    </p>
                   </div>
                 </div>
                 <button 
@@ -895,7 +897,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
             <Button 
               type="submit" 
               disabled={isProcessing}
-              className="w-full bg-[#1e4b64] hover:bg-[#153446] text-white font-black py-8 rounded-[24px] text-base tracking-wide uppercase shadow-xl shadow-[#1e4b64]/10 transition-all hover:scale-[1.005] active:scale-[0.99]"
+              className="hidden w-full bg-[#1e4b64] hover:bg-[#153446] text-white font-black py-8 rounded-[24px] text-base tracking-wide uppercase shadow-xl shadow-[#1e4b64]/10 transition-all hover:scale-[1.005] active:scale-[0.99] md:flex"
             >
               {isProcessing ? (
                  <div className="flex items-center gap-3">
@@ -919,10 +921,10 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                       <ShoppingCart className="h-4.5 w-4.5" /> ĐƠN HÀNG CỦA BẠN
                     </CardTitle>
                  </CardHeader>
-                 <CardContent className="p-6 sm:p-8 space-y-6 bg-white">
-                    <ScrollArea className="h-64 -mr-4 pr-4">
+                 <CardContent className="p-5 sm:p-8 space-y-4 sm:space-y-6 bg-white">
+                    <ScrollArea className={cn(cart.length <= 1 ? 'h-auto' : 'h-56 sm:h-64', '-mr-4 pr-4')}>
                        {cart.map(item => (
-                          <div key={`${item.id}-${item.selectedColor}-${item.selectedSize}`} className="flex gap-3 mb-5 last:mb-0 group relative">
+                          <div key={`${item.id}-${item.selectedColor}-${item.selectedSize}`} className="flex gap-3 mb-4 sm:mb-5 last:mb-0 group relative">
                              <div className="relative h-16 w-16 rounded-xl overflow-hidden bg-slate-50 shrink-0 border border-slate-100">
                                 {item.images && item.images[0] && (
                                    <img src={item.images[0]} alt={item.name} loading="lazy" className="h-full w-full object-cover transition-transform group-hover:scale-105" referrerPolicy="no-referrer" />
@@ -1142,7 +1144,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
              </AnimatePresence>
              
              {/* Trust Badges Bar */}
-             <div className="mt-6 flex items-center justify-center gap-8 text-zinc-400/80">
+             <div className="mt-3 flex items-center justify-center gap-8 text-zinc-400/80 md:mt-6">
                 <div className="flex flex-col items-center gap-1">
                    <ShieldCheck className="h-5 w-5" />
                    <span className="text-[8px] font-black uppercase tracking-widest">Bảo mật</span>

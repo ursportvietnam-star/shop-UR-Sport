@@ -13,8 +13,8 @@ export const TRUST_BADGES = [
 export function TrustBadgesSection({ className = '' }: { className?: string }) {
   return (
     <section className={cn("bg-zinc-50/50 border-y border-zinc-100", className)}>
-      <div className="container-custom py-10 sm:py-12">
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-7 lg:grid-cols-4 lg:gap-8">
+      <div className="container-custom py-6 sm:py-12">
+        <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-7 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4 lg:gap-8">
           {TRUST_BADGES.map((badge, idx) => (
             <motion.div
               key={badge.title}
@@ -22,7 +22,7 @@ export function TrustBadgesSection({ className = '' }: { className?: string }) {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: idx * 0.1 }}
-              className="group flex items-center gap-4"
+              className="group flex min-w-[250px] snap-start items-center gap-3 rounded-2xl bg-white/60 p-3 sm:min-w-0 sm:bg-transparent sm:p-0 sm:gap-4"
             >
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-zinc-100 bg-white shadow-sm transition-all duration-500 group-hover:border-[#1e4b64] group-hover:bg-[#1e4b64] sm:h-14 sm:w-14">
                 <badge.icon className="h-5 w-5 text-[#1e4b64] transition-colors duration-500 group-hover:text-white sm:h-6 sm:w-6" />
