@@ -799,3 +799,8 @@ html {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
 }
+
+/* Safe area utilities */
+.pb-safe-area {
+  padding-bottom: env(safe-area-inset-bottom);
+}
