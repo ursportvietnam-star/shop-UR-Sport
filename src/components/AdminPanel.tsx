@@ -712,6 +712,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>('all');
   const [blogSearchQuery, setBlogSearchQuery] = useState('');
+  const [blogCategoryFilter, setBlogCategoryFilter] = useState('all');
   const [selectedBlogPostIds, setSelectedBlogPostIds] = useState<string[]>([]);
   const [manualNewsletterEmail, setManualNewsletterEmail] = useState('');
   const [selectedNewsletterIds, setSelectedNewsletterIds] = useState<string[]>([]);
@@ -1734,11 +1735,14 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
       return prev.filter(item => item !== id);
     });
   };
-  const filteredBlogPosts = blogPosts.filter(post =>
-    post.title.toLowerCase().includes(blogSearchQuery.toLowerCase()) ||
-    (post.category || '').toLowerCase().includes(blogSearchQuery.toLowerCase()) ||
-    (post.author || '').toLowerCase().includes(blogSearchQuery.toLowerCase())
-  );
+  const filteredBlogPosts = blogPosts.filter(post => {
+    const matchesSearch = post.title.toLowerCase().includes(blogSearchQuery.toLowerCase()) ||
+      (post.category || '').toLowerCase().includes(blogSearchQuery.toLowerCase()) ||
+      (post.author || '').toLowerCase().includes(blogSearchQuery.toLowerCase());
+    const matchesCategory = blogCategoryFilter === 'all' || 
+      normalizeMenuLabel(post.category || '') === normalizeMenuLabel(blogCategoryFilter);
+    return matchesSearch && matchesCategory;
+  });
   const filteredBlogPostIds = filteredBlogPosts.map(post => post.id);
   const selectedExistingBlogPostCount = selectedBlogPostIds.filter(id => blogPosts.some(post => post.id === id)).length;
   const selectedFilteredBlogPostCount = filteredBlogPostIds.filter(id => selectedBlogPostIds.includes(id)).length;
@@ -2930,7 +2934,7 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
                                   )}
                                 </div>
                                 <div>
-                                  <p className="max-w-[360px] text-white text-sm font-bold line-clamp-1">{product.name}</p>
+                                  <p className="max-w-[360px] text-white text-sm font-bold line-clamp-1" title={product.name}>{product.name}</p>
                                 </div>
                               </div>
                             </td>
@@ -3082,15 +3086,33 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
 
           {activeTab === 'blog' && (
             <div className="space-y-4">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm bài viết..."
-                  value={blogSearchQuery}
-                  onChange={e => setBlogSearchQuery(e.target.value)}
-                  className="w-full bg-[#13161f] border border-white/5 rounded-xl pl-11 pr-4 py-3 text-white text-sm font-medium placeholder:text-white/25 focus:outline-none focus:border-[#1e4b64]/50 transition-all"
-                />
+              <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-3">
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
+                  <input
+                    type="text"
+                    placeholder="Tìm kiếm bài viết..."
+                    value={blogSearchQuery}
+                    onChange={e => setBlogSearchQuery(e.target.value)}
+                    className="w-full bg-[#13161f] border border-white/5 rounded-xl pl-11 pr-4 py-3 text-white text-sm font-medium placeholder:text-white/25 focus:outline-none focus:border-[#1e4b64]/50 transition-all"
+                  />
+                </div>
+                <div className="relative">
+                  <Filter className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
+                  <select
+                    value={blogCategoryFilter}
+                    onChange={e => setBlogCategoryFilter(e.target.value)}
+                    className="w-full appearance-none bg-[#13161f] border border-white/5 rounded-xl pl-11 pr-10 py-3 text-white text-sm font-bold focus:outline-none focus:border-[#1e4b64]/50 transition-all"
+                  >
+                    <option value="all">Tất cả chuyên mục</option>
+                    {blogCategories.filter(category => category.label !== 'Tất cả').map(category => (
+                      <option key={category.id} value={category.label}>
+                        {category.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30 pointer-events-none" />
+                </div>
               </div>
 
               <div className="flex items-center justify-between gap-4">
@@ -3204,8 +3226,8 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
                                   )}
                                 </div>
                                 <div className="min-w-0">
-                                  <p className="text-white text-sm font-bold line-clamp-1">{post.title}</p>
-                                  <p className="text-white/30 text-[11px] mt-1 line-clamp-1">{(post.excerpt || '').slice(0, 80)}...</p>
+                                  <p className="text-white text-sm font-bold line-clamp-1" title={post.title}>{post.title}</p>
+                                  <p className="text-white/30 text-[11px] mt-1 line-clamp-1" title={post.excerpt || undefined}>{(post.excerpt || '').slice(0, 80)}...</p>
                                 </div>
                               </div>
                             </td>
@@ -4501,7 +4523,7 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
                               </div>
                             )}
                           </div>
-                          <p className="text-white text-[11px] font-bold line-clamp-2 leading-relaxed h-8">{product.name}</p>
+                          <p className="text-white text-[11px] font-bold line-clamp-2 leading-relaxed h-8" title={product.name}>{product.name}</p>
                           
                           <div className="mt-3 space-y-2">
                              {isSelected ? (
@@ -4751,7 +4773,7 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
                                 </div>
                               )}
                             </div>
-                            <p className="text-white text-[11px] font-bold line-clamp-2 leading-relaxed h-8">{product.name}</p>
+                            <p className="text-white text-[11px] font-bold line-clamp-2 leading-relaxed h-8" title={product.name}>{product.name}</p>
                             <div className="mt-3 flex items-center justify-between gap-2">
                               <span className="text-white/50 text-xs font-black">{(product.discountPrice || product.price).toLocaleString('vi-VN')}₫</span>
                               <span className={cn(
