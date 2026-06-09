@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { ImageUpload } from '../ImageUpload';
 import { syncSiteFavicon } from '../../lib/localMediaUpload';
+import { DEFAULT_SHIPPING_SETTINGS, normalizeShippingSettings, ShippingSettings } from '@/lib/shippingSettings';
 
 import { CATEGORY_METADATA } from '../../data';
 import { saveAdminSetting, getAdminSetting } from '../../services/adminData';
@@ -19,7 +20,7 @@ const withCacheBust = (url: string) => {
 };
 
 interface AdminSettingsTabProps {
-  activeSection?: 'settings' | 'settings-logo' | 'settings-footer' | 'settings-css' | 'settings-contact' | 'seo-sitemap' | 'seo-schema' | 'seo-robots' | 'seo-redirects';
+  activeSection?: 'settings' | 'settings-logo' | 'settings-footer' | 'settings-shipping' | 'settings-css' | 'settings-contact' | 'seo-sitemap' | 'seo-schema' | 'seo-robots' | 'seo-redirects';
   blogPosts: BlogPost[];
   cssSaved: boolean;
   customCss: string;
@@ -217,6 +218,44 @@ export function AdminSettingsTab({
   };
   const [newBadgeText, setNewBadgeText] = useState('');
   const [newGatewayText, setNewGatewayText] = useState('');
+  const [shippingSettings, setShippingSettings] = useState<ShippingSettings>(DEFAULT_SHIPPING_SETTINGS);
+  const [shippingSettingsLoading, setShippingSettingsLoading] = useState(true);
+  const [shippingSettingsSaving, setShippingSettingsSaving] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    setShippingSettingsLoading(true);
+    getAdminSetting<Partial<ShippingSettings>>('shippingSettings')
+      .then(data => {
+        if (isMounted) setShippingSettings(normalizeShippingSettings(data));
+      })
+      .catch(error => {
+        console.error('Error loading shipping settings:', error);
+        if (isMounted) setShippingSettings(DEFAULT_SHIPPING_SETTINGS);
+      })
+      .finally(() => {
+        if (isMounted) setShippingSettingsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleSaveShippingSettings = async () => {
+    setShippingSettingsSaving(true);
+    try {
+      const normalized = normalizeShippingSettings(shippingSettings);
+      await saveAdminSetting('shippingSettings', normalized);
+      setShippingSettings(normalized);
+      toast.success('Đã lưu cài đặt phí vận chuyển!');
+    } catch (error) {
+      console.error('Error saving shipping settings:', error);
+      toast.error('Không thể lưu cài đặt phí vận chuyển.');
+    } finally {
+      setShippingSettingsSaving(false);
+    }
+  };
 
   const clearLogoField = (field: 'logoLight' | 'logoDark' | 'favicon') => {
     const updated = { ...logoSettings, [field]: '' };
@@ -1821,6 +1860,78 @@ export function AdminSettingsTab({
                     >
                       Lưu cấu hình Chân trang
                     </button>
+                  </div>
+                </div>
+              )}
+              {/* Shipping Settings */}
+              {(activeSection === 'settings' || activeSection === 'settings-shipping') && (
+                <div className="bg-[#13161f] border border-white/5 rounded-2xl p-6">
+                  <div className="flex flex-col gap-4 border-b border-white/5 pb-5 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.25em] text-cyan-400">Thanh toán & giao hàng</p>
+                      <h3 className="mt-2 text-lg font-black uppercase tracking-tight text-white">Cài đặt phí vận chuyển</h3>
+                      <p className="mt-1 text-xs font-medium text-white/35">
+                        COD tính phí dưới ngưỡng miễn phí; chuyển khoản và ví điện tử có thể miễn phí riêng.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleSaveShippingSettings}
+                      disabled={shippingSettingsSaving || shippingSettingsLoading}
+                      className="rounded-xl bg-[#1e4b64] px-6 py-2.5 text-xs font-black text-white transition-colors hover:bg-[#153446] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {shippingSettingsSaving ? 'Đang lưu...' : 'Lưu cài đặt vận chuyển'}
+                    </button>
+                  </div>
+
+                  <div className="mt-6 grid gap-4 md:grid-cols-2">
+                    <label className="block">
+                      <span className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-white/30">Phí COD dưới ngưỡng</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={1000}
+                        value={shippingSettings.codFee}
+                        onChange={event => setShippingSettings(prev => ({ ...prev, codFee: Number(event.target.value) || 0 }))}
+                        className="h-11 w-full rounded-xl border border-white/5 bg-white/5 px-3 text-sm font-bold text-white outline-none focus:border-[#1e4b64]/60"
+                      />
+                      <p className="mt-1 text-[11px] font-medium text-white/30">
+                        Hiện tại: {shippingSettings.codFee.toLocaleString('vi-VN')}đ
+                      </p>
+                    </label>
+                    <label className="block">
+                      <span className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-white/30">Miễn phí COD từ</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={10000}
+                        value={shippingSettings.codFreeThreshold}
+                        onChange={event => setShippingSettings(prev => ({ ...prev, codFreeThreshold: Number(event.target.value) || 0 }))}
+                        className="h-11 w-full rounded-xl border border-white/5 bg-white/5 px-3 text-sm font-bold text-white outline-none focus:border-[#1e4b64]/60"
+                      />
+                      <p className="mt-1 text-[11px] font-medium text-white/30">
+                        Đơn COD từ {shippingSettings.codFreeThreshold.toLocaleString('vi-VN')}đ sẽ miễn phí vận chuyển.
+                      </p>
+                    </label>
+                  </div>
+
+                  <div className="mt-6 grid gap-3 md:grid-cols-2">
+                    {[
+                      { key: 'bankTransferFree' as const, label: 'Chuyển khoản ngân hàng' },
+                      { key: 'momoFree' as const, label: 'Ví MoMo' },
+                      { key: 'zalopayFree' as const, label: 'Ví ZaloPay' },
+                      { key: 'shopeepayFree' as const, label: 'Ví ShopeePay' },
+                    ].map(option => (
+                      <label key={option.key} className="flex items-center justify-between gap-4 rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-3">
+                        <span className="text-xs font-black uppercase tracking-widest text-white/70">{option.label}</span>
+                        <input
+                          type="checkbox"
+                          checked={shippingSettings[option.key]}
+                          onChange={event => setShippingSettings(prev => ({ ...prev, [option.key]: event.target.checked }))}
+                          className="h-5 w-5 accent-[#1e4b64]"
+                        />
+                      </label>
+                    ))}
                   </div>
                 </div>
               )}

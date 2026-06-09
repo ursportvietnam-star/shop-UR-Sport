@@ -172,7 +172,11 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, isOpe
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-white/40">Phí vận chuyển</span>
-                  <span className="text-emerald-400 font-bold uppercase text-[10px]">Miễn phí</span>
+                  {(order.shippingFee || 0) > 0 ? (
+                    <span className="text-white font-medium">{order.shippingFee?.toLocaleString('vi-VN')}₫</span>
+                  ) : (
+                    <span className="text-emerald-400 font-bold uppercase text-[10px]">Miễn phí</span>
+                  )}
                 </div>
                 <div className="h-px bg-white/5 my-2" />
                 <div className="flex justify-between items-baseline">
@@ -181,7 +185,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, isOpe
                     <span className="text-white font-black uppercase text-sm italic tracking-tight">Tổng cộng</span>
                   </div>
                   <span className="text-2xl font-black text-[#1e4b64] italic tracking-tighter">
-                    {order.total.toLocaleString('vi-VN')}₫
+                    {(order.finalTotal ?? order.total).toLocaleString('vi-VN')}₫
                   </span>
                 </div>
               </div>

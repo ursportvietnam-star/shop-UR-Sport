@@ -50,6 +50,7 @@ export type AdminTab =
   | 'products-cat-phukien'
   | 'settings-logo'
   | 'settings-footer'
+  | 'settings-shipping'
   | 'settings-css'
   | 'settings-contact'
   | 'seo-sitemap'

@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Package, ShoppingBag, Users, MessageSquare,
   Image as ImageIcon, Settings, Plus, Trash2, Edit2, LogOut,
   TrendingUp, Eye, DollarSign, BarChart2, Menu, X, Bell,
-  Search, ChevronRight, ChevronDown, Megaphone, Upload, Star, AlertCircle, Copy, ExternalLink, Code2, Check as CheckIcon, Bot, Sparkles, Zap, Timer, Clock, Ticket, Download, Filter, MailCheck, Send, UserPlus, ShieldCheck, Network, PanelsTopLeft, Phone, GripVertical,
+  Search, ChevronRight, ChevronDown, Megaphone, Upload, Star, AlertCircle, Copy, ExternalLink, Code2, Check as CheckIcon, Bot, Sparkles, Zap, Timer, Clock, Ticket, Download, Filter, MailCheck, Send, UserPlus, ShieldCheck, Network, PanelsTopLeft, Phone, Truck, GripVertical,
   FileText, Globe, Rocket
 } from 'lucide-react';
 import { PRODUCTS as STATIC_PRODUCTS, STATIC_BLOG_POSTS, STATIC_ORDERS, STATIC_CUSTOMERS, CATEGORY_METADATA, STATIC_VOUCHERS } from '../data';
@@ -400,6 +400,7 @@ const NAV_ITEMS: AdminNavigationItem[] = [
     children: [
       { id: 'settings-logo', label: 'Cấu hình Logo & Favicon', icon: ImageIcon },
       { id: 'settings-footer', label: 'Cấu hình Chân trang (Footer)', icon: PanelsTopLeft },
+      { id: 'settings-shipping', label: 'Cài đặt phí vận chuyển', icon: Truck },
       { id: 'settings-css', label: 'Tùy biến giao diện (Custom CSS)', icon: Code2 },
       { id: 'settings-contact', label: 'Cài đặt Menu Liên hệ (Nút nổi)', icon: Phone }
     ]
@@ -3930,7 +3931,7 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
               />
             </React.Suspense>
           )}
-          {(activeTab === 'settings' || activeTab === 'settings-logo' || activeTab === 'settings-footer' || activeTab === 'settings-css' || activeTab === 'settings-contact' || activeTab === 'seo-sitemap' || activeTab === 'seo-schema' || activeTab === 'seo-robots' || activeTab === 'seo-redirects') && (
+          {(activeTab === 'settings' || activeTab === 'settings-logo' || activeTab === 'settings-footer' || activeTab === 'settings-shipping' || activeTab === 'settings-css' || activeTab === 'settings-contact' || activeTab === 'seo-sitemap' || activeTab === 'seo-schema' || activeTab === 'seo-robots' || activeTab === 'seo-redirects') && (
             <React.Suspense fallback={<AdminTabFallback />}>
               <AdminSettingsTab
                 activeSection={activeTab}

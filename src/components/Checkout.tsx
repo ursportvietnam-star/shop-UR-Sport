@@ -21,6 +21,7 @@ import { BANK_TRANSFER_INFO, createOrderCode, getTransferContent, getVietQrUrl }
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { composeVietnamAddress, fetchVietnamProvinces, fetchVietnamWards, ProvinceOption, WardOption } from '@/lib/vietnamRegions';
+import { calculateShippingFee, DEFAULT_SHIPPING_SETTINGS, normalizeShippingSettings, ShippingSettings } from '@/lib/shippingSettings';
 
 const checkoutSchema = z.object({
   fullName: z.string().min(2, 'Vui lòng nhập họ tên'),
@@ -77,6 +78,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
   const [wards, setWards] = React.useState<WardOption[]>([]);
   const [isLoadingProvinces, setIsLoadingProvinces] = React.useState(false);
   const [isLoadingWards, setIsLoadingWards] = React.useState(false);
+  const [shippingSettings, setShippingSettings] = React.useState<ShippingSettings>(DEFAULT_SHIPPING_SETTINGS);
 
   // Clipboard copies
   const [copiedAccount, setCopiedAccount] = React.useState(false);
@@ -87,7 +89,11 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
     return getVoucherDiscount(appliedVoucher, total);
   }, [appliedVoucher, total]);
 
-  const finalTotal = total - discountAmount;
+  const subtotalAfterDiscount = Math.max(total - discountAmount, 0);
+  const selectedPaymentMethodForShipping = paymentMethod === 'e_wallet' ? activeWallet : paymentMethod;
+  const shippingFee = calculateShippingFee(shippingSettings, selectedPaymentMethodForShipping, subtotalAfterDiscount);
+  const finalTotal = subtotalAfterDiscount + shippingFee;
+  const isShippingFree = shippingFee === 0;
 
   const nextVoucherOpportunity = React.useMemo(() => {
     if (appliedVoucher && discountAmount > 0) return null;
@@ -110,6 +116,22 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
     });
 
     return () => unsubscribe();
+  }, []);
+
+  React.useEffect(() => {
+    if (!db || !isFirebaseConfigured) {
+      setShippingSettings(DEFAULT_SHIPPING_SETTINGS);
+      return;
+    }
+
+    getDoc(doc(db, 'settings', 'shippingSettings'))
+      .then(snapshot => {
+        setShippingSettings(normalizeShippingSettings(snapshot.exists() ? snapshot.data() : null));
+      })
+      .catch(error => {
+        console.error('Error loading shipping settings:', error);
+        setShippingSettings(DEFAULT_SHIPPING_SETTINGS);
+      });
   }, []);
 
   React.useEffect(() => {
@@ -154,8 +176,9 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
     }
     toast.success('Đã sao chép thành công vào bộ nhớ tạm!');
   };
+  const [isAddressConfirmed, setIsAddressConfirmed] = React.useState(false);
 
-  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<CheckoutFormValues>({
+  const { register, handleSubmit, reset, watch, setValue, trigger, formState: { errors } } = useForm<CheckoutFormValues>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
       fullName: user?.displayName || '',
@@ -219,6 +242,32 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
   }, [selectedProvinceCode]);
 
   React.useEffect(() => {
+    // 1. First check if we have a saved address in localStorage
+    const saved = localStorage.getItem('ursport_saved_address');
+    if (saved) {
+      try {
+        const addr = JSON.parse(saved);
+        if (addr.fullName && addr.phone && addr.provinceCode && addr.wardName && addr.addressDetail) {
+          reset({
+            fullName: addr.fullName,
+            email: addr.email || user?.email || '',
+            phone: addr.phone,
+            provinceCode: addr.provinceCode,
+            provinceName: addr.provinceName || '',
+            wardCode: addr.wardCode || '',
+            wardName: addr.wardName,
+            addressDetail: addr.addressDetail,
+            note: addr.note || ''
+          });
+          setIsAddressConfirmed(true);
+          return;
+        }
+      } catch (e) {
+        console.error('Error loading saved address:', e);
+      }
+    }
+
+    // 2. If no saved address in localStorage and no user, do nothing
     if (!user) return;
 
     const fallbackValues: Partial<CheckoutFormValues> = {
@@ -241,7 +290,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
     getDoc(doc(db, 'users', user.uid))
       .then(snapshot => {
         const data = snapshot.exists() ? snapshot.data() : {};
-        reset({
+        const profileAddress = {
           fullName: (data.displayName as string) || fallbackValues.fullName || '',
           email: (data.email as string) || fallbackValues.email || '',
           phone: (data.phone as string) || '',
@@ -251,7 +300,13 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
           wardName: (data.wardName as string) || '',
           addressDetail: (data.addressDetail as string) || '',
           note: ''
-        });
+        };
+        reset(profileAddress);
+        
+        // Auto-confirm if they have a complete profile address
+        if (profileAddress.fullName && profileAddress.phone && profileAddress.provinceCode && profileAddress.wardName && profileAddress.addressDetail) {
+          setIsAddressConfirmed(true);
+        }
       })
       .catch(error => {
         console.error('Error loading checkout profile:', error);
@@ -287,6 +342,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
         items: cart,
         total: total,
         discountAmount: discountAmount,
+        shippingFee,
         finalTotal: finalTotal,
         voucherCode: appliedVoucher?.code || null,
         status: 'pending',
@@ -308,6 +364,20 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
       };
 
       const orderRef = await addDoc(collection(db, 'orders'), orderData);
+
+      // Save address to localStorage on successful order
+      const addressToSave = {
+        fullName: data.fullName,
+        email: data.email,
+        phone: data.phone,
+        provinceCode: data.provinceCode,
+        provinceName: data.provinceName,
+        wardCode: data.wardCode || '',
+        wardName: data.wardName,
+        addressDetail: data.addressDetail,
+        note: data.note || ''
+      };
+      localStorage.setItem('ursport_saved_address', JSON.stringify(addressToSave));
       
       toast.success('ĐẶT HÀNG THÀNH CÔNG!', {
         description: 'Đơn hàng của bạn đang được xử lý.',
@@ -375,149 +445,222 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
               transition={{ duration: 0.4 }}
               className="bg-white rounded-[32px] p-6 sm:p-8 shadow-[0_24px_50px_rgba(0,0,0,0.02)] border border-slate-100/80"
             >
-              <div className="flex items-center justify-between gap-2 mb-6 border-b border-slate-100/50 pb-4">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-[#f0f9ff] text-[#1e4b64] font-black text-sm md:text-lg shadow-sm shrink-0">1</div>
-                  <div className="min-w-0">
-                    <h2 className="text-xs sm:text-sm md:text-lg font-black uppercase tracking-tight text-zinc-900 truncate whitespace-nowrap">THÔNG TIN GIAO HÀNG</h2>
-                    <p className="text-[10px] sm:text-xs text-zinc-400 font-medium truncate hidden sm:block">Nhập thông tin người nhận hàng</p>
+              {/* Compact Address Display */}
+              {isAddressConfirmed && (
+                <div 
+                  onClick={() => setIsAddressConfirmed(false)}
+                  className="cursor-pointer hover:opacity-95 transition-all flex items-start gap-4 select-none relative py-2"
+                >
+                  <div className="h-9 w-9 rounded-full bg-red-50 flex items-center justify-center shrink-0 mt-0.5">
+                    <MapPin className="h-5 w-5 text-[#ee4d2d]" />
+                  </div>
+                  <div className="flex-1 min-w-0 pr-6">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className="font-black text-sm uppercase text-zinc-900 tracking-tight">
+                        {watch('fullName')}
+                      </span>
+                      <span className="text-xs font-bold text-zinc-400 font-mono">
+                        ({watch('phone')})
+                      </span>
+                    </div>
+                    <p className="text-xs text-zinc-500 font-semibold leading-relaxed">
+                      {watch('addressDetail')}
+                    </p>
+                    <p className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider mt-0.5">
+                      {watch('wardName')}, {watch('provinceName')}
+                    </p>
+                  </div>
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 text-zinc-300">
+                    <ChevronRight className="h-5 w-5" />
                   </div>
                 </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                    <User className="h-3.5 w-3.5 text-[#1e4b64]" /> Họ và tên người nhận
-                  </label>
-                  <Input 
-                    {...register('fullName')} 
-                    className="rounded-2xl border-slate-200/80 bg-slate-50/50 focus-visible:ring-[#1e4b64]/10 focus-visible:border-[#1e4b64] h-13 font-semibold text-zinc-900 placeholder:text-zinc-300 transition-all focus:bg-white" 
-                    placeholder="Nguyễn Văn A" 
-                  />
-                  {errors.fullName && <p className="text-[11px] text-red-500 font-bold ml-2">{errors.fullName.message}</p>}
+              )}
+
+              {/* Full Form Container - hidden when confirmed but still in the DOM */}
+              <div className={cn("space-y-6", isAddressConfirmed && "hidden")}>
+                <div className="flex items-center justify-between gap-2 border-b border-slate-100/50 pb-4">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-[#f0f9ff] text-[#1e4b64] font-black text-sm md:text-lg shadow-sm shrink-0">1</div>
+                    <div className="min-w-0">
+                      <h2 className="text-xs sm:text-sm md:text-lg font-black uppercase tracking-tight text-zinc-900 truncate whitespace-nowrap">THÔNG TIN GIAO HÀNG</h2>
+                      <p className="text-[10px] sm:text-xs text-zinc-400 font-medium truncate hidden sm:block">Nhập thông tin người nhận hàng</p>
+                    </div>
+                  </div>
                 </div>
                 
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                    <Mail className="h-3.5 w-3.5 text-[#1e4b64]" /> Địa chỉ Email
-                  </label>
-                  <Input 
-                    {...register('email')} 
-                    className="rounded-2xl border-slate-200/80 bg-slate-50/50 focus-visible:ring-[#1e4b64]/10 focus-visible:border-[#1e4b64] h-13 font-semibold text-zinc-900 placeholder:text-zinc-300 transition-all focus:bg-white" 
-                    placeholder="email@example.com" 
-                  />
-                  {errors.email && <p className="text-[11px] text-red-500 font-bold ml-2">{errors.email.message}</p>}
-                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                      <User className="h-3.5 w-3.5 text-[#1e4b64]" /> Họ và tên người nhận
+                    </label>
+                    <Input 
+                      {...register('fullName')} 
+                      className="rounded-2xl border-slate-200/80 bg-slate-50/50 focus-visible:ring-[#1e4b64]/10 focus-visible:border-[#1e4b64] h-13 font-semibold text-zinc-900 placeholder:text-zinc-300 transition-all focus:bg-white" 
+                      placeholder="Nguyễn Văn A" 
+                    />
+                    {errors.fullName && <p className="text-[11px] text-red-500 font-bold ml-2">{errors.fullName.message}</p>}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                      <Mail className="h-3.5 w-3.5 text-[#1e4b64]" /> Địa chỉ Email
+                    </label>
+                    <Input 
+                      {...register('email')} 
+                      className="rounded-2xl border-slate-200/80 bg-slate-50/50 focus-visible:ring-[#1e4b64]/10 focus-visible:border-[#1e4b64] h-13 font-semibold text-zinc-900 placeholder:text-zinc-300 transition-all focus:bg-white" 
+                      placeholder="email@example.com" 
+                    />
+                    {errors.email && <p className="text-[11px] text-red-500 font-bold ml-2">{errors.email.message}</p>}
+                  </div>
 
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                    <Phone className="h-3.5 w-3.5 text-[#1e4b64]" /> Số điện thoại nhận hàng
-                  </label>
-                  <Input 
-                    {...register('phone')} 
-                    className="rounded-2xl border-slate-200/80 bg-slate-50/50 focus-visible:ring-[#1e4b64]/10 focus-visible:border-[#1e4b64] h-13 font-semibold text-zinc-900 placeholder:text-zinc-300 transition-all focus:bg-white" 
-                    placeholder="09xx xxx xxx" 
-                  />
-                  {errors.phone && <p className="text-[11px] text-red-500 font-bold ml-2">{errors.phone.message}</p>}
-                </div>
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                      <Phone className="h-3.5 w-3.5 text-[#1e4b64]" /> Số điện thoại nhận hàng
+                    </label>
+                    <Input 
+                      {...register('phone')} 
+                      className="rounded-2xl border-slate-200/80 bg-slate-50/50 focus-visible:ring-[#1e4b64]/10 focus-visible:border-[#1e4b64] h-13 font-semibold text-zinc-900 placeholder:text-zinc-300 transition-all focus:bg-white" 
+                      placeholder="09xx xxx xxx" 
+                    />
+                    {errors.phone && <p className="text-[11px] text-red-500 font-bold ml-2">{errors.phone.message}</p>}
+                  </div>
 
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                    <MapPin className="h-3.5 w-3.5 text-[#1e4b64]" /> Tỉnh / Thành phố
-                  </label>
-                  <select
-                    value={selectedProvinceCode || ''}
-                    onChange={event => {
-                      const province = provinces.find(item => item.code === event.target.value);
-                      setValue('provinceCode', province?.code || '', { shouldValidate: true });
-                      setValue('provinceName', province?.name || '', { shouldValidate: true });
-                      setValue('wardCode', '', { shouldValidate: true });
-                      setValue('wardName', '', { shouldValidate: true });
-                    }}
-                    disabled={isLoadingProvinces}
-                    className="h-13 w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 px-4 text-sm font-semibold text-zinc-900 outline-none transition-all focus:border-[#1e4b64] focus:bg-white focus:ring-4 focus:ring-[#1e4b64]/10 disabled:text-zinc-400"
-                  >
-                    <option value="">{isLoadingProvinces ? 'Đang tải tỉnh/thành...' : 'Chọn tỉnh/thành phố'}</option>
-                    {provinces.map(province => (
-                      <option key={province.code} value={province.code}>{province.name}</option>
-                    ))}
-                  </select>
-                  <input type="hidden" {...register('provinceCode')} />
-                  <input type="hidden" {...register('provinceName')} />
-                  {(errors.provinceCode || errors.provinceName) && (
-                    <p className="text-[11px] text-red-500 font-bold ml-2">{errors.provinceCode?.message || errors.provinceName?.message}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                    <MapPin className="h-3.5 w-3.5 text-[#1e4b64]" /> Phường / Xã / Đặc khu
-                  </label>
-                  {wards.length > 1 ? (
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                      <MapPin className="h-3.5 w-3.5 text-[#1e4b64]" /> Tỉnh / Thành phố
+                    </label>
                     <select
-                      value={selectedWardCode || ''}
+                      value={selectedProvinceCode || ''}
                       onChange={event => {
-                        const ward = wards.find(item => item.code === event.target.value);
-                        setValue('wardCode', ward?.code || '', { shouldValidate: true });
-                        setValue('wardName', ward?.name || '', { shouldValidate: true });
+                        const province = provinces.find(item => item.code === event.target.value);
+                        setValue('provinceCode', province?.code || '', { shouldValidate: true });
+                        setValue('provinceName', province?.name || '', { shouldValidate: true });
+                        setValue('wardCode', '', { shouldValidate: true });
+                        setValue('wardName', '', { shouldValidate: true });
                       }}
-                      disabled={!selectedProvinceCode || isLoadingWards}
+                      disabled={isLoadingProvinces}
                       className="h-13 w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 px-4 text-sm font-semibold text-zinc-900 outline-none transition-all focus:border-[#1e4b64] focus:bg-white focus:ring-4 focus:ring-[#1e4b64]/10 disabled:text-zinc-400"
                     >
-                      <option value="">
-                        {!selectedProvinceCode ? 'Chọn tỉnh/thành trước' : isLoadingWards ? 'Đang tải phường/xã...' : 'Chọn phường/xã'}
-                      </option>
-                      {wards.map(ward => (
-                        <option key={ward.code} value={ward.code}>{ward.name}</option>
+                      <option value="">{isLoadingProvinces ? 'Đang tải tỉnh/thành...' : 'Chọn tỉnh/thành phố'}</option>
+                      {provinces.map(province => (
+                        <option key={province.code} value={province.code}>{province.name}</option>
                       ))}
                     </select>
-                  ) : (
-                    <Input
-                      value={watch('wardName') || ''}
-                      onChange={event => {
-                        setValue('wardCode', '', { shouldValidate: true });
-                        setValue('wardName', event.target.value, { shouldValidate: true });
-                      }}
-                      disabled={!selectedProvinceCode || isLoadingWards}
-                      className="rounded-2xl border-slate-200/80 bg-slate-50/50 focus-visible:ring-[#1e4b64]/10 focus-visible:border-[#1e4b64] h-13 font-semibold text-zinc-900 placeholder:text-zinc-300 transition-all focus:bg-white"
-                      placeholder={!selectedProvinceCode ? 'Chọn tỉnh/thành trước' : isLoadingWards ? 'Đang tải phường/xã...' : 'Nhập phường/xã'}
-                      list="checkout-vietnam-wards"
+                    <input type="hidden" {...register('provinceCode')} />
+                    <input type="hidden" {...register('provinceName')} />
+                    {(errors.provinceCode || errors.provinceName) && (
+                      <p className="text-[11px] text-red-500 font-bold ml-2">{errors.provinceCode?.message || errors.provinceName?.message}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                      <MapPin className="h-3.5 w-3.5 text-[#1e4b64]" /> Phường / Xã / Đặc khu
+                    </label>
+                    {wards.length > 1 ? (
+                      <select
+                        value={selectedWardCode || ''}
+                        onChange={event => {
+                          const ward = wards.find(item => item.code === event.target.value);
+                          setValue('wardCode', ward?.code || '', { shouldValidate: true });
+                          setValue('wardName', ward?.name || '', { shouldValidate: true });
+                        }}
+                        disabled={!selectedProvinceCode || isLoadingWards}
+                        className="h-13 w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 px-4 text-sm font-semibold text-zinc-900 outline-none transition-all focus:border-[#1e4b64] focus:bg-white focus:ring-4 focus:ring-[#1e4b64]/10 disabled:text-zinc-400"
+                      >
+                        <option value="">
+                          {!selectedProvinceCode ? 'Chọn tỉnh/thành trước' : isLoadingWards ? 'Đang tải phường/xã...' : 'Chọn phường/xã'}
+                        </option>
+                        {wards.map(ward => (
+                          <option key={ward.code} value={ward.code}>{ward.name}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <Input
+                        value={watch('wardName') || ''}
+                        onChange={event => {
+                          setValue('wardCode', '', { shouldValidate: true });
+                          setValue('wardName', event.target.value, { shouldValidate: true });
+                        }}
+                        disabled={!selectedProvinceCode || isLoadingWards}
+                        className="rounded-2xl border-slate-200/80 bg-slate-50/50 focus-visible:ring-[#1e4b64]/10 focus-visible:border-[#1e4b64] h-13 font-semibold text-zinc-900 placeholder:text-zinc-300 transition-all focus:bg-white"
+                        placeholder={!selectedProvinceCode ? 'Chọn tỉnh/thành trước' : isLoadingWards ? 'Đang tải phường/xã...' : 'Nhập phường/xã'}
+                        list="checkout-vietnam-wards"
+                      />
+                    )}
+                    <datalist id="checkout-vietnam-wards">
+                      {wards.map(ward => (
+                        <option key={ward.code} value={ward.name} />
+                      ))}
+                    </datalist>
+                    <input type="hidden" {...register('wardCode')} />
+                    <input type="hidden" {...register('wardName')} />
+                    {(errors.wardCode || errors.wardName) && (
+                      <p className="text-[11px] text-red-500 font-bold ml-2">{errors.wardCode?.message || errors.wardName?.message}</p>
+                    )}
+                  </div>
+
+                  <div className="md:col-span-2 space-y-2">
+                    <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                      <MapPin className="h-3.5 w-3.5 text-[#1e4b64]" /> Địa chỉ chi tiết
+                    </label>
+                    <Input 
+                      {...register('addressDetail')} 
+                      className="rounded-2xl border-slate-200/80 bg-slate-50/50 focus-visible:ring-[#1e4b64]/10 focus-visible:border-[#1e4b64] h-13 font-semibold text-zinc-900 placeholder:text-zinc-300 transition-all focus:bg-white" 
+                      placeholder="Số nhà, tên đường, tòa nhà..." 
                     />
-                  )}
-                  <datalist id="checkout-vietnam-wards">
-                    {wards.map(ward => (
-                      <option key={ward.code} value={ward.name} />
-                    ))}
-                  </datalist>
-                  <input type="hidden" {...register('wardCode')} />
-                  <input type="hidden" {...register('wardName')} />
-                  {(errors.wardCode || errors.wardName) && (
-                    <p className="text-[11px] text-red-500 font-bold ml-2">{errors.wardCode?.message || errors.wardName?.message}</p>
-                  )}
-                </div>
+                    {errors.addressDetail && <p className="text-[11px] text-red-500 font-bold ml-2">{errors.addressDetail.message}</p>}
+                  </div>
 
-                <div className="md:col-span-2 space-y-2">
-                  <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                    <MapPin className="h-3.5 w-3.5 text-[#1e4b64]" /> Địa chỉ chi tiết
-                  </label>
-                  <Input 
-                    {...register('addressDetail')} 
-                    className="rounded-2xl border-slate-200/80 bg-slate-50/50 focus-visible:ring-[#1e4b64]/10 focus-visible:border-[#1e4b64] h-13 font-semibold text-zinc-900 placeholder:text-zinc-300 transition-all focus:bg-white" 
-                    placeholder="Số nhà, tên đường, tòa nhà..." 
-                  />
-                  {errors.addressDetail && <p className="text-[11px] text-red-500 font-bold ml-2">{errors.addressDetail.message}</p>}
-                </div>
+                  <div className="md:col-span-2 space-y-2">
+                    <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                      <FileText className="h-3.5 w-3.5 text-[#1e4b64]" /> Ghi chú đơn hàng (Tùy chọn)
+                    </label>
+                    <textarea 
+                      {...register('note')} 
+                      className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 focus:ring-2 focus:ring-[#1e4b64]/10 p-4 font-semibold text-sm text-zinc-950 min-h-[100px] outline-none focus:border-[#1e4b64] focus:bg-white transition-all resize-none placeholder:text-zinc-300"
+                      placeholder="Ví dụ: Giao giờ hành chính, gọi trước khi đến..."
+                    />
+                  </div>
 
-                <div className="md:col-span-2 space-y-2">
-                  <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                    <FileText className="h-3.5 w-3.5 text-[#1e4b64]" /> Ghi chú đơn hàng (Tùy chọn)
-                  </label>
-                  <textarea 
-                    {...register('note')} 
-                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 focus:ring-2 focus:ring-[#1e4b64]/10 p-4 font-semibold text-sm text-zinc-950 min-h-[100px] outline-none focus:border-[#1e4b64] focus:bg-white transition-all resize-none placeholder:text-zinc-300"
-                    placeholder="Ví dụ: Giao giờ hành chính, gọi trước khi đến..."
-                  />
+                  {/* Confirmation Action Button */}
+                  <div className="md:col-span-2 flex justify-end pt-4 border-t border-slate-100/40">
+                    <Button
+                      type="button"
+                      onClick={async () => {
+                        const isValid = await trigger([
+                          'fullName',
+                          'email',
+                          'phone',
+                          'provinceCode',
+                          'provinceName',
+                          'wardCode',
+                          'wardName',
+                          'addressDetail'
+                        ]);
+                        if (isValid) {
+                          setIsAddressConfirmed(true);
+                          const currentAddress = {
+                            fullName: watch('fullName'),
+                            email: watch('email'),
+                            phone: watch('phone'),
+                            provinceCode: watch('provinceCode'),
+                            provinceName: watch('provinceName'),
+                            wardCode: watch('wardCode') || '',
+                            wardName: watch('wardName'),
+                            addressDetail: watch('addressDetail'),
+                            note: watch('note') || ''
+                          };
+                          localStorage.setItem('ursport_saved_address', JSON.stringify(currentAddress));
+                        } else {
+                          toast.error('Vui lòng điền đầy đủ các thông tin giao hàng bắt buộc');
+                        }
+                      }}
+                      className="bg-[#1e4b64] hover:bg-[#153446] text-white font-bold h-11 px-8 rounded-xl text-xs uppercase tracking-wider transition-all"
+                    >
+                      Xác nhận địa chỉ
+                    </Button>
+                  </div>
                 </div>
               </div>
             </motion.section>
@@ -859,7 +1002,9 @@ export const Checkout: React.FC<CheckoutProps> = ({ onComplete }) => {
                        </div>
                        <div className="flex justify-between text-zinc-400 text-[10px] font-black uppercase tracking-wider">
                           <span>Phí vận chuyển</span>
-                          <span className="text-emerald-500 font-bold">MIỄN PHÍ</span>
+                          <span className={cn('font-bold', isShippingFree ? 'text-emerald-500' : 'text-zinc-950')}>
+                            {isShippingFree ? 'MIỄN PHÍ' : `${shippingFee.toLocaleString('vi-VN')}₫`}
+                          </span>
                        </div>
                        {discountAmount > 0 && (
                          <div className="flex justify-between text-zinc-400 text-[10px] font-black uppercase tracking-wider">

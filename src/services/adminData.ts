@@ -43,6 +43,7 @@ export type AdminSetting =
   | 'supportPolicies'
   | 'logoSettings'
   | 'footerSettings'
+  | 'shippingSettings'
   | 'schemaSettings'
   | 'robotsSettings'
   | 'redirectSettings'

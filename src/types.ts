@@ -92,6 +92,7 @@ export interface Order {
   items: CartItem[];
   total: number;
   discountAmount?: number;
+  shippingFee?: number;
   finalTotal?: number;
   voucherCode?: string | null;
   orderCode?: string;
