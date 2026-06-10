@@ -4,7 +4,7 @@ import {
   Image as ImageIcon, Settings, Plus, Trash2, Edit2, LogOut,
   TrendingUp, Eye, DollarSign, BarChart2, Menu, X, Bell,
   Search, ChevronRight, ChevronDown, Megaphone, Upload, Star, AlertCircle, Copy, ExternalLink, Code2, Check as CheckIcon, Bot, Sparkles, Zap, Timer, Clock, Ticket, Download, Filter, MailCheck, Send, UserPlus, ShieldCheck, Network, PanelsTopLeft, Phone, Truck, GripVertical,
-  FileText, Globe, Rocket
+  FileText, Globe, Rocket, Link as LinkIcon
 } from 'lucide-react';
 import { PRODUCTS as STATIC_PRODUCTS, STATIC_BLOG_POSTS, STATIC_ORDERS, STATIC_CUSTOMERS, CATEGORY_METADATA, STATIC_VOUCHERS } from '../data';
 import { ImageUpload } from './ImageUpload';
@@ -106,6 +106,9 @@ const PolicyPagesManager = React.lazy(() =>
 );
 const UsersRolesTab = React.lazy(() =>
   import('./admin/UsersRolesTab').then(module => ({ default: module.UsersRolesTab }))
+);
+const BioPageConfigManager = React.lazy(() =>
+  import('./admin/BioPageConfigManager').then(module => ({ default: module.BioPageConfigManager }))
 );
 
 const SITE_IMAGE_HOSTS = new Set(['shop-ur-sport.vercel.app', 'ursport.vn', 'www.ursport.vn']);
@@ -380,6 +383,7 @@ const NAV_ITEMS: AdminNavigationItem[] = [
     children: [
       { id: 'homepage', label: 'Trang chủ', icon: PanelsTopLeft },
       { id: 'blog-page', label: 'Blog', icon: FileText },
+      { id: 'bio-page', label: 'Trang Bio Link', icon: LinkIcon },
       { id: 'menu-navigation', label: 'Menu website', icon: Menu },
     ]
   },
@@ -3297,6 +3301,12 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
           {activeTab === 'blog-page' && (
             <React.Suspense fallback={<AdminTabFallback />}>
               <BlogPageConfigManager blogPosts={blogPosts} blogCategories={blogCategories.map(category => ({ label: category.label, link: category.link }))} />
+            </React.Suspense>
+          )}
+
+          {activeTab === 'bio-page' && (
+            <React.Suspense fallback={<AdminTabFallback />}>
+              <BioPageConfigManager />
             </React.Suspense>
           )}
 

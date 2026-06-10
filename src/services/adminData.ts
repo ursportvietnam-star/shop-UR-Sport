@@ -47,7 +47,8 @@ export type AdminSetting =
   | 'schemaSettings'
   | 'robotsSettings'
   | 'redirectSettings'
-  | 'canonicalSettings';
+  | 'canonicalSettings'
+  | 'bio';
 
 export const adminTimestamp = serverTimestamp;
 

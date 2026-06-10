@@ -27,6 +27,7 @@ const OrderLookupPage = React.lazy(() => import('./pages/OrderLookupPage'));
 const ProductComparisonPage = React.lazy(() => import('./pages/ProductComparisonPage'));
 const PolicyPage = React.lazy(() => import('./pages/PolicyPage'));
 const ContactPage = React.lazy(() => import('./pages/ContactPage'));
+const BioPage = React.lazy(() => import('./pages/BioPage'));
 
 // Other lazy-loaded components
 const ProductDetail = React.lazy(() => import('./components/ProductDetail').then(module => ({ default: module.ProductDetail })));
@@ -129,6 +130,19 @@ function NotFoundPage() {
       >
         Về cửa hàng
       </button>
+    </div>
+  );
+}
+
+function ExternalRedirect({ url }: { url: string }) {
+  useEffect(() => {
+    window.location.replace(url);
+  }, [url]);
+
+  return (
+    <div className="mx-auto flex min-h-[60vh] max-w-xl flex-col items-center justify-center px-4 py-20 text-center">
+      <div className="mb-4 h-10 w-10 rounded-full border-4 border-[#1e4b64] border-t-transparent animate-spin mx-auto" />
+      <p className="text-sm font-bold text-zinc-500">Đang chuyển hướng đến trang mạng xã hội của UR Sport...</p>
     </div>
   );
 }
@@ -263,6 +277,8 @@ function AppContent() {
 
   const isAdminRoute = location.pathname === '/quan-tri' || location.pathname === '/quantri' || location.pathname.startsWith('/admin');
   const isBlogRoute = location.pathname === '/blog' || location.pathname.startsWith('/blog/');
+  const isBioRoute = location.pathname === '/bio' || location.pathname === '/links' || location.pathname === '/me';
+  const hideLayout = isAdminRoute || isBioRoute;
 
   useEffect(() => {
     if (previousPathRef.current === location.pathname) return;
@@ -288,7 +304,7 @@ function AppContent() {
         <ComparisonProvider>
         <PromotionProvider>
         <div className="min-h-screen flex flex-col bg-white font-sans selection:bg-black selection:text-white w-full relative">
-          {!isAdminRoute && (
+          {!hideLayout && (
             <Navbar 
               onCartClick={() => setIsCartOpen(true)} 
               onPageChange={onPageChange}
@@ -306,7 +322,7 @@ function AppContent() {
             />
           )}
           
-          <main className={!isAdminRoute ? (hasTopPanel ? "flex-1 pt-16 md:pt-24 pb-16 md:pb-0" : "flex-1 pt-16 pb-16 md:pb-0") : "flex-1"}>
+          <main className={!hideLayout ? (hasTopPanel ? "flex-1 pt-16 md:pt-24 pb-16 md:pb-0" : "flex-1 pt-16 pb-16 md:pb-0") : "flex-1"}>
             <React.Suspense fallback={<div className="min-h-[50vh] flex items-center justify-center"><div className="h-10 w-10 rounded-full border-4 border-[#1e4b64] border-t-transparent animate-spin" /></div>}>
             <Routes>
               <Route path="/" element={<HomePage onCategorySelect={handleCategorySelect} onPageChange={onPageChange} />} />
@@ -325,6 +341,31 @@ function AppContent() {
               <Route path="/chinh-sach/:policySlug" element={<PolicyPage />} />
               <Route path="/lien-he" element={<ContactPage />} />
               <Route path="/contact" element={<Navigate to="/lien-he" replace />} />
+
+              {/* Bio Page Routes */}
+              <Route path="/bio" element={<BioPage />} />
+              <Route path="/links" element={<Navigate to="/bio" replace />} />
+              <Route path="/me" element={<Navigate to="/bio" replace />} />
+
+              {/* Catchy Social Media Redirect Routes */}
+              <Route path="/facebook" element={<ExternalRedirect url="https://zalo.me/0917722425" />} />
+              <Route path="/fanpage" element={<ExternalRedirect url="https://www.facebook.com/ursportvietnam" />} />
+              <Route path="/cong-dong" element={<ExternalRedirect url="https://www.facebook.com/ursportvietnam" />} />
+              <Route path="/clb-the-thao" element={<ExternalRedirect url="https://www.facebook.com/ursportvietnam" />} />
+
+              <Route path="/tiktok" element={<ExternalRedirect url="https://zalo.me/0917722425" />} />
+              <Route path="/goc-the-thao" element={<ExternalRedirect url="https://www.tiktok.com/@ursportvietnam" />} />
+              <Route path="/video" element={<ExternalRedirect url="https://www.tiktok.com/@ursportvietnam" />} />
+
+              <Route path="/instagram" element={<ExternalRedirect url="https://www.instagram.com/ursportvietnam" />} />
+              <Route path="/goc-anh" element={<ExternalRedirect url="https://www.instagram.com/ursportvietnam" />} />
+              <Route path="/bo-suu-tap" element={<ExternalRedirect url="https://www.instagram.com/ursportvietnam" />} />
+
+              <Route path="/zalo" element={<ExternalRedirect url="https://zalo.me/0917722425" />} />
+              <Route path="/x" element={<ExternalRedirect url="https://zalo.me/0917722425" />} />
+              <Route path="/tu-van" element={<ExternalRedirect url="https://zalo.me/0917722425" />} />
+              <Route path="/chat" element={<ExternalRedirect url="https://zalo.me/0917722425" />} />
+              <Route path="/ho-tro" element={<ExternalRedirect url="https://zalo.me/0917722425" />} />
               <Route path="/blog" element={<NewsPage />} />
               <Route path="/blog/category/:categorySlug" element={<NewsPage />} />
               <Route path="/blog/:slug" element={<NewsPage />} />
@@ -358,7 +399,7 @@ function AppContent() {
             </React.Suspense>
           </main>
 
-          {!isAdminRoute && location.pathname !== '/' && (
+          {!hideLayout && location.pathname !== '/' && (
             <>
               {!isBlogRoute && (
                 <React.Suspense fallback={null}>
@@ -375,8 +416,8 @@ function AppContent() {
           )}
           
           <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} onCheckout={handleCheckout} />
-          {!isAdminRoute && <FloatingContactMenu />}
-          {!isAdminRoute && (
+          {!hideLayout && <FloatingContactMenu />}
+          {!hideLayout && (
             <MobileBottomNav
               onMenuClick={() => setIsSidebarOpen(true)}
               onSearchClick={() => setIsMobileSearchOpen(v => !v)}

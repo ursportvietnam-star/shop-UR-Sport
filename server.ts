@@ -1075,6 +1075,31 @@ ${String(parsed?.contentHtml || '').slice(0, 12000)}`;
     }
   });
 
+  // Catchy social media shortlinks/redirects
+  const socialRedirects: Record<string, string> = {
+    "fanpage": "https://www.facebook.com/ursportvietnam",
+    "facebook": "https://zalo.me/0917722425",
+    "cong-dong": "https://www.facebook.com/ursportvietnam",
+    "clb-the-thao": "https://www.facebook.com/ursportvietnam",
+    "tiktok": "https://zalo.me/0917722425",
+    "goc-the-thao": "https://www.tiktok.com/@ursportvietnam",
+    "video": "https://www.tiktok.com/@ursportvietnam",
+    "instagram": "https://www.instagram.com/ursportvietnam",
+    "goc-anh": "https://www.instagram.com/ursportvietnam",
+    "bo-suu-tap": "https://www.instagram.com/ursportvietnam",
+    "zalo": "https://zalo.me/0917722425",
+    "x": "https://zalo.me/0917722425",
+    "tu-van": "https://zalo.me/0917722425",
+    "chat": "https://zalo.me/0917722425",
+    "ho-tro": "https://zalo.me/0917722425"
+  };
+
+  Object.entries(socialRedirects).forEach(([pathName, targetUrl]) => {
+    app.get(`/${pathName}`, (_req, res) => {
+      res.redirect(301, targetUrl);
+    });
+  });
+
   console.log(`Starting server in ${process.env.NODE_ENV || 'development'} mode`);
   
   // Vite middleware for development
