@@ -85,6 +85,7 @@ export const ProductDetail: React.FC = () => {
   const [selectedSize, setSelectedSize] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [mainImage, setMainImage] = useState('');
+  const [mainVideo, setMainVideo] = useState('');
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
@@ -500,7 +501,14 @@ export const ProductDetail: React.FC = () => {
     if (product) {
       setSelectedColor(product.colors?.[0] || '');
       setSelectedSize(product.sizes?.[0] || '');
-      setMainImage(product.images?.[0] || '');
+      // Nếu có video thì hiển thị video, không thì hiển thị ảnh
+      if (product.videos?.length > 0) {
+        setMainVideo(product.videos[0]);
+        setMainImage('');
+      } else {
+        setMainVideo('');
+        setMainImage(product.images?.[0] || '');
+      }
       window.scrollTo(0, 0);
     }
   }, [product?.id]);
@@ -666,6 +674,7 @@ export const ProductDetail: React.FC = () => {
           >
             <div 
               onClick={() => {
+                if (mainVideo) return;
                 const imagesList = product.images || [];
                 const idx = imagesList.indexOf(mainImage);
                 setLightboxIndex(idx !== -1 ? idx : 0);
@@ -673,7 +682,26 @@ export const ProductDetail: React.FC = () => {
               }}
               className="relative aspect-square w-full overflow-hidden bg-white border border-zinc-100 rounded-2xl shadow-sm cursor-zoom-in group animate-in fade-in duration-300"
             >
-              {mainImage && (
+              {mainVideo ? (
+                mainVideo.includes('youtube.com/embed') || mainVideo.includes('youtu.be') || mainVideo.includes('player.vimeo.com') || mainVideo.includes('vimeo.com') ? (
+                  <iframe
+                    src={mainVideo}
+                    className="w-full h-full"
+                    frameBorder="0"
+                    allowFullScreen
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  />
+                ) : (
+                  <video 
+                    src={mainVideo} 
+                    controls
+                    controlsList="nodownload"
+                    crossOrigin="anonymous"
+                    preload="metadata"
+                    className="w-full h-full object-cover" 
+                  />
+                )
+              ) : mainImage && (
                 <motion.img
                   key={mainImage}
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -688,23 +716,48 @@ export const ProductDetail: React.FC = () => {
                 />
               )}
               {/* App-like Page Indicator for Mobile */}
-              <div className="absolute bottom-4 right-4 bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full text-white text-[11px] font-bold md:hidden">
-                {Math.max(1, (product.images || []).indexOf(mainImage) + 1)} / {(product.images || []).length}
-              </div>
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300 flex items-center justify-center pointer-events-none">
-                <div className="p-3 rounded-full bg-white/95 text-zinc-800 shadow-lg scale-90 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all duration-300">
-                  <ZoomIn className="h-5 w-5" />
+              {!mainVideo && (
+                <div className="absolute bottom-4 right-4 bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full text-white text-[11px] font-bold md:hidden">
+                  {Math.max(1, (product.images || []).indexOf(mainImage) + 1)} / {(product.images || []).length}
                 </div>
-              </div>
+              )}
+              {!mainVideo && (
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300 flex items-center justify-center pointer-events-none">
+                  <div className="p-3 rounded-full bg-white/95 text-zinc-800 shadow-lg scale-90 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all duration-300">
+                    <ZoomIn className="h-5 w-5" />
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex gap-3 overflow-x-auto pb-2">
+              {(product.videos || []).map((vid, i) => (
+                <button 
+                  key={`video-${i}`} 
+                  onClick={() => {
+                    setMainVideo(vid);
+                    setMainImage('');
+                  }} 
+                  className={cn(
+                    "w-20 h-20 rounded-xl border-2 overflow-hidden shrink-0 transition-all duration-200 bg-zinc-900 flex items-center justify-center relative group",
+                    mainVideo === vid ? "border-[#1e4b64] scale-[1.03]" : "border-zinc-100 hover:border-zinc-300"
+                  )}
+                >
+                  <Video className="h-6 w-6 text-white/70" />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/10 transition-all">
+                    <Play className="h-5 w-5 text-white fill-white" />
+                  </div>
+                </button>
+              ))}
               {(product.images || []).map((img, i) => (
                 <button 
-                  key={i} 
-                  onClick={() => setMainImage(img)} 
+                  key={`image-${i}`} 
+                  onClick={() => {
+                    setMainImage(img);
+                    setMainVideo('');
+                  }} 
                   className={cn(
                     "w-20 h-20 rounded-xl border-2 overflow-hidden shrink-0 transition-all duration-200",
-                    mainImage === img ? "border-[#1e4b64] scale-[1.03]" : "border-zinc-100 hover:border-zinc-300"
+                    mainImage === img && !mainVideo ? "border-[#1e4b64] scale-[1.03]" : "border-zinc-100 hover:border-zinc-300"
                   )}
                 >
                   <img src={img} alt={`${product.name} - Ảnh ${i + 1}`} loading="lazy" decoding="async" className="w-full h-full object-cover" />
@@ -1770,8 +1823,16 @@ export const ProductDetail: React.FC = () => {
                               ))}
                               {review.videos?.map((vid: string, i: number) => (
                                 <div key={i} className="w-32 h-32 rounded-xl overflow-hidden border border-zinc-100 cursor-pointer hover:scale-105 transition-all shadow-sm relative group">
-                                  <video src={vid} className="w-full h-full object-cover" />
-                                  <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/10 transition-all">
+                                  <video 
+                                    src={vid} 
+                                    className="w-full h-full object-cover" 
+                                    controls
+                                    controlsList="nodownload"
+                                    crossOrigin="anonymous"
+                                    preload="metadata"
+                                    poster={`${vid}?quality=auto&fetch_format=auto&w=200&h=200&crop=fill&gravity=auto`}
+                                  />
+                                  <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/10 transition-all pointer-events-none">
                                     <Play className="h-10 w-10 text-white fill-white" />
                                   </div>
                                 </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Save, Eye, Settings, Star, Check, AlignLeft, AlignCenter, AlignRight, Type, Tag, Code, TrendingUp, Trash2, Upload, Link as LinkIcon, CircleCheck, CircleAlert, Sparkles, BrainCircuit } from 'lucide-react';
+import { X, Save, Eye, Settings, Star, Check, AlignLeft, AlignCenter, AlignRight, Type, Tag, Code, TrendingUp, Trash2, Upload, Link as LinkIcon, CircleCheck, CircleAlert, Sparkles, BrainCircuit, Video, Play } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { collection, addDoc, serverTimestamp, updateDoc, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -316,6 +316,9 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
   const [videoModal, setVideoModal] = useState<{ isOpen: boolean; type: 'url' | 'file' | null }>({ isOpen: false, type: null });
   const [videoInput, setVideoInput] = useState('');
   const [isUploadingVideo, setIsUploadingVideo] = useState(false);
+  const [productVideos, setProductVideos] = useState<string[]>([]);
+  const [productVideoUrl, setProductVideoUrl] = useState('');
+  const [isUploadingProductVideo, setIsUploadingProductVideo] = useState(false);
   const [isAiRewriteLoading, setIsAiRewriteLoading] = useState(false);
   const selectedImgRef = useRef<HTMLImageElement | null>(null);
   const imageAltBySrcRef = useRef<Record<string, string>>({});
@@ -837,6 +840,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         });
       }
       setHtmlSource(product.description || '');
+      setProductVideos(product.videos || []);
     } else {
       imageAltBySrcRef.current = {};
       imageCaptionBySrcRef.current = {};
@@ -873,6 +877,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         collarType: 'Cổ tròn',
       });
       setHtmlSource('');
+      setProductVideos([]);
     }
   }, [isOpen, product]);
 
@@ -941,6 +946,9 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
     // Chuẩn hóa link YouTube sang link embed
     if (videoUrl.includes('youtube.com/watch?v=')) {
       const videoId = videoUrl.split('v=')[1]?.split('&')[0];
+      videoUrl = `https://www.youtube.com/embed/${videoId}`;
+    } else if (videoUrl.includes('youtube.com/shorts/')) {
+      const videoId = videoUrl.split('/shorts/')[1]?.split('?')[0];
       videoUrl = `https://www.youtube.com/embed/${videoId}`;
     } else if (videoUrl.includes('youtu.be/')) {
       const videoId = videoUrl.split('/').pop()?.split('?')[0];
@@ -1096,6 +1104,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         colors: validVariants.map(v => v.name.trim()),
         colorImages: validVariants.map(v => ({ name: v.name.trim(), image: v.image })),
         images: allImages,
+        videos: productVideos.filter(Boolean),
         price: Number(currentPrice),
         discountPrice: formData.discountPrice ? Number(formData.discountPrice) : null,
         stock: productVariants.length > 0 ? totalVariantStock : Number(currentStock),
@@ -1203,6 +1212,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
             ...formData.extraImages,
             ...formData.colorVariants.map(v => v.image),
           ].filter(Boolean))),
+          videos: productVideos.filter(Boolean),
           price: Number(formData.price),
           discountPrice: formData.discountPrice ? Number(formData.discountPrice) : undefined,
           stock: localProductVariants.length > 0 ? localTotalStock : Number(formData.stock),
@@ -2667,6 +2677,193 @@ Yeu cau: chi dua tren du lieu co that, khong bia thong so, gia, ton kho, bao han
                           </div>
                         </div>
                       ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Video sản phẩm */}
+                <div className="space-y-4 pt-6 border-t border-zinc-200">
+                  <h3 className="text-[11px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                    <Video className="h-3.5 w-3.5" />
+                    Video sản phẩm
+                  </h3>
+
+                  {/* Dán link video */}
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={productVideoUrl}
+                        onChange={(e) => setProductVideoUrl(e.target.value)}
+                        placeholder="Dán link YouTube, Vimeo..."
+                        className="flex-1 h-10 px-3 text-[13px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#1e4b64] transition-colors"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (!productVideoUrl.trim()) return;
+                            let url = productVideoUrl.trim();
+                            if (url.includes('youtube.com/watch?v=')) {
+                              const vid = url.split('v=')[1]?.split('&')[0];
+                              url = `https://www.youtube.com/embed/${vid}`;
+                            } else if (url.includes('youtube.com/shorts/')) {
+                              const vid = url.split('/shorts/')[1]?.split('?')[0];
+                              url = `https://www.youtube.com/embed/${vid}`;
+                            } else if (url.includes('youtu.be/')) {
+                              const vid = url.split('/').pop()?.split('?')[0];
+                              url = `https://www.youtube.com/embed/${vid}`;
+                            } else if (url.includes('vimeo.com/') && !url.includes('player.vimeo.com')) {
+                              const vid = url.split('/').pop();
+                              url = `https://player.vimeo.com/video/${vid}`;
+                            }
+                            if (!productVideos.includes(url)) {
+                              setProductVideos(prev => [...prev, url]);
+                              toast.success('Đã thêm video');
+                            } else {
+                              toast.error('Video này đã tồn tại');
+                            }
+                            setProductVideoUrl('');
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!productVideoUrl.trim()) return;
+                          let url = productVideoUrl.trim();
+                          if (url.includes('youtube.com/watch?v=')) {
+                            const vid = url.split('v=')[1]?.split('&')[0];
+                            url = `https://www.youtube.com/embed/${vid}`;
+                          } else if (url.includes('youtube.com/shorts/')) {
+                            const vid = url.split('/shorts/')[1]?.split('?')[0];
+                            url = `https://www.youtube.com/embed/${vid}`;
+                          } else if (url.includes('youtu.be/')) {
+                            const vid = url.split('/').pop()?.split('?')[0];
+                            url = `https://www.youtube.com/embed/${vid}`;
+                          } else if (url.includes('vimeo.com/') && !url.includes('player.vimeo.com')) {
+                            const vid = url.split('/').pop();
+                            url = `https://player.vimeo.com/video/${vid}`;
+                          }
+                          if (!productVideos.includes(url)) {
+                            setProductVideos(prev => [...prev, url]);
+                            toast.success('Đã thêm video');
+                          } else {
+                            toast.error('Video này đã tồn tại');
+                          }
+                          setProductVideoUrl('');
+                        }}
+                        className="h-10 px-3 bg-[#1e4b64] text-white rounded-xl hover:bg-[#153446] transition-colors flex items-center gap-1.5 text-xs font-black"
+                      >
+                        <LinkIcon className="h-3.5 w-3.5" />
+                        Thêm
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Upload video từ máy */}
+                  <label className={cn(
+                    "flex h-[72px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-zinc-200 bg-zinc-50 text-center transition-all hover:border-[#1e4b64] hover:bg-blue-50/40",
+                    isUploadingProductVideo && "pointer-events-none opacity-60"
+                  )}>
+                    {isUploadingProductVideo ? (
+                      <>
+                        <div className="h-5 w-5 border-2 border-[#1e4b64] border-t-transparent rounded-full animate-spin mb-1" />
+                        <span className="text-[11px] font-bold text-zinc-500">Đang tải video lên...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-5 w-5 text-[#1e4b64] mb-1" />
+                        <span className="text-[11px] font-bold text-zinc-600">Upload video từ máy tính</span>
+                        <span className="text-[9px] text-zinc-400">MP4/WebM/MOV, tối đa 100MB</span>
+                      </>
+                    )}
+                    <input
+                      type="file"
+                      accept="video/*"
+                      className="hidden"
+                      disabled={isUploadingProductVideo}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (!file.type.startsWith('video/')) {
+                          toast.error('Vui lòng chọn file video');
+                          return;
+                        }
+                        if (file.size > 100 * 1024 * 1024) {
+                          toast.error('Video quá lớn. Tối đa 100MB.');
+                          return;
+                        }
+                        setIsUploadingProductVideo(true);
+                        const toastId = toast.loading('Đang tải video lên...');
+                        try {
+                          const uploadData = new FormData();
+                          uploadData.append('file', file);
+                          uploadData.append('upload_preset', 'ursport_uploads');
+                          uploadData.append('folder', 'product_videos');
+                          const res = await fetch('https://api.cloudinary.com/v1_1/dcj4qhcfh/video/upload', {
+                            method: 'POST',
+                            body: uploadData
+                          });
+                          if (!res.ok) throw new Error('Upload video thất bại');
+                          const data = await res.json();
+                          setProductVideos(prev => [...prev, data.secure_url]);
+                          toast.success('Đã upload video thành công', { id: toastId });
+                        } catch (error) {
+                          console.error('Video upload error:', error);
+                          toast.error('Lỗi khi tải video', { id: toastId });
+                        } finally {
+                          setIsUploadingProductVideo(false);
+                          e.currentTarget.value = '';
+                        }
+                      }}
+                    />
+                  </label>
+
+                  {/* Danh sách video đã thêm */}
+                  {productVideos.length > 0 && (
+                    <div className="space-y-2">
+                      {productVideos.map((url, i) => {
+                        const isEmbed = url.includes('youtube.com/embed') || url.includes('player.vimeo.com');
+                        return (
+                          <div key={i} className="relative rounded-xl overflow-hidden border border-zinc-200 bg-zinc-900 group">
+                            {isEmbed ? (
+                              <div className="aspect-video w-full">
+                                <iframe
+                                  src={url}
+                                  className="w-full h-full"
+                                  frameBorder="0"
+                                  allowFullScreen
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                />
+                              </div>
+                            ) : (
+                              <div className="aspect-video w-full relative">
+                                <video 
+                                  src={url} 
+                                  className="w-full h-full object-cover" 
+                                  controls
+                                  controlsList="nodownload"
+                                  crossOrigin="anonymous"
+                                  preload="metadata"
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none">
+                                  <Play className="h-10 w-10 text-white fill-white" />
+                                </div>
+                              </div>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => setProductVideos(prev => prev.filter((_, idx) => idx !== i))}
+                              className="absolute top-2 right-2 w-7 h-7 bg-black/70 hover:bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all z-10"
+                              title="Xóa video"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                            <div className="absolute bottom-2 left-2 bg-black/60 px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-all">
+                              <span className="text-[10px] text-white font-medium truncate block max-w-[200px]">{url.split('/').pop()}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>

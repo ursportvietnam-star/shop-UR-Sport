@@ -1494,7 +1494,14 @@ export function NewsPage() {
               <div className="mt-10 space-y-6 w-full">
                 {selectedPost.videos.map((video, index) => (
                   <div key={index} className="overflow-hidden rounded-[24px] bg-black shadow-md w-full">
-                    <video controls src={video} className="w-full object-cover" />
+                    <video 
+                      controls 
+                      src={video} 
+                      className="w-full object-cover" 
+                      controlsList="nodownload"
+                      crossOrigin="anonymous"
+                      preload="metadata"
+                    />
                   </div>
                 ))}
               </div>
