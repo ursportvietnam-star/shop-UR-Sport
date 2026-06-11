@@ -1,16 +1,16 @@
 import React, { FormEvent, useEffect, useRef, useState } from "react";
 import {
   ChevronDown,
-  Facebook,
-  Instagram,
   Mail,
   MapPin,
   Moon,
-  Music2,
   Phone,
   Send,
   Sun,
-  ChevronRight
+  ChevronRight,
+  Facebook,
+  Music2,
+  Instagram
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { doc, serverTimestamp, setDoc, getDoc } from "firebase/firestore";
@@ -76,7 +76,7 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
   const [isSubscribing, setIsSubscribing] = useState(false);
   const [isDark, setIsDark] = useState(true);
   const [visible, setVisible] = useState(false);
-  const [openSection, setOpenSection] = useState("Danh mục sản phẩm");
+  const [openSection, setOpenSection] = useState<string | null>(null);
   const footerRef = useRef<HTMLElement>(null);
 
   const [logoSettingsState, setLogoSettingsState] = useState(logoSettings || null);
@@ -89,6 +89,9 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
     facebook: 'https://facebook.com',
     instagram: 'https://instagram.com',
     tiktok: 'https://tiktok.com',
+    youtube: 'https://youtube.com',
+    shopee: 'https://shopee.vn',
+    zalo: '',
     copyright: '© 2026 UR SPORT. All rights reserved',
     customLinks: [
       {
@@ -252,7 +255,7 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
 
             if (colId === 'contact') {
               return (
-                <div key="contact" style={{ flex: '1.15 1 18%' }} className="w-full">
+                <div key="contact" style={{ flex: '1.15 1 18%' }} className="hidden md:block w-full">
                   <h3 className="text-base font-black">Thông tin liên hệ</h3>
                   <ul className="mt-5 space-y-4 text-sm font-semibold text-slate-300">
                     <li className="flex gap-3">
@@ -292,7 +295,7 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
 
             if (colId === 'social') {
               return (
-                <div key="social" style={{ flex: '0.85 1 12%' }} className="w-full">
+                <div key="social" style={{ flex: '0.85 1 12%' }} className="hidden md:block w-full">
                   <div className="flex items-center justify-between gap-3">
                     <h3 className="text-base font-black">Mạng xã hội</h3>
                     <button
@@ -307,11 +310,13 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
 
                   <div className="mt-5 flex gap-3">
                     {[
-                      { label: "Facebook", href: footerSettings.facebook, icon: Facebook },
-                      { label: "Instagram", href: footerSettings.instagram, icon: Instagram },
-                      { label: "TikTok", href: footerSettings.tiktok, icon: Music2 }
+                      { label: "Facebook", href: footerSettings.facebook, icon: Facebook, isImage: false },
+                      { label: "Instagram", href: footerSettings.instagram, image: "/images/logo_icon/icon-instagram.webp", isImage: true },
+                      { label: "TikTok", href: footerSettings.tiktok, icon: Music2, isImage: false },
+                      ...(footerSettings.youtube ? [{ label: "YouTube", href: footerSettings.youtube, image: "/images/logo_icon/icon-youtube.webp", isImage: true }] : []),
+                      ...(footerSettings.shopee ? [{ label: "Shopee", href: footerSettings.shopee, image: "/images/logo_icon/icon-shopee.webp", isImage: true }] : []),
+                      ...(footerSettings.zalo ? [{ label: "Zalo", href: footerSettings.zalo, image: "/images/logo_icon/icon-zalo1.webp", isImage: true }] : [])
                     ].map((social) => {
-                      const Icon = social.icon;
                       return (
                         <a
                           aria-label={social.label}
@@ -321,7 +326,11 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
                           rel="noopener noreferrer"
                           target="_blank"
                         >
-                          <Icon className="h-5 w-5" />
+                          {social.isImage ? (
+                            <img src={social.image} alt={social.label} className="h-5 w-5" />
+                          ) : (
+                            <social.icon className="h-5 w-5" />
+                          )}
                         </a>
                       );
                     })}
@@ -433,6 +442,99 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
                 </div>
               );
             })}
+
+          {/* Contact Section - Mobile */}
+          <div className="border-b border-white/10">
+            <button
+              className="flex w-full items-center justify-between py-4 text-left text-sm font-black"
+              onClick={() => setOpenSection(openSection === 'Thông tin liên hệ' ? null : 'Thông tin liên hệ')}
+              type="button"
+            >
+              Thông tin liên hệ
+              <ChevronDown
+                className={cn(
+                  "h-5 w-5 transition-transform duration-300",
+                  openSection === 'Thông tin liên hệ' && "rotate-180"
+                )}
+              />
+            </button>
+            <div
+              className={cn(
+                "grid transition-all duration-300 overflow-hidden",
+                openSection === 'Thông tin liên hệ' ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+              )}
+            >
+              <ul className="min-h-0 space-y-4 pb-4">
+                <li className="flex gap-3">
+                  <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-[#1e4b64]" />
+                  <span className="text-sm font-semibold text-slate-300">{footerSettings.address}</span>
+                </li>
+                <li className="flex gap-3">
+                  <Phone className="mt-0.5 h-5 w-5 shrink-0 text-[#1e4b64]" />
+                  <a className="text-sm font-semibold text-slate-300 transition hover:text-[#1e4b64]" href={`tel:${footerSettings.phone.replace(/\s+/g, '')}`}>
+                    {footerSettings.phone}
+                  </a>
+                </li>
+                <li className="flex gap-3">
+                  <Mail className="mt-0.5 h-5 w-5 shrink-0 text-[#1e4b64]" />
+                  <a className="text-sm font-semibold text-slate-300 transition hover:text-[#1e4b64]" href={`mailto:${footerSettings.email}`}>
+                    {footerSettings.email}
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Social Section - Mobile */}
+          <div className="border-b border-white/10">
+            <button
+              className="flex w-full items-center justify-between py-4 text-left text-sm font-black"
+              onClick={() => setOpenSection(openSection === 'Mạng xã hội' ? null : 'Mạng xã hội')}
+              type="button"
+            >
+              Mạng xã hội
+              <ChevronDown
+                className={cn(
+                  "h-5 w-5 transition-transform duration-300",
+                  openSection === 'Mạng xã hội' && "rotate-180"
+                )}
+              />
+            </button>
+            <div
+              className={cn(
+                "grid transition-all duration-300 overflow-hidden",
+                openSection === 'Mạng xã hội' ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+              )}
+            >
+              <div className="min-h-0 flex gap-3 py-4">
+                {[
+                  { label: "Facebook", href: footerSettings.facebook, icon: Facebook, isImage: false },
+                  { label: "Instagram", href: footerSettings.instagram, image: "/images/logo_icon/icon-instagram.webp", isImage: true },
+                  { label: "TikTok", href: footerSettings.tiktok, icon: Music2, isImage: false },
+                  ...(footerSettings.youtube ? [{ label: "YouTube", href: footerSettings.youtube, image: "/images/logo_icon/icon-youtube.webp", isImage: true }] : []),
+                  ...(footerSettings.shopee ? [{ label: "Shopee", href: footerSettings.shopee, image: "/images/logo_icon/icon-shopee.webp", isImage: true }] : []),
+                  ...(footerSettings.zalo ? [{ label: "Zalo", href: footerSettings.zalo, image: "/images/logo_icon/icon-zalo1.webp", isImage: true }] : [])
+                ].map((social) => {
+                  return (
+                    <a
+                      aria-label={social.label}
+                      className="grid h-11 w-11 place-items-center rounded-full bg-white/[0.08] text-slate-200 ring-1 ring-white/10 transition duration-300 hover:scale-105 hover:bg-[#1e4b64] hover:text-white"
+                      href={social.href}
+                      key={social.label}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      {social.isImage ? (
+                        <img src={social.image} alt={social.label} className="h-5 w-5" />
+                      ) : (
+                        <social.icon className="h-5 w-5" />
+                      )}
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="mt-10 flex flex-col gap-4 border-t border-white/10 pt-6 text-sm font-semibold text-slate-400 sm:flex-row sm:items-center sm:justify-between">

@@ -756,6 +756,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
     facebook: 'https://facebook.com',
     instagram: 'https://instagram.com',
     tiktok: 'https://tiktok.com',
+    youtube: 'https://youtube.com',
+    shopee: 'https://shopee.vn',
+    zalo: '',
     copyright: '© 2026 UR SPORT. All rights reserved',
     customLinks: [
       {

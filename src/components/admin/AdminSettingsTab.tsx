@@ -48,6 +48,9 @@ interface AdminSettingsTabProps {
     facebook: string;
     instagram: string;
     tiktok: string;
+    youtube?: string;
+    shopee?: string;
+    zalo?: string;
     copyright: string;
     customLinks: {
       title: string;
@@ -74,6 +77,9 @@ interface AdminSettingsTabProps {
     facebook: string;
     instagram: string;
     tiktok: string;
+    youtube?: string;
+    shopee?: string;
+    zalo?: string;
     copyright: string;
     customLinks: {
       title: string;
@@ -100,6 +106,9 @@ interface AdminSettingsTabProps {
     facebook: string;
     instagram: string;
     tiktok: string;
+    youtube?: string;
+    shopee?: string;
+    zalo?: string;
     copyright: string;
     customLinks: {
       title: string;
@@ -1650,6 +1659,36 @@ export function AdminSettingsTab({
                                           value={footerSettings.tiktok}
                                           onChange={(e) => setFooterSettings({...footerSettings, tiktok: e.target.value})}
                                           placeholder="https://tiktok.com/@ursport"
+                                          className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Link YouTube</label>
+                                        <input 
+                                          type="text"
+                                          value={footerSettings.youtube}
+                                          onChange={(e) => setFooterSettings({...footerSettings, youtube: e.target.value})}
+                                          placeholder="https://youtube.com/@ursport"
+                                          className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Link Shopee</label>
+                                        <input 
+                                          type="text"
+                                          value={footerSettings.shopee}
+                                          onChange={(e) => setFooterSettings({...footerSettings, shopee: e.target.value})}
+                                          placeholder="https://shopee.vn/ursport"
+                                          className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Link Zalo</label>
+                                        <input 
+                                          type="text"
+                                          value={footerSettings.zalo}
+                                          onChange={(e) => setFooterSettings({...footerSettings, zalo: e.target.value})}
+                                          placeholder="https://zalo.me/ursport"
                                           className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50"
                                         />
                                       </div>

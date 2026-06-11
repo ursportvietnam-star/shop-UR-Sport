@@ -350,7 +350,7 @@ async function startServer() {
       `connect-src 'self' https://*.googleapis.com https://*.firebaseapp.com https://*.google.com https://*.gstatic.com wss://*.firebaseapp.com wss://localhost:* ws://localhost:* ws://127.0.0.1:* http://localhost:* http://127.0.0.1:* https://api.cloudinary.com https://res.cloudinary.com https://images.unsplash.com https://api.resend.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com`,
       `img-src 'self' data: https://res.cloudinary.com https://images.unsplash.com https://*.firebasestorage.googleapis.com https://firebasestorage.googleapis.com https://*.google.com https://*.googleapis.com https://*.googleusercontent.com https://*.gstatic.com`,
       `frame-src 'self' https://*.firebaseapp.com https://*.google.com https://accounts.google.com https://youtube.com https://*.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com`,
-      "media-src 'self' https://res.cloudinary.com blob:",
+      "media-src 'self' https://res.cloudinary.com https://www.youtube.com https://*.youtube.com https://youtube.com https://player.vimeo.com https://vimeo.com blob:",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self' https://accounts.google.com https://*.google.com https://*.firebaseapp.com",
