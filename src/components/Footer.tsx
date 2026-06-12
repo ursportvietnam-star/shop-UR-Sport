@@ -8,9 +8,7 @@ import {
   Send,
   Sun,
   ChevronRight,
-  Facebook,
-  Music2,
-  Instagram
+  Facebook
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { doc, serverTimestamp, setDoc, getDoc } from "firebase/firestore";
@@ -39,14 +37,6 @@ const supportLinks = [
   { label: "Hướng dẫn mua hàng", href: "#" },
   { label: "Liên hệ", href: "contact" }
 ];
-
-const socialLinks = [
-  { label: "Facebook", href: "https://facebook.com", icon: Facebook },
-  { label: "Instagram", href: "https://instagram.com", icon: Instagram },
-  { label: "TikTok", href: "https://tiktok.com", icon: Music2 }
-];
-
-
 
 const Logo = ({ inverse, logoSettings }: { inverse?: boolean; logoSettings?: { logoLight?: string; logoDark?: string; favicon?: string } | null }) => {
   const logoUrl = inverse ? (logoSettings?.logoDark || logoSettings?.logoLight) : (logoSettings?.logoLight || logoSettings?.logoDark);
@@ -194,6 +184,15 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
     }
   };
 
+  const socialItems = [
+    { label: "Facebook", href: footerSettings.facebook, icon: Facebook },
+    { label: "Instagram", href: footerSettings.instagram, image: "/images/logo_icon/icon-instagram.webp" },
+    { label: "TikTok", href: footerSettings.tiktok, image: "/images/logo_icon/icon-tiktok.webp" },
+    ...(footerSettings.youtube ? [{ label: "YouTube", href: footerSettings.youtube, image: "/images/logo_icon/icon-youtube.webp" }] : []),
+    ...(footerSettings.shopee ? [{ label: "Shopee", href: footerSettings.shopee, image: "/images/logo_icon/icon-shopee.webp" }] : []),
+    ...(footerSettings.zalo ? [{ label: "Zalo", href: footerSettings.zalo, image: "/images/logo_icon/icon-zalo.webp" }] : [])
+  ];
+
   return (
     <footer
       className={cn(
@@ -309,14 +308,7 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
                   </div>
 
                   <div className="mt-5 flex gap-3">
-                    {[
-                      { label: "Facebook", href: footerSettings.facebook, icon: Facebook, isImage: false },
-                      { label: "Instagram", href: footerSettings.instagram, image: "/images/logo_icon/icon-instagram.webp", isImage: true },
-                      { label: "TikTok", href: footerSettings.tiktok, icon: Music2, isImage: false },
-                      ...(footerSettings.youtube ? [{ label: "YouTube", href: footerSettings.youtube, image: "/images/logo_icon/icon-youtube.webp", isImage: true }] : []),
-                      ...(footerSettings.shopee ? [{ label: "Shopee", href: footerSettings.shopee, image: "/images/logo_icon/icon-shopee.webp", isImage: true }] : []),
-                      ...(footerSettings.zalo ? [{ label: "Zalo", href: footerSettings.zalo, image: "/images/logo_icon/icon-zalo1.webp", isImage: true }] : [])
-                    ].map((social) => {
+                    {socialItems.map((social) => {
                       return (
                         <a
                           aria-label={social.label}
@@ -326,8 +318,8 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
                           rel="noopener noreferrer"
                           target="_blank"
                         >
-                          {social.isImage ? (
-                            <img src={social.image} alt={social.label} className="h-5 w-5" />
+                          {"image" in social ? (
+                            <img src={social.image} alt={social.label} className="h-5 w-5 object-contain" />
                           ) : (
                             <social.icon className="h-5 w-5" />
                           )}
@@ -507,14 +499,7 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
               )}
             >
               <div className="min-h-0 flex gap-3 py-4">
-                {[
-                  { label: "Facebook", href: footerSettings.facebook, icon: Facebook, isImage: false },
-                  { label: "Instagram", href: footerSettings.instagram, image: "/images/logo_icon/icon-instagram.webp", isImage: true },
-                  { label: "TikTok", href: footerSettings.tiktok, icon: Music2, isImage: false },
-                  ...(footerSettings.youtube ? [{ label: "YouTube", href: footerSettings.youtube, image: "/images/logo_icon/icon-youtube.webp", isImage: true }] : []),
-                  ...(footerSettings.shopee ? [{ label: "Shopee", href: footerSettings.shopee, image: "/images/logo_icon/icon-shopee.webp", isImage: true }] : []),
-                  ...(footerSettings.zalo ? [{ label: "Zalo", href: footerSettings.zalo, image: "/images/logo_icon/icon-zalo1.webp", isImage: true }] : [])
-                ].map((social) => {
+                {socialItems.map((social) => {
                   return (
                     <a
                       aria-label={social.label}
@@ -524,8 +509,8 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
                       rel="noopener noreferrer"
                       target="_blank"
                     >
-                      {social.isImage ? (
-                        <img src={social.image} alt={social.label} className="h-5 w-5" />
+                      {"image" in social ? (
+                        <img src={social.image} alt={social.label} className="h-5 w-5 object-contain" />
                       ) : (
                         <social.icon className="h-5 w-5" />
                       )}
