@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, setDoc, serverTimestamp, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { toast } from 'sonner';
-import { Plus, Search, UserX, UserCheck, Shield, Mail, Calendar, Loader2, X } from 'lucide-react';
+import { Plus, Search, UserX, UserCheck, Shield, Mail, Calendar, Loader2, X, Crown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, updateProfile, signOut } from 'firebase/auth';
@@ -35,6 +35,8 @@ interface CustomerData {
   createdAt: any;
   status: 'active' | 'banned';
   role: string;
+  isVip?: boolean;
+  vipActivatedAt?: any;
 }
 
 export const CustomerManagementTab: React.FC = () => {
@@ -82,6 +84,22 @@ export const CustomerManagementTab: React.FC = () => {
     }
   };
 
+  const handleToggleVip = async (customer: CustomerData) => {
+    const nextVip = !customer.isVip;
+
+    try {
+      await updateDoc(doc(db, 'users', customer.id), {
+        isVip: nextVip,
+        vipUpdatedAt: serverTimestamp(),
+        vipActivatedAt: nextVip ? serverTimestamp() : null,
+      });
+      toast.success(nextVip ? 'Đã kích hoạt VIP cho khách hàng!' : 'Đã tắt VIP cho khách hàng!');
+    } catch (error: any) {
+      console.error('Error toggling VIP:', error);
+      toast.error(`Lỗi: ${error.message}`);
+    }
+  };
+
   const handleAddCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEmail || !newPassword || !newName) {
@@ -111,7 +129,8 @@ export const CustomerManagementTab: React.FC = () => {
           photoURL: null,
           createdAt: serverTimestamp(),
           status: 'active',
-          role: 'customer'
+          role: 'customer',
+          isVip: false,
         });
 
         await signOut(secondaryAuth);
@@ -223,6 +242,11 @@ export const CustomerManagementTab: React.FC = () => {
                             {customer.role === 'admin' && (
                               <span className="px-1.5 py-0.5 text-[10px] uppercase font-black bg-rose-500/10 text-rose-400 rounded">Admin</span>
                             )}
+                            {customer.isVip && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] uppercase font-black bg-amber-400/15 text-amber-300 border border-amber-400/20 rounded">
+                                <Crown className="h-3 w-3" /> VIP
+                              </span>
+                            )}
                           </div>
                           <div className="text-xs text-[#8e9aab] flex items-center gap-1 mt-0.5">
                             <Mail className="h-3 w-3" />
@@ -248,7 +272,19 @@ export const CustomerManagementTab: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center justify-end">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleToggleVip(customer)}
+                          className={`p-2 rounded-lg transition-colors flex items-center gap-1 text-xs font-bold ${
+                            customer.isVip
+                              ? 'text-amber-300 hover:bg-amber-400/10'
+                              : 'text-[#8e9aab] hover:bg-amber-400/10 hover:text-amber-300'
+                          }`}
+                          title={customer.isVip ? 'Tắt giá thành viên VIP' : 'Kích hoạt giá thành viên VIP'}
+                        >
+                          <Crown className="h-4 w-4" />
+                          {customer.isVip ? 'Tắt VIP' : 'Bật VIP'}
+                        </button>
                         <button
                           onClick={() => handleToggleStatus(customer)}
                           className={`p-2 rounded-lg transition-colors flex items-center gap-1 text-xs font-bold ${

@@ -182,7 +182,7 @@ import {
 interface AddProductModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (savedProduct?: Product) => void;
   product?: Product | null;
   openAiWriterOnOpen?: boolean;
 }
@@ -588,7 +588,9 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
     style: '',
     material: '',
     fashionStyle: '',
-    collarType: ''
+    collarType: '',
+    shopeeUrl: '',
+    tiktokShopUrl: ''
   });
 
   const uploadProductDescriptionImage = async (file: File) => {
@@ -783,9 +785,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         : (product.colors || []).map((c, i) => ({ name: c, image: product.images?.[i] || '' }));
 
       const coverImage = product.images?.[0] || colorVariants[0]?.image || '';
-      // Exclude variant images from extraImages to prevent duplication on each save
-      const variantImageSet = new Set(colorVariants.map(v => v.image).filter(Boolean));
-      const extraImages = (product.images || []).filter(img => img && (!variantImageSet.has(img) || img === coverImage));
+      const extraImages = Array.from(new Set((product.images || []).filter(Boolean)));
       const variants = (product.variants || []).map(toVariantForm);
 
       setFormData({
@@ -819,6 +819,8 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         material: product.material || 'Cotton Premium',
         fashionStyle: product.fashionStyle || 'Thể thao, Cơ bản',
         collarType: product.collarType || 'Cổ tròn',
+        shopeeUrl: product.marketplaceLinks?.shopee || '',
+        tiktokShopUrl: product.marketplaceLinks?.tiktokShop || '',
       });
       imageAltBySrcRef.current = {};
       imageCaptionBySrcRef.current = {};
@@ -875,6 +877,8 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         material: 'Cotton Premium',
         fashionStyle: 'Thể thao, Cơ bản',
         collarType: 'Cổ tròn',
+        shopeeUrl: '',
+        tiktokShopUrl: '',
       });
       setHtmlSource('');
       setProductVideos([]);
@@ -1122,60 +1126,44 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         style: formData.style,
         material: formData.material,
         fashionStyle: formData.fashionStyle,
-        collarType: formData.collarType
+        collarType: formData.collarType,
+        marketplaceLinks: {
+          shopee: formData.shopeeUrl.trim(),
+          tiktokShop: formData.tiktokShopUrl.trim()
+        }
       });
+
+      let savedProduct: Product | undefined;
 
       if (product && product.id && !product.id.startsWith('ai_')) {
         await updateDoc(doc(db, 'products', product.id), payload);
+        savedProduct = stripUndefinedValues({
+          ...product,
+          ...payload,
+          id: product.id,
+          rating: product.rating || 0,
+          reviewsCount: product.reviewsCount || 0,
+          createdAt: product.createdAt,
+        }) as Product;
         toast.success('Cập nhật sản phẩm thành công!');
       } else {
-        await addDoc(collection(db, 'products'), {
+        const docRef = await addDoc(collection(db, 'products'), {
           ...payload,
           createdAt: serverTimestamp(),
           rating: 0,
           reviewsCount: 0,
         });
+        savedProduct = stripUndefinedValues({
+          ...payload,
+          id: docRef.id,
+          rating: 0,
+          reviewsCount: 0,
+          createdAt: new Date(),
+        }) as Product;
         toast.success('Thêm sản phẩm thành công!');
       }
 
-      onSuccess();
-      
-      // Reset form ONLY for new product additions
-      if (!product || (product && product.id && product.id.startsWith('ai_'))) {
-        onClose();
-        setFormData({
-          productCode: 'UR',
-          name: '',
-          price: '',
-          discountPrice: '',
-          category: CATEGORIES[0],
-          description: '',
-          stock: '',
-          sizes: DEFAULT_PRODUCT_SIZE_TEXT,
-          sizeGuideUrl: '',
-          slug: '',
-          seoTitle: '',
-          metaDescription: '',
-          keywords: '',
-          colorVariants: [],
-          variants: [],
-          variantBulk: {
-            price: '',
-            stock: '',
-            sku: '',
-          },
-          extraImages: [],
-          coverImage: '',
-          specifications: '',
-          careInstructions: '',
-          brand: 'UR SPORT',
-          origin: 'Việt Nam',
-          style: 'Slim Fit',
-          material: 'Cotton Premium',
-          fashionStyle: 'Thể thao, Cơ bản',
-          collarType: 'Cổ tròn',
-        });
-      }
+      onSuccess(savedProduct);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Lỗi không xác định';
       console.error('Error saving product:', error, {
@@ -1231,6 +1219,10 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
           material: formData.material,
           fashionStyle: formData.fashionStyle,
           collarType: formData.collarType,
+          marketplaceLinks: {
+            shopee: formData.shopeeUrl.trim(),
+            tiktokShop: formData.tiktokShopUrl.trim()
+          },
           id: localId,
           rating: product?.rating || 0,
           reviewsCount: product?.reviewsCount || 0,
@@ -1238,8 +1230,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         }) as Product;
         saveLocalProduct(localProduct);
         toast.success('Đã lưu sản phẩm trên local');
-        onSuccess();
-        if (!product || product.id.startsWith('ai_')) onClose();
+        onSuccess(localProduct);
         return;
       }
 
@@ -2958,6 +2949,28 @@ Yeu cau: chi dua tren du lieu co that, khong bia thong so, gia, ton kho, bao han
                         onChange={(e) => setFormData({...formData, collarType: e.target.value})}
                         className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#1e4b64]"
                         placeholder="Cổ tròn"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase px-1">Link Shopee</label>
+                      <input
+                        type="url"
+                        value={formData.shopeeUrl}
+                        onChange={(e) => setFormData({ ...formData, shopeeUrl: e.target.value })}
+                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#ee4d2d]"
+                        placeholder="https://shopee.vn/..."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase px-1">Link TikTok Shop</label>
+                      <input
+                        type="url"
+                        value={formData.tiktokShopUrl}
+                        onChange={(e) => setFormData({ ...formData, tiktokShopUrl: e.target.value })}
+                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-zinc-900"
+                        placeholder="https://www.tiktok.com/..."
                       />
                     </div>
                   </div>

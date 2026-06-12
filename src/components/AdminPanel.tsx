@@ -4847,15 +4847,18 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
         <React.Suspense fallback={<AdminTabFallback />}>
           {isAddModalOpen && (
             <AddProductModal
-              key={`product-${editingProduct?.id || editingProduct?.slug || 'new'}`}
+              key="product-editor"
               isOpen={isAddModalOpen}
               onClose={() => {
                 setIsAddModalOpen(false);
                 setEditingProduct(null);
               }}
-              onSuccess={() => {
+              onSuccess={(savedProduct) => {
                 const sourceProducts = productSourceRef.current.length > 0 ? productSourceRef.current : STATIC_PRODUCTS;
                 setProducts(assignProductPublishTimes(mergeLocalProducts(sourceProducts)));
+                if (savedProduct) {
+                  setEditingProduct(savedProduct);
+                }
               }}
               product={editingProduct}
             />

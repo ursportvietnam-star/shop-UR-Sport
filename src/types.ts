@@ -59,6 +59,10 @@ export interface Product {
   material?: string;
   fashionStyle?: string;
   collarType?: string;
+  marketplaceLinks?: {
+    shopee?: string;
+    tiktokShop?: string;
+  };
   createdAt?: FirestoreTimestamp;
 }
 

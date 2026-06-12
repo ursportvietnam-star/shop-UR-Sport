@@ -78,7 +78,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         onClick={onMenuClick}
         className="flex flex-1 min-w-0 flex-col items-center justify-center text-zinc-500 active:bg-zinc-50 transition-colors cursor-pointer px-1 bottom-nav-btn"
       >
-        <Menu className="bottom-nav-icon text-[#f97316]" />
+        <Menu className="bottom-nav-icon text-[#0068FF]" />
         <span className="bottom-nav-text font-semibold mt-0.5 text-zinc-500 whitespace-nowrap tracking-tight">Menu</span>
       </button>
 
@@ -87,7 +87,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         onClick={onSearchClick}
         className="flex flex-1 min-w-0 flex-col items-center justify-center text-zinc-500 active:bg-zinc-50 transition-colors cursor-pointer px-1 bottom-nav-btn"
       >
-        <Search className="bottom-nav-icon text-[#f97316]" />
+        <Search className="bottom-nav-icon text-[#0068FF]" />
         <span className="bottom-nav-text font-semibold mt-0.5 text-zinc-500 whitespace-nowrap tracking-tight">Tìm kiếm</span>
       </button>
 
@@ -97,9 +97,9 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         className="flex flex-1 min-w-0 flex-col items-center justify-center text-zinc-500 active:bg-zinc-50 transition-colors relative cursor-pointer px-1 bottom-nav-btn"
       >
         <div className="relative flex flex-col items-center">
-          <ShoppingCart className="bottom-nav-icon text-[#f97316]" />
+          <ShoppingCart className="bottom-nav-icon text-[#0068FF]" />
           {cartCount > 0 && (
-            <span className="absolute -top-1.5 -right-2 h-4 w-4 bg-[#00a651] text-white text-[9px] font-black rounded-full flex items-center justify-center border border-white">
+            <span className="absolute -top-1.5 -right-2 h-4 w-4 bg-[#1E4B64] text-white text-[9px] font-black rounded-full flex items-center justify-center border border-white">
               {cartCount}
             </span>
           )}
@@ -112,8 +112,8 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         onClick={onAccountClick}
         className="flex flex-1 min-w-0 flex-col items-center justify-center text-zinc-500 active:bg-zinc-50 transition-colors cursor-pointer px-1 bottom-nav-btn"
       >
-        <User className={`bottom-nav-icon text-[#f97316] ${location.pathname === '/tai-khoan' ? 'stroke-[2.5px]' : ''}`} />
-        <span className={`bottom-nav-text font-semibold mt-0.5 whitespace-nowrap tracking-tight ${location.pathname === '/tai-khoan' ? 'text-[#f97316] font-bold' : 'text-zinc-500'}`}>
+        <User className={`bottom-nav-icon text-[#0068FF] ${location.pathname === '/tai-khoan' ? 'stroke-[2.5px]' : ''}`} />
+        <span className={`bottom-nav-text font-semibold mt-0.5 whitespace-nowrap tracking-tight ${location.pathname === '/tai-khoan' ? 'text-[#0068FF] font-bold' : 'text-zinc-500'}`}>
           Tài khoản
         </span>
       </button>
@@ -123,7 +123,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         onClick={handleContactClick}
         className="flex flex-1 min-w-0 flex-col items-center justify-center text-zinc-500 active:bg-zinc-50 transition-colors cursor-pointer px-1 bottom-nav-btn"
       >
-        <MessageCircle className="bottom-nav-icon text-[#f97316]" />
+        <MessageCircle className="bottom-nav-icon text-[#0068FF]" />
         <span className="bottom-nav-text font-semibold mt-0.5 text-zinc-500 whitespace-nowrap tracking-tight">Zalo</span>
       </button>
     </div>

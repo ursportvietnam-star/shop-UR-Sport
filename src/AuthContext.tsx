@@ -18,6 +18,8 @@ import { auth, db, isFirebaseConfigured } from './firebase';
 interface AuthContextType {
   user: User | null;
   isAdmin: boolean;
+  isVip: boolean;
+  customerProfile: CustomerAccountProfile | null;
   loading: boolean;
   loginWithGoogle: () => Promise<void>;
   loginWithEmail: (email: string, password: string) => Promise<void>;
@@ -25,6 +27,16 @@ interface AuthContextType {
   updateCustomerProfile: (profile: CustomerProfileInput) => Promise<void>;
   devLogin: () => void;
   logout: () => Promise<void>;
+}
+
+interface CustomerAccountProfile {
+  uid: string;
+  email: string | null;
+  displayName: string;
+  photoURL?: string | null;
+  status?: 'active' | 'banned';
+  role?: string;
+  isVip?: boolean;
 }
 
 export interface CustomerProfileInput {
@@ -75,6 +87,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     return false;
   });
+  const [customerProfile, setCustomerProfile] = useState<CustomerAccountProfile | null>(() => {
+    if (isLocalhost && localStorage.getItem(DEV_ADMIN_KEY) === '1') {
+      return {
+        uid: fakeAdminUser.uid,
+        email: fakeAdminUser.email,
+        displayName: fakeAdminUser.displayName || 'Dev Admin (Local)',
+        photoURL: null,
+        status: 'active',
+        role: 'admin',
+        isVip: true,
+      };
+    }
+    return null;
+  });
+  const [isVip, setIsVip] = useState<boolean>(() => {
+    return isLocalhost && localStorage.getItem(DEV_ADMIN_KEY) === '1';
+  });
   const [loading, setLoading] = useState(true);
 
   const syncSignedInUser = async (authUser: User) => {
@@ -95,7 +124,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         photoURL: authUser.photoURL || null,
         createdAt: serverTimestamp(),
         status: 'active',
-        role: 'customer'
+        role: 'customer',
+        isVip: false,
       });
     }
   };
@@ -104,12 +134,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Nếu đang dùng dev bypass thì không cần chờ Firebase
     if (isLocalhost && localStorage.getItem(DEV_ADMIN_KEY) === '1') {
       setLoading(false);
+      setCustomerProfile({
+        uid: fakeAdminUser.uid,
+        email: fakeAdminUser.email,
+        displayName: fakeAdminUser.displayName || 'Dev Admin (Local)',
+        photoURL: null,
+        status: 'active',
+        role: 'admin',
+        isVip: true,
+      });
+      setIsVip(true);
       return;
     }
 
     if (!auth || !db) {
       setUser(null);
       setIsAdmin(false);
+      setCustomerProfile(null);
+      setIsVip(false);
       setLoading(false);
       return;
     }
@@ -119,6 +161,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (isLocalhost && localStorage.getItem(DEV_ADMIN_KEY) === '1') {
         setUser(fakeAdminUser);
         setIsAdmin(true);
+        setCustomerProfile({
+          uid: fakeAdminUser.uid,
+          email: fakeAdminUser.email,
+          displayName: fakeAdminUser.displayName || 'Dev Admin (Local)',
+          photoURL: null,
+          status: 'active',
+          role: 'admin',
+          isVip: true,
+        });
+        setIsVip(true);
         setLoading(false);
         return;
       }
@@ -145,10 +197,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             await signOut(auth);
             setUser(null);
             setIsAdmin(false);
+            setCustomerProfile(null);
+            setIsVip(false);
             setLoading(false);
             // We use setTimeout because toast might fire before AuthProvider is fully mounted or when state is unstable
             setTimeout(() => toast.error('Tài khoản của bạn đã bị khóa.'), 100);
             return;
+          }
+          if (userDoc.exists()) {
+            const profile = userDoc.data() as CustomerAccountProfile;
+            setCustomerProfile(profile);
+            setIsVip(Boolean(profile.isVip));
+          } else {
+            setCustomerProfile(null);
+            setIsVip(false);
           }
         } catch (error) {
           console.error('Error checking banned status:', error);
@@ -156,6 +218,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       } else {
         setIsAdmin(false);
+        setCustomerProfile(null);
+        setIsVip(false);
       }
       setLoading(false);
     });
@@ -233,7 +297,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await signOut(auth);
         throw new Error('Tài khoản của bạn đã bị khóa.');
       }
-      
+      if (snap.exists()) {
+        const profile = snap.data() as CustomerAccountProfile;
+        setCustomerProfile(profile);
+        setIsVip(Boolean(profile.isVip));
+      } else {
+        setCustomerProfile(null);
+        setIsVip(false);
+      }
+
       setUser(result.user);
     } catch (error: any) {
       console.error('Login error detail:', error);
@@ -262,11 +334,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           photoURL: null,
           createdAt: serverTimestamp(),
           status: 'active',
-          role: 'customer'
+          role: 'customer',
+          isVip: false,
         });
 
         // Force a re-fetch of the user object so UI updates with displayName
         setUser({ ...result.user, displayName } as User);
+        setCustomerProfile({
+          uid: result.user.uid,
+          email: result.user.email,
+          displayName,
+          photoURL: null,
+          status: 'active',
+          role: 'customer',
+          isVip: false,
+        });
+        setIsVip(false);
       }
     } catch (error: any) {
       console.error('Register error detail:', error);
@@ -285,6 +368,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem(DEV_ADMIN_KEY, '1');
     setUser(fakeAdminUser);
     setIsAdmin(true);
+    setCustomerProfile({
+      uid: fakeAdminUser.uid,
+      email: fakeAdminUser.email,
+      displayName: fakeAdminUser.displayName || 'Dev Admin (Local)',
+      photoURL: null,
+      status: 'active',
+      role: 'admin',
+      isVip: true,
+    });
+    setIsVip(true);
   };
 
   const updateCustomerProfile = async ({ displayName, phone, address, provinceCode = '', provinceName = '', wardCode = '', wardName = '', addressDetail = '' }: CustomerProfileInput) => {
@@ -335,10 +428,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     setUser(null);
     setIsAdmin(false);
+    setCustomerProfile(null);
+    setIsVip(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAdmin, loading, loginWithGoogle, loginWithEmail, registerWithEmail, updateCustomerProfile, devLogin, logout }}>
+    <AuthContext.Provider value={{ user, isAdmin, isVip, customerProfile, loading, loginWithGoogle, loginWithEmail, registerWithEmail, updateCustomerProfile, devLogin, logout }}>
       {children}
     </AuthContext.Provider>
   );
