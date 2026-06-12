@@ -1348,7 +1348,7 @@ export function NewsPage() {
               <div 
                 ref={blogContentRef}
                 className={cn(
-                  "blog-content product-description-container notranslate w-full text-zinc-700 transition-[max-height] duration-700 ease-in-out overflow-x-hidden text-base sm:text-lg leading-relaxed font-medium",
+                  "blog-content product-description-container w-full text-zinc-700 transition-[max-height] duration-700 ease-in-out overflow-x-hidden text-base sm:text-lg leading-relaxed font-medium",
                   !isExpanded ? "max-h-[1200px] overflow-y-hidden" : "max-h-none overflow-y-visible"
                 )}
               >

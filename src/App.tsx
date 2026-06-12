@@ -15,6 +15,7 @@ import { RecentlyViewedProvider } from './RecentlyViewedContext';
 import { ComparisonProvider } from './ComparisonContext';
 import { ProductsProvider } from './ProductsContext';
 import { PromotionProvider } from './PromotionContext';
+import { LanguageProvider, useLanguage } from './LanguageContext';
 import { CATEGORY_METADATA } from './data';
 import { Category } from './types';
 import { DEFAULT_SEO_SUBCATEGORIES, CATEGORY_PRODUCT_MATCH_TERMS, slugifyVietnamese } from './lib/categoryConfig';
@@ -113,28 +114,31 @@ const SEO_LANDING_PAGES = DEFAULT_SEO_SUBCATEGORIES
 
 function NotFoundPage() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   return (
     <div className="mx-auto flex min-h-[60vh] max-w-xl flex-col items-center justify-center px-4 py-20 text-center">
       <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-[#1e4b64]/10 text-lg font-black text-[#1e4b64]">
         UR
       </div>
-      <h1 className="text-2xl font-black text-zinc-950 sm:text-3xl">Trang này chưa sẵn sàng</h1>
+      <h1 className="text-2xl font-black text-zinc-950 sm:text-3xl">{t('notFoundTitle')}</h1>
       <p className="mt-3 text-sm font-medium leading-6 text-zinc-500 sm:text-base">
-        Đường dẫn có thể đã được đổi tên hoặc sản phẩm đã ngừng hiển thị. Bạn có thể quay lại cửa hàng để tiếp tục mua sắm.
+        {t('notFoundBody')}
       </p>
       <button
         type="button"
         onClick={() => navigate('/shop')}
         className="mt-8 rounded-full bg-[#1e4b64] px-6 py-3 text-sm font-black text-white shadow-sm transition-colors hover:bg-[#153a4d]"
       >
-        Về cửa hàng
+        {t('backToShop')}
       </button>
     </div>
   );
 }
 
 function ExternalRedirect({ url }: { url: string }) {
+  const { t } = useLanguage();
+
   useEffect(() => {
     window.location.replace(url);
   }, [url]);
@@ -142,7 +146,7 @@ function ExternalRedirect({ url }: { url: string }) {
   return (
     <div className="mx-auto flex min-h-[60vh] max-w-xl flex-col items-center justify-center px-4 py-20 text-center">
       <div className="mb-4 h-10 w-10 rounded-full border-4 border-[#1e4b64] border-t-transparent animate-spin mx-auto" />
-      <p className="text-sm font-bold text-zinc-500">Đang chuyển hướng đến trang mạng xã hội của UR Sport...</p>
+      <p className="text-sm font-bold text-zinc-500">{t('redirectingSocial')}</p>
     </div>
   );
 }
@@ -150,7 +154,9 @@ function ExternalRedirect({ url }: { url: string }) {
 export default function App() {
   return (
     <Router basename={import.meta.env.BASE_URL}>
-      <AppContent />
+      <LanguageProvider>
+        <AppContent />
+      </LanguageProvider>
     </Router>
   );
 }

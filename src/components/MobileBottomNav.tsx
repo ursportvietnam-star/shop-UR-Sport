@@ -4,6 +4,7 @@ import { Menu, Search, ShoppingCart, User, MessageCircle } from 'lucide-react';
 import { useCart } from '../CartContext';
 import { db, isFirebaseConfigured } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { useLanguage } from '../LanguageContext';
 
 interface MobileBottomNavProps {
   onMenuClick: () => void;
@@ -19,6 +20,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   onAccountClick,
 }) => {
   const { cart } = useCart();
+  const { t } = useLanguage();
   const location = useLocation();
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -79,7 +81,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         className="flex flex-1 min-w-0 flex-col items-center justify-center text-zinc-500 active:bg-zinc-50 transition-colors cursor-pointer px-1 bottom-nav-btn"
       >
         <Menu className="bottom-nav-icon text-[#0068FF]" />
-        <span className="bottom-nav-text font-semibold mt-0.5 text-zinc-500 whitespace-nowrap tracking-tight">Menu</span>
+        <span className="bottom-nav-text font-semibold mt-0.5 text-zinc-500 whitespace-nowrap tracking-tight">{t('menu')}</span>
       </button>
 
       {/* Search Tab */}
@@ -88,7 +90,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         className="flex flex-1 min-w-0 flex-col items-center justify-center text-zinc-500 active:bg-zinc-50 transition-colors cursor-pointer px-1 bottom-nav-btn"
       >
         <Search className="bottom-nav-icon text-[#0068FF]" />
-        <span className="bottom-nav-text font-semibold mt-0.5 text-zinc-500 whitespace-nowrap tracking-tight">Tìm kiếm</span>
+        <span className="bottom-nav-text font-semibold mt-0.5 text-zinc-500 whitespace-nowrap tracking-tight">{t('search')}</span>
       </button>
 
       {/* Cart Tab */}
@@ -104,7 +106,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             </span>
           )}
         </div>
-        <span className="bottom-nav-text font-semibold mt-0.5 text-zinc-500 whitespace-nowrap tracking-tight">Giỏ hàng</span>
+        <span className="bottom-nav-text font-semibold mt-0.5 text-zinc-500 whitespace-nowrap tracking-tight">{t('cart')}</span>
       </button>
 
       {/* Account Tab */}
@@ -114,7 +116,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       >
         <User className={`bottom-nav-icon text-[#0068FF] ${location.pathname === '/tai-khoan' ? 'stroke-[2.5px]' : ''}`} />
         <span className={`bottom-nav-text font-semibold mt-0.5 whitespace-nowrap tracking-tight ${location.pathname === '/tai-khoan' ? 'text-[#0068FF] font-bold' : 'text-zinc-500'}`}>
-          Tài khoản
+          {t('account')}
         </span>
       </button>
 
@@ -124,7 +126,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         className="flex flex-1 min-w-0 flex-col items-center justify-center text-zinc-500 active:bg-zinc-50 transition-colors cursor-pointer px-1 bottom-nav-btn"
       >
         <MessageCircle className="bottom-nav-icon text-[#0068FF]" />
-        <span className="bottom-nav-text font-semibold mt-0.5 text-zinc-500 whitespace-nowrap tracking-tight">Zalo</span>
+        <span className="bottom-nav-text font-semibold mt-0.5 text-zinc-500 whitespace-nowrap tracking-tight">{t('zalo')}</span>
       </button>
     </div>
   );

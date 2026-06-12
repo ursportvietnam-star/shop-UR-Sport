@@ -787,7 +787,7 @@ export function ShopPage({
           <div className="relative w-full overflow-x-hidden">
             <div 
               className={cn(
-                "product-description-container notranslate w-full text-zinc-600 transition-[max-height] duration-700 ease-in-out overflow-x-hidden",
+                "product-description-container w-full text-zinc-600 transition-[max-height] duration-700 ease-in-out overflow-x-hidden",
                 !isSeoExpanded ? "max-h-[118px] overflow-y-hidden sm:max-h-[132px]" : "max-h-none overflow-y-visible"
               )}
             >

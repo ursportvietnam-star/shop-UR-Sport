@@ -58,11 +58,13 @@ import { ProductCard } from './ProductCard';
 import { ImageLightbox } from './ImageLightbox';
 import { getProductPath, normalizeProductSlug } from '../lib/productUrls';
 import { canonicalCategoryLabel, isSameCategoryLabel } from '../lib/categoryConfig';
+import { useLanguage } from '../LanguageContext';
 
 export const ProductDetail: React.FC = () => {
   const { categorySlug, productSlug } = useParams<{ categorySlug?: string, productSlug: string }>();
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
+  const { t } = useLanguage();
   const { products, loading } = useProducts();
 
   const normalizedRouteSlug = normalizeProductSlug(productSlug);
@@ -542,12 +544,12 @@ export const ProductDetail: React.FC = () => {
         <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-[#1e4b64]/10 text-lg font-black text-[#1e4b64]">
           UR
         </div>
-        <h2 className="mb-3 text-center text-2xl font-black text-zinc-950">Không tìm thấy sản phẩm</h2>
+        <h2 className="mb-3 text-center text-2xl font-black text-zinc-950">{t('productNotFound')}</h2>
         <p className="mb-7 max-w-md text-center text-sm font-medium leading-6 text-zinc-500">
           Sản phẩm có thể đã đổi đường dẫn hoặc tạm ngừng hiển thị. Bạn quay lại cửa hàng để xem các mẫu đang có nhé.
         </p>
         <Button onClick={() => navigate('/shop')} className="rounded-full bg-[#1e4b64] px-6 font-black hover:bg-[#153a4d]">
-          Về cửa hàng
+          {t('backToShop')}
         </Button>
       </div>
     );
@@ -837,14 +839,14 @@ export const ProductDetail: React.FC = () => {
                     onClick={() => document.getElementById('reviews-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                     className="text-[#0068FF] underline underline-offset-2 transition-colors hover:text-[#005AE0]"
                   >
-                    Reviews: {product.reviewsCount || 0}
+                    {t('reviews')}: {product.reviewsCount || 0}
                   </button>
                   <button
                     type="button"
                     onClick={() => document.getElementById('reviews-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                     className="text-[#0068FF] underline underline-offset-2 transition-colors hover:text-[#005AE0]"
                   >
-                    Viết đánh giá
+                    {t('writeReview')}
                   </button>
                 </div>
                 <div className="flex items-center gap-1.5 text-[11px] leading-none text-zinc-500">
@@ -920,7 +922,7 @@ export const ProductDetail: React.FC = () => {
             <div className="space-y-5">
               <div className="space-y-2.5">
                 <p className="text-[13px] font-bold text-zinc-900 uppercase tracking-wider">
-                  Màu sắc: <span className="text-[#ff3b30] font-bold ml-1">{selectedColor}</span>
+                  {t('color')}: <span className="text-[#ff3b30] font-bold ml-1">{selectedColor}</span>
                 </p>
 
                 <div className="flex flex-wrap gap-1.5">
@@ -973,7 +975,7 @@ export const ProductDetail: React.FC = () => {
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
                   <p className="text-[13px] font-bold text-zinc-900 uppercase tracking-wider">
-                    Kích cỡ: <span className="text-[#ff3b30] font-bold ml-1">{selectedSize}</span>
+                    {t('size')}: <span className="text-[#ff3b30] font-bold ml-1">{selectedSize}</span>
                     {selectedVariantStock !== null && !selectedVariantOutOfStock && (
                       <span className="ml-2 text-[11px] font-bold normal-case tracking-normal text-zinc-400">
                         Còn {selectedVariantStock}
@@ -981,7 +983,7 @@ export const ProductDetail: React.FC = () => {
                     )}
                   </p>
                   <button onClick={() => setIsSizeGuideOpen(true)} className="text-[11px] font-bold uppercase italic tracking-widest text-[#0068c9] hover:underline">
-                    Size Guide
+                    {t('sizeGuide')}
                   </button>
                 </div>
                 <div className={cn(
@@ -1023,7 +1025,7 @@ export const ProductDetail: React.FC = () => {
 
               {/* Mobile Quantity Selector Row */}
               <div className="flex items-center justify-between py-4 border-t border-b border-zinc-100 md:hidden">
-                <span className="text-[14px] font-bold text-zinc-900 uppercase tracking-wider">Số lượng</span>
+                <span className="text-[14px] font-bold text-zinc-900 uppercase tracking-wider">{t('quantity')}</span>
                 <div className="flex items-center border border-zinc-200 rounded-xl bg-white overflow-hidden h-9">
                   <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-10 h-full flex items-center justify-center text-zinc-400 active:bg-zinc-50">
                     <Minus className="h-3.5 w-3.5" />
@@ -1050,22 +1052,22 @@ export const ProductDetail: React.FC = () => {
                   disabled={selectedVariantOutOfStock}
                   className="flex h-full flex-1 items-center justify-center gap-2 rounded-xl border-2 border-[#1e4b64] bg-[#f0f9ff] text-[13px] font-bold uppercase tracking-widest text-[#1e4b64] transition-all hover:bg-blue-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-400"
                 >
-                  <ShoppingCart className="h-5 w-5" /> Thêm vào giỏ
+                  <ShoppingCart className="h-5 w-5" /> {t('addToCart')}
                 </button>
                 <button
                   onClick={handleBuyNow}
                   disabled={selectedVariantOutOfStock}
                   className="h-full flex-1 rounded-xl bg-[#1e4b64] text-[13px] font-bold uppercase tracking-widest text-white shadow-md transition-all hover:bg-[#153a4d] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:shadow-none"
                 >
-                  Mua Ngay
+                  {t('buyNow')}
                 </button>
               </div>
 
               <div className="rounded-xl border border-zinc-100 bg-white p-2.5 shadow-[0_10px_28px_-24px_rgba(15,23,42,0.35)]">
                 <div className="mb-2 flex items-center justify-between gap-3 px-0.5">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Mua trên sàn</p>
-                    <p className="mt-0.5 text-[13px] font-bold text-zinc-900">Chọn kênh bạn tiện thanh toán nhất</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">{t('marketplaceTitle')}</p>
+                    <p className="mt-0.5 text-[13px] font-bold text-zinc-900">{t('marketplaceSubtitle')}</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -1103,8 +1105,8 @@ export const ProductDetail: React.FC = () => {
                       <ShieldCheck className="h-5 w-5 text-[#1e4b64] sm:h-6 sm:w-6" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[11px] font-black uppercase leading-tight tracking-tight text-zinc-900 sm:text-[12px]">Cam kết chính hãng</p>
-                      <p className="mt-0.5 text-[9px] text-zinc-400 font-bold uppercase leading-tight sm:text-[10px]">Hoàn tiền 200% nếu giả</p>
+                      <p className="text-[11px] font-black uppercase leading-tight tracking-tight text-zinc-900 sm:text-[12px]">{t('officialCommit')}</p>
+                      <p className="mt-0.5 text-[9px] text-zinc-400 font-bold uppercase leading-tight sm:text-[10px]">{t('officialCommitDesc')}</p>
                     </div>
                   </div>
                   <div className="flex min-w-0 items-center gap-3 border-y sm:border-y-0 sm:border-x border-zinc-100 py-3 sm:gap-4 sm:py-0 sm:px-6">
@@ -1112,8 +1114,8 @@ export const ProductDetail: React.FC = () => {
                       <RefreshCcw className="h-5 w-5 text-[#1e4b64] sm:h-6 sm:w-6" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[11px] font-black uppercase leading-tight tracking-tight text-zinc-900 sm:text-[12px]">7 ngày đổi trả</p>
-                      <p className="mt-0.5 text-[9px] text-zinc-400 font-bold uppercase leading-tight sm:text-[10px]">Lỗi là đổi tận nơi</p>
+                      <p className="text-[11px] font-black uppercase leading-tight tracking-tight text-zinc-900 sm:text-[12px]">{t('returnDays')}</p>
+                      <p className="mt-0.5 text-[9px] text-zinc-400 font-bold uppercase leading-tight sm:text-[10px]">{t('returnDaysDesc')}</p>
                     </div>
                   </div>
                   <div className="flex min-w-0 items-center gap-3 py-3 sm:gap-4 sm:py-0">
@@ -1121,8 +1123,8 @@ export const ProductDetail: React.FC = () => {
                       <Truck className="h-5 w-5 text-[#1e4b64] sm:h-6 sm:w-6" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[11px] font-black uppercase leading-tight tracking-tight text-zinc-900 sm:text-[12px]">Giao hàng hỏa tốc</p>
-                      <p className="mt-0.5 text-[9px] text-zinc-400 font-bold uppercase leading-tight sm:text-[10px]">Toàn quốc từ 2-3 ngày</p>
+                      <p className="text-[11px] font-black uppercase leading-tight tracking-tight text-zinc-900 sm:text-[12px]">{t('fastShipping')}</p>
+                      <p className="mt-0.5 text-[9px] text-zinc-400 font-bold uppercase leading-tight sm:text-[10px]">{t('fastShippingDesc')}</p>
                     </div>
                   </div>
                 </div>
@@ -1271,7 +1273,7 @@ export const ProductDetail: React.FC = () => {
                 <div className="flex-1 overflow-y-auto py-4 space-y-5 -mx-5 px-5 select-none scrollbar-none">
                   {/* Colors Section */}
                   <div className="space-y-3">
-                    <p className="text-[13px] font-bold text-zinc-800 uppercase tracking-wider">Màu sắc</p>
+                    <p className="text-[13px] font-bold text-zinc-800 uppercase tracking-wider">{t('color')}</p>
                     <div className="flex flex-wrap gap-2">
                       {(product.colors || []).map((color) => {
                         const unavailable = isColorUnavailable(color);
@@ -1364,7 +1366,7 @@ export const ProductDetail: React.FC = () => {
 
                   {/* Quantity Section */}
                   <div className="flex items-center justify-between py-2">
-                    <span className="text-[13px] font-bold text-zinc-800 uppercase tracking-wider">Số lượng</span>
+                    <span className="text-[13px] font-bold text-zinc-800 uppercase tracking-wider">{t('quantity')}</span>
                     <div className="flex items-center border border-zinc-200 rounded-xl bg-white overflow-hidden h-9">
                       <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-10 h-full flex items-center justify-center text-zinc-400 active:bg-zinc-50">
                         <Minus className="h-3.5 w-3.5" />
@@ -1395,7 +1397,7 @@ export const ProductDetail: React.FC = () => {
                     disabled={selectedVariantOutOfStock}
                     className="w-full h-12 bg-[#ff3b30] text-white font-black text-[14px] uppercase tracking-wider rounded-2xl flex items-center justify-center transition-all active:scale-[0.99] disabled:bg-zinc-300"
                   >
-                    {mobilePickerMode === 'cart' ? 'Thêm vào giỏ hàng' : 'Mua ngay'}
+                    {mobilePickerMode === 'cart' ? t('addToCart') : t('buyNow')}
                   </button>
                 </div>
               </motion.div>
@@ -1607,7 +1609,7 @@ export const ProductDetail: React.FC = () => {
                 <div className="relative w-full overflow-x-hidden">
                   <ProductDescriptionHtml
                     className={cn(
-                      "product-description-container notranslate w-full text-zinc-600 leading-loose transition-[max-height] duration-700 ease-in-out overflow-x-hidden",
+                      "product-description-container w-full text-zinc-600 leading-loose transition-[max-height] duration-700 ease-in-out overflow-x-hidden",
                       !isDescriptionExpanded
                         ? "max-h-[1200px] overflow-y-hidden"
                         : "max-h-none overflow-y-visible"
@@ -1997,7 +1999,7 @@ export const ProductDetail: React.FC = () => {
           disabled={selectedVariantOutOfStock}
           className="flex-[1.15] h-12 bg-[#1e4b64] text-white font-black rounded-xl text-[12px] uppercase tracking-wide active:scale-95 transition-transform shadow-lg shadow-blue-500/20 whitespace-nowrap disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:shadow-none"
         >
-          Mua Ngay
+          {t('buyNow')}
         </button>
       </div>
 

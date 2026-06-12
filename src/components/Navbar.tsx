@@ -1,6 +1,6 @@
 import React, { type ReactNode, useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Search, Menu, LogOut, Phone, LogIn, UserPlus, X, UserRound, Heart, Clock, Mic, PackageSearch, MapPin, ChevronDown } from 'lucide-react';
+import { ShoppingCart, Search, Menu, LogOut, Phone, LogIn, UserPlus, X, UserRound, Heart, Clock, Mic, PackageSearch, MapPin, ChevronDown, List } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { doc, getDoc } from 'firebase/firestore';
 import { useAuth } from '../AuthContext';
@@ -13,6 +13,7 @@ import { MobileSidebar } from './MobileSidebar';
 import { AuthModal } from './AuthModal';
 import { Category, Product } from '../types';
 import { getProductPath } from '../lib/productUrls';
+import { useLanguage } from '../LanguageContext';
 import {
   getHomepageTopPanelSection,
   getTopPanelSettings,
@@ -57,6 +58,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const { wishlistCount } = useWishlist();
   const { recentCount } = useRecentlyViewed();
   const { products } = useProducts();
+  const { language, setLanguage, t, translateTopPanelLabel } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -212,6 +214,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   const shouldShowSuggestions = trimmedSearchQuery.length >= 2 && searchSuggestions.length > 0;
   const trendingSearches = ['áo thun cotton', 'áo thun thể thao', 'áo polo nam', 'quần jogger'];
   const topPanelSettings = getTopPanelSettings(topPanelSection);
+  const selectedLanguageLabel = language === 'en' ? t('languageEn') : t('languageVi');
+  const selectedLanguageShort = language === 'en' ? 'EN' : 'VI';
+  const mobileTopPanelItems = topPanelSettings.topPanelItems.filter((item) => {
+    const label = normalizeSearchText(item.label);
+    return label.includes('thong tin') || label.includes('tieng') || item.label.trim() === '₫' || item.label.trim() === '$';
+  });
 
   const renderTopPanelLink = (href: string | undefined, className: string, content: ReactNode, key?: string) => {
     const normalizedHref = href?.trim() || '';
@@ -243,14 +251,98 @@ export const Navbar: React.FC<NavbarProps> = ({
     const href = item.href?.trim() || '';
     const isActive = href && !/^https?:\/\//i.test(href) && !href.startsWith('#') && location.pathname === href;
     const className = `flex cursor-pointer items-center gap-1 transition-colors hover:text-[#1e4b64] ${isActive ? 'text-[#1e4b64]' : ''}`;
+    const normalizedLabel = normalizeSearchText(item.label);
+
+    if (normalizedLabel.includes('tieng')) {
+      return (
+        <div key={`${item.label}-${index}`} className="group relative flex h-8 items-center">
+          <button
+            type="button"
+            className="flex h-8 cursor-pointer items-center gap-1 transition-colors hover:text-[#1e4b64]"
+          >
+            {selectedLanguageLabel}
+            <ChevronDown className="h-3 w-3" />
+          </button>
+          <div className="invisible absolute right-0 top-full z-[90] min-w-[128px] translate-y-1 rounded-xl border border-zinc-100 bg-white p-1 text-[12px] font-bold text-zinc-600 opacity-0 shadow-xl transition-all group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
+            {[
+              ['vi', t('languageVi')],
+              ['en', t('languageEn')],
+            ].map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setLanguage(value as 'vi' | 'en')}
+                className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left transition-colors hover:bg-blue-50 hover:text-[#1e4b64] ${language === value ? 'text-[#1e4b64]' : ''}`}
+              >
+                {label}
+                {language === value && <span className="h-1.5 w-1.5 rounded-full bg-[#1e4b64]" />}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
     const content = (
       <>
-        {item.label}
+        {translateTopPanelLabel(item.label)}
         {item.hasDropdown && <ChevronDown className="h-3 w-3" />}
       </>
     );
 
     return renderTopPanelLink(item.href, className, content, `${item.label}-${index}`);
+  };
+
+  const renderMobileTopPanelItem = (item: TopPanelItem, index: number) => {
+    const label = normalizeSearchText(item.label);
+    if (label.includes('tieng')) {
+      return (
+        <div key={`mobile-${item.label}-${index}`} className="group relative flex h-7 items-center">
+          <button
+            type="button"
+            className="flex h-7 shrink-0 items-center gap-0.5 px-1 text-[11px] font-semibold text-zinc-600 transition-colors hover:text-[#1e4b64]"
+          >
+            <span>{selectedLanguageShort}</span>
+            <ChevronDown className="h-3 w-3" />
+          </button>
+          <div className="invisible absolute right-0 top-full z-[90] min-w-[112px] translate-y-1 rounded-xl border border-zinc-100 bg-white p-1 text-[12px] font-bold text-zinc-600 opacity-0 shadow-xl transition-all group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
+            {[
+              ['vi', t('languageVi')],
+              ['en', t('languageEn')],
+            ].map(([value, optionLabel]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setLanguage(value as 'vi' | 'en')}
+                className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left transition-colors hover:bg-blue-50 hover:text-[#1e4b64] ${language === value ? 'text-[#1e4b64]' : ''}`}
+              >
+                {optionLabel}
+                {language === value && <span className="h-1.5 w-1.5 rounded-full bg-[#1e4b64]" />}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    const content = label.includes('thong tin') ? (
+      <>
+        <List className="h-3.5 w-3.5 text-[#20a464]" />
+        {item.hasDropdown && <ChevronDown className="h-3 w-3" />}
+      </>
+    ) : (
+      <>
+        <span>{label.includes('tieng') ? selectedLanguageShort : translateTopPanelLabel(item.label)}</span>
+        {item.hasDropdown && <ChevronDown className="h-3 w-3" />}
+      </>
+    );
+
+    return renderTopPanelLink(
+      item.href,
+      "flex h-7 shrink-0 items-center gap-0.5 px-1 text-[11px] font-semibold text-zinc-600 transition-colors hover:text-[#1e4b64]",
+      content,
+      `mobile-${item.label}-${index}`
+    );
   };
 
   const renderSearchSuggestions = (isMobile = false) => (
@@ -267,7 +359,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           }
         >
           <div className="border-b border-zinc-100 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-zinc-400">
-            Gợi ý sản phẩm
+            {t('productSuggestions')}
           </div>
           <div className="max-h-[360px] overflow-y-auto py-1">
             {searchSuggestions.map((product) => (
@@ -310,7 +402,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="flex w-full items-center justify-center gap-2 border-t border-zinc-100 px-4 py-3 text-[11px] font-black uppercase tracking-widest text-[#1e4b64] transition-colors hover:bg-blue-50"
           >
             <Search className="h-3.5 w-3.5" />
-            Xem tất cả kết quả
+            {t('allResults')}
           </button>
         </motion.div>
       )}
@@ -325,23 +417,40 @@ export const Navbar: React.FC<NavbarProps> = ({
           : 'bg-white border-b border-zinc-100'
       }`}>
         {topPanelSection?.enabled !== false && (
-          <div className="tygh-top-panel hidden h-8 items-center border-b border-zinc-100 bg-white px-4 text-[13px] font-medium text-zinc-500 md:flex">
-            <div className="flex flex-1 items-center">
+          <>
+            <div className="tygh-top-panel flex h-8 items-center justify-between border-b border-zinc-100 bg-white px-4 text-[11px] font-medium text-zinc-500 md:hidden">
               {renderTopPanelLink(
                 topPanelSettings.topPanelLocationHref,
-                "flex cursor-pointer items-center gap-1.5 transition-colors hover:text-[#1e4b64]",
+                "flex min-w-0 items-center gap-1.5 transition-colors hover:text-[#1e4b64]",
                 <>
-                  <MapPin className="h-3.5 w-3.5 fill-[#20a464] text-[#20a464]" />
-                  <span>{topPanelSettings.topPanelLocationLabel}</span>
+                  <MapPin className="h-3.5 w-3.5 shrink-0 fill-[#20a464] text-[#20a464]" />
+                  <span className="truncate">{translateTopPanelLabel(topPanelSettings.topPanelLocationLabel)}</span>
                 </>,
-                'top-panel-location'
+                'mobile-top-panel-location'
               )}
+              <div className="ml-3 flex shrink-0 items-center gap-2">
+                {mobileTopPanelItems.map(renderMobileTopPanelItem)}
+              </div>
             </div>
 
-            <div className="flex items-center gap-6">
-              {topPanelSettings.topPanelItems.map(renderTopPanelItem)}
+            <div className="tygh-top-panel hidden h-8 items-center border-b border-zinc-100 bg-white px-4 text-[13px] font-medium text-zinc-500 md:flex">
+              <div className="flex flex-1 items-center">
+                {renderTopPanelLink(
+                  topPanelSettings.topPanelLocationHref,
+                  "flex cursor-pointer items-center gap-1.5 transition-colors hover:text-[#1e4b64]",
+                  <>
+                    <MapPin className="h-3.5 w-3.5 fill-[#20a464] text-[#20a464]" />
+                    <span>{translateTopPanelLabel(topPanelSettings.topPanelLocationLabel)}</span>
+                  </>,
+                  'top-panel-location'
+                )}
+              </div>
+
+              <div className="flex items-center gap-6">
+                {topPanelSettings.topPanelItems.map(renderTopPanelItem)}
+              </div>
             </div>
-          </div>
+          </>
         )}
 
         {/* Main Navbar Row */}
@@ -426,7 +535,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onChange={e => setSearchQuery(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
                 onBlur={() => setIsSearchFocused(false)}
-                placeholder="Tìm kiếm sản phẩm..."
+                placeholder={t('searchPlaceholder')}
                 className="w-full bg-zinc-50 border border-zinc-200 rounded-full py-2.5 px-5 pr-12 text-sm focus:bg-white focus:ring-2 focus:ring-[#1e4b64]/15 focus:border-[#1e4b64] placeholder:text-zinc-400 font-medium outline-none transition-all"
               />
               <button
@@ -439,7 +548,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 type="button"
                 onClick={startVoiceSearch}
                 className="absolute right-11 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-blue-50 hover:text-[#1e4b64]"
-                aria-label="Tìm kiếm bằng giọng nói"
+                aria-label={t('voiceSearch')}
               >
                 <Mic className="h-3.5 w-3.5" />
               </button>
@@ -474,7 +583,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               onClick={() => setIsMobileSearchOpen(v => !v)}
               className={`${iconBtn} md:hidden ${isMobileSearchOpen ? 'text-[#1e4b64] bg-blue-50' : 'text-zinc-600 hover:bg-zinc-100'}`}
-              aria-label="Tìm kiếm"
+              aria-label={t('search')}
             >
               <Search className="h-5 w-5" />
             </button>
@@ -488,7 +597,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   onClick={() => openAuthModal('login')}
                   className={`${iconBtn} md:hidden text-zinc-600 hover:bg-zinc-100`}
-                  aria-label="Đăng nhập"
+                  aria-label={t('login')}
                 >
                   <LogIn className="h-5 w-5" />
                 </button>
@@ -499,14 +608,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                     className="h-9 flex items-center gap-2 px-4 rounded-xl text-sm font-bold text-zinc-600 hover:bg-zinc-50 transition-all active:scale-95 border border-transparent hover:border-zinc-200"
                   >
                     <LogIn className="h-4 w-4" />
-                    Đăng nhập
+                    {t('login')}
                   </button>
                   <button
                     onClick={() => openAuthModal('register')}
                     className="h-9 flex items-center gap-2 px-4 rounded-xl bg-[#1e4b64] hover:bg-[#153446] text-sm font-bold text-white shadow-sm transition-all active:scale-95"
                   >
                     <UserPlus className="h-4 w-4" />
-                    Đăng ký
+                    {t('register')}
                   </button>
                 </div>
               </>
@@ -515,15 +624,15 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   onClick={() => navigate('/tai-khoan')}
                   className="hidden h-10 items-center gap-2 rounded-full border border-zinc-100 bg-white px-3 text-sm font-bold text-zinc-700 transition-all hover:border-[#1e4b64]/30 hover:bg-blue-50/50 hover:text-[#1e4b64] md:flex"
-                  title="Tài khoản và đơn hàng"
+                  title={t('accountOrders')}
                 >
                   <UserRound className="h-4 w-4" />
-                  Tài khoản
+                  {t('account')}
                 </button>
                 <button
                   onClick={() => navigate('/tai-khoan')}
                   className={`${iconBtn} bg-zinc-900 hover:bg-zinc-700 text-white text-sm font-bold`}
-                  title={user.displayName || user.email || 'Tài khoản'}
+                  title={user.displayName || user.email || t('account')}
                 >
                   {user.photoURL ? (
                     <img src={user.photoURL} alt={user.displayName || 'User profile'} loading="lazy" className="h-full w-full object-cover rounded-full" referrerPolicy="no-referrer" />
@@ -594,7 +703,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               onClick={onCartClick}
               className={`${iconBtn} relative text-[#1e4b64] hover:bg-zinc-100 ml-1`}
-              aria-label="Giỏ hàng"
+              aria-label={t('cart')}
             >
               <ShoppingCart className="h-6 w-6" />
               <AnimatePresence>
@@ -631,7 +740,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     type="text"
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    placeholder="Nhập từ khóa tìm kiếm..."
+                    placeholder={t('searchPlaceholder')}
                     className="flex-1 bg-transparent text-white placeholder:text-zinc-400 text-sm font-medium outline-none"
                   />
                 </div>
@@ -639,7 +748,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   type="button"
                   onClick={startVoiceSearch}
                   className="h-10 w-10 bg-white/10 hover:bg-white/15 rounded-full flex items-center justify-center text-white transition-all active:scale-90 shrink-0"
-                  aria-label="Tìm kiếm bằng giọng nói"
+                  aria-label={t('voiceSearch')}
                 >
                   <Mic className="h-4 w-4" />
                 </button>
