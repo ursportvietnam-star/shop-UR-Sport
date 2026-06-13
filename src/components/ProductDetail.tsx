@@ -42,7 +42,6 @@ import {
   Truck,
   ShieldCheck,
   RefreshCcw,
-  MessageCircle,
   Phone,
   Zap,
   Clock,
@@ -241,7 +240,7 @@ export const ProductDetail: React.FC = () => {
 
   useEffect(() => {
     const style = document.createElement('style');
-    style.id = 'hide-floating-menu-mobile';
+    style.id = 'hide-floating-menu-mobile-on-product';
     style.innerHTML = `
       @media (max-width: 767px) {
         .floating-contact-menu {
@@ -251,7 +250,7 @@ export const ProductDetail: React.FC = () => {
     `;
     document.head.appendChild(style);
     return () => {
-      const el = document.getElementById('hide-floating-menu-mobile');
+      const el = document.getElementById('hide-floating-menu-mobile-on-product');
       if (el) el.remove();
     };
   }, []);
@@ -1181,7 +1180,7 @@ export const ProductDetail: React.FC = () => {
         )}
 
         {/* Permanent Mobile Action Bar (Shopee Style) */}
-        <div className="fixed bottom-0 left-0 right-0 z-[60] bg-white border-t border-zinc-100 flex items-center md:hidden pb-safe-area shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
+        <div className="fixed bottom-0 left-0 right-0 z-[60] flex h-14 items-stretch border-t border-white/10 bg-white md:hidden pb-safe-area shadow-[0_-8px_24px_rgba(0,0,0,0.12)]">
           {/* Zalo Button */}
           <a
             href={`https://zalo.me/${contactSettings.zaloPhone}`}
@@ -1200,10 +1199,34 @@ export const ProductDetail: React.FC = () => {
                   console.error('Failed to copy link: ', err);
                 });
             }}
-            className="flex flex-col items-center justify-center w-14 h-14 text-[#0068ff] border-r border-zinc-100 active:bg-zinc-50 shrink-0"
+            className="flex h-14 w-[24%] shrink-0 flex-col items-center justify-center border-r border-white/20 bg-[#22b8a8] text-white transition-colors active:bg-[#1da394]"
+            aria-label="Chat với UR Sport"
           >
-            <MessageCircle className="h-5 w-5" />
-            <span className="text-[9px] font-bold mt-0.5">Zalo</span>
+            <svg
+              className="h-7 w-7"
+              viewBox="0 0 36 36"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M23.3 12.2h1.1c3.1 0 5.6 2.3 5.6 5.1 0 1.7-1 3.3-2.5 4.2l.7 2.6-3.3-1.9"
+                stroke="currentColor"
+                strokeWidth="2.3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M13.6 9.5h6.1c5 0 9.1 3.6 9.1 8s-4.1 8-9.1 8h-4.2l-6.4 4 1.5-4.9C7.7 23.1 5.8 20.5 5.8 17.5c0-4.4 3.7-8 7.8-8Z"
+                stroke="currentColor"
+                strokeWidth="2.3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <circle cx="14.3" cy="17.6" r="1.35" fill="currentColor" />
+              <circle cx="18.1" cy="17.6" r="1.35" fill="currentColor" />
+              <circle cx="21.9" cy="17.6" r="1.35" fill="currentColor" />
+            </svg>
+            <span className="mt-0.5 text-[10px] font-semibold leading-none">Zalo</span>
           </a>
 
           {/* Add to Cart Icon Button */}
@@ -1213,10 +1236,16 @@ export const ProductDetail: React.FC = () => {
               setIsMobilePickerOpen(true);
             }}
             disabled={selectedVariantOutOfStock}
-            className="flex flex-col items-center justify-center w-14 h-14 text-[#0068ff] border-r border-zinc-100 active:bg-zinc-50 shrink-0 disabled:opacity-50"
+            className="flex h-14 w-[24%] shrink-0 flex-col items-center justify-center bg-[#22b8a8] text-white transition-colors active:bg-[#1da394] disabled:cursor-not-allowed disabled:bg-zinc-300"
+            aria-label="Thêm vào giỏ hàng"
           >
-            <ShoppingCart className="h-5 w-5" />
-            <span className="text-[9px] font-bold mt-0.5">Thêm giỏ</span>
+            <span className="relative inline-flex">
+              <ShoppingCart className="h-6 w-6" strokeWidth={2.4} />
+              <span className="absolute -right-2 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-[3px] border border-white bg-[#22b8a8] text-[12px] font-black leading-none text-white">
+                +
+              </span>
+            </span>
+            <span className="mt-0.5 text-[10px] font-semibold leading-none">Thêm giỏ</span>
           </button>
 
           {/* Buy Now Button */}
@@ -1226,11 +1255,11 @@ export const ProductDetail: React.FC = () => {
               setIsMobilePickerOpen(true);
             }}
             disabled={selectedVariantOutOfStock}
-            className="flex-1 h-14 bg-[#ff3b30] text-white flex flex-col items-center justify-center active:opacity-90 transition-all disabled:bg-zinc-300"
+            className="flex h-14 flex-1 flex-col items-center justify-center bg-[#ee4d2d] text-white transition-colors active:bg-[#d93f22] disabled:cursor-not-allowed disabled:bg-zinc-300"
           >
-            <span className="text-[13px] font-black uppercase tracking-wider leading-none">MUA NGAY</span>
-            <span className="text-[10px] font-bold opacity-80 mt-0.5">
-              {activePrice.toLocaleString('vi-VN')}₫
+            <span className="text-[13px] font-bold leading-none">Mua ngay</span>
+            <span className="mt-0.5 text-[16px] font-black leading-none tracking-wide">
+              {activePrice.toLocaleString('vi-VN')}đ
             </span>
           </button>
         </div>
@@ -2001,7 +2030,7 @@ export const ProductDetail: React.FC = () => {
       </div>
 
       {/* Mobile Sticky Action Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-zinc-200 px-2.5 py-2 pb-safe flex gap-2 shadow-[0_-8px_20px_-10px_rgba(0,0,0,0.1)]">
+      <div className="hidden">
         <button
           onClick={handleAddToCart}
           disabled={selectedVariantOutOfStock}

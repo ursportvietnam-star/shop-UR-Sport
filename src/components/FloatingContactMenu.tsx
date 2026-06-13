@@ -39,10 +39,26 @@ export function FloatingContactMenu() {
   }, []);
 
   return (
-    <div
-      ref={menuRef}
-      className="floating-contact-menu fixed bottom-24 right-4 z-[100] hidden md:flex flex-col items-center sm:bottom-8 sm:right-8"
-    >
+    <>
+      <a
+        href={`https://zalo.me/${settings.zaloPhone}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Chat Zalo"
+        className="floating-contact-menu fixed bottom-24 right-4 z-[100] block h-14 w-14 rounded-[18px] border border-white/50 bg-white p-0.5 shadow-xl transition-all duration-300 active:scale-95 md:hidden"
+      >
+        <img
+          src={settings.zaloIcon}
+          alt="Chat Zalo hỗ trợ khách hàng"
+          loading="lazy"
+          className="h-full w-full rounded-[16px] object-cover"
+        />
+      </a>
+
+      <div
+        ref={menuRef}
+        className="floating-contact-menu fixed bottom-24 right-4 z-[100] hidden flex-col items-center md:flex sm:bottom-8 sm:right-8"
+      >
       {/* Expanded Menu */}
       <div
         className={cn(
@@ -130,6 +146,7 @@ export function FloatingContactMenu() {
           </div>
         </button>
       )}
-    </div>
+      </div>
+    </>
   );
 }
