@@ -265,7 +265,7 @@ const loadGoogleTranslate = () => {
 
   const script = document.createElement('script');
   script.id = GOOGLE_TRANSLATE_SCRIPT_ID;
-  script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+  script.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
   script.async = true;
   document.body.appendChild(script);
 };

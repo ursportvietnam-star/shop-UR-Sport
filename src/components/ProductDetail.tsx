@@ -1180,91 +1180,86 @@ export const ProductDetail: React.FC = () => {
         )}
 
         {/* Premium Mobile Action Bar */}
-        <div className="fixed bottom-0 left-0 right-0 z-[60] flex h-[60px] items-stretch overflow-hidden border-t border-white/20 bg-white md:hidden pb-safe-area shadow-[0_-8px_22px_rgba(15,23,42,0.12)]">
-          {/* Zalo Button */}
-          <a
-            href={`https://zalo.me/${contactSettings.zaloPhone}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => {
-              const productUrl = window.location.href;
-              navigator.clipboard.writeText(`Chào shop, tôi muốn được tư vấn sản phẩm này: ${productUrl}`)
-                .then(() => {
-                  toast.success('Đã copy link sản phẩm! Hãy dán (Paste) vào ô chat Zalo để gửi.', {
-                    position: 'top-center',
-                    duration: 4000
+        <div className="fixed bottom-0 left-0 right-0 z-[60] flex flex-col overflow-hidden border-t border-zinc-200 bg-white md:hidden pb-safe-area shadow-[0_-8px_22px_rgba(15,23,42,0.10)]">
+          <div className="flex h-[62px] items-stretch bg-white">
+            {/* Chat Button */}
+            <a
+              href={`https://zalo.me/${contactSettings.zaloPhone}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => {
+                const productUrl = window.location.href;
+                navigator.clipboard.writeText(`Chào shop, tôi muốn được tư vấn sản phẩm này: ${productUrl}`)
+                  .then(() => {
+                    toast.success('Đã copy link sản phẩm! Hãy dán (Paste) vào ô chat Zalo để gửi.', {
+                      position: 'top-center',
+                      duration: 4000
+                    });
+                  })
+                  .catch(err => {
+                    console.error('Failed to copy link: ', err);
                   });
-                })
-                .catch(err => {
-                  console.error('Failed to copy link: ', err);
-                });
-            }}
-            className="relative flex w-[27%] shrink-0 flex-col items-center justify-center bg-[#24bfae] text-white transition-colors active:bg-[#1ba898]"
-            aria-label="Chat với UR Sport"
-          >
-            <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/30" />
-            <svg
-              className="mb-0.5 h-[22px] w-[22px] drop-shadow-sm"
-              viewBox="0 0 36 36"
-              fill="none"
-              aria-hidden="true"
+              }}
+              className="relative flex w-[23%] shrink-0 flex-col items-center justify-center gap-0.5 bg-white text-[#0068FF] transition-colors active:bg-zinc-50"
+              aria-label="Chat với UR Sport"
             >
-              <path
-                d="M23.3 12.2h1.1c3.1 0 5.6 2.3 5.6 5.1 0 1.7-1 3.3-2.5 4.2l.7 2.6-3.3-1.9"
+              <svg
+                className="h-[24px] w-[24px]"
+                fill="none"
                 stroke="currentColor"
-                strokeWidth="2.3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M13.6 9.5h6.1c5 0 9.1 3.6 9.1 8s-4.1 8-9.1 8h-4.2l-6.4 4 1.5-4.9C7.7 23.1 5.8 20.5 5.8 17.5c0-4.4 3.7-8 7.8-8Z"
-                stroke="currentColor"
-                strokeWidth="2.3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <circle cx="14.3" cy="17.6" r="1.35" fill="currentColor" />
-              <circle cx="18.1" cy="17.6" r="1.35" fill="currentColor" />
-              <circle cx="21.9" cy="17.6" r="1.35" fill="currentColor" />
-            </svg>
-            <span className="text-[10px] font-bold leading-none tracking-tight">Zalo</span>
-          </a>
+                viewBox="0 0 24 24"
+                strokeWidth={1.6}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+                <circle cx="8" cy="12" r="1.2" fill="currentColor" stroke="none" />
+                <circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none" />
+                <circle cx="16" cy="12" r="1.2" fill="currentColor" stroke="none" />
+              </svg>
+              <span className="text-[10px] font-semibold leading-none text-[#0068FF]">Zalo</span>
+            </a>
 
-          {/* Add to Cart Icon Button */}
-          <button
-            onClick={() => {
-              setMobilePickerMode('cart');
-              setIsMobilePickerOpen(true);
-            }}
-            disabled={selectedVariantOutOfStock}
-            className="relative flex w-[27%] shrink-0 flex-col items-center justify-center border-l border-white/20 bg-[#24bfae] text-white transition-colors active:bg-[#1ba898] disabled:cursor-not-allowed disabled:bg-zinc-300"
-            aria-label="Thêm vào giỏ hàng"
-          >
-            <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/30" />
-            <span className="relative mb-1 inline-flex">
-              <ShoppingCart className="h-[22px] w-[22px] drop-shadow-sm" strokeWidth={2.35} />
-              <span className="absolute -right-2 -top-1.5 flex h-4 w-4 items-center justify-center rounded-[4px] border border-white bg-[#24bfae] text-[12px] font-black leading-none text-white shadow-sm">
-                +
+            {/* Divider */}
+            <div className="my-auto h-[32px] w-px bg-zinc-300" />
+
+            {/* Add to Cart Icon Button */}
+            <button
+              onClick={() => {
+                setMobilePickerMode('cart');
+                setIsMobilePickerOpen(true);
+              }}
+              disabled={selectedVariantOutOfStock}
+              className="relative flex w-[23%] shrink-0 flex-col items-center justify-center gap-0.5 bg-white text-[#0068FF] transition-colors active:bg-zinc-50 disabled:cursor-not-allowed disabled:text-zinc-300"
+              aria-label="Thêm vào giỏ hàng"
+            >
+              <svg
+                className="h-[24px] w-[24px]"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6h4m-2-2v4" />
+              </svg>
+              <span className="text-[10px] font-semibold leading-none text-[#0068FF]">Giỏ hàng</span>
+            </button>
+
+            {/* Buy Now Button */}
+            <button
+              onClick={() => {
+                setMobilePickerMode('buy');
+                setIsMobilePickerOpen(true);
+              }}
+              disabled={selectedVariantOutOfStock}
+              className="relative flex flex-1 flex-col items-center justify-center bg-[#1e4b64] text-white transition-colors active:bg-[#153648] disabled:cursor-not-allowed disabled:bg-zinc-300"
+            >
+              <span className="text-[13px] font-medium leading-none mb-[4px]">Mua ngay</span>
+              <span className="text-[17px] font-bold leading-none tracking-tight">
+                {activePrice.toLocaleString('vi-VN')}
+                <span className="underline ml-[0.5px]">đ</span>
               </span>
-            </span>
-            <span className="text-[10px] font-bold leading-none tracking-tight">Thêm giỏ</span>
-          </button>
-
-          {/* Buy Now Button */}
-          <button
-            onClick={() => {
-              setMobilePickerMode('buy');
-              setIsMobilePickerOpen(true);
-            }}
-            disabled={selectedVariantOutOfStock}
-            className="relative flex flex-1 flex-col items-center justify-center bg-[#ff4a2f] text-white transition-colors active:bg-[#e83f27] disabled:cursor-not-allowed disabled:bg-zinc-300"
-          >
-            <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/35" />
-            <span className="text-[13px] font-extrabold leading-none drop-shadow-sm">Mua ngay</span>
-            <span className="mt-0.5 text-[16px] font-black leading-none tracking-tight drop-shadow-sm">
-              {activePrice.toLocaleString('vi-VN')}đ
-            </span>
-          </button>
+            </button>
+          </div>
         </div>
 
         {/* Mobile Shopee-style Variant Selection Drawer */}
