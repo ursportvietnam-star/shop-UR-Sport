@@ -1179,8 +1179,8 @@ export const ProductDetail: React.FC = () => {
           </section>
         )}
 
-        {/* Permanent Mobile Action Bar (Shopee Style) */}
-        <div className="fixed bottom-0 left-0 right-0 z-[60] flex h-14 items-stretch border-t border-white/10 bg-white md:hidden pb-safe-area shadow-[0_-8px_24px_rgba(0,0,0,0.12)]">
+        {/* Premium Mobile Action Bar */}
+        <div className="fixed bottom-0 left-0 right-0 z-[60] flex h-[60px] items-stretch overflow-hidden border-t border-white/20 bg-white md:hidden pb-safe-area shadow-[0_-8px_22px_rgba(15,23,42,0.12)]">
           {/* Zalo Button */}
           <a
             href={`https://zalo.me/${contactSettings.zaloPhone}`}
@@ -1199,11 +1199,12 @@ export const ProductDetail: React.FC = () => {
                   console.error('Failed to copy link: ', err);
                 });
             }}
-            className="flex h-14 w-[24%] shrink-0 flex-col items-center justify-center border-r border-white/20 bg-[#22b8a8] text-white transition-colors active:bg-[#1da394]"
+            className="relative flex w-[27%] shrink-0 flex-col items-center justify-center bg-[#24bfae] text-white transition-colors active:bg-[#1ba898]"
             aria-label="Chat với UR Sport"
           >
+            <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/30" />
             <svg
-              className="h-7 w-7"
+              className="mb-0.5 h-[22px] w-[22px] drop-shadow-sm"
               viewBox="0 0 36 36"
               fill="none"
               aria-hidden="true"
@@ -1226,7 +1227,7 @@ export const ProductDetail: React.FC = () => {
               <circle cx="18.1" cy="17.6" r="1.35" fill="currentColor" />
               <circle cx="21.9" cy="17.6" r="1.35" fill="currentColor" />
             </svg>
-            <span className="mt-0.5 text-[10px] font-semibold leading-none">Zalo</span>
+            <span className="text-[10px] font-bold leading-none tracking-tight">Zalo</span>
           </a>
 
           {/* Add to Cart Icon Button */}
@@ -1236,16 +1237,17 @@ export const ProductDetail: React.FC = () => {
               setIsMobilePickerOpen(true);
             }}
             disabled={selectedVariantOutOfStock}
-            className="flex h-14 w-[24%] shrink-0 flex-col items-center justify-center bg-[#22b8a8] text-white transition-colors active:bg-[#1da394] disabled:cursor-not-allowed disabled:bg-zinc-300"
+            className="relative flex w-[27%] shrink-0 flex-col items-center justify-center border-l border-white/20 bg-[#24bfae] text-white transition-colors active:bg-[#1ba898] disabled:cursor-not-allowed disabled:bg-zinc-300"
             aria-label="Thêm vào giỏ hàng"
           >
-            <span className="relative inline-flex">
-              <ShoppingCart className="h-6 w-6" strokeWidth={2.4} />
-              <span className="absolute -right-2 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-[3px] border border-white bg-[#22b8a8] text-[12px] font-black leading-none text-white">
+            <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/30" />
+            <span className="relative mb-1 inline-flex">
+              <ShoppingCart className="h-[22px] w-[22px] drop-shadow-sm" strokeWidth={2.35} />
+              <span className="absolute -right-2 -top-1.5 flex h-4 w-4 items-center justify-center rounded-[4px] border border-white bg-[#24bfae] text-[12px] font-black leading-none text-white shadow-sm">
                 +
               </span>
             </span>
-            <span className="mt-0.5 text-[10px] font-semibold leading-none">Thêm giỏ</span>
+            <span className="text-[10px] font-bold leading-none tracking-tight">Thêm giỏ</span>
           </button>
 
           {/* Buy Now Button */}
@@ -1255,10 +1257,11 @@ export const ProductDetail: React.FC = () => {
               setIsMobilePickerOpen(true);
             }}
             disabled={selectedVariantOutOfStock}
-            className="flex h-14 flex-1 flex-col items-center justify-center bg-[#ee4d2d] text-white transition-colors active:bg-[#d93f22] disabled:cursor-not-allowed disabled:bg-zinc-300"
+            className="relative flex flex-1 flex-col items-center justify-center bg-[#ff4a2f] text-white transition-colors active:bg-[#e83f27] disabled:cursor-not-allowed disabled:bg-zinc-300"
           >
-            <span className="text-[13px] font-bold leading-none">Mua ngay</span>
-            <span className="mt-0.5 text-[16px] font-black leading-none tracking-wide">
+            <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/35" />
+            <span className="text-[13px] font-extrabold leading-none drop-shadow-sm">Mua ngay</span>
+            <span className="mt-0.5 text-[16px] font-black leading-none tracking-tight drop-shadow-sm">
               {activePrice.toLocaleString('vi-VN')}đ
             </span>
           </button>
