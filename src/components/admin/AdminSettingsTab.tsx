@@ -51,6 +51,12 @@ interface AdminSettingsTabProps {
     youtube?: string;
     shopee?: string;
     zalo?: string;
+    showFacebook?: boolean;
+    showInstagram?: boolean;
+    showTiktok?: boolean;
+    showYoutube?: boolean;
+    showShopee?: boolean;
+    showZalo?: boolean;
     copyright: string;
     customLinks: {
       title: string;
@@ -80,6 +86,12 @@ interface AdminSettingsTabProps {
     youtube?: string;
     shopee?: string;
     zalo?: string;
+    showFacebook?: boolean;
+    showInstagram?: boolean;
+    showTiktok?: boolean;
+    showYoutube?: boolean;
+    showShopee?: boolean;
+    showZalo?: boolean;
     copyright: string;
     customLinks: {
       title: string;
@@ -109,6 +121,12 @@ interface AdminSettingsTabProps {
     youtube?: string;
     shopee?: string;
     zalo?: string;
+    showFacebook?: boolean;
+    showInstagram?: boolean;
+    showTiktok?: boolean;
+    showYoutube?: boolean;
+    showShopee?: boolean;
+    showZalo?: boolean;
     copyright: string;
     customLinks: {
       title: string;
@@ -1634,63 +1652,129 @@ export function AdminSettingsTab({
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                       <div>
                                         <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Link Facebook</label>
-                                        <input 
-                                          type="text"
-                                          value={footerSettings.facebook}
-                                          onChange={(e) => setFooterSettings({...footerSettings, facebook: e.target.value})}
-                                          placeholder="https://facebook.com/ursport"
-                                          className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50"
-                                        />
+                                        <div className="flex gap-2 items-start">
+                                          <input 
+                                            type="text"
+                                            value={footerSettings.facebook}
+                                            onChange={(e) => setFooterSettings({...footerSettings, facebook: e.target.value})}
+                                            placeholder="https://facebook.com/ursport"
+                                            className="flex-1 bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                          />
+                                          <label className="flex items-center gap-1 text-xs text-white/70 cursor-pointer mt-2">
+                                            <input 
+                                              type="checkbox"
+                                              checked={footerSettings.showFacebook !== false}
+                                              onChange={(e) => setFooterSettings({...footerSettings, showFacebook: e.target.checked})}
+                                              className="accent-[#1e4b64] h-3.5 w-3.5 rounded"
+                                            />
+                                            <span className="text-[9px] font-bold">Hiển thị</span>
+                                          </label>
+                                        </div>
                                       </div>
                                       <div>
                                         <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Link Instagram</label>
-                                        <input 
-                                          type="text"
-                                          value={footerSettings.instagram}
-                                          onChange={(e) => setFooterSettings({...footerSettings, instagram: e.target.value})}
-                                          placeholder="https://instagram.com/ursport"
-                                          className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50"
-                                        />
+                                        <div className="flex gap-2 items-start">
+                                          <input 
+                                            type="text"
+                                            value={footerSettings.instagram}
+                                            onChange={(e) => setFooterSettings({...footerSettings, instagram: e.target.value})}
+                                            placeholder="https://instagram.com/ursport"
+                                            className="flex-1 bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                          />
+                                          <label className="flex items-center gap-1 text-xs text-white/70 cursor-pointer mt-2">
+                                            <input 
+                                              type="checkbox"
+                                              checked={footerSettings.showInstagram !== false}
+                                              onChange={(e) => setFooterSettings({...footerSettings, showInstagram: e.target.checked})}
+                                              className="accent-[#1e4b64] h-3.5 w-3.5 rounded"
+                                            />
+                                            <span className="text-[9px] font-bold">Hiển thị</span>
+                                          </label>
+                                        </div>
                                       </div>
                                       <div>
                                         <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Link TikTok</label>
-                                        <input 
-                                          type="text"
-                                          value={footerSettings.tiktok}
-                                          onChange={(e) => setFooterSettings({...footerSettings, tiktok: e.target.value})}
-                                          placeholder="https://tiktok.com/@ursport"
-                                          className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50"
-                                        />
+                                        <div className="flex gap-2 items-start">
+                                          <input 
+                                            type="text"
+                                            value={footerSettings.tiktok}
+                                            onChange={(e) => setFooterSettings({...footerSettings, tiktok: e.target.value})}
+                                            placeholder="https://tiktok.com/@ursport"
+                                            className="flex-1 bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                          />
+                                          <label className="flex items-center gap-1 text-xs text-white/70 cursor-pointer mt-2">
+                                            <input 
+                                              type="checkbox"
+                                              checked={footerSettings.showTiktok !== false}
+                                              onChange={(e) => setFooterSettings({...footerSettings, showTiktok: e.target.checked})}
+                                              className="accent-[#1e4b64] h-3.5 w-3.5 rounded"
+                                            />
+                                            <span className="text-[9px] font-bold">Hiển thị</span>
+                                          </label>
+                                        </div>
                                       </div>
                                       <div>
                                         <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Link YouTube</label>
-                                        <input 
-                                          type="text"
-                                          value={footerSettings.youtube}
-                                          onChange={(e) => setFooterSettings({...footerSettings, youtube: e.target.value})}
-                                          placeholder="https://youtube.com/@ursport"
-                                          className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50"
-                                        />
+                                        <div className="flex gap-2 items-start">
+                                          <input 
+                                            type="text"
+                                            value={footerSettings.youtube}
+                                            onChange={(e) => setFooterSettings({...footerSettings, youtube: e.target.value})}
+                                            placeholder="https://youtube.com/@ursport"
+                                            className="flex-1 bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                          />
+                                          <label className="flex items-center gap-1 text-xs text-white/70 cursor-pointer mt-2">
+                                            <input 
+                                              type="checkbox"
+                                              checked={footerSettings.showYoutube !== false}
+                                              onChange={(e) => setFooterSettings({...footerSettings, showYoutube: e.target.checked})}
+                                              className="accent-[#1e4b64] h-3.5 w-3.5 rounded"
+                                            />
+                                            <span className="text-[9px] font-bold">Hiển thị</span>
+                                          </label>
+                                        </div>
                                       </div>
                                       <div>
                                         <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Link Shopee</label>
-                                        <input 
-                                          type="text"
-                                          value={footerSettings.shopee}
-                                          onChange={(e) => setFooterSettings({...footerSettings, shopee: e.target.value})}
-                                          placeholder="https://shopee.vn/ursport"
-                                          className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50"
-                                        />
+                                        <div className="flex gap-2 items-start">
+                                          <input 
+                                            type="text"
+                                            value={footerSettings.shopee}
+                                            onChange={(e) => setFooterSettings({...footerSettings, shopee: e.target.value})}
+                                            placeholder="https://shopee.vn/ursport"
+                                            className="flex-1 bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                          />
+                                          <label className="flex items-center gap-1 text-xs text-white/70 cursor-pointer mt-2">
+                                            <input 
+                                              type="checkbox"
+                                              checked={footerSettings.showShopee !== false}
+                                              onChange={(e) => setFooterSettings({...footerSettings, showShopee: e.target.checked})}
+                                              className="accent-[#1e4b64] h-3.5 w-3.5 rounded"
+                                            />
+                                            <span className="text-[9px] font-bold">Hiển thị</span>
+                                          </label>
+                                        </div>
                                       </div>
                                       <div>
                                         <label className="text-[10px] font-black uppercase text-white/30 mb-1 block">Link Zalo</label>
-                                        <input 
-                                          type="text"
-                                          value={footerSettings.zalo}
-                                          onChange={(e) => setFooterSettings({...footerSettings, zalo: e.target.value})}
-                                          placeholder="https://zalo.me/ursport"
-                                          className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50"
-                                        />
+                                        <div className="flex gap-2 items-start">
+                                          <input 
+                                            type="text"
+                                            value={footerSettings.zalo}
+                                            onChange={(e) => setFooterSettings({...footerSettings, zalo: e.target.value})}
+                                            placeholder="https://zalo.me/ursport"
+                                            className="flex-1 bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-[#1e4b64]/50"
+                                          />
+                                          <label className="flex items-center gap-1 text-xs text-white/70 cursor-pointer mt-2">
+                                            <input 
+                                              type="checkbox"
+                                              checked={footerSettings.showZalo !== false}
+                                              onChange={(e) => setFooterSettings({...footerSettings, showZalo: e.target.checked})}
+                                              className="accent-[#1e4b64] h-3.5 w-3.5 rounded"
+                                            />
+                                            <span className="text-[9px] font-bold">Hiển thị</span>
+                                          </label>
+                                        </div>
                                       </div>
                                     </div>
                                   </div>

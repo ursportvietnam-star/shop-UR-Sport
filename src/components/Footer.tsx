@@ -87,6 +87,12 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
     shopee: 'https://shopee.vn',
     zalo: '',
     copyright: '© 2026 UR SPORT. All rights reserved',
+    showFacebook: true,
+    showInstagram: true,
+    showTiktok: true,
+    showYoutube: true,
+    showShopee: true,
+    showZalo: true,
     customLinks: [
       {
         title: "Danh mục sản phẩm",
@@ -189,12 +195,12 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
   };
 
   const socialItems = [
-    { label: "Facebook", href: footerSettings.facebook, icon: Facebook },
-    { label: "Instagram", href: footerSettings.instagram, image: "/images/logo_icon/icon-instagram.webp" },
-    { label: "TikTok", href: footerSettings.tiktok, image: "/images/logo_icon/icon-tiktok.webp" },
-    ...(footerSettings.youtube ? [{ label: "YouTube", href: footerSettings.youtube, image: "/images/logo_icon/icon-youtube.webp" }] : []),
-    ...(footerSettings.shopee ? [{ label: "Shopee", href: footerSettings.shopee, image: "/images/logo_icon/icon-shopee.webp" }] : []),
-    ...(footerSettings.zalo ? [{ label: "Zalo", href: footerSettings.zalo, image: "/images/logo_icon/icon-zalo.webp" }] : [])
+    ...(footerSettings.showFacebook !== false && footerSettings.facebook ? [{ label: "Facebook", href: footerSettings.facebook, icon: Facebook }] : []),
+    ...(footerSettings.showInstagram !== false && footerSettings.instagram ? [{ label: "Instagram", href: footerSettings.instagram, image: "/images/logo_icon/icon-instagram.webp" }] : []),
+    ...(footerSettings.showTiktok !== false && footerSettings.tiktok ? [{ label: "TikTok", href: footerSettings.tiktok, image: "/images/logo_icon/icon-tiktok.webp" }] : []),
+    ...(footerSettings.showYoutube !== false && footerSettings.youtube ? [{ label: "YouTube", href: footerSettings.youtube, image: "/images/logo_icon/icon-youtube.webp" }] : []),
+    ...(footerSettings.showShopee !== false && footerSettings.shopee ? [{ label: "Shopee", href: footerSettings.shopee, image: "/images/logo_icon/icon-shopee.webp" }] : []),
+    ...(footerSettings.showZalo !== false && footerSettings.zalo ? [{ label: "Zalo", href: footerSettings.zalo, image: "/images/logo_icon/icon-zalo.webp" }] : [])
   ];
   const translateFooterText = (value = '') => {
     if (language !== 'en') return value;
