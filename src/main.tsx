@@ -5,6 +5,29 @@ import './index.css';
 
 // Auto-reload recovery on chunk load/import failures (usually due to version mismatch after deployment)
 if (typeof window !== 'undefined') {
+  const CHUNK_RELOAD_STORAGE_KEY = 'ursport_chunk_reload_at';
+  const CHUNK_RELOAD_COOLDOWN_MS = 15000;
+
+  const recoverFromChunkError = async () => {
+    const lastReloadAt = Number(window.sessionStorage.getItem(CHUNK_RELOAD_STORAGE_KEY) || 0);
+    const now = Date.now();
+    if (now - lastReloadAt < CHUNK_RELOAD_COOLDOWN_MS) {
+      console.warn('Dynamic chunk error detected again after a recent reload. Skipping reload loop.');
+      return;
+    }
+
+    window.sessionStorage.setItem(CHUNK_RELOAD_STORAGE_KEY, String(now));
+
+    try {
+      const registrations = await navigator.serviceWorker?.getRegistrations?.();
+      await Promise.all((registrations || []).map(registration => registration.update()));
+    } catch (error) {
+      console.warn('Service worker update check failed before chunk recovery reload:', error);
+    }
+
+    window.location.reload();
+  };
+
   window.addEventListener('error', (event) => {
     const errorMsg = event.message || '';
     const target = event.target as HTMLElement | null;
@@ -14,7 +37,7 @@ if (typeof window !== 'undefined') {
       (target && target.tagName === 'SCRIPT' && (target as HTMLScriptElement).src?.includes('/assets/'))
     ) {
       console.warn('Dynamic chunk import error detected. Reloading page...');
-      window.location.reload();
+      void recoverFromChunkError();
     }
   }, true);
 
@@ -25,7 +48,7 @@ if (typeof window !== 'undefined') {
       reasonStr.includes('Importing a module script failed')
     ) {
       console.warn('Dynamic chunk import rejection detected. Reloading page...');
-      window.location.reload();
+      void recoverFromChunkError();
     }
   });
 }

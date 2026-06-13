@@ -162,6 +162,7 @@ const normalizeText = (value: string) =>
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
     .trim();
 
 const topPanelLabelMap: Record<string, TranslationKey> = {

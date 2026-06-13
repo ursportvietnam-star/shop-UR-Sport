@@ -29,6 +29,8 @@ const SEO_LANDING_PAGES = DEFAULT_SEO_SUBCATEGORIES
     matchTerms: CATEGORY_PRODUCT_MATCH_TERMS[page.slug] || []
   }));
 
+const PRODUCT_PAGE_SIZE = 30;
+
 type SeoLandingPage = typeof SEO_LANDING_PAGES[number];
 
 const belongsToCategory = (product: Product, category: string) => {
@@ -158,6 +160,7 @@ export function ShopPage({
   const sortFilter = searchParams.get('sort') || 'newest';
   const searchQuery = searchParams.get('q')?.trim() || '';
   const [searchInput, setSearchInput] = React.useState(searchQuery);
+  const [visibleProductCount, setVisibleProductCount] = React.useState(PRODUCT_PAGE_SIZE);
   const showLoading = isLoading || productsLoading;
 
   // Derive current category from URL params, prop or state instantly during render
@@ -171,22 +174,22 @@ export function ShopPage({
   }, [seoLanding, categoryName, currentSlug, categoryFilter, activeCategory]);
 
   // Extract unique values for filters and normalize them
-  const brands = Array.from(new Set(
+  const brands = React.useMemo(() => Array.from(new Set(
     products.map(p => p.brand?.trim())
       .filter(Boolean)
-  )) as string[];
+  )) as string[], [products]);
   
-  const colors = Array.from(new Set(
+  const colors = React.useMemo(() => Array.from(new Set(
     products.flatMap(p => p.colors || [])
       .map(c => c.trim().toLowerCase())
       .filter(Boolean)
-  )).map(c => c.charAt(0).toUpperCase() + c.slice(1)) as string[];
+  )).map(c => c.charAt(0).toUpperCase() + c.slice(1)) as string[], [products]);
 
-  const sizes = Array.from(new Set(
+  const sizes = React.useMemo(() => Array.from(new Set(
     products.flatMap(p => p.sizes || [])
       .map(s => s.trim().toUpperCase())
       .filter(Boolean)
-  )) as string[];
+  )) as string[], [products]);
 
   const priceRanges = [
     { label: 'Tất cả', value: 'all' },
@@ -261,6 +264,10 @@ export function ShopPage({
   }, [currentSlug, categoryFilter, setActiveCategory, activeCategory, brandFilter, priceFilter, colorFilter, sizeFilter]);
 
   React.useEffect(() => {
+    setVisibleProductCount(PRODUCT_PAGE_SIZE);
+  }, [currentCategory, seoLanding?.slug, brandFilter, priceFilter, colorFilter, sizeFilter, sortFilter, searchQuery]);
+
+  React.useEffect(() => {
     const fetchSeo = async () => {
       if (currentCategory === 'All') {
         setSeoContent('');
@@ -327,74 +334,82 @@ export function ShopPage({
     fetchSeo();
   }, [currentCategory, seoLanding]);
 
-  let filteredProducts = currentCategory === 'All' 
-    ? [...products]
-    : products.filter(p => belongsToCategory(p, currentCategory));
+  const filteredProducts = React.useMemo(() => {
+    let result = currentCategory === 'All' 
+      ? [...products]
+      : products.filter(p => belongsToCategory(p, currentCategory));
 
-  if (seoLanding?.matchTerms?.length) {
-    filteredProducts = filteredProducts.filter(product => productMatchesTerms(product, seoLanding.matchTerms));
-  }
+    if (seoLanding?.matchTerms?.length) {
+      result = result.filter(product => productMatchesTerms(product, seoLanding.matchTerms));
+    }
 
-  if (brandFilter) {
-    filteredProducts = filteredProducts.filter(p => p.brand?.trim().toLowerCase() === brandFilter.trim().toLowerCase());
-  }
+    if (brandFilter) {
+      result = result.filter(p => p.brand?.trim().toLowerCase() === brandFilter.trim().toLowerCase());
+    }
 
-  if (colorFilter) {
-    filteredProducts = filteredProducts.filter(p => 
-      p.colors?.some(c => c.trim().toLowerCase() === colorFilter.toLowerCase())
-    );
-  }
+    if (colorFilter) {
+      result = result.filter(p => 
+        p.colors?.some(c => c.trim().toLowerCase() === colorFilter.toLowerCase())
+      );
+    }
 
-  if (sizeFilter) {
-    filteredProducts = filteredProducts.filter(p => 
-      p.sizes?.some(s => s.trim().toUpperCase() === sizeFilter.toUpperCase())
-    );
-  }
+    if (sizeFilter) {
+      result = result.filter(p => 
+        p.sizes?.some(s => s.trim().toUpperCase() === sizeFilter.toUpperCase())
+      );
+    }
 
-  if (priceFilter) {
-    const [min, max] = priceFilter.split('-').map(Number);
-    filteredProducts = filteredProducts.filter(p => {
-      const price = p.discountPrice || p.price;
-      return price >= min && price <= max;
-    });
-  }
+    if (priceFilter) {
+      const [min, max] = priceFilter.split('-').map(Number);
+      result = result.filter(p => {
+        const price = p.discountPrice || p.price;
+        return price >= min && price <= max;
+      });
+    }
 
-  if (searchQuery) {
-    const normalizedQuery = normalizeSearchText(searchQuery);
-    filteredProducts = filteredProducts.filter(product => {
-      const haystack = normalizeSearchText([
-        product.name,
-        product.description,
-        product.category,
-        product.brand,
-        product.material,
-        product.style,
-        product.keywords,
-        product.seoTitle,
-        product.metaDescription,
-        ...(product.colors || []),
-        ...(product.sizes || []),
-        ...(product.features || [])
-      ].filter(Boolean).join(' '));
-
-      return normalizedQuery
+    if (searchQuery) {
+      const searchTerms = normalizeSearchText(searchQuery)
         .split(/\s+/)
-        .filter(Boolean)
-        .every(term => haystack.includes(term));
-    });
-  }
+        .filter(Boolean);
 
-  // Sorting
-  if (sortFilter === 'price-asc') {
-    filteredProducts.sort((a, b) => (a.discountPrice || a.price) - (b.discountPrice || b.price));
-  } else if (sortFilter === 'price-desc') {
-    filteredProducts.sort((a, b) => (b.discountPrice || b.price) - (a.discountPrice || a.price));
-  } else if (sortFilter === 'rating') {
-    filteredProducts.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-  } else {
-    // Newest first by default
-    filteredProducts.sort((a, b) => getTimestamp(b.createdAt) - getTimestamp(a.createdAt));
-  }
+      result = result.filter(product => {
+        const haystack = normalizeSearchText([
+          product.name,
+          product.description,
+          product.category,
+          product.brand,
+          product.material,
+          product.style,
+          product.keywords,
+          product.seoTitle,
+          product.metaDescription,
+          ...(product.colors || []),
+          ...(product.sizes || []),
+          ...(product.features || [])
+        ].filter(Boolean).join(' '));
+
+        return searchTerms.every(term => haystack.includes(term));
+      });
+    }
+
+    if (sortFilter === 'price-asc') {
+      result.sort((a, b) => (a.discountPrice || a.price) - (b.discountPrice || b.price));
+    } else if (sortFilter === 'price-desc') {
+      result.sort((a, b) => (b.discountPrice || b.price) - (a.discountPrice || a.price));
+    } else if (sortFilter === 'rating') {
+      result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    } else {
+      result.sort((a, b) => getTimestamp(b.createdAt) - getTimestamp(a.createdAt));
+    }
+
+    return result;
+  }, [products, currentCategory, seoLanding, brandFilter, priceFilter, colorFilter, sizeFilter, searchQuery, sortFilter]);
+
+  const displayedProducts = React.useMemo(
+    () => filteredProducts.slice(0, visibleProductCount),
+    [filteredProducts, visibleProductCount]
+  );
+  const hasMoreProducts = visibleProductCount < filteredProducts.length;
 
   const hasActiveFacetedParams = Boolean(
     categoryFilter ||
@@ -722,7 +737,7 @@ export function ShopPage({
                     </div>
                   </div>
                   <div className="hidden sm:flex items-center gap-1.5">
-                    Hiển thị: <span className="font-bold text-[#1e4b64] cursor-pointer hover:underline">30</span> <ChevronDown className="h-3 w-3" />
+                    Hiển thị: <span className="font-bold text-[#1e4b64]">{Math.min(visibleProductCount, filteredProducts.length)}/{filteredProducts.length}</span>
                   </div>
                 </div>
 
@@ -752,15 +767,32 @@ export function ShopPage({
           ))}
         </div>
       ) : filteredProducts.length > 0 ? (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-          {filteredProducts.map((product) => (
-            <ProductCard 
-              key={product.id} 
-              product={product} 
-              onClick={() => navigate(getProductUrl(product))} 
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            {displayedProducts.map((product) => (
+              <ProductCard 
+                key={product.id} 
+                product={product} 
+                onClick={() => navigate(getProductUrl(product))} 
+              />
+            ))}
+          </div>
+          {hasMoreProducts && (
+            <div className="mt-10 flex flex-col items-center gap-3 text-center">
+              <p className="text-xs font-bold text-zinc-400">
+                Đang hiển thị {displayedProducts.length}/{filteredProducts.length} sản phẩm
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setVisibleProductCount(count => count + PRODUCT_PAGE_SIZE)}
+                className="rounded-full border-zinc-200 px-8 font-bold text-[#1e4b64] hover:border-[#1e4b64]/40 hover:bg-blue-50/50"
+              >
+                Xem thêm {Math.min(PRODUCT_PAGE_SIZE, filteredProducts.length - visibleProductCount)} sản phẩm
+              </Button>
+            </div>
+          )}
+        </>
       ) : (
         <div className="py-20 text-center">
           <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-zinc-50 mb-6">

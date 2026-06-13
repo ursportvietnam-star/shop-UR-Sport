@@ -5,6 +5,7 @@ import { ChevronRight, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getProductPath } from '../lib/productUrls';
 import { sortBestSellers, sortNewProducts } from '../lib/productSorting';
+import { useLanguage } from '../LanguageContext';
 
 const PRODUCTS_PER_ROW = 6;
 
@@ -14,6 +15,7 @@ interface BestSellerProps {
 
 export function BestSeller({ products }: BestSellerProps) {
   const navigate = useNavigate();
+  const { language } = useLanguage();
   const [activeTab, setActiveTab] = useState<'new' | 'best_seller'>('new');
   const [visibleCounts, setVisibleCounts] = useState<Record<'new' | 'best_seller', number>>({
     new: PRODUCTS_PER_ROW,
@@ -49,7 +51,7 @@ export function BestSeller({ products }: BestSellerProps) {
                 : 'bg-white text-zinc-600 border border-zinc-200 hover:border-[#1e4b64] hover:text-[#1e4b64]'
             }`}
           >
-            Sản phẩm mới {activeTab === 'new' && <Star className="w-3.5 h-3.5 fill-white" />}
+            {language === 'en' ? 'New Arrivals' : 'Sản phẩm mới'} {activeTab === 'new' && <Star className="w-3.5 h-3.5 fill-white" />}
           </button>
           
           <button 
@@ -60,7 +62,7 @@ export function BestSeller({ products }: BestSellerProps) {
                 : 'bg-white text-zinc-600 border border-zinc-200 hover:border-[#1e4b64] hover:text-[#1e4b64]'
             }`}
           >
-            Bán chạy nhất {activeTab === 'best_seller' && <Star className="w-3.5 h-3.5 fill-white" />}
+            {language === 'en' ? 'Best Sellers' : 'Bán chạy nhất'} {activeTab === 'best_seller' && <Star className="w-3.5 h-3.5 fill-white" />}
           </button>
         </div>
 
@@ -68,7 +70,7 @@ export function BestSeller({ products }: BestSellerProps) {
           onClick={() => navigate('/shop')}
           className="text-[#1e4b64] text-[11px] sm:text-[14px] font-bold flex items-center gap-0.5 sm:gap-1 hover:opacity-80 transition-all group flex-shrink-0 whitespace-nowrap"
         >
-          <span>Xem tất cả</span>
+          <span>{language === 'en' ? 'View all' : 'Xem tất cả'}</span>
           <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 group-hover:translate-x-1 transition-transform" />
         </button>
       </div>
@@ -90,11 +92,10 @@ export function BestSeller({ products }: BestSellerProps) {
           onClick={handleShowMore}
           className="inline-flex h-10 items-center justify-center rounded-full border border-zinc-200 bg-white px-6 text-sm font-bold text-zinc-900 shadow-sm transition-colors hover:border-[#1e4b64] hover:text-[#1e4b64] active:scale-[0.98]"
         >
-          Xem thêm
+          {language === 'en' ? 'Load more' : 'Xem thêm'}
         </button>
       </div>
       )}
     </section>
   );
 }
-

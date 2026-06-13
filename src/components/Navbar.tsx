@@ -143,7 +143,8 @@ export const Navbar: React.FC<NavbarProps> = ({
     value
       .toLowerCase()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '');
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd');
 
   const searchSuggestions = React.useMemo(() => {
     if (trimmedSearchQuery.length < 2) return [];
@@ -520,7 +521,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     textAlignLast: 'justify',
                   }}
                 >
-                  Phong cách thể thao
+                  {language === 'en' ? 'Sportswear style' : 'Phong cách thể thao'}
                 </motion.div>
               </motion.div>
             </Link>

@@ -2,6 +2,7 @@ import React from 'react';
 import { Product } from '../types';
 import { cn } from '@/lib/utils';
 import { Check } from 'lucide-react';
+import { useLanguage } from '../LanguageContext';
 
 type ColorOption = string | { name: string; image: string };
 
@@ -26,6 +27,7 @@ export function ProductVariantPicker({
   sizeStyle = 'large',
   showSummary = false,
 }: ProductVariantPickerProps) {
+  const { language } = useLanguage();
   const colorOptions = (product.colorImages || product.colors || []) as ColorOption[];
   const sizeOptions = product.sizes?.length > 0 ? product.sizes : ['S', 'M', 'L', 'XL', 'XXL'];
   const variants = product.variants || [];
@@ -51,13 +53,29 @@ export function ProductVariantPicker({
     }
     return !variants.some(variant => variant.size === size && Number(variant.stock || 0) > 0);
   };
+  const translateColor = (color: string) => {
+    if (language !== 'en') return color;
+    const normalized = color.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').trim();
+    const map: Record<string, string> = {
+      den: 'Black',
+      trang: 'White',
+      'xanh den': 'Navy',
+      xanh: 'Blue',
+      xam: 'Gray',
+      do: 'Red',
+      vang: 'Yellow',
+      be: 'Beige',
+      nau: 'Brown',
+    };
+    return map[normalized] || color;
+  };
 
   return (
     <div className="space-y-4">
       {colorOptions.length > 0 && (
         <div>
           {colorStyle === 'chip' && (
-            <p className="mb-2 text-[11px] font-black uppercase tracking-widest text-zinc-400">Màu sắc</p>
+            <p className="mb-2 text-[11px] font-black uppercase tracking-widest text-zinc-400">{language === 'en' ? 'Color' : 'Màu sắc'}</p>
           )}
           <div className={cn("flex flex-wrap gap-2")}>
             {colorOptions.map((colorOption, idx) => {
@@ -83,10 +101,10 @@ export function ProductVariantPicker({
                       selectedColor === colorName ? "border-[#1e4b64]" : "border-zinc-100",
                       unavailable && "cursor-not-allowed opacity-35 grayscale hover:scale-100 after:absolute after:left-1/2 after:top-0 after:h-full after:w-px after:-rotate-45 after:bg-zinc-500 after:content-['']"
                     )}
-                    title={unavailable ? `${colorName} hết hàng` : colorName}
+                    title={unavailable ? `${translateColor(colorName)} ${language === 'en' ? 'out of stock' : 'hết hàng'}` : translateColor(colorName)}
                   >
                     {colorImage ? (
-                      <img src={colorImage} alt={colorName} loading="lazy" className="h-full w-full rounded-full object-cover" />
+                      <img src={colorImage} alt={translateColor(colorName)} loading="lazy" className="h-full w-full rounded-full object-cover" />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center rounded-full bg-zinc-100 text-[8px] font-black uppercase text-zinc-500" style={{ backgroundColor: typeof colorOption === 'string' ? colorOption.toLowerCase() : undefined }}>
                         {typeof colorOption === 'string' ? '' : colorName.slice(0, 1)}
@@ -112,16 +130,16 @@ export function ProductVariantPicker({
                         : "border-zinc-200 text-zinc-500 hover:border-zinc-300",
                       unavailable && "cursor-not-allowed border-zinc-100 bg-zinc-50 text-zinc-300 opacity-60 after:absolute after:left-2 after:right-2 after:top-1/2 after:h-px after:-rotate-12 after:bg-zinc-300 after:content-['']"
                     )}
-                    title={unavailable ? `${colorName} hết hàng` : colorName}
+                    title={unavailable ? `${translateColor(colorName)} ${language === 'en' ? 'out of stock' : 'hết hàng'}` : translateColor(colorName)}
                   >
                     {colorImage && (
                       <img
                         src={colorImage}
-                        alt={colorName}
+                        alt={translateColor(colorName)}
                         className="w-8 h-8 rounded-lg object-cover bg-zinc-100 flex-shrink-0"
                       />
                     )}
-                    <span>{colorName}</span>
+                    <span>{translateColor(colorName)}</span>
                     {selectedColor === colorName && (
                       <div
                         className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-[#ff3b30] flex items-center justify-center"
@@ -139,7 +157,7 @@ export function ProductVariantPicker({
 
       <div>
         {sizeStyle === 'large' && (
-          <p className="mb-2 text-[11px] font-black uppercase tracking-widest text-zinc-400">Kích cỡ</p>
+          <p className="mb-2 text-[11px] font-black uppercase tracking-widest text-zinc-400">{language === 'en' ? 'Size' : 'Kích cỡ'}</p>
         )}
         <div className={cn(
           "w-full",
@@ -179,7 +197,7 @@ export function ProductVariantPicker({
                       : (shouldStretch ? "flex-1 min-w-0" : "px-5 sm:px-6")
                   )
                 )}
-                title={unavailable ? `Size ${size} hết hàng` : `Size ${size}`}
+                title={unavailable ? `Size ${size} ${language === 'en' ? 'out of stock' : 'hết hàng'}` : `Size ${size}`}
               >
                 {size}
               </button>
@@ -192,11 +210,11 @@ export function ProductVariantPicker({
         <div className="pt-2">
           <div className="flex items-center justify-between px-1">
             <div className="flex flex-col">
-              <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-400">Màu sắc</span>
-              <span className="text-[11px] font-black italic text-zinc-900">{selectedColor || '--'}</span>
+              <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-400">{language === 'en' ? 'Color' : 'Màu sắc'}</span>
+              <span className="text-[11px] font-black italic text-zinc-900">{selectedColor ? translateColor(selectedColor) : '--'}</span>
             </div>
             <div className="flex flex-col items-end">
-              <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-400">Kích thước</span>
+              <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-400">{language === 'en' ? 'Size' : 'Kích thước'}</span>
               <span className="text-[11px] font-black italic text-zinc-900">{selectedSize || '--'}</span>
             </div>
           </div>

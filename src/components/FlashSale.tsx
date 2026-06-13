@@ -8,6 +8,8 @@ import { db, isFirebaseConfigured } from '../firebase';
 import { cn } from '@/lib/utils';
 import { LazyImage } from './LazyImage';
 import { getProductPath } from '../lib/productUrls';
+import { useLanguage } from '../LanguageContext';
+import { getLocalizedProductName } from '../lib/productI18n';
 
 interface FlashSaleProps {
   products: Product[];
@@ -22,6 +24,7 @@ interface FlashSaleSettings {
 
 export function FlashSale({ products }: FlashSaleProps) {
   const navigate = useNavigate();
+  const { language } = useLanguage();
   const [settings, setSettings] = useState<FlashSaleSettings | null>(null);
   const [timeLeft, setTimeLeft] = useState({
     hours: 0,
@@ -128,7 +131,7 @@ export function FlashSale({ products }: FlashSaleProps) {
         </div>
 
         <Link to="/shop" className="text-[#ee4d2d] text-[11px] sm:text-[14px] font-bold flex items-center gap-0.5 sm:gap-1 hover:opacity-80 transition-all group flex-shrink-0 whitespace-nowrap">
-          <span>Xem tất cả</span>
+          <span>{language === 'en' ? 'View all' : 'Xem tất cả'}</span>
           <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 group-hover:translate-x-1 transition-transform" />
         </Link>
       </div>
@@ -155,11 +158,12 @@ export function FlashSale({ products }: FlashSaleProps) {
             const totalStock = product.stock || 50;
             const percent = Math.min(100, Math.round((soldCount / totalStock) * 100));
             
-            let statusText = `ĐÃ BÁN ${soldCount}`;
-            if (soldCount === 0) statusText = "ĐANG MỞ BÁN";
-            else if (percent > 95) statusText = `VỪA CHÁY HÀNG`;
-            else if (percent > 80) statusText = "SẮP CHÁY HÀNG";
-            else if (percent > 60) statusText = "ĐANG BÁN CHẠY";
+            let statusText = language === 'en' ? `SOLD ${soldCount}` : `ĐÃ BÁN ${soldCount}`;
+            if (soldCount === 0) statusText = language === 'en' ? 'ON SALE NOW' : 'ĐANG MỞ BÁN';
+            else if (percent > 95) statusText = language === 'en' ? 'ALMOST SOLD OUT' : 'VỪA CHÁY HÀNG';
+            else if (percent > 80) statusText = language === 'en' ? 'SELLING FAST' : 'SẮP CHÁY HÀNG';
+            else if (percent > 60) statusText = language === 'en' ? 'HOT SELLER' : 'ĐANG BÁN CHẠY';
+            const productName = getLocalizedProductName(product, language);
 
             return (
               <div 
@@ -172,7 +176,7 @@ export function FlashSale({ products }: FlashSaleProps) {
                 >
                   <LazyImage 
                     src={product.images[0]} 
-                    alt={product.name} 
+                    alt={productName} 
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   />
                   

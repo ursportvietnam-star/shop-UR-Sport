@@ -13,6 +13,8 @@ import { ProductQuickViewModal } from './ProductQuickViewModal';
 import { ProductVariantPicker } from './ProductVariantPicker';
 import { getProductPath } from '../lib/productUrls';
 import { usePromotionBadges } from '../PromotionContext';
+import { useLanguage } from '../LanguageContext';
+import { getLocalizedProductCategory, getLocalizedProductName } from '../lib/productI18n';
 
 interface ProductCardProps {
   product: Product;
@@ -40,6 +42,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
   const { isWishlisted, toggleWishlist } = useWishlist();
   const { isCompared, toggleCompare } = useComparison();
   const { isCheapChampionProduct, isActiveFlashSaleProduct, getCheapChampionPrice } = usePromotionBadges();
+  const { language } = useLanguage();
   const [selectedColor, setSelectedColor] = useState(product.colors?.[0] || 'Default');
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -60,14 +63,14 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
 
   const addSelectedToCart = (closeQuickView = false) => {
     if (!selectedSize && product.sizes && product.sizes.length > 0) {
-      toast.error('Vui lòng chọn size trước khi thêm vào giỏ hàng', {
+      toast.error(language === 'en' ? 'Please choose a size before adding to cart' : 'Vui lòng chọn size trước khi thêm vào giỏ hàng', {
         position: 'top-center'
       });
       return;
     }
 
     if (selectedVariantOutOfStock) {
-      toast.error('Phân loại này đang hết hàng, vui lòng chọn màu hoặc size khác', {
+      toast.error(language === 'en' ? 'This variant is out of stock. Please choose another color or size.' : 'Phân loại này đang hết hàng, vui lòng chọn màu hoặc size khác', {
         position: 'top-center'
       });
       return;
@@ -75,9 +78,9 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
 
     addToCart(effectiveProduct, selectedColor, selectedSize || 'Free Size', 1);
     showAddToCartToast({
-      productName: product.name,
+      productName,
       image: primaryImage || undefined,
-      meta: `Màu: ${selectedColor} / Size: ${selectedSize || 'Free Size'}`,
+      meta: language === 'en' ? `Color: ${selectedColor} / Size: ${selectedSize || 'Free Size'}` : `Màu: ${selectedColor} / Size: ${selectedSize || 'Free Size'}`,
       onCheckout: () => navigate('/checkout'),
     });
 
@@ -93,7 +96,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
   const handleWishlistClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     const saved = toggleWishlist(product.id);
-    toast.success(saved ? 'Đã lưu vào yêu thích' : 'Đã bỏ khỏi yêu thích', {
+    toast.success(language === 'en' ? (saved ? 'Saved to wishlist' : 'Removed from wishlist') : (saved ? 'Đã lưu vào yêu thích' : 'Đã bỏ khỏi yêu thích'), {
       position: 'top-center'
     });
   };
@@ -101,7 +104,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
   const handleCompareClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     const added = toggleCompare(effectiveProduct);
-    toast.success(added ? 'Đã thêm vào bảng so sánh' : 'Đã bỏ khỏi bảng so sánh', {
+    toast.success(language === 'en' ? (added ? 'Added to comparison' : 'Removed from comparison') : (added ? 'Đã thêm vào bảng so sánh' : 'Đã bỏ khỏi bảng so sánh'), {
       position: 'top-center'
     });
   };
@@ -112,6 +115,8 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
 
   const hasOptions = (product.colors && product.colors.length > 0) || (product.sizes && product.sizes.length > 0);
   const productUrl = getProductPath(product);
+  const productName = getLocalizedProductName(product, language);
+  const productCategory = getLocalizedProductCategory(product, language);
 
   return (
     <div 
@@ -137,7 +142,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
               key={primaryImage || product.id}
               initial={{ opacity: 0.9 }} animate={{ opacity: 1 }} exit={{ opacity: 0.9 }}
               src={primaryImage || '/images/og-ursport.jpg'}
-              alt={product.name}
+              alt={productName}
               loading="lazy"
               decoding="async"
               className={cn(
@@ -152,13 +157,13 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
             to={productUrl}
             onClick={(e) => e.stopPropagation()}
             className="absolute inset-0 z-[1]"
-            aria-label={`Xem chi tiết ${product.name}`}
+            aria-label={language === 'en' ? `View details for ${productName}` : `Xem chi tiết ${productName}`}
           />
 
           {/* Badges */}
           <div className="absolute top-2 left-2 flex flex-col gap-1.5 z-10 sm:top-2.5 sm:left-2.5">
             {product.isNew && (
-              <div className="bg-[#00a651] text-white px-2 py-0.5 rounded-full text-[9px] font-bold shadow-sm uppercase tracking-wider">Mới</div>
+              <div className="bg-[#00a651] text-white px-2 py-0.5 rounded-full text-[9px] font-bold shadow-sm uppercase tracking-wider">{language === 'en' ? 'New' : 'Mới'}</div>
             )}
             {discountPercent > 0 && (
               <div className="bg-[#ff3b30] text-white px-2 py-0.5 rounded-full text-[9px] font-bold shadow-sm">-{discountPercent}%</div>
@@ -172,7 +177,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
               "absolute top-2 right-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/85 text-zinc-400 shadow-sm backdrop-blur-md transition-all hover:text-red-500 active:scale-90 sm:top-2.5 sm:right-2.5",
               liked && "bg-red-50 text-red-500"
             )}
-            aria-label={liked ? 'Bỏ khỏi yêu thích' : 'Thêm vào yêu thích'}
+            aria-label={language === 'en' ? (liked ? 'Remove from wishlist' : 'Add to wishlist') : (liked ? 'Bỏ khỏi yêu thích' : 'Thêm vào yêu thích')}
           >
             <Heart className={cn("h-4 w-4", liked && "fill-current")} />
           </button>
@@ -184,7 +189,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
               setIsQuickViewOpen(true);
             }}
             className="absolute right-2 top-12 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/85 text-zinc-500 opacity-100 shadow-sm backdrop-blur-md transition-all hover:bg-[#1e4b64] hover:text-white active:scale-90 sm:right-2.5 sm:top-12 sm:opacity-0 sm:group-hover:opacity-100"
-            aria-label="Xem nhanh sản phẩm"
+            aria-label={language === 'en' ? 'Quick view product' : 'Xem nhanh sản phẩm'}
           >
             <Eye className="h-4 w-4" />
           </button>
@@ -195,7 +200,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
               "absolute right-2 top-[5.5rem] z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/85 text-zinc-500 shadow-sm backdrop-blur-md transition-all hover:bg-[#1e4b64] hover:text-white active:scale-90 sm:right-2.5 sm:top-[5.5rem]",
               compared && "bg-[#1e4b64] text-white"
             )}
-            aria-label="So sánh sản phẩm"
+            aria-label={language === 'en' ? 'Compare product' : 'So sánh sản phẩm'}
           >
             <Plus className="h-4 w-4" />
           </button>
@@ -209,7 +214,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
           </div>
 
           <p className="mb-1 text-[10px] uppercase tracking-[0.08em] text-zinc-400 line-clamp-1">
-            {product.category}
+            {productCategory}
           </p>
 
           <h3 className="mb-2 h-[2.7em] overflow-hidden text-[12px] font-bold leading-[1.35] sm:text-[14px]">
@@ -218,7 +223,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
               onClick={(e) => e.stopPropagation()}
               className="line-clamp-2 text-zinc-800 transition-colors group-hover:text-[#1e4b64]"
             >
-              {product.name}
+              {productName}
             </Link>
           </h3>
 
@@ -226,7 +231,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
             <div className="mb-2 flex min-h-[20px] flex-wrap items-center gap-1.5">
               {showCheapChampionBadge && (
                 <span className="inline-flex h-5 items-center rounded border border-[#ff4d2d] bg-white px-1.5 text-[10px] font-semibold leading-none text-[#ff4d2d]">
-                  Rẻ Vô Địch
+                  {language === 'en' ? 'Best Price' : 'Rẻ Vô Địch'}
                 </span>
               )}
               {showFlashSaleBadge && (
@@ -234,7 +239,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                   <span className="flex h-3.5 w-3.5 items-center justify-center rounded-sm bg-[#ff3b30]">
                     <Zap className="h-2.5 w-2.5 fill-white text-white" />
                   </span>
-                  Đang bán chạy
+                  {language === 'en' ? 'Hot Seller' : 'Đang bán chạy'}
                 </span>
               )}
             </div>
@@ -262,7 +267,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
             <button 
               onClick={handleQuickAdd}
               className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#1e4b64] text-white flex items-center justify-center shadow-lg hover:bg-[#153a4d] transition-all active:scale-90 group/btn"
-              title="Thêm vào giỏ"
+              title={language === 'en' ? 'Add to cart' : 'Thêm vào giỏ'}
             >
               <div className="relative">
                 <ShoppingBag className="h-4.5 w-4.5" />

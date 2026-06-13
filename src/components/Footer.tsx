@@ -13,6 +13,8 @@ import {
 import { cn } from "@/lib/utils";
 import { doc, serverTimestamp, setDoc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
+import { useLanguage } from "../LanguageContext";
+import { getLocalizedCategoryLabel } from "../lib/productI18n";
 
 type Category = 'Áo thun nam' | 'Áo thun thể thao nam' | 'Áo polo nam' | 'Quần thể thao nam' | 'Phụ kiện thể thao' | 'All';
 
@@ -39,6 +41,7 @@ const supportLinks = [
 ];
 
 const Logo = ({ inverse, logoSettings }: { inverse?: boolean; logoSettings?: { logoLight?: string; logoDark?: string; favicon?: string } | null }) => {
+  const { language } = useLanguage();
   const logoUrl = inverse ? (logoSettings?.logoDark || logoSettings?.logoLight) : (logoSettings?.logoLight || logoSettings?.logoDark);
   
   return (
@@ -52,7 +55,7 @@ const Logo = ({ inverse, logoSettings }: { inverse?: boolean; logoSettings?: { l
             <span>SPORT</span>
           </div>
           <span className={`text-xs font-bold italic uppercase tracking-tighter mt-1 ${inverse ? 'text-white/70' : 'text-zinc-500'}`}>
-            Phong Cách Thể Thao
+            {language === 'en' ? 'Sportswear Style' : 'Phong Cách Thể Thao'}
           </span>
         </>
       )}
@@ -61,6 +64,7 @@ const Logo = ({ inverse, logoSettings }: { inverse?: boolean; logoSettings?: { l
 };
 
 export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterProps) {
+  const { language } = useLanguage();
   const [email, setEmail] = useState("");
   const [subscribeMessage, setSubscribeMessage] = useState("");
   const [isSubscribing, setIsSubscribing] = useState(false);
@@ -158,7 +162,7 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail) return;
     if (!db) {
-      setSubscribeMessage("Chua the luu email do Firebase chua duoc cau hinh.");
+      setSubscribeMessage(language === 'en' ? "Email cannot be saved because Firebase is not configured." : "Chua the luu email do Firebase chua duoc cau hinh.");
       return;
     }
 
@@ -175,10 +179,10 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
       }, { merge: true });
 
       setEmail("");
-      setSubscribeMessage("Cám ơn quý khách đã đăng ký.");
+      setSubscribeMessage(language === 'en' ? "Thanks for subscribing." : "Cám ơn quý khách đã đăng ký.");
     } catch (error) {
       console.error("Newsletter subscribe failed:", error);
-      setSubscribeMessage("Chưa thể lưu email. Vui lòng thử lại sau.");
+      setSubscribeMessage(language === 'en' ? "Email could not be saved. Please try again later." : "Chưa thể lưu email. Vui lòng thử lại sau.");
     } finally {
       setIsSubscribing(false);
     }
@@ -192,6 +196,33 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
     ...(footerSettings.shopee ? [{ label: "Shopee", href: footerSettings.shopee, image: "/images/logo_icon/icon-shopee.webp" }] : []),
     ...(footerSettings.zalo ? [{ label: "Zalo", href: footerSettings.zalo, image: "/images/logo_icon/icon-zalo.webp" }] : [])
   ];
+  const translateFooterText = (value = '') => {
+    if (language !== 'en') return value;
+    return value
+      .replace(/Chuyên cung cấp đồ thể thao chất lượng cao, phong cách hiện đại./gi, 'Premium sportswear with modern style and reliable quality.')
+      .replace(/Danh mục sản phẩm/gi, 'Product categories')
+      .replace(/Hỗ trợ khách hàng/gi, 'Customer support')
+      .replace(/Thông tin liên hệ/gi, 'Contact information')
+      .replace(/Mạng xã hội/gi, 'Social media')
+      .replace(/72 Nguyễn Trãi, Quận 1, TP\. Hồ Chí Minh/gi, '72 Nguyen Trai, District 1, Ho Chi Minh City')
+      .replace(/Thanh toán/gi, 'Payment')
+      .replace(/Chính sách đổi trả/gi, 'Return policy')
+      .replace(/Chính sách bảo hành/gi, 'Warranty policy')
+      .replace(/Hướng dẫn mua hàng/gi, 'Shopping guide')
+      .replace(/Liên hệ/gi, 'Contact')
+      .replace(/Email của bạn/gi, 'Your email')
+      .replace(/Đăng ký/gi, 'Subscribe')
+      .replace(/Đang lưu/gi, 'Saving');
+  };
+  const contactTitle = language === 'en' ? 'Contact information' : 'Thông tin liên hệ';
+  const socialTitle = language === 'en' ? 'Social media' : 'Mạng xã hội';
+  const getFooterLinkLabel = (item: any) => {
+    if (item?.action === 'category') {
+      return getLocalizedCategoryLabel(item.value || item.label, language);
+    }
+    return translateFooterText(item?.label || '');
+  };
+  const localizedAddress = translateFooterText(footerSettings.address);
 
   return (
     <footer
@@ -216,7 +247,7 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
                     </div>
                   )}
                   <p className="mt-5 max-w-xs text-sm leading-7 text-slate-300">
-                    {footerSettings.description}
+                    {translateFooterText(footerSettings.description)}
                   </p>
 
                   {footerSettings.showNewsletter !== false && (
@@ -230,7 +261,7 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
                           className="h-11 min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
                           id="footer-email"
                           onChange={(event) => setEmail(event.target.value)}
-                          placeholder={footerSettings.newsletterPlaceholder || "Email của bạn"}
+                          placeholder={translateFooterText(footerSettings.newsletterPlaceholder || "Email của bạn")}
                           type="email"
                           value={email}
                         />
@@ -241,7 +272,7 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
                         type="submit"
                       >
                         <Send className="h-4 w-4" />
-                        {isSubscribing ? "Đang lưu" : (footerSettings.newsletterButtonText || "Đăng ký")}
+                        {isSubscribing ? (language === 'en' ? 'Saving' : "Đang lưu") : translateFooterText(footerSettings.newsletterButtonText || "Đăng ký")}
                       </button>
                     </form>
                   )}
@@ -255,11 +286,11 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
             if (colId === 'contact') {
               return (
                 <div key="contact" style={{ flex: '1.15 1 18%' }} className="hidden md:block w-full">
-                  <h3 className="text-base font-black">Thông tin liên hệ</h3>
+                  <h3 className="text-base font-black">{contactTitle}</h3>
                   <ul className="mt-5 space-y-4 text-sm font-semibold text-slate-300">
                     <li className="flex gap-3">
                       <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-[#1e4b64]" />
-                      <span>{footerSettings.address}</span>
+                      <span>{localizedAddress}</span>
                     </li>
                     <li className="flex gap-3">
                       <Phone className="mt-0.5 h-5 w-5 shrink-0 text-[#1e4b64]" />
@@ -296,9 +327,9 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
               return (
                 <div key="social" style={{ flex: '0.85 1 12%' }} className="hidden md:block w-full">
                   <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-base font-black">Mạng xã hội</h3>
+                    <h3 className="text-base font-black">{socialTitle}</h3>
                     <button
-                      aria-label="Chuyển dark mode"
+                      aria-label={language === 'en' ? 'Toggle dark mode' : 'Chuyển dark mode'}
                       className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/[0.08] text-[#1e4b64] transition duration-300 hover:scale-105 hover:bg-white/[0.12]"
                       onClick={() => setIsDark((current) => !current)}
                       type="button"
@@ -330,7 +361,7 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
 
                   <div className="mt-6 rounded-lg border border-white/10 bg-white/[0.06] p-4">
                     <p className="text-xs font-black uppercase tracking-[0.18em] text-[#1e4b64]">
-                      Thanh toán
+                      {language === 'en' ? 'Payment' : 'Thanh toán'}
                     </p>
                     <div className="mt-3 flex flex-wrap gap-2">
                       {(footerSettings.paymentBadges || []).map((item) => (
@@ -354,7 +385,7 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
               const width = colIdx === 0 ? '0.9 1 15%' : '0.95 1 15%';
               return (
                 <div key={colId} style={{ flex: width }} className="hidden md:block w-full">
-                  <h3 className="text-base font-black">{col.title}</h3>
+                  <h3 className="text-base font-black">{translateFooterText(col.title)}</h3>
                   <ul className="mt-5 space-y-3">
                     {col.items?.map((item: any, itemIdx: number) => (
                       <li key={itemIdx}>
@@ -369,7 +400,7 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
                           className="group/link inline-flex w-fit items-center text-sm font-semibold text-slate-300 transition duration-300 hover:translate-x-1 hover:text-[#1e4b64]"
                         >
                           <span className="bg-gradient-to-r from-[#1e4b64] to-[#1e4b64] bg-[length:0%_1px] bg-left-bottom bg-no-repeat transition-[background-size] duration-300 group-hover/link:bg-[length:100%_1px]">
-                            {item.label}
+                            {getFooterLinkLabel(item)}
                           </span>
                         </button>
                       </li>
@@ -398,7 +429,7 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
                     onClick={() => setOpenSection(isOpen ? "" : col.title)}
                     type="button"
                   >
-                    {col.title}
+                    {translateFooterText(col.title)}
                     <ChevronDown
                       className={cn(
                         "h-5 w-5 transition-transform duration-300",
@@ -425,7 +456,7 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
                             }}
                             className="text-sm font-semibold text-slate-300 hover:text-[#1e4b64] transition-colors"
                           >
-                            {link.label}
+                            {getFooterLinkLabel(link)}
                           </button>
                         </li>
                       ))}
@@ -442,7 +473,7 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
               onClick={() => setOpenSection(openSection === 'Thông tin liên hệ' ? null : 'Thông tin liên hệ')}
               type="button"
             >
-              Thông tin liên hệ
+              {contactTitle}
               <ChevronDown
                 className={cn(
                   "h-5 w-5 transition-transform duration-300",
@@ -459,7 +490,7 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
               <ul className="min-h-0 space-y-4 pb-4">
                 <li className="flex gap-3">
                   <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-[#1e4b64]" />
-                  <span className="text-sm font-semibold text-slate-300">{footerSettings.address}</span>
+                  <span className="text-sm font-semibold text-slate-300">{localizedAddress}</span>
                 </li>
                 <li className="flex gap-3">
                   <Phone className="mt-0.5 h-5 w-5 shrink-0 text-[#1e4b64]" />
@@ -484,7 +515,7 @@ export function Footer({ onPageChange, onCategorySelect, logoSettings }: FooterP
               onClick={() => setOpenSection(openSection === 'Mạng xã hội' ? null : 'Mạng xã hội')}
               type="button"
             >
-              Mạng xã hội
+              {socialTitle}
               <ChevronDown
                 className={cn(
                   "h-5 w-5 transition-transform duration-300",

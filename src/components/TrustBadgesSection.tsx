@@ -2,6 +2,7 @@ import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { Truck, ShieldCheck, RefreshCcw, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '../LanguageContext';
 
 export const TRUST_BADGES = [
   { icon: Truck, title: 'Miễn phí vận chuyển', desc: 'Cho đơn hàng từ 500k', detailHref: '/chinh-sach-giao-hang' },
@@ -11,11 +12,20 @@ export const TRUST_BADGES = [
 ];
 
 export function TrustBadgesSection({ className = '' }: { className?: string }) {
+  const { language } = useLanguage();
+  const trustBadges = language === 'en'
+    ? [
+      { icon: Truck, title: 'Free shipping', desc: 'For orders from 500k', detailHref: '/chinh-sach-giao-hang' },
+      { icon: ShieldCheck, title: 'Secure payment', desc: '100% information protection' },
+      { icon: RefreshCcw, title: '30-day returns', desc: 'Easy and fast', detailHref: '/chinh-sach-doi-tra' },
+      { icon: Phone, title: 'Dedicated support', desc: 'Hotline: 0917 722 425' },
+    ]
+    : TRUST_BADGES;
   return (
     <section className={cn("bg-zinc-50/50 border-y border-zinc-100", className)}>
       <div className="container-custom py-6 sm:py-12">
         <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-7 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4 lg:gap-8">
-          {TRUST_BADGES.map((badge, idx) => (
+          {trustBadges.map((badge, idx) => (
             <motion.div
               key={badge.title}
               initial={{ opacity: 0, y: 10 }}
@@ -35,7 +45,7 @@ export function TrustBadgesSection({ className = '' }: { className?: string }) {
                     to={badge.detailHref}
                     className="mt-1 inline-block text-[11px] font-medium text-[#1e4b64] transition-colors hover:text-[#153446] hover:underline"
                   >
-                    Xem chi tiết
+                    {language === 'en' ? 'View details' : 'Xem chi tiết'}
                   </Link>
                 )}
               </div>

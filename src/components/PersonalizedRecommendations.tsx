@@ -8,6 +8,7 @@ import { useRecentlyViewed } from '../RecentlyViewedContext';
 import { ProductCard } from './ProductCard';
 import { getProductPath } from '../lib/productUrls';
 import { Product } from '../types';
+import { useLanguage } from '../LanguageContext';
 
 const getProductUrl = (product: Product) => {
   return getProductPath(product);
@@ -15,6 +16,7 @@ const getProductUrl = (product: Product) => {
 
 export function PersonalizedRecommendations({ products }: { products: Product[] }) {
   const navigate = useNavigate();
+  const { language } = useLanguage();
   const { cart } = useCart();
   const { wishlistIds } = useWishlist();
   const { recentProductIds } = useRecentlyViewed();
@@ -51,9 +53,10 @@ export function PersonalizedRecommendations({ products }: { products: Product[] 
     <section className="container-custom section-padding bg-white">
       <div className="mb-8 flex flex-col items-center gap-4 text-center sm:flex-row sm:items-end sm:justify-between sm:text-left">
         <div className="homepage-heading-copy">
-          <span className="section-subtitle">Dựa trên hành vi mua sắm</span>
+          <span className="section-subtitle">{language === 'en' ? 'Based on your shopping behavior' : 'Dựa trên hành vi mua sắm'}</span>
           <h2 className="section-title">
-            Gợi ý <span className="text-[#1e4b64]">dành riêng cho bạn</span>
+            {language === 'en' ? 'Recommended ' : 'Gợi ý '}
+            <span className="text-[#1e4b64]">{language === 'en' ? 'for you' : 'dành riêng cho bạn'}</span>
           </h2>
         </div>
         <button
@@ -61,7 +64,7 @@ export function PersonalizedRecommendations({ products }: { products: Product[] 
           onClick={() => navigate('/da-xem')}
           className="text-[#1e4b64] text-[11px] sm:text-[14px] font-bold flex items-center gap-0.5 sm:gap-1 hover:opacity-80 transition-all group flex-shrink-0 whitespace-nowrap"
         >
-          <span>Xem lịch sử</span>
+          <span>{language === 'en' ? 'View history' : 'Xem lịch sử'}</span>
           <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 group-hover:translate-x-1 transition-transform" />
         </button>
       </div>

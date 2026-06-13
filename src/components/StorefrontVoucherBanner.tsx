@@ -7,11 +7,13 @@ import { useCart } from '../CartContext';
 import { Ticket, Clock, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '../LanguageContext';
 
 export const StorefrontVoucherBanner = () => {
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const { savedVouchers, saveVoucher } = useCart();
   const [isLoading, setIsLoading] = useState(true);
+  const { language } = useLanguage();
 
   useEffect(() => {
     if (!db || !isFirebaseConfigured) {
@@ -43,8 +45,8 @@ export const StorefrontVoucherBanner = () => {
             <Ticket className="h-6 w-6 text-[#ee4d2d]" />
           </div>
           <div>
-            <h2 className="text-xl md:text-2xl font-black text-zinc-900 uppercase tracking-tight">Siêu Ưu Đãi</h2>
-            <p className="text-sm font-medium text-zinc-500">Thu thập mã giảm giá ngay</p>
+            <h2 className="text-xl md:text-2xl font-black text-zinc-900 uppercase tracking-tight">{language === 'en' ? 'Hot Deals' : 'Siêu Ưu Đãi'}</h2>
+            <p className="text-sm font-medium text-zinc-500">{language === 'en' ? 'Collect discount codes now' : 'Thu thập mã giảm giá ngay'}</p>
           </div>
         </div>
 
@@ -53,8 +55,15 @@ export const StorefrontVoucherBanner = () => {
             const isSaved = savedVouchers.includes(voucher.code);
             const isPercent = voucher.discountType === 'percent';
             const discountText = isPercent 
-              ? `Giảm ${voucher.discountValue}%` 
-              : `Giảm ${(voucher.discountValue / 1000)}K`;
+              ? (language === 'en' ? `${voucher.discountValue}% off` : `Giảm ${voucher.discountValue}%`)
+              : (language === 'en' ? `${(voucher.discountValue / 1000)}K off` : `Giảm ${(voucher.discountValue / 1000)}K`);
+            const voucherName = language === 'en'
+              ? voucher.name
+                .replace(/Mã giảm giá/gi, 'Discount code')
+                .replace(/Giảm giá/gi, 'Discount')
+                .replace(/Khách mới/gi, 'New customer')
+                .replace(/cuối tuần/gi, 'weekend')
+              : voucher.name;
 
             return (
               <div 
@@ -67,7 +76,7 @@ export const StorefrontVoucherBanner = () => {
                     {isPercent ? `${voucher.discountValue}%` : `${voucher.discountValue / 1000}K`}
                   </div>
                   <div className="text-[10px] font-bold uppercase tracking-widest mt-1 opacity-90 text-center">
-                    {voucher.type === 'hoan_xu' ? 'Hoàn Xu' : 'Giảm Giá'}
+                    {voucher.type === 'hoan_xu' ? (language === 'en' ? 'Cashback' : 'Hoàn Xu') : (language === 'en' ? 'Discount' : 'Giảm Giá')}
                   </div>
                   {/* Decorative cutouts */}
                   <div className="absolute top-1/2 -translate-y-1/2 -right-2 h-4 w-4 rounded-full bg-white" />
@@ -78,10 +87,10 @@ export const StorefrontVoucherBanner = () => {
                   <div className="absolute top-1/2 -translate-y-1/2 -left-2 h-4 w-4 rounded-full bg-white" />
                   
                   <div>
-                    <h3 className="text-sm font-bold text-zinc-900 line-clamp-1">{voucher.name}</h3>
-                    <p className="text-[11px] font-medium text-zinc-500 mt-1">Đơn tối thiểu {voucher.minOrderValue.toLocaleString('vi-VN')}đ</p>
+                    <h3 className="text-sm font-bold text-zinc-900 line-clamp-1">{voucherName}</h3>
+                    <p className="text-[11px] font-medium text-zinc-500 mt-1">{language === 'en' ? 'Min. order' : 'Đơn tối thiểu'} {voucher.minOrderValue.toLocaleString('vi-VN')}đ</p>
                     {isPercent && voucher.maxDiscountValue ? (
-                      <p className="text-[10px] font-medium text-[#ee4d2d] mt-0.5">Giảm tối đa {voucher.maxDiscountValue.toLocaleString('vi-VN')}đ</p>
+                      <p className="text-[10px] font-medium text-[#ee4d2d] mt-0.5">{language === 'en' ? 'Max discount' : 'Giảm tối đa'} {voucher.maxDiscountValue.toLocaleString('vi-VN')}đ</p>
                     ) : null}
                   </div>
 
@@ -89,7 +98,7 @@ export const StorefrontVoucherBanner = () => {
                     <div className="flex items-center gap-1">
                       <Clock className="h-3 w-3 text-zinc-400" />
                       <span className="text-[10px] font-medium text-zinc-400">
-                        HSD: {new Date(voucher.endTime).toLocaleDateString('vi-VN')}
+                        {language === 'en' ? 'Exp:' : 'HSD:'} {new Date(voucher.endTime).toLocaleDateString('vi-VN')}
                       </span>
                     </div>
 
@@ -97,7 +106,7 @@ export const StorefrontVoucherBanner = () => {
                       onClick={() => {
                         if (!isSaved) {
                           saveVoucher(voucher.code);
-                          toast.success(`Đã lưu mã ${voucher.code}`);
+                          toast.success(language === 'en' ? `Saved code ${voucher.code}` : `Đã lưu mã ${voucher.code}`);
                         }
                       }}
                       className={cn(
@@ -109,10 +118,10 @@ export const StorefrontVoucherBanner = () => {
                     >
                       {isSaved ? (
                         <>
-                          <Check className="h-3 w-3" /> Đã lưu
+                          <Check className="h-3 w-3" /> {language === 'en' ? 'Saved' : 'Đã lưu'}
                         </>
                       ) : (
-                        'Lưu mã'
+                        (language === 'en' ? 'Save' : 'Lưu mã')
                       )}
                     </button>
                   </div>

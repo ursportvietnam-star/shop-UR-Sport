@@ -32,7 +32,7 @@ export function showAddToCartToast({ productName, image, meta, onCheckout }: Add
         </div>
 
         <div className="min-w-0 flex-1 pt-0.5">
-          <p className="text-[13px] font-black leading-snug text-zinc-950">Đã thêm vào giỏ hàng</p>
+          <p className="text-[13px] font-black leading-snug text-[#005594]">Đã thêm vào giỏ hàng</p>
           <p className="mt-0.5 line-clamp-2 text-[13px] font-semibold leading-snug text-zinc-800">
             {productName}
           </p>
@@ -44,7 +44,7 @@ export function showAddToCartToast({ productName, image, meta, onCheckout }: Add
             toast.dismiss(toastId);
             onCheckout();
           }}
-          className="mt-1 shrink-0 rounded-md bg-zinc-950 px-3 py-2 text-[11px] font-black text-white transition-colors hover:bg-[#1e4b64]"
+          className="mt-1 shrink-0 rounded-md bg-[#1e4b64] px-3 py-2 text-[11px] font-black text-white shadow-sm transition-colors hover:bg-[#153a4d]"
         >
           Thanh toán ngay
         </button>

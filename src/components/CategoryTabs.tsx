@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 type Item = {
   id: number | string;
   label: string;
+  displayLabel?: string;
   link: string;
 };
 
@@ -32,7 +33,7 @@ export const CategoryTabs: React.FC<CategoryTabsProps> = ({ categories = [], act
                     : "bg-white hover:bg-zinc-50 text-zinc-600 hover:text-zinc-900 border border-zinc-200 shadow-sm"
                 )}
               >
-                {c.label}
+                {c.displayLabel || c.label}
               </button>
             );
           })}

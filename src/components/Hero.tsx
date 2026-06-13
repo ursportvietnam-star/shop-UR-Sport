@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { getDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { readLocalHomepageBanners, readLocalHomepageMobileBanners } from '../lib/homepageConfig';
+import { useLanguage } from '../LanguageContext';
 
 const splitHeroTitle = (title: string) => {
   const normalized = title.replace(/\s+/g, ' ').trim();
@@ -51,6 +52,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   isMobile
 }) => {
   const navigate = useNavigate();
+  const { language } = useLanguage();
 
   const handleNext = () => {
     setCurrentIndex((prev) => (prev + 1) % banners.length);
@@ -78,18 +80,29 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
       <div className="relative h-[500px] w-full flex items-center justify-center bg-zinc-950 text-center px-4">
         <div className="max-w-2xl">
           <h1 className="text-white text-3xl font-black mb-4 uppercase tracking-tighter">
-            {headingOverride || 'Chào mừng đến với UR SPORT'}
+            {language === 'en' ? (headingOverride || 'Welcome to UR SPORT') : (headingOverride || 'Chào mừng đến với UR SPORT')}
           </h1>
-          <p className="text-white/40 mb-8">Hãy cập nhật Banner trong trang quản trị để bắt đầu.</p>
+          <p className="text-white/40 mb-8">{language === 'en' ? 'Update banners in the admin page to get started.' : 'Hãy cập nhật Banner trong trang quản trị để bắt đầu.'}</p>
           <Button onClick={onShopClick} className="bg-white text-black hover:bg-zinc-200 font-bold px-8 py-6 rounded-2xl">
-            KHÁM PHÁ CỬA HÀNG
+            {language === 'en' ? 'EXPLORE SHOP' : 'KHÁM PHÁ CỬA HÀNG'}
           </Button>
         </div>
       </div>
     );
   }
 
-  const heroTitleLines = splitHeroTitle(headingOverride || banners[currentIndex]?.title || 'UR Sport');
+  const translateBannerText = (value = '') => {
+    if (language !== 'en') return value;
+    return value
+      .replace(/Phong Cách Thể Thao Đẳng Cấp/gi, 'Premium Sportswear Style')
+      .replace(/URSport – Thời Trang Thể Thao Nam Cao Cấp/gi, 'URSport - Premium Men\'s Sportswear')
+      .replace(/Năng Động & Nam Tính/gi, 'Active & Masculine')
+      .replace(/Áo Thun, Áo Polo Nam/gi, "Men's T-Shirts and Polo Shirts")
+      .replace(/Hiệu suất tối đa, phong cách vượt trội cho mọi hành trình./gi, 'Maximum performance and standout style for every journey.')
+      .replace(/Khám phá/gi, 'Explore');
+  };
+
+  const heroTitleLines = splitHeroTitle(translateBannerText(headingOverride || banners[currentIndex]?.title || 'UR Sport'));
 
   return (
     <div className="relative h-[560px] sm:h-[clamp(360px,36vw,520px)] w-full overflow-hidden bg-[#dceefa] group/hero">
@@ -169,7 +182,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
               transition={{ delay: 0.8, duration: 0.8 }}
               className="mb-6 max-w-sm text-[13px] font-semibold leading-relaxed text-white/85 drop-shadow-sm sm:text-[16px]"
             >
-              {banners[currentIndex]?.subtitle || 'Hiệu suất tối đa, phong cách vượt trội cho mọi hành trình.'}
+            {translateBannerText(banners[currentIndex]?.subtitle || 'Hiệu suất tối đa, phong cách vượt trội cho mọi hành trình.')}
             </motion.p>
             
             <div className="flex flex-wrap gap-4">
@@ -177,7 +190,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
                 onClick={handleButtonClick}
                 className="group relative flex items-center gap-3 overflow-hidden rounded-full bg-white px-8 py-4 text-[12px] font-black uppercase tracking-widest text-black shadow-2xl transition-all hover:bg-[#1e4b64] hover:text-white active:scale-95 sm:px-10"
               >
-                <span className="relative z-10">Khám phá ngay</span>
+                <span className="relative z-10">{language === 'en' ? 'Explore now' : 'Khám phá ngay'}</span>
                 <ArrowRight className="h-4 w-4 relative z-10 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>

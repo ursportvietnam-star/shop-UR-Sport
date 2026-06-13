@@ -32,6 +32,9 @@ import { STATIC_BLOG_POSTS as POSTS } from '../data';
 import { useProducts } from '../ProductsContext';
 import { LazyImage } from './LazyImage';
 import { getProductPath } from '../lib/productUrls';
+import { useLanguage } from '../LanguageContext';
+import { getLocalizedBlogField } from '../lib/blogI18n';
+import { getLocalizedProductName } from '../lib/productI18n';
 import {
   DEFAULT_BLOG_PAGE_SECTIONS,
   mergeBlogPageSections,
@@ -439,13 +442,65 @@ export function NewsPage() {
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const [copied, setCopied] = useState(false);
+  const { language } = useLanguage();
+  const selectedPostTitle = getLocalizedBlogField(selectedPost, 'title', language, selectedPost?.title || 'Blog UR Sport');
+  const selectedPostExcerpt = getLocalizedBlogField(selectedPost, 'excerpt', language, selectedPost?.excerpt || '');
+  const selectedPostContent = getLocalizedBlogField(selectedPost, 'content', language, selectedPost?.content || '');
+  const selectedPostCategory = getLocalizedBlogField(selectedPost, 'category', language, selectedPost?.category || '');
+  const selectedPostSeoTitle = getLocalizedBlogField(selectedPost, 'seoTitle', language, selectedPost?.seoTitle || '');
+  const selectedPostMetaDescription = getLocalizedBlogField(selectedPost, 'metaDescription', language, selectedPost?.metaDescription || '');
+  const localizeBlogText = (value = '') => {
+    if (language !== 'en') return value;
+    const categoryLabel = getLocalizedBlogField({ id: '', slug: '', title: '', excerpt: '', content: '', date: '', author: '', image: '', category: value }, 'category', language, value);
+    if (categoryLabel !== value) return categoryLabel;
+    const exact: Record<string, string> = {
+      'Blog Đồ Thể Thao Nam: Áo Thun, Quần Thể Thao & Đồ Gym Nam':
+        'Men\'s Sportswear Blog: T-Shirts, Sports Bottoms and Gym Wear',
+      'Blog Đồ Thể Thao Nam: Áo Thun, Đồ Gym | UR Sport':
+        'Men\'s Sportswear Blog: T-Shirts and Gym Wear | UR Sport',
+      'Kiến thức chọn áo thun nam, áo thun thể thao nam, quần thể thao nam và đồ gym nam theo chất liệu, form dáng, cách phối đồ và nhu cầu tập luyện hằng ngày.':
+        'Guides to men\'s T-shirts, performance shirts, sports bottoms and gym wear by material, fit, styling and daily training needs.',
+      'Chọn áo thun nam mát, bền form, không xù lông và dễ phối hằng ngày.':
+        'Choose men\'s T-shirts that feel cool, keep their shape, resist pilling and are easy to style every day.',
+      'Áo tập gym, chạy bộ, quick dry, co giãn và thấm hút mồ hôi.':
+        'Gym and running shirts with quick-dry comfort, stretch and sweat control.',
+      'Quần short, jogger, quần gym theo dáng người và mục đích sử dụng.':
+        'Shorts, joggers and gym bottoms by body shape and use case.',
+      'Cotton, polyester, spandex, quick dry, thấm hút và chống mùi.':
+        'Cotton, polyester, spandex and quick-dry fabrics for sweat control and odor resistance.',
+      'Outfit đi gym, đi chơi, đi làm, chạy bộ và mặc mùa hè.':
+        'Outfit ideas for the gym, casual wear, work, running and summer days.',
+    };
+    if (exact[value]) return exact[value];
+    return value
+      .replace(/Danh mục blog/gi, 'Blog category')
+      .replace(/Bài viết mới về đồ thể thao nam/gi, 'Latest men\'s sportswear articles')
+      .replace(/Bài viết theo danh mục/gi, 'Articles by category')
+      .replace(/Bài viết mới/gi, 'Latest articles')
+      .replace(/Bài viết/gi, 'Articles')
+      .replace(/Tin tức/gi, 'News')
+      .replace(/Áo thun thể thao nam/gi, "Men's Performance T-Shirts")
+      .replace(/Áo thun nam/gi, "Men's T-Shirts")
+      .replace(/Quần thể thao nam/gi, "Men's Sports Bottoms")
+      .replace(/Chất liệu vải thể thao/gi, 'Performance Fabrics')
+      .replace(/Chất liệu áo quần thể thao nam/gi, 'Men\'s Sportswear Fabrics')
+      .replace(/Chất liệu áo thun nam/gi, 'Men\'s T-Shirt Fabrics')
+      .replace(/Chất liệu & form dáng/gi, 'Materials and Fit')
+      .replace(/Chất liệu/gi, 'Materials')
+      .replace(/Cách chọn/gi, 'How to choose')
+      .replace(/Hướng dẫn/gi, 'Guide')
+      .replace(/đồ thể thao nam/gi, 'men\'s sportswear')
+      .replace(/danh mục/gi, 'category')
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
 
   useEffect(() => {
     if (!selectedPost) return;
     const key = `ursport_blog_liked_${selectedPost.id}`;
     setLiked(localStorage.getItem(key) === 'true');
-    setLikesCount(Math.floor((selectedPost.title.length * 7) % 40) + 12);
-  }, [selectedPost]);
+    setLikesCount(Math.floor((selectedPostTitle.length * 7) % 40) + 12);
+  }, [selectedPost, selectedPostTitle]);
 
   const handleLike = () => {
     if (!selectedPost) return;
@@ -647,7 +702,7 @@ export function NewsPage() {
         .replace(/\s+/g, '-')
         .replace(/-+/g, '-');
 
-    let rawHtml = selectedPost.content || '';
+    let rawHtml = getLocalizedBlogField(selectedPost, 'content', language, selectedPost.content || '');
     if (!rawHtml.trim().startsWith('<')) {
       rawHtml = rawHtml
         .split('\n\n')
@@ -844,7 +899,7 @@ export function NewsPage() {
     });
 
     setContentHtml(processedHtml);
-  }, [selectedPost]);
+  }, [selectedPost, language]);
 
   useEffect(() => {
     const root = blogContentRef.current;
@@ -1026,14 +1081,16 @@ export function NewsPage() {
   const currentBlogHubSlug = !selectedPost && !isBlogHome ? getSlugFromCategoryPath(blogCanonical) : '';
   const currentBlogHubProductLink = currentBlogHubSlug ? BLOG_HUB_PRODUCT_LINKS[currentBlogHubSlug] : undefined;
   const currentBlogHubTitle = currentBlogMeta?.h1 || activeCategory;
-  const blogHomeTitle = isBlogHome ? BLOG_HOME_SEO.h1 : currentBlogMeta?.h1;
-  const blogHomeDescription = isBlogHome ? BLOG_HOME_SEO.description : currentBlogMeta?.description;
+  const rawBlogHomeTitle = isBlogHome ? BLOG_HOME_SEO.h1 : currentBlogMeta?.h1;
+  const rawBlogHomeDescription = isBlogHome ? BLOG_HOME_SEO.description : currentBlogMeta?.description;
+  const blogHomeTitle = localizeBlogText(rawBlogHomeTitle || '');
+  const blogHomeDescription = localizeBlogText(rawBlogHomeDescription || '');
   const blogSchema = selectedPost ? buildSeoGraph(
     {
       '@type': 'Article',
       '@id': `${absoluteUrl(postCanonical)}#article`,
-      headline: selectedPost.title || 'Bài viết',
-      description: cleanSeoText(selectedPost.metaDescription || selectedPost.excerpt || selectedPost.content, 220),
+      headline: selectedPostTitle || 'Blog UR Sport',
+      description: cleanSeoText(selectedPostMetaDescription || selectedPostExcerpt || selectedPostContent, 220),
       image: [absoluteUrl(selectedPost.image)],
       url: absoluteUrl(postCanonical),
       mainEntityOfPage: absoluteUrl(postCanonical),
@@ -1049,13 +1106,13 @@ export function NewsPage() {
         url: SITE_URL
       },
       publisher: { '@id': `${SITE_URL}/#organization` },
-      inLanguage: 'vi-VN',
-      wordCount: selectedPost.content ? selectedPost.content.split(/\s+/).length : 0
+      inLanguage: language === 'en' ? 'en-US' : 'vi-VN',
+      wordCount: selectedPostContent ? selectedPostContent.split(/\s+/).length : 0
     },
     buildBreadcrumbSchema([
       { name: 'Trang chủ', url: '/' },
       { name: 'Blog', url: '/blog' },
-      { name: selectedPost.title, url: postCanonical }
+      { name: selectedPostTitle, url: postCanonical }
     ])
   ) : buildSeoGraph({
     '@type': 'Blog',
@@ -1063,13 +1120,13 @@ export function NewsPage() {
     url: absoluteUrl(blogCanonical),
     name: blogHomeTitle || 'Blog UR Sport',
     description: blogHomeDescription,
-    inLanguage: 'vi-VN',
+    inLanguage: language === 'en' ? 'en-US' : 'vi-VN',
     publisher: { '@id': `${SITE_URL}/#organization` }
   });
 
   useSEO({
-    title: selectedPost ? (selectedPost.seoTitle || `${selectedPost.title} | Blog UR Sport`) : (isBlogHome ? BLOG_HOME_SEO.title : (currentBlogMeta?.seoTitle || `${currentBlogMeta?.h1 || 'Blog'} | UR Sport`)),
-    description: selectedPost ? (selectedPost.metaDescription || selectedPost.excerpt || selectedPost.title) : (isBlogHome ? BLOG_HOME_SEO.description : (currentBlogMeta?.metaDescription || currentBlogMeta?.description || '')),
+    title: selectedPost ? (selectedPostSeoTitle || `${selectedPostTitle} | Blog UR Sport`) : (language === 'en' ? `${blogHomeTitle || 'UR Sport Blog'} | UR Sport` : (isBlogHome ? BLOG_HOME_SEO.title : (currentBlogMeta?.seoTitle || `${currentBlogMeta?.h1 || 'Blog'} | UR Sport`))),
+    description: selectedPost ? (selectedPostMetaDescription || selectedPostExcerpt || selectedPostTitle) : (language === 'en' ? blogHomeDescription : (isBlogHome ? BLOG_HOME_SEO.description : (currentBlogMeta?.metaDescription || currentBlogMeta?.description || ''))),
     canonical: postCanonical,
     image: selectedPost?.image,
     type: selectedPost ? "article" : "website",
@@ -1085,9 +1142,9 @@ export function NewsPage() {
 
     const queryNormalized = normalizeTextForMatch(searchQuery);
     return (
-      normalizeTextForMatch(post.title || '').includes(queryNormalized) ||
-      normalizeTextForMatch(post.excerpt || '').includes(queryNormalized) ||
-      normalizeTextForMatch(post.category || '').includes(queryNormalized)
+      normalizeTextForMatch(getLocalizedBlogField(post, 'title', language, post.title || '')).includes(queryNormalized) ||
+      normalizeTextForMatch(getLocalizedBlogField(post, 'excerpt', language, post.excerpt || '')).includes(queryNormalized) ||
+      normalizeTextForMatch(getLocalizedBlogField(post, 'category', language, post.category || '')).includes(queryNormalized)
     );
   });
   const mobileFeaturedPosts = filteredPosts.slice(0, 3);
@@ -1131,8 +1188,12 @@ export function NewsPage() {
     post?.images?.find((image: string) => image?.trim?.()) ||
     getFirstPostContentImage(post?.content) ||
     getMobilePostFallbackImage(post);
+  const getMobilePostTitle = (post: any) =>
+    getLocalizedBlogField(post, 'title', language, post?.title || '');
   const getMobilePostText = (post: any) =>
-    post?.excerpt || post?.metaDescription || post?.title || '';
+    getLocalizedBlogField(post, 'excerpt', language, post?.excerpt || '') ||
+    getLocalizedBlogField(post, 'metaDescription', language, post?.metaDescription || '') ||
+    getMobilePostTitle(post);
 
   const scrollToTocHeading = (headingId: string, offset = 100) => {
     setIsExpanded(true);
@@ -1179,7 +1240,7 @@ export function NewsPage() {
                   onClick={() => setInlineTocOpenId(inlineTocOpenId === activeHeadingId ? null : activeHeadingId)}
                   className="flex-shrink-0 text-[11px] font-bold px-3 py-1.5 rounded-lg bg-zinc-50 hover:bg-zinc-100 text-[#1e4b64] transition-all flex items-center gap-1 border border-zinc-200 cursor-pointer"
                 >
-                  {inlineTocOpenId === activeHeadingId ? 'Thu gọn' : 'Xem mục lục'}
+                  {inlineTocOpenId === activeHeadingId ? (language === 'en' ? 'Collapse' : 'Thu gọn') : (language === 'en' ? 'View table of contents' : 'Xem mục lục')}
                   <ChevronDown className={cn("h-3.5 w-3.5 transition-transform duration-300", inlineTocOpenId === activeHeadingId && "rotate-180")} />
                 </button>
               </div>
@@ -1196,7 +1257,7 @@ export function NewsPage() {
                     <div className="max-w-[936px] mx-auto rounded-2xl bg-zinc-50 border border-zinc-200 p-6 shadow-md max-h-[min(70vh,720px)] overflow-y-auto custom-scrollbar">
                       <div className="flex items-center justify-between border-b border-zinc-150 pb-3 mb-4">
                         <h4 className="text-sm font-black text-zinc-955 uppercase tracking-wider">
-                          Mục lục bài viết
+                          {language === 'en' ? 'Article contents' : 'Mục lục bài viết'}
                         </h4>
                         <button
                           onClick={() => setInlineTocOpenId(null)}
@@ -1235,17 +1296,17 @@ export function NewsPage() {
           <button onClick={() => navigate("/")} className="shrink-0 hover:text-zinc-900 transition-colors cursor-pointer">Trang chủ</button>
           <ChevronRight className="h-3 w-3 shrink-0" />
           <button onClick={() => navigate("/blog")} className="shrink-0 hover:text-zinc-900 transition-colors cursor-pointer">Blog</button>
-          {selectedPost.category && (() => {
+          {selectedPostCategory && (() => {
             const cat = blogCategories.find(c => 
-              c.label.toLowerCase() === selectedPost.category.toLowerCase() ||
-              selectedPost.category.toLowerCase().includes(c.label.toLowerCase()) ||
-              c.label.toLowerCase().includes(selectedPost.category.toLowerCase())
+              c.label.toLowerCase() === selectedPostCategory.toLowerCase() ||
+              selectedPostCategory.toLowerCase().includes(c.label.toLowerCase()) ||
+              c.label.toLowerCase().includes(selectedPostCategory.toLowerCase())
             ) || DEFAULT_BLOG_CATEGORY_ITEMS.find(c => 
-              c.label.toLowerCase() === selectedPost.category.toLowerCase() ||
-              selectedPost.category.toLowerCase().includes(c.label.toLowerCase()) ||
-              c.label.toLowerCase().includes(selectedPost.category.toLowerCase())
+              c.label.toLowerCase() === selectedPostCategory.toLowerCase() ||
+              selectedPostCategory.toLowerCase().includes(c.label.toLowerCase()) ||
+              c.label.toLowerCase().includes(selectedPostCategory.toLowerCase())
             );
-            const catLink = cat ? cat.link : `/blog/category/${slugifyCategory(selectedPost.category)}`;
+            const catLink = cat ? cat.link : `/blog/category/${slugifyCategory(selectedPostCategory)}`;
             return (
               <>
                 <ChevronRight className="h-3 w-3 shrink-0" />
@@ -1253,19 +1314,19 @@ export function NewsPage() {
                   onClick={() => navigate(catLink)} 
                   className="shrink-0 hover:text-zinc-900 transition-colors cursor-pointer"
                 >
-                  {selectedPost.category}
+                  {selectedPostCategory}
                 </button>
               </>
             );
           })()}
           <ChevronRight className="h-3 w-3 shrink-0" />
-          <span className="min-w-[140px] max-w-[55vw] truncate text-zinc-600 sm:max-w-md">{selectedPost.title}</span>
+          <span className="min-w-[140px] max-w-[55vw] truncate text-zinc-600 sm:max-w-md">{selectedPostTitle}</span>
         </nav>
 
         {/* Post Metadata Hero Block */}
         <div className="max-w-4xl mb-8">
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-zinc-955 leading-tight tracking-tight mb-6">
-            {selectedPost.title}
+            {selectedPostTitle}
           </h1>
 
           <div className="flex items-center gap-3.5 pb-6 border-b border-zinc-100">
@@ -1282,7 +1343,7 @@ export function NewsPage() {
                 <span className="w-1 h-1 rounded-full bg-zinc-300" />
                 <div className="flex items-center gap-1">
                   <Clock className="h-3.5 w-3.5 animate-pulse" />
-                  <span>{Math.max(1, Math.ceil((selectedPost.content?.split(/\s+/).length || 0) / 200))} phút đọc</span>
+                  <span>{Math.max(1, Math.ceil((selectedPostContent?.split(/\s+/).length || 0) / 200))} {language === 'en' ? 'min read' : 'phút đọc'}</span>
                 </div>
               </div>
             </div>
@@ -1293,7 +1354,7 @@ export function NewsPage() {
         <div className="blog-hero-image relative aspect-video overflow-hidden rounded-[32px] mb-12 shadow-lg border border-zinc-100">
           <img 
             src={selectedPost.image} 
-            alt={selectedPost.title} 
+            alt={selectedPostTitle} 
             loading="lazy"
             className="h-full w-full object-cover transition-transform duration-700 hover:scale-102"
           />
@@ -1308,13 +1369,13 @@ export function NewsPage() {
                 <div className="mb-10 p-6 rounded-2xl bg-zinc-50 border border-zinc-200/60 shadow-sm w-full lg:hidden">
                   <div className="flex items-center justify-between border-b border-zinc-150 pb-3 mb-4">
                     <h4 className="text-sm font-black text-zinc-955 uppercase tracking-wider">
-                      Mục lục
+                      {language === 'en' ? 'Contents' : 'Mục lục'}
                     </h4>
                     <button 
                       onClick={() => setIsStaticTocOpen(!isStaticTocOpen)}
                       className="text-xs text-[#1e4b64] flex items-center gap-1 hover:underline font-bold uppercase tracking-wider cursor-pointer"
                     >
-                      {isStaticTocOpen ? 'Ẩn' : 'Hiện'} 
+                      {isStaticTocOpen ? (language === 'en' ? 'Hide' : 'Ẩn') : (language === 'en' ? 'Show' : 'Hiện')} 
                       <ChevronDown className={cn("h-4 w-4 transition-transform duration-300", isStaticTocOpen ? "rotate-180" : "rotate-0")} />
                     </button>
                   </div>
@@ -1375,7 +1436,7 @@ export function NewsPage() {
                         onClick={() => setInlineTocOpenId(isThisOpen ? null : heading.id)}
                         className="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-zinc-50 hover:bg-zinc-100 text-[#1e4b64] transition-all flex items-center gap-1 border border-zinc-200 cursor-pointer"
                       >
-                        {isThisOpen ? 'Thu gọn' : 'Xem thêm'}
+                        {isThisOpen ? (language === 'en' ? 'Collapse' : 'Thu gọn') : (language === 'en' ? 'View more' : 'Xem thêm')}
                         <ChevronDown className={cn("h-3.5 w-3.5 transition-transform duration-300", isThisOpen && "rotate-180")} />
                       </button>,
                       actionAnchor
@@ -1388,13 +1449,13 @@ export function NewsPage() {
                       >
                         <div className="flex items-center justify-between mb-4 pb-2 border-b border-zinc-150">
                           <h4 className="text-sm font-black text-zinc-955 uppercase tracking-wider">
-                            Mục lục
+                            {language === 'en' ? 'Contents' : 'Mục lục'}
                           </h4>
                           <button 
                             onClick={() => setInlineTocOpenId(null)}
                             className="text-xs text-[#1e4b64] flex items-center gap-1 hover:underline font-bold uppercase tracking-wider cursor-pointer"
                           >
-                            Ẩn <ChevronDown className="h-4 w-4 rotate-180" />
+                            {language === 'en' ? 'Hide' : 'Ẩn'} <ChevronDown className="h-4 w-4 rotate-180" />
                           </button>
                         </div>
                         <div className="space-y-2.5">
@@ -1431,7 +1492,7 @@ export function NewsPage() {
                 onClick={() => setIsExpanded(!isExpanded)}
                 className="px-8 py-3.5 bg-white text-[#1e4b64] border border-zinc-200 text-sm font-black uppercase tracking-wider rounded-full shadow-md hover:text-[#153446] hover:border-[#1e4b64] hover:-translate-y-1 transition-all flex items-center gap-2 group cursor-pointer"
               >
-                <span>{isExpanded ? 'Thu gọn bài viết' : 'Đọc tiếp bài viết'}</span>
+                <span>{isExpanded ? (language === 'en' ? 'Collapse article' : 'Thu gọn bài viết') : (language === 'en' ? 'Continue reading' : 'Đọc tiếp bài viết')}</span>
                 <ChevronDown className={cn("h-4 w-4 transition-all duration-300", isExpanded && "rotate-180")} />
               </button>
             </div>
@@ -1447,13 +1508,13 @@ export function NewsPage() {
                       ? "bg-rose-500 border-rose-500 text-white shadow-rose-500/25 hover:bg-rose-600"
                       : "bg-white border-zinc-200 text-zinc-500 hover:text-zinc-800 hover:border-zinc-300"
                   )}
-                  aria-label="Yêu thích bài viết"
+                  aria-label={language === 'en' ? 'Like article' : 'Yêu thích bài viết'}
                 >
                   <Heart className={cn("h-5 w-5", liked && "fill-current")} />
                 </button>
                 <div>
-                  <span className="block text-sm font-black text-zinc-955 leading-none mb-1.5">Bài viết hữu ích?</span>
-                  <span className="text-xs font-bold text-zinc-500">{likesCount} lượt yêu thích</span>
+                  <span className="block text-sm font-black text-zinc-955 leading-none mb-1.5">{language === 'en' ? 'Helpful article?' : 'Bài viết hữu ích?'}</span>
+                  <span className="text-xs font-bold text-zinc-500">{likesCount} {language === 'en' ? 'likes' : 'lượt yêu thích'}</span>
                 </div>
               </div>
               
@@ -1461,7 +1522,7 @@ export function NewsPage() {
                 <button 
                   onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, '_blank')}
                   className="h-10 w-10 rounded-full flex items-center justify-center bg-[#1877f2] hover:bg-[#166fe5] text-white transition-colors shadow-xs cursor-pointer"
-                  title="Chia sẻ lên Facebook"
+                  title={language === 'en' ? 'Share on Facebook' : 'Chia sẻ lên Facebook'}
                 >
                   <Facebook className="h-4 w-4" />
                 </button>
@@ -1475,7 +1536,7 @@ export function NewsPage() {
                   )}
                 >
                   <Link className="h-3.5 w-3.5" />
-                  <span>{copied ? 'Đã sao chép!' : 'Sao chép link'}</span>
+                  <span>{copied ? (language === 'en' ? 'Copied!' : 'Đã sao chép!') : (language === 'en' ? 'Copy link' : 'Sao chép link')}</span>
                 </button>
               </div>
             </div>
@@ -1484,7 +1545,7 @@ export function NewsPage() {
               <div className="grid gap-6 mt-10 sm:grid-cols-2 w-full">
                 {selectedPost.images.map((img, index) => (
                   <div key={index} className="overflow-hidden rounded-[24px] bg-zinc-50 border border-zinc-100 shadow-sm w-full aspect-[4/3]">
-                    <img src={img} alt={`${selectedPost.title} - Ảnh ${index + 1}`} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 hover:scale-103" />
+                    <img src={img} alt={`${selectedPostTitle} - image ${index + 1}`} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 hover:scale-103" />
                   </div>
                 ))}
               </div>
@@ -1517,7 +1578,7 @@ export function NewsPage() {
                 {/* Dynamic scroll-following TOC */}
                 <div className="p-6 rounded-2xl bg-zinc-50 border border-zinc-200/60 shadow-xs">
                   <h4 className="text-[11px] font-black text-zinc-455 uppercase tracking-[0.2em] mb-4 pb-2 border-b border-zinc-150">
-                    Mục lục bài viết
+                    {language === 'en' ? 'Article contents' : 'Mục lục bài viết'}
                   </h4>
                   <nav className="space-y-3">
                       {tocHeadings.map((heading) => {
@@ -1544,10 +1605,12 @@ export function NewsPage() {
                 {/* Related Posts */}
                 <div>
                   <h3 className="text-[11px] font-black text-zinc-455 uppercase tracking-[0.2em] mb-5 border-b border-zinc-150 pb-2 truncate">
-                    BÀI VIẾT LIÊN QUAN
+                    {language === 'en' ? 'RELATED ARTICLES' : 'BÀI VIẾT LIÊN QUAN'}
                   </h3>
                   <div className="space-y-5">
-                    {relatedPosts.slice(0, 3).map((post) => (
+                    {relatedPosts.slice(0, 3).map((post) => {
+                      const relatedTitle = getLocalizedBlogField(post, 'title', language, post.title || '');
+                      return (
                       <div 
                         key={post.id} 
                         className="flex gap-4 group cursor-pointer"
@@ -1556,18 +1619,18 @@ export function NewsPage() {
                         <div className="w-16 h-16 flex-shrink-0 overflow-hidden rounded-xl bg-zinc-50 border border-zinc-100 shadow-xs">
                            <LazyImage 
                             src={post.image} 
-                            alt={post.title} 
+                            alt={relatedTitle} 
                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                            />
                         </div>
                         <div className="flex flex-col justify-center min-w-0">
                            <h4 className="font-bold text-xs text-zinc-900 group-hover:text-[#1e4b64] transition-colors leading-snug line-clamp-2">
-                             {post.title}
+                             {relatedTitle}
                            </h4>
                            <span className="text-[10px] font-bold text-zinc-400 mt-1">{post.date}</span>
                         </div>
                       </div>
-                    ))}
+                    )})}
                   </div>
                 </div>
 
@@ -1576,13 +1639,15 @@ export function NewsPage() {
                   <div className="absolute top-[-20%] left-[-10%] w-[50%] aspect-square rounded-full bg-white/5 blur-2xl pointer-events-none" />
                   <h4 className="text-sm font-black uppercase tracking-wider mb-2">UR SPORT Premium</h4>
                   <p className="text-xs text-zinc-300 mb-4 leading-normal">
-                    Chất liệu tối ưu hoàn hảo cho buổi tập hiệu năng cao. Khám phá bộ sưu tập mới nhất.
+                    {language === 'en'
+                      ? 'Optimized materials for high-performance training. Explore the latest collection.'
+                      : 'Chất liệu tối ưu hoàn hảo cho buổi tập hiệu năng cao. Khám phá bộ sưu tập mới nhất.'}
                   </p>
                   <button 
                     onClick={() => navigate('/shop')}
                     className="w-full py-2.5 rounded-xl bg-white hover:bg-zinc-100 text-zinc-900 font-black text-xs uppercase tracking-widest transition-all cursor-pointer shadow-xs"
                   >
-                    Mua sắm ngay
+                    {language === 'en' ? 'Shop now' : 'Mua sắm ngay'}
                   </button>
                 </div>
               </div>
@@ -1593,13 +1658,13 @@ export function NewsPage() {
         {/* Related Products Widget */}
         <div className="w-full mt-16 pt-12 border-t border-zinc-200">
           <div className="flex items-center justify-between gap-6 mb-8">
-            <h3 className="text-lg sm:text-xl font-extrabold text-[#1e4b64] uppercase tracking-tight">SẢN PHẨM PHÙ HỢP VỚI BẠN</h3>
+            <h3 className="text-lg sm:text-xl font-extrabold text-[#1e4b64] uppercase tracking-tight">{language === 'en' ? 'RECOMMENDED PRODUCTS FOR YOU' : 'SẢN PHẨM PHÙ HỢP VỚI BẠN'}</h3>
             <button
               type="button"
               onClick={() => navigate('/shop')}
               className="text-[#1e4b64] text-xs sm:text-sm font-black uppercase tracking-wider flex items-center gap-1 hover:opacity-80 transition-all group flex-shrink-0 cursor-pointer"
             >
-              <span>Xem tất cả</span>
+              <span>{language === 'en' ? 'View all' : 'Xem tất cả'}</span>
               <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
@@ -1616,12 +1681,12 @@ export function NewsPage() {
                 <div className="relative aspect-[4/5] w-full overflow-hidden bg-zinc-50">
                   <LazyImage
                     src={product.images[0]}
-                    alt={product.name}
+                    alt={getLocalizedProductName(product, language)}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                   {product.discountPrice && (
                     <span className="absolute top-2 left-2 px-2 py-1 rounded bg-rose-500 text-white font-black text-[9px] uppercase tracking-wider shadow-sm">
-                      Giảm giá
+                      {language === 'en' ? 'Sale' : 'Giảm giá'}
                     </span>
                   )}
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/2 transition-colors" />
@@ -1631,7 +1696,7 @@ export function NewsPage() {
                 </div>
                 <div className="p-4 flex-grow flex flex-col justify-between">
                   <h4 className="text-[13px] font-bold text-zinc-800 leading-snug line-clamp-2 group-hover:text-[#1e4b64] transition-colors mb-2">
-                    {product.name}
+                    {getLocalizedProductName(product, language)}
                   </h4>
                   <div className="flex items-center gap-2 mt-auto">
                     <span className="text-[15px] font-black text-[#ff3b30]">{(product.discountPrice || product.price).toLocaleString('vi-VN')}đ</span>
@@ -1664,15 +1729,19 @@ export function NewsPage() {
   const selectedTabLinks = categoryTabsSection?.settings?.selectedTabLinks;
   const blogCategoryTabs = blogCategories
     .filter(c => !selectedTabLinks?.length || selectedTabLinks.includes(c.link))
-    .map(c => ({ id: c.id, label: c.label, link: c.link }));
+    .map(c => ({ id: c.id, label: c.label, displayLabel: language === 'en' ? localizeBlogText(c.label) : c.label, link: c.link }));
   const featuredSection = getBlogSection('featured');
   const heroSection = getBlogSection('hero');
   const normalizeSavedCategorySlug = (value?: string) => value?.toString().split('/').filter(Boolean).pop() || '';
   const selectedFeaturedCategorySlug = normalizeSavedCategorySlug(featuredSection?.settings?.featuredCategorySlug);
-  const blogHeroTitle = heroSection?.settings?.title || blogHomeTitle;
-  const blogHeroSubtitle = heroSection?.settings?.subtitle || blogHomeDescription;
-  const blogHeroTrendingTags = heroSection?.settings?.trendingTags;
-  const blogHeroSearchPlaceholder = heroSection?.settings?.searchPlaceholder;
+  const blogHeroTitle = language === 'en' ? localizeBlogText(heroSection?.settings?.title || blogHomeTitle) : (heroSection?.settings?.title || blogHomeTitle);
+  const blogHeroSubtitle = language === 'en' ? localizeBlogText(heroSection?.settings?.subtitle || blogHomeDescription) : (heroSection?.settings?.subtitle || blogHomeDescription);
+  const blogHeroTrendingTags = language === 'en'
+    ? (heroSection?.settings?.trendingTags || []).map((tag: string) => localizeBlogText(tag))
+    : heroSection?.settings?.trendingTags;
+  const blogHeroSearchPlaceholder = language === 'en'
+    ? 'Search articles: T-shirts, gym wear, materials...'
+    : heroSection?.settings?.searchPlaceholder;
   const featuredPosts = featuredSection?.settings?.featuredMode === 'manual'
     ? (featuredSection.settings.selectedPostIds || [])
       .map(id => posts.find(post => post.id === id))
@@ -1718,7 +1787,10 @@ export function NewsPage() {
             subtitle={blogHeroSubtitle}
             searchValue={searchQuery}
             searchPlaceholder={blogHeroSearchPlaceholder}
+            searchLabel={language === 'en' ? 'Search articles' : 'Tìm kiếm bài viết'}
+            searchButtonLabel={language === 'en' ? 'Search' : 'Tìm'}
             trendingTags={blogHeroTrendingTags}
+            trendingLabel={language === 'en' ? 'Trending keywords:' : 'Từ khóa nổi bật:'}
             onSearchChange={setSearchQuery}
             onSearchSubmit={() => setSearchQuery(searchQuery.trim())}
             onTagClick={setSearchQuery}
@@ -1747,7 +1819,7 @@ export function NewsPage() {
             <div className="relative aspect-[1.08/1] overflow-hidden rounded-2xl bg-zinc-100">
               <img
                 src={getMobilePostImage(featuredMobilePosts[0])}
-                alt={featuredMobilePosts[0].title}
+                alt={getMobilePostTitle(featuredMobilePosts[0])}
                 className="h-full w-full object-cover"
                 loading="eager"
                 onError={(event) => {
@@ -1760,7 +1832,7 @@ export function NewsPage() {
               </span>
             </div>
             <h3 className="mt-3 text-[17px] font-semibold leading-tight text-zinc-950">
-              {featuredMobilePosts[0].title}
+              {getMobilePostTitle(featuredMobilePosts[0])}
             </h3>
             <p className="mt-1 line-clamp-2 text-sm font-medium leading-5 text-zinc-700">
               {getMobilePostText(featuredMobilePosts[0])}
@@ -1778,7 +1850,7 @@ export function NewsPage() {
                   <div className="relative aspect-[1.35/1] overflow-hidden rounded-xl bg-zinc-100">
                     <img
                       src={getMobilePostImage(post)}
-                      alt={post.title}
+                      alt={getMobilePostTitle(post)}
                       className="h-full w-full object-cover"
                       loading="lazy"
                       onError={(event) => {
@@ -1791,7 +1863,7 @@ export function NewsPage() {
                     </span>
                   </div>
                   <h4 className="mt-2 line-clamp-3 text-[14px] font-semibold leading-tight text-zinc-950">
-                    {post.title}
+                    {getMobilePostTitle(post)}
                   </h4>
                 </article>
               ))}
@@ -1812,13 +1884,13 @@ export function NewsPage() {
               <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <span className="text-[10px] font-black uppercase tracking-[0.28em] text-[#1e4b64]">
-                    Danh mục blog
+                    {language === 'en' ? 'Blog category' : 'Danh mục blog'}
                   </span>
                   <h2 className="mt-2 text-2xl font-extrabold leading-tight text-zinc-950 sm:text-3xl">
-                    {hubSection.title}
+                    {localizeBlogText(hubSection.title)}
                   </h2>
                   <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-zinc-600">
-                    {hubSection.description}
+                    {localizeBlogText(hubSection.description)}
                   </p>
                 </div>
                 <button
@@ -1826,7 +1898,7 @@ export function NewsPage() {
                   onClick={() => navigate(hubSection.href)}
                   className="inline-flex w-fit items-center gap-1.5 text-sm font-black text-[#1e4b64] transition-colors hover:text-[#153446]"
                 >
-                  <span>Xem danh mục</span>
+                  <span>{language === 'en' ? 'View category' : 'Xem danh mục'}</span>
                   <ChevronRight className="h-4 w-4" />
                 </button>
               </div>
@@ -1852,7 +1924,7 @@ export function NewsPage() {
                         onClick={() => showMoreHomeHubPosts(hubSection.slug)}
                         className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-7 py-3 text-sm font-black text-zinc-950 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#1e4b64] hover:text-[#1e4b64] hover:shadow-md"
                       >
-                        <span>Xem thêm</span>
+                        <span>{language === 'en' ? 'View more' : 'Xem thêm'}</span>
                         <ChevronDown className="h-4 w-4" />
                       </button>
                     </div>
@@ -1860,9 +1932,11 @@ export function NewsPage() {
                 </>
               ) : (
                 <div className="rounded-[24px] border border-dashed border-zinc-200 bg-zinc-50 px-6 py-10 text-center">
-                  <h3 className="text-lg font-black text-zinc-900">Chưa có bài viết {hubSection.title}</h3>
+                  <h3 className="text-lg font-black text-zinc-900">{language === 'en' ? `No articles in ${localizeBlogText(hubSection.title)} yet` : `Chưa có bài viết ${hubSection.title}`}</h3>
                   <p className="mx-auto mt-2 max-w-xl text-sm font-semibold leading-6 text-zinc-500">
-                    Khi thêm bài blog có danh mục, tiêu đề hoặc mô tả chứa từ khóa liên quan đến {hubSection.title.toLowerCase()}, bài sẽ tự hiển thị tại đây.
+                    {language === 'en'
+                      ? `When a blog post has a category, title or description related to ${localizeBlogText(hubSection.title).toLowerCase()}, it will appear here automatically.`
+                      : `Khi thêm bài blog có danh mục, tiêu đề hoặc mô tả chứa từ khóa liên quan đến ${hubSection.title.toLowerCase()}, bài sẽ tự hiển thị tại đây.`}
                   </p>
                 </div>
               )}
@@ -1876,10 +1950,10 @@ export function NewsPage() {
         {!searchQuery && (
           <div className="flex flex-col items-start mb-8">
             <span className="text-[10px] font-black uppercase text-[#1e4b64] tracking-[0.28em] mb-2">
-              {isBlogHome ? 'BÀI VIẾT MỚI' : 'BÀI VIẾT THEO DANH MỤC'}
+              {isBlogHome ? (language === 'en' ? 'LATEST ARTICLES' : 'BÀI VIẾT MỚI') : (language === 'en' ? 'ARTICLES BY CATEGORY' : 'BÀI VIẾT THEO DANH MỤC')}
             </span>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 leading-none">
-              {isBlogHome ? 'Bài viết mới về đồ thể thao nam' : `Bài viết ${currentBlogHubTitle}`}
+              {isBlogHome ? (language === 'en' ? 'Latest men\'s sportswear articles' : 'Bài viết mới về đồ thể thao nam') : (language === 'en' ? `Articles about ${localizeBlogText(currentBlogHubTitle)}` : `Bài viết ${currentBlogHubTitle}`)}
             </h2>
           </div>
         )}
@@ -1902,12 +1976,16 @@ export function NewsPage() {
               <Search className="h-7 w-7" />
             </div>
             <h3 className="text-xl font-extrabold text-zinc-955 mb-2">
-              {searchQuery ? 'Không tìm thấy bài viết' : `Chưa có bài viết ${currentBlogHubTitle}`}
+              {searchQuery ? (language === 'en' ? 'No articles found' : 'Không tìm thấy bài viết') : (language === 'en' ? `No articles in ${localizeBlogText(currentBlogHubTitle)} yet` : `Chưa có bài viết ${currentBlogHubTitle}`)}
             </h3>
             <p className="text-zinc-500 text-sm max-w-sm mb-6 font-semibold">
               {searchQuery
-                ? `Chúng tôi không tìm thấy bài viết nào phù hợp với từ khóa "${searchQuery}". Bạn hãy thử tìm kiếm với từ khóa khác như "size", "chất liệu", "đồ tập"...`
-                : `Danh mục ${currentBlogHubTitle} đã sẵn cấu trúc SEO. Khi thêm bài viết có tiêu đề, danh mục hoặc mô tả chứa cụm từ liên quan, bài sẽ tự hiển thị tại đây.`}
+                ? (language === 'en'
+                  ? `We could not find any articles matching "${searchQuery}". Try another keyword such as "size", "material" or "training".`
+                  : `Chúng tôi không tìm thấy bài viết nào phù hợp với từ khóa "${searchQuery}". Bạn hãy thử tìm kiếm với từ khóa khác như "size", "chất liệu", "đồ tập"...`)
+                : (language === 'en'
+                  ? `The ${localizeBlogText(currentBlogHubTitle)} category is ready. When a post has a related title, category or description, it will appear here automatically.`
+                  : `Danh mục ${currentBlogHubTitle} đã sẵn cấu trúc SEO. Khi thêm bài viết có tiêu đề, danh mục hoặc mô tả chứa cụm từ liên quan, bài sẽ tự hiển thị tại đây.`)}
             </p>
             <button
               onClick={() => {
@@ -1919,7 +1997,7 @@ export function NewsPage() {
               }}
               className="px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest bg-zinc-900 hover:bg-[#1e4b64] text-white transition-all shadow-sm cursor-pointer border border-zinc-955 hover:border-[#1e4b64]"
             >
-              {searchQuery ? 'Xóa tìm kiếm' : (currentBlogHubProductLink?.label || 'Về trang blog')}
+              {searchQuery ? (language === 'en' ? 'Clear search' : 'Xóa tìm kiếm') : (language === 'en' ? localizeBlogText(currentBlogHubProductLink?.label || 'Back to blog') : (currentBlogHubProductLink?.label || 'Về trang blog'))}
             </button>
           </div>
         )}

@@ -3,6 +3,8 @@ import { ArrowRight } from 'lucide-react';
 import { CATEGORY_METADATA } from '../data';
 import { Category } from '../types';
 import { LazyImage } from './LazyImage';
+import { useLanguage } from '../LanguageContext';
+import { getLocalizedCategoryLabel } from '../lib/productI18n';
 
 interface FULLCollectionSectionProps {
   onCategorySelect: (c: Category) => void;
@@ -31,7 +33,16 @@ const CATEGORY_DETAILS: Record<string, { image: string; description: string }> =
   },
 };
 
+const CATEGORY_DESCRIPTIONS_EN: Record<string, string> = {
+  'ao-thun-nam': 'Cotton, graphic and oversized styles for everyday wear.',
+  'ao-thun-the-thao-nam': 'Breathable, stretchy picks for gym and running.',
+  'ao-polo-nam': 'Sharper polo styles for work, weekends and golf.',
+  'quan-the-thao-nam': 'Shorts, joggers and training bottoms made to move.',
+  'phu-kien-the-thao': 'Bags, bottles and accessories to complete your kit.',
+};
+
 export function FULLCollectionSection({ onCategorySelect }: FULLCollectionSectionProps) {
+  const { language } = useLanguage();
   const handleCategoryClick = (categoryName: Category) => {
     onCategorySelect(categoryName);
     window.scrollTo(0, 0);
@@ -47,14 +58,16 @@ export function FULLCollectionSection({ onCategorySelect }: FULLCollectionSectio
       <div className="mb-8 flex flex-col items-center gap-4 text-center md:flex-row md:items-end md:justify-between md:text-left">
         <div className="homepage-heading-copy">
           <span className="mb-2 block text-xs font-black uppercase tracking-widest text-[#1e4b64]">
-            Danh mục nổi bật
+            {language === 'en' ? 'Featured categories' : 'Danh mục nổi bật'}
           </span>
           <h2 className="section-title">
-            Mua theo nhu cầu
+            {language === 'en' ? 'Shop by need' : 'Mua theo nhu cầu'}
           </h2>
         </div>
         <p className="max-w-md text-sm font-medium leading-6 text-zinc-500 sm:text-base">
-          Chọn nhanh đúng nhóm sản phẩm bạn cần, từ áo mặc hằng ngày đến đồ tập và phụ kiện.
+          {language === 'en'
+            ? 'Quickly choose the right product group, from everyday tops to training gear and accessories.'
+            : 'Chọn nhanh đúng nhóm sản phẩm bạn cần, từ áo mặc hằng ngày đến đồ tập và phụ kiện.'}
         </p>
       </div>
 
@@ -69,18 +82,18 @@ export function FULLCollectionSection({ onCategorySelect }: FULLCollectionSectio
             <div className="relative aspect-[4/5] overflow-hidden bg-zinc-100">
               <LazyImage
                 src={cat.image}
-                alt={cat.name}
+                alt={getLocalizedCategoryLabel(cat.name, language)}
                 className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
               <div className="absolute bottom-4 left-4 right-4">
-                <h3 className="text-xl font-black leading-tight text-white">{cat.name}</h3>
+                <h3 className="text-xl font-black leading-tight text-white">{getLocalizedCategoryLabel(cat.name, language)}</h3>
               </div>
             </div>
             <div className="min-h-[118px] p-5">
-              <p className="mb-4 text-sm font-medium leading-5 text-zinc-500">{cat.description}</p>
+              <p className="mb-4 text-sm font-medium leading-5 text-zinc-500">{language === 'en' ? CATEGORY_DESCRIPTIONS_EN[cat.slug] : cat.description}</p>
               <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#1e4b64]">
-                Xem sản phẩm <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+                {language === 'en' ? 'View products' : 'Xem sản phẩm'} <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
               </span>
             </div>
           </button>

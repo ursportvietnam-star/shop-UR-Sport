@@ -59,12 +59,19 @@ import { ImageLightbox } from './ImageLightbox';
 import { getProductPath, normalizeProductSlug } from '../lib/productUrls';
 import { canonicalCategoryLabel, isSameCategoryLabel } from '../lib/categoryConfig';
 import { useLanguage } from '../LanguageContext';
+import {
+  getLocalizedCategoryLabel,
+  getLocalizedProductAttribute,
+  getLocalizedProductCategory,
+  getLocalizedProductDescription,
+  getLocalizedProductName
+} from '../lib/productI18n';
 
 export const ProductDetail: React.FC = () => {
   const { categorySlug, productSlug } = useParams<{ categorySlug?: string, productSlug: string }>();
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { products, loading } = useProducts();
 
   const normalizedRouteSlug = normalizeProductSlug(productSlug);
@@ -78,6 +85,10 @@ export const ProductDetail: React.FC = () => {
   const categoryName = catMetadata ? catMetadata.name : normalizedProductCategory;
   const categoryProducts = products.filter(p => isSameCategoryLabel(p.category, categoryName));
   const currentIndex = categoryProducts.findIndex(p => p.slug === productSlug);
+  const productName = product ? getLocalizedProductName(product, language) : '';
+  const productCategoryName = product ? getLocalizedProductCategory(product, language) : getLocalizedCategoryLabel(String(categoryName || ''), language);
+  const localizedCategoryName = getLocalizedCategoryLabel(String(categoryName || ''), language);
+  const productDescription = product ? getLocalizedProductDescription(product, language) : '';
 
   const prevProduct = currentIndex > 0 ? categoryProducts[currentIndex - 1] : null;
   const nextProduct = currentIndex < categoryProducts.length - 1 ? categoryProducts[currentIndex + 1] : null;
@@ -138,11 +149,11 @@ export const ProductDetail: React.FC = () => {
     const productNode: any = {
       '@type': 'Product',
       '@id': `${productUrl}#product`,
-      name: product.name,
+      name: getLocalizedProductName(product, language),
       image: (product.images || []).map(absoluteUrl),
-      description: cleanSeoText(product.metaDescription || product.description, 500),
+      description: cleanSeoText(language === 'en' ? getLocalizedProductDescription(product, language) : (product.metaDescription || product.description), 500),
       sku: product.productCode || `UR-${product.id.substring(0, 6).toUpperCase()}`,
-      category: product.category,
+      category: getLocalizedProductCategory(product, language),
       color: product.colors,
       size: product.sizes,
       material: product.material,
@@ -179,7 +190,7 @@ export const ProductDetail: React.FC = () => {
       productNode.isRelatedTo = relatedProductsList.map(rp => ({
         '@type': 'Product',
         '@id': `${absoluteUrl(getProductPath(rp))}#product`,
-        name: rp.name,
+        name: getLocalizedProductName(rp, language),
         url: absoluteUrl(getProductPath(rp)),
         image: (rp.images || []).slice(0, 1).map(absoluteUrl)
       }));
@@ -188,17 +199,17 @@ export const ProductDetail: React.FC = () => {
     return buildSeoGraph(
       productNode,
       buildBreadcrumbSchema([
-        { name: 'Trang chủ', url: '/' },
-        { name: String(categoryName || product.category), url: productCategoryUrl },
-        { name: product.name, url: productCanonical }
+        { name: language === 'en' ? 'Home' : 'Trang chủ', url: '/' },
+        { name: getLocalizedCategoryLabel(String(categoryName || product.category), language), url: productCategoryUrl },
+        { name: getLocalizedProductName(product, language), url: productCanonical }
       ])
     );
-  }, [product, productCanonical, categoryName, productCategoryUrl, categoryProducts]);
+  }, [product, productCanonical, categoryName, productCategoryUrl, categoryProducts, language]);
 
   useSEO({
-    title: product?.seoTitle || (product ? `${product.name} | UR Sport - Đồ Thể Thao Cao Cấp` : 'UR Sport'),
-    description: product?.metaDescription || product?.description,
-    keywords: product?.keywords || (product ? `${product.name}, ${product.category}, ur sport, đồ thể thao nam` : ''),
+    title: product ? (language === 'en' ? `${productName} | UR Sport - Premium Sportswear` : (product.seoTitle || `${product.name} | UR Sport - Đồ Thể Thao Cao Cấp`)) : 'UR Sport',
+    description: product ? (language === 'en' ? cleanSeoText(productDescription, 220) : (product.metaDescription || product.description)) : '',
+    keywords: product ? (language === 'en' ? `${productName}, ${productCategoryName}, ur sport, men sportswear` : (product.keywords || `${product.name}, ${product.category}, ur sport, đồ thể thao nam`)) : '',
     canonical: productCanonical,
     image: product?.images?.[0],
     type: "product",
@@ -448,7 +459,9 @@ export const ProductDetail: React.FC = () => {
         for (let i = 0; i < selectedReviewFiles.length; i++) {
           const file = selectedReviewFiles[i];
           const isVideo = file.type.startsWith('video');
-          toast.loading(`Đang tải ${isVideo ? 'video' : 'ảnh'} (${i + 1}/${selectedReviewFiles.length})...`, { id: uploadToast });
+          toast.loading(language === 'en'
+            ? `Uploading ${isVideo ? 'video' : 'image'} (${i + 1}/${selectedReviewFiles.length})...`
+            : `Đang tải ${isVideo ? 'video' : 'ảnh'} (${i + 1}/${selectedReviewFiles.length})...`, { id: uploadToast });
 
           const formData = new FormData();
           formData.append('file', file);
@@ -471,11 +484,11 @@ export const ProductDetail: React.FC = () => {
         }
       }
 
-      toast.loading('Đang lưu thông tin đánh giá...', { id: uploadToast });
+      toast.loading(language === 'en' ? 'Saving your review...' : 'Đang lưu thông tin đánh giá...', { id: uploadToast });
 
       await addDoc(collection(db, 'reviews'), {
         productId: product.id,
-        productName: product.name,
+        productName,
         userId: user.uid,
         userName: user?.displayName || newReview.userName,
         rating: newReview.rating,
@@ -490,10 +503,10 @@ export const ProductDetail: React.FC = () => {
       setNewReview({ rating: 5, comment: '', userName: '' });
       setSelectedReviewFiles([]);
       setReviewPreviews([]);
-      toast.success('Cảm ơn bạn đã đánh giá sản phẩm!', { id: uploadToast });
+      toast.success(language === 'en' ? 'Thanks for reviewing this product!' : 'Cảm ơn bạn đã đánh giá sản phẩm!', { id: uploadToast });
     } catch (error: any) {
       console.error('Error submitting review:', error);
-      toast.error('Có lỗi xảy ra: ' + error.message, { id: uploadToast });
+      toast.error((language === 'en' ? 'An error occurred: ' : 'Có lỗi xảy ra: ') + error.message, { id: uploadToast });
     } finally {
       setIsSubmittingReview(false);
     }
@@ -546,7 +559,9 @@ export const ProductDetail: React.FC = () => {
         </div>
         <h2 className="mb-3 text-center text-2xl font-black text-zinc-950">{t('productNotFound')}</h2>
         <p className="mb-7 max-w-md text-center text-sm font-medium leading-6 text-zinc-500">
-          Sản phẩm có thể đã đổi đường dẫn hoặc tạm ngừng hiển thị. Bạn quay lại cửa hàng để xem các mẫu đang có nhé.
+          {language === 'en'
+            ? 'This product may have changed its URL or is temporarily unavailable. Please return to the shop to view available items.'
+            : 'Sản phẩm có thể đã đổi đường dẫn hoặc tạm ngừng hiển thị. Bạn quay lại cửa hàng để xem các mẫu đang có nhé.'}
         </p>
         <Button onClick={() => navigate('/shop')} className="rounded-full bg-[#1e4b64] px-6 font-black hover:bg-[#153a4d]">
           {t('backToShop')}
@@ -593,7 +608,7 @@ export const ProductDetail: React.FC = () => {
     {
       id: 'shopee',
       label: 'Shopee',
-      caption: 'Mua nhanh trên gian hàng chính hãng',
+      caption: language === 'en' ? 'Quick purchase from the official store' : 'Mua nhanh trên gian hàng chính hãng',
       href: product.marketplaceLinks?.shopee || 'https://shopee.vn/ursport.vn',
       icon: '/images/logo_icon/icon-shopee.webp',
       className: 'border-[#ee4d2d]/20 bg-[#fff6f2] text-[#ee4d2d] hover:border-[#ee4d2d]/50 hover:bg-[#fff0e9] hover:shadow-[#ee4d2d]/10'
@@ -601,7 +616,7 @@ export const ProductDetail: React.FC = () => {
     {
       id: 'tiktok-shop',
       label: 'TikTok Shop',
-      caption: 'Xem video thật và ưu đãi live',
+      caption: language === 'en' ? 'Watch real videos and live deals' : 'Xem video thật và ưu đãi live',
       href: product.marketplaceLinks?.tiktokShop || 'https://www.tiktok.com/@ursportvietnam',
       icon: '/images/logo_icon/icon-tiktok.webp',
       className: 'border-zinc-900/10 bg-zinc-950 text-white hover:bg-black hover:shadow-zinc-900/15'
@@ -610,7 +625,7 @@ export const ProductDetail: React.FC = () => {
 
   const ensureSelectedVariantAvailable = () => {
     if (!selectedVariantOutOfStock) return true;
-    toast.error('Phân loại này đang hết hàng, vui lòng chọn màu hoặc size khác', {
+    toast.error(language === 'en' ? 'This variant is out of stock. Please choose another color or size.' : 'Phân loại này đang hết hàng, vui lòng chọn màu hoặc size khác', {
       position: 'top-center',
     });
     return false;
@@ -623,9 +638,9 @@ export const ProductDetail: React.FC = () => {
     
     addToCart(cartProduct, selectedColor, selectedSize, quantity);
     showAddToCartToast({
-      productName: product.name,
+      productName,
       image: primaryImage || undefined,
-      meta: `${selectedColor} / Size ${selectedSize} / SL: ${quantity}`,
+      meta: `${selectedColor} / Size ${selectedSize} / ${language === 'en' ? 'Qty' : 'SL'}: ${quantity}`,
       onCheckout: () => navigate('/checkout'),
     });
   };
@@ -656,9 +671,9 @@ export const ProductDetail: React.FC = () => {
         <nav className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto whitespace-nowrap text-xs font-medium text-zinc-400 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <Link to="/" className="hover:text-black transition-colors shrink-0">Home</Link>
           <ChevronRight className="h-3 w-3 text-zinc-300 shrink-0" />
-          <Link to={productCategorySlug === 'shop' ? '/shop' : `/${productCategorySlug}`} className="hover:text-black transition-colors shrink-0">{categoryName}</Link>
+          <Link to={productCategorySlug === 'shop' ? '/shop' : `/${productCategorySlug}`} className="hover:text-black transition-colors shrink-0">{localizedCategoryName}</Link>
           <ChevronRight className="h-3 w-3 text-zinc-300 shrink-0" />
-          <span className="min-w-[120px] max-w-[55vw] truncate text-zinc-500 sm:max-w-md">{product.name}</span>
+          <span className="min-w-[120px] max-w-[55vw] truncate text-zinc-500 sm:max-w-md">{productName}</span>
         </nav>
 
         <div className="flex items-center gap-2 h-full shrink-0">
@@ -729,7 +744,7 @@ export const ProductDetail: React.FC = () => {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   src={mainImage}
-                  alt={product.name}
+                  alt={productName}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   loading="eager"
                   decoding="async"
@@ -767,7 +782,7 @@ export const ProductDetail: React.FC = () => {
                   {videoThumbnailImage ? (
                     <img
                       src={videoThumbnailImage}
-                      alt={`${product.name} - Video ${i + 1}`}
+                      alt={`${productName} - Video ${i + 1}`}
                       loading="lazy"
                       decoding="async"
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
@@ -798,7 +813,7 @@ export const ProductDetail: React.FC = () => {
                     mainImage === img && !mainVideo ? "border-[#1e4b64] scale-[1.03]" : "border-zinc-100 hover:border-zinc-300"
                   )}
                 >
-                  <img src={img} alt={`${product.name} - Ảnh ${i + 1}`} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                  <img src={img} alt={`${productName} - ${language === 'en' ? 'Image' : 'Ảnh'} ${i + 1}`} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>
@@ -819,7 +834,7 @@ export const ProductDetail: React.FC = () => {
                   transition={{ delay: 0.4 }}
                   className="text-[20px] font-semibold leading-tight text-zinc-950 sm:text-[22px]"
                 >
-                  {product.name}
+                  {productName}
                 </motion.h1>
                 <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[12px] leading-none text-zinc-500">
                   <div className="flex items-center gap-0.5">
@@ -1063,14 +1078,14 @@ export const ProductDetail: React.FC = () => {
                 </button>
               </div>
 
-              <div className="rounded-xl border border-zinc-100 bg-white p-2.5 shadow-[0_10px_28px_-24px_rgba(15,23,42,0.35)]">
-                <div className="mb-2 flex items-center justify-between gap-3 px-0.5">
+              <div className="rounded-xl border border-zinc-100 bg-white px-2 py-1.5 shadow-[0_8px_20px_-18px_rgba(15,23,42,0.28)]">
+                <div className="mb-1 flex items-center justify-between gap-3 px-0.5">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">{t('marketplaceTitle')}</p>
-                    <p className="mt-0.5 text-[13px] font-bold text-zinc-900">{t('marketplaceSubtitle')}</p>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-zinc-400">{t('marketplaceTitle')}</p>
+                    <p className="text-[11px] font-bold leading-tight text-zinc-900">{t('marketplaceSubtitle')}</p>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-1.5">
                   {marketplaceLinks.map((link) => (
                     <a
                       key={link.id}
@@ -1078,20 +1093,20 @@ export const ProductDetail: React.FC = () => {
                       target="_blank"
                       rel="noopener noreferrer"
                       className={cn(
-                        "group flex min-h-[56px] items-center gap-2 rounded-xl border px-2.5 py-2 transition-all hover:-translate-y-0.5 hover:shadow-md sm:min-h-[60px] sm:px-3",
+                        "group flex min-h-[42px] items-center gap-2 rounded-lg border px-2 py-1 transition-all hover:-translate-y-0.5 hover:shadow-md sm:min-h-[44px]",
                         link.className
                       )}
                     >
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm">
-                        <img src={link.icon} alt={link.label} loading="lazy" className="h-6 w-6 object-contain" />
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm">
+                        <img src={link.icon} alt={link.label} loading="lazy" className="h-4.5 w-4.5 object-contain" />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[11px] font-black uppercase tracking-wide sm:text-[12px] sm:tracking-widest">{link.label}</span>
-                        <span className={cn("mt-0.5 hidden text-[10px] font-bold leading-3 min-[390px]:line-clamp-2 sm:block", link.id === 'tiktok-shop' ? 'text-white/65' : 'text-[#ee4d2d]/70')}>
+                        <span className="block truncate text-[10px] font-black uppercase tracking-wide sm:text-[11px] sm:tracking-widest">{link.label}</span>
+                        <span className={cn("mt-0.5 hidden truncate text-[8px] font-bold leading-none xl:block", link.id === 'tiktok-shop' ? 'text-white/60' : 'text-[#ee4d2d]/65')}>
                           {link.caption}
                         </span>
                       </span>
-                      <ChevronRight className="h-4 w-4 shrink-0 opacity-60 transition-transform group-hover:translate-x-1" />
+                      <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-60 transition-transform group-hover:translate-x-1" />
                     </a>
                   ))}
                 </div>
@@ -1138,10 +1153,10 @@ export const ProductDetail: React.FC = () => {
             <div className="mb-6 flex items-end justify-between gap-4">
               <div>
                 <p className="mb-2 text-[11px] font-black uppercase tracking-widest text-[#1e4b64]">
-                  Xem lại nhanh
+                  {language === 'en' ? 'Quick review' : 'Xem lại nhanh'}
                 </p>
                 <h2 className="text-2xl font-black tracking-tight text-zinc-950">
-                  Sản phẩm đã xem gần đây
+                  {language === 'en' ? 'Recently viewed products' : 'Sản phẩm đã xem gần đây'}
                 </h2>
               </div>
               <button
@@ -1149,7 +1164,7 @@ export const ProductDetail: React.FC = () => {
                 onClick={() => navigate('/da-xem')}
                 className="hidden text-[#1e4b64] text-[11px] sm:text-[14px] font-bold items-center gap-0.5 sm:gap-1 hover:opacity-80 transition-all group flex-shrink-0 whitespace-nowrap sm:flex"
               >
-                <span>Xem tất cả</span>
+                <span>{language === 'en' ? 'View all' : 'Xem tất cả'}</span>
                 <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
@@ -1244,7 +1259,7 @@ export const ProductDetail: React.FC = () => {
                 {/* Header Section */}
                 <div className="flex gap-4 pb-4 border-b border-zinc-100 relative">
                   <div className="w-24 h-24 rounded-2xl overflow-hidden bg-zinc-50 border border-zinc-100 shrink-0">
-                    <img src={mainImage} alt={product.name} className="w-full h-full object-cover" />
+                    <img src={mainImage} alt={productName} className="w-full h-full object-cover" />
                   </div>
                   <div className="flex-1 flex flex-col justify-end min-w-0 pr-8">
                     <div className="flex items-baseline gap-2 flex-wrap">
@@ -1412,7 +1427,7 @@ export const ProductDetail: React.FC = () => {
           images={product.images || []}
           currentIndex={lightboxIndex}
           onChangeIndex={setLightboxIndex}
-          productName={product.name}
+          productName={productName}
           price={product.price}
           discountPrice={
             activePrice < product.price ? activePrice : product.discountPrice
@@ -1431,20 +1446,20 @@ export const ProductDetail: React.FC = () => {
               {/* ── 1. CHI TIẾT SẢN PHẨM ── */}
               <div>
                 <h4 className="text-[18px] font-bold text-zinc-900 italic mb-4 pb-3 border-b-2 border-zinc-900 inline-block pr-8">
-                  CHI TIẾT SẢN PHẨM
+                  {language === 'en' ? 'PRODUCT DETAILS' : 'CHI TIẾT SẢN PHẨM'}
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-0 w-full">
                   {[
-                    { label: 'Thương hiệu', value: product.brand || 'UR SPORT' },
-                    { label: 'Xuất xứ', value: product.origin || 'Việt Nam' },
-                    { label: 'Kiểu dáng', value: product.style || 'Slim Fit' },
-                    { label: 'Chất liệu', value: product.material || 'Cotton Premium' },
-                    { label: 'Phong cách', value: product.fashionStyle || 'Thể thao, Cơ bản, Hàn Quốc, Đường phố, Công sở' },
-                    { label: 'Cổ áo', value: product.collarType || 'Cổ tròn' }
+                    { label: language === 'en' ? 'Brand' : 'Thương hiệu', value: product.brand || 'UR SPORT', key: 'brand' },
+                    { label: language === 'en' ? 'Origin' : 'Xuất xứ', value: language === 'en' ? getLocalizedProductAttribute(product.origin || 'Việt Nam', language) : (product.origin || 'Việt Nam'), key: 'origin' },
+                    { label: language === 'en' ? 'Fit' : 'Kiểu dáng', value: getLocalizedProductAttribute(product.style || 'Slim Fit', language), key: 'style' },
+                    { label: language === 'en' ? 'Material' : 'Chất liệu', value: getLocalizedProductAttribute(product.material || 'Cotton Premium', language), key: 'material' },
+                    { label: language === 'en' ? 'Style' : 'Phong cách', value: language === 'en' ? getLocalizedProductAttribute(product.fashionStyle || 'Thể thao, Cơ bản, Hàn Quốc, Đường phố, Công sở', language) : (product.fashionStyle || 'Thể thao, Cơ bản, Hàn Quốc, Đường phố, Công sở'), key: 'fashionStyle' },
+                    { label: language === 'en' ? 'Collar' : 'Cổ áo', value: language === 'en' ? getLocalizedProductAttribute(product.collarType || 'Cổ tròn', language) : (product.collarType || 'Cổ tròn'), key: 'collar' }
                   ].map(row => (
                     <div key={row.label} className="flex items-center py-[14px] border-b border-zinc-100 last:border-0 gap-4 w-full">
                       <span className="text-zinc-400 text-[14px] w-32 shrink-0">{row.label}</span>
-                      {row.label === 'Thương hiệu' ? (
+                      {row.key === 'brand' ? (
                         <Link 
                           to={`/shop?brand=${encodeURIComponent(row.value)}`}
                           className="text-[#1e4b64] text-[14px] font-bold hover:underline"
@@ -1462,11 +1477,11 @@ export const ProductDetail: React.FC = () => {
               {/* ── 2. HƯỚNG DẪN CHỌN SIZE ── */}
               <div>
                 <h4 className="text-[18px] font-bold text-zinc-900 italic mb-6 pb-4 border-b-2 border-zinc-900 inline-block pr-8">
-                  HƯỚNG DẪN CHỌN SIZE
+                  {language === 'en' ? 'SIZE GUIDE' : 'HƯỚNG DẪN CHỌN SIZE'}
                 </h4>
                 
                 <div className="w-full">
-                  <h5 className="text-[15px] font-medium text-zinc-800 mb-4">Số đo sản phẩm</h5>
+                  <h5 className="text-[15px] font-medium text-zinc-800 mb-4">{language === 'en' ? 'Product measurements' : 'Số đo sản phẩm'}</h5>
                   
                   {/* Banner Đề xuất Size */}
                   <div className="w-full border border-red-200 bg-red-50/30 rounded-xl p-4 flex items-center justify-between mb-6">
@@ -1474,9 +1489,9 @@ export const ProductDetail: React.FC = () => {
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-500"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                       <span className="text-[14px] text-zinc-700">
                         {suggestedSize ? (
-                          <>Size đề xuất: <strong className="text-red-500">{suggestedSize}</strong></>
+                          <>{language === 'en' ? 'Suggested size' : 'Size đề xuất'}: <strong className="text-red-500">{suggestedSize}</strong></>
                         ) : (
-                          'Nhập chiều cao cân nặng để nhận đề xuất size'
+                          language === 'en' ? 'Enter height and weight to get a size suggestion' : 'Nhập chiều cao cân nặng để nhận đề xuất size'
                         )}
                       </span>
                     </div>
@@ -1484,7 +1499,7 @@ export const ProductDetail: React.FC = () => {
                       onClick={() => setIsSizeProfileModalOpen(true)}
                       className="text-[13px] text-zinc-500 hover:text-zinc-800 flex items-center gap-1 transition-colors"
                     >
-                      Hồ sơ size <ChevronRight className="h-3 w-3" />
+                      {language === 'en' ? 'Size profile' : 'Hồ sơ size'} <ChevronRight className="h-3 w-3" />
                     </button>
                   </div>
 
@@ -1493,10 +1508,10 @@ export const ProductDetail: React.FC = () => {
                     <table className="w-full text-center text-[14px] min-w-[500px]">
                       <thead className="bg-zinc-50">
                         <tr>
-                          <th className="py-4 px-4 font-bold text-zinc-800 border-b border-zinc-200 text-left">Size (Quốc Tế)</th>
-                          <th className="py-4 px-4 font-bold text-zinc-800 border-b border-zinc-200">Vai <span className="block text-[11px] font-normal text-zinc-400 mt-0.5">(cm)</span></th>
-                          <th className="py-4 px-4 font-bold text-zinc-800 border-b border-zinc-200">Chiều dài áo <span className="block text-[11px] font-normal text-zinc-400 mt-0.5">(cm)</span></th>
-                          <th className="py-4 px-4 font-bold text-zinc-800 border-b border-zinc-200">Vòng ngực <span className="block text-[11px] font-normal text-zinc-400 mt-0.5">(cm)</span></th>
+                          <th className="py-4 px-4 font-bold text-zinc-800 border-b border-zinc-200 text-left">{language === 'en' ? 'Size (International)' : 'Size (Quốc Tế)'}</th>
+                          <th className="py-4 px-4 font-bold text-zinc-800 border-b border-zinc-200">{language === 'en' ? 'Shoulder' : 'Vai'} <span className="block text-[11px] font-normal text-zinc-400 mt-0.5">(cm)</span></th>
+                          <th className="py-4 px-4 font-bold text-zinc-800 border-b border-zinc-200">{language === 'en' ? 'Shirt length' : 'Chiều dài áo'} <span className="block text-[11px] font-normal text-zinc-400 mt-0.5">(cm)</span></th>
+                          <th className="py-4 px-4 font-bold text-zinc-800 border-b border-zinc-200">{language === 'en' ? 'Chest' : 'Vòng ngực'} <span className="block text-[11px] font-normal text-zinc-400 mt-0.5">(cm)</span></th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1516,7 +1531,7 @@ export const ProductDetail: React.FC = () => {
                   </div>
                   
                   {/* Ảnh bảng size (product.sizeGuideUrl) đã được di chuyển lên Modal 'SIZE GUIDE', không còn hiển thị ở đây */}
-                  <p className="text-[12px] text-zinc-400 mt-4">Số đo có thể thay đổi nhẹ tùy thuộc vào từng form áo.</p>
+                  <p className="text-[12px] text-zinc-400 mt-4">{language === 'en' ? 'Measurements may vary slightly depending on each fit.' : 'Số đo có thể thay đổi nhẹ tùy thuộc vào từng form áo.'}</p>
                 </div>
               </div>
 
@@ -1538,7 +1553,7 @@ export const ProductDetail: React.FC = () => {
                       className="relative w-full max-w-[500px] bg-white rounded-2xl shadow-2xl overflow-hidden"
                     >
                       <div className="flex items-center justify-between p-5 border-b border-zinc-100">
-                        <h3 className="text-[18px] font-medium text-zinc-800">Thông tin số đo</h3>
+                        <h3 className="text-[18px] font-medium text-zinc-800">{language === 'en' ? 'Measurement information' : 'Thông tin số đo'}</h3>
                         <button 
                           onClick={() => setIsSizeProfileModalOpen(false)}
                           className="p-2 hover:bg-zinc-100 rounded-full transition-colors"
@@ -1548,10 +1563,10 @@ export const ProductDetail: React.FC = () => {
                       </div>
                       
                       <div className="p-6">
-                        <h4 className="text-[15px] font-medium text-zinc-800 mb-4">Các số đo cơ bản</h4>
+                        <h4 className="text-[15px] font-medium text-zinc-800 mb-4">{language === 'en' ? 'Basic measurements' : 'Các số đo cơ bản'}</h4>
                         <div className="grid grid-cols-2 gap-4 mb-6">
                           <div>
-                            <label className="block text-[13px] text-zinc-600 mb-2">Chiều cao mẫu<span className="text-red-500">*</span></label>
+                            <label className="block text-[13px] text-zinc-600 mb-2">{language === 'en' ? 'Height' : 'Chiều cao mẫu'}<span className="text-red-500">*</span></label>
                             <div className="relative">
                               <input 
                                 type="number" 
@@ -1564,7 +1579,7 @@ export const ProductDetail: React.FC = () => {
                             </div>
                           </div>
                           <div>
-                            <label className="block text-[13px] text-zinc-600 mb-2">Cân nặng mẫu<span className="text-red-500">*</span></label>
+                            <label className="block text-[13px] text-zinc-600 mb-2">{language === 'en' ? 'Weight' : 'Cân nặng mẫu'}<span className="text-red-500">*</span></label>
                             <div className="relative">
                               <input 
                                 type="number" 
@@ -1580,7 +1595,7 @@ export const ProductDetail: React.FC = () => {
 
                         <div className="border-t border-zinc-100 pt-4 mb-6">
                           <button className="w-full flex items-center justify-between text-[14px] text-zinc-800">
-                            Các số đo khác
+                            {language === 'en' ? 'Other measurements' : 'Các số đo khác'}
                             <ChevronDown className="h-4 w-4 text-zinc-400" />
                           </button>
                         </div>
@@ -1590,7 +1605,7 @@ export const ProductDetail: React.FC = () => {
                             onClick={handleSaveSizeProfile}
                             className="px-10 py-2.5 bg-[#f05d40] text-white font-bold rounded-md hover:bg-[#d94b30] transition-colors"
                           >
-                            Lưu
+                            {language === 'en' ? 'Save' : 'Lưu'}
                           </button>
                         </div>
                       </div>
@@ -1602,7 +1617,7 @@ export const ProductDetail: React.FC = () => {
               {/* ── 3. MÔ TẢ SẢN PHẨM ── */}
               <div className="w-full">
                 <h4 className="text-[18px] font-bold text-zinc-900 italic mb-5 pb-3 border-b-2 border-zinc-900 inline-block pr-8">
-                  MÔ TẢ SẢN PHẨM
+                  {language === 'en' ? 'PRODUCT DESCRIPTION' : 'MÔ TẢ SẢN PHẨM'}
                 </h4>
 
                 {/* Wrapper: clip chiều cao khi chưa expand, luôn clip overflow ngang */}
@@ -1614,7 +1629,7 @@ export const ProductDetail: React.FC = () => {
                         ? "max-h-[1200px] overflow-y-hidden"
                         : "max-h-none overflow-y-visible"
                     )}
-                    html={product.description
+                    html={productDescription
                       .replace(/&nbsp;/g, ' ')
                       .replace(/\u00a0/g, ' ')
                     }
@@ -1635,7 +1650,7 @@ export const ProductDetail: React.FC = () => {
                     onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
                     className="px-8 py-3 bg-white text-[#153446] border border-zinc-200 text-sm font-bold rounded-full shadow-sm hover:text-[#1e4b64] hover:border-[#1e4b64] hover:-translate-y-1 transition-all flex items-center gap-2 group"
                   >
-                    {isDescriptionExpanded ? 'Thu gọn' : 'Xem thêm'}
+                    {isDescriptionExpanded ? (language === 'en' ? 'Collapse' : 'Thu gọn') : (language === 'en' ? 'View more' : 'Xem thêm')}
                     <ChevronDown className={cn("h-4 w-4 transition-all duration-300", isDescriptionExpanded && "rotate-180")} />
                   </button>
                 </div>
@@ -1645,9 +1660,9 @@ export const ProductDetail: React.FC = () => {
             {/* Suggested Products */}
             <div className="w-full pt-8 border-t border-zinc-200 sm:pt-12">
               <div className="flex items-center justify-between mb-10">
-                <h4 className="text-[20px] font-bold text-zinc-900 uppercase tracking-tight">CÓ THỂ BẠN CŨNG THÍCH</h4>
+                <h4 className="text-[20px] font-bold text-zinc-900 uppercase tracking-tight">{language === 'en' ? 'YOU MAY ALSO LIKE' : 'CÓ THỂ BẠN CŨNG THÍCH'}</h4>
                 <Link to={`/apparel/${categorySlug || 'all'}`} className="text-[#1e4b64] text-[11px] sm:text-[14px] font-bold flex items-center gap-0.5 sm:gap-1 hover:opacity-80 transition-all group flex-shrink-0 whitespace-nowrap">
-                  <span>Xem tất cả</span>
+                  <span>{language === 'en' ? 'View all' : 'Xem tất cả'}</span>
                   <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </div>
@@ -1657,7 +1672,7 @@ export const ProductDetail: React.FC = () => {
                     <div className="aspect-[4/5] w-full overflow-hidden bg-zinc-50 mb-4 relative rounded-2xl border border-zinc-100 shadow-sm group-hover:shadow-md transition-all">
                       <img
                         src={p.images?.[0]}
-                        alt={p.name}
+                        alt={getLocalizedProductName(p, language)}
                         loading="lazy"
                         decoding="async"
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
@@ -1669,7 +1684,7 @@ export const ProductDetail: React.FC = () => {
                       )}
                     </div>
                     <h5 className="text-[14px] font-bold text-zinc-800 leading-snug line-clamp-2 group-hover:text-[#1e4b64] transition-colors mb-2">
-                      {p.name}
+                      {getLocalizedProductName(p, language)}
                     </h5>
                     <div className="flex items-center gap-2">
                       <span className="text-[#ff3b30] font-black text-[16px]">
@@ -1690,14 +1705,14 @@ export const ProductDetail: React.FC = () => {
         <div id="reviews-section" className="mt-8 bg-zinc-50/50 rounded-[28px] p-4 sm:mt-12 sm:rounded-[40px] sm:p-8 border border-zinc-100 shadow-sm">
           <div className="space-y-6">
             <div className="text-left">
-              <h4 className="text-xl font-bold text-zinc-900 tracking-tight">Đánh giá sản phẩm</h4>
+              <h4 className="text-xl font-bold text-zinc-900 tracking-tight">{language === 'en' ? 'Product reviews' : 'Đánh giá sản phẩm'}</h4>
             </div>
 
             <div className="bg-[#fffbf8] border border-[#f9ede5] p-6 sm:p-8 rounded-3xl flex flex-col md:flex-row items-center gap-6 sm:gap-8 md:gap-12 shadow-sm/50">
               <div className="text-center md:text-left shrink-0">
                 <div className="text-[#ee4d2d] font-bold mb-2 flex items-baseline justify-center md:justify-start gap-1">
                   <span className="text-4xl font-black tracking-tight">{product.rating ? product.rating.toFixed(1) : '0.0'}</span>
-                  <span className="text-sm font-bold text-zinc-500 uppercase tracking-wide">trên 5</span>
+                  <span className="text-sm font-bold text-zinc-500 uppercase tracking-wide">{language === 'en' ? 'out of 5' : 'trên 5'}</span>
                 </div>
                 <div className="flex justify-center md:justify-start gap-0.5">
                   {[...Array(5)].map((_, i) => (
@@ -1714,14 +1729,14 @@ export const ProductDetail: React.FC = () => {
                   };
 
                   return [
-                    { id: 'all', label: 'Tất Cả' },
-                    { id: '5', label: `5 Sao (${formatCount(reviews.filter(r => r.rating === 5).length)})` },
-                    { id: '4', label: `4 Sao (${formatCount(reviews.filter(r => r.rating === 4).length)})` },
-                    { id: '3', label: `3 Sao (${formatCount(reviews.filter(r => r.rating === 3).length)})` },
-                    { id: '2', label: `2 Sao (${formatCount(reviews.filter(r => r.rating === 2).length)})` },
-                    { id: '1', label: `1 Sao (${formatCount(reviews.filter(r => r.rating === 1).length)})` },
-                    { id: 'comment', label: `Có Bình Luận (${formatCount(reviews.filter(r => r.comment.trim()).length)})` },
-                    { id: 'media', label: `Có Hình Ảnh / Video (${formatCount(reviews.filter(r => (r.images?.length || 0) > 0 || (r.videos?.length || 0) > 0).length)})` }
+                    { id: 'all', label: language === 'en' ? 'All' : 'Tất Cả' },
+                    { id: '5', label: `5 ${language === 'en' ? 'Stars' : 'Sao'} (${formatCount(reviews.filter(r => r.rating === 5).length)})` },
+                    { id: '4', label: `4 ${language === 'en' ? 'Stars' : 'Sao'} (${formatCount(reviews.filter(r => r.rating === 4).length)})` },
+                    { id: '3', label: `3 ${language === 'en' ? 'Stars' : 'Sao'} (${formatCount(reviews.filter(r => r.rating === 3).length)})` },
+                    { id: '2', label: `2 ${language === 'en' ? 'Stars' : 'Sao'} (${formatCount(reviews.filter(r => r.rating === 2).length)})` },
+                    { id: '1', label: `1 ${language === 'en' ? 'Star' : 'Sao'} (${formatCount(reviews.filter(r => r.rating === 1).length)})` },
+                    { id: 'comment', label: `${language === 'en' ? 'With comments' : 'Có Bình Luận'} (${formatCount(reviews.filter(r => r.comment.trim()).length)})` },
+                    { id: 'media', label: `${language === 'en' ? 'With photos / videos' : 'Có Hình Ảnh / Video'} (${formatCount(reviews.filter(r => (r.images?.length || 0) > 0 || (r.videos?.length || 0) > 0).length)})` }
                   ].map(filter => (
                     <button
                       key={filter.id}
@@ -1742,10 +1757,10 @@ export const ProductDetail: React.FC = () => {
 
             {!isCheckingPurchase && hasPurchased ? (
               <div className="bg-white rounded-[24px] p-5 sm:p-8 border border-zinc-100 shadow-sm">
-                <h5 className="text-lg font-bold text-zinc-900 mb-4">Viết cảm nhận của bạn</h5>
+                <h5 className="text-lg font-bold text-zinc-900 mb-4">{language === 'en' ? 'Write your review' : 'Viết cảm nhận của bạn'}</h5>
                 <form onSubmit={handleSubmitReview} className="space-y-6">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 pb-2">
-                    <span className="text-xs sm:text-sm font-bold text-zinc-500 uppercase tracking-wider">Bạn chấm mấy sao?</span>
+                    <span className="text-xs sm:text-sm font-bold text-zinc-500 uppercase tracking-wider">{language === 'en' ? 'Your rating' : 'Bạn chấm mấy sao?'}</span>
                     <div className="flex gap-2">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <button key={star} type="button" onClick={() => setNewReview({ ...newReview, rating: star })} className="transition-transform active:scale-125 cursor-pointer">
@@ -1759,7 +1774,7 @@ export const ProductDetail: React.FC = () => {
                     {!user && (
                       <input
                         type="text"
-                        placeholder="Họ và tên của bạn..."
+                        placeholder={language === 'en' ? 'Your full name...' : 'Họ và tên của bạn...'}
                         value={newReview.userName}
                         onChange={(e) => setNewReview({ ...newReview, userName: e.target.value })}
                         className="w-full px-6 py-4 bg-zinc-50 border border-transparent rounded-2xl text-sm font-medium focus:ring-2 focus:ring-[#ee4d2d]/20 focus:border-[#ee4d2d]/30 outline-none transition-all"
@@ -1767,7 +1782,7 @@ export const ProductDetail: React.FC = () => {
                     )}
                     <textarea
                       rows={4}
-                      placeholder="Sản phẩm mặc có mát không? Form dáng thế nào?..."
+                      placeholder={language === 'en' ? 'Is the product cool to wear? How is the fit?...' : 'Sản phẩm mặc có mát không? Form dáng thế nào?...'}
                       value={newReview.comment}
                       onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
                       className="w-full px-6 py-6 bg-zinc-50 border border-transparent rounded-[24px] text-sm font-medium focus:ring-2 focus:ring-[#ee4d2d]/20 focus:border-[#ee4d2d]/30 outline-none transition-all resize-none"
@@ -1778,7 +1793,7 @@ export const ProductDetail: React.FC = () => {
                     <div className="flex flex-wrap gap-4">
                       <label className="flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3.5 bg-zinc-50 hover:bg-zinc-100 rounded-2xl cursor-pointer transition-all border-2 border-dashed border-zinc-200 text-zinc-600 font-bold text-xs uppercase tracking-widest group">
                         <Camera className="h-4 w-4 group-hover:text-[#ee4d2d] group-active:text-[#ee4d2d] transition-colors shrink-0" />
-                        <span>Thêm ảnh hoặc video</span>
+                        <span>{language === 'en' ? 'Add photos or videos' : 'Thêm ảnh hoặc video'}</span>
                         <input type="file" multiple accept="image/*,video/*" className="hidden" onChange={handleFileChange} />
                       </label>
                     </div>
@@ -1788,7 +1803,7 @@ export const ProductDetail: React.FC = () => {
                         {reviewPreviews.map((preview, idx) => (
                           <div key={idx} className="relative w-24 h-24 rounded-xl overflow-hidden border-2 border-zinc-100 group shadow-sm">
                             {preview.type === 'image' ? (
-                              <img src={preview.url} alt={`Đánh giá sản phẩm ${product.name}`} loading="lazy" className="w-full h-full object-cover" />
+                              <img src={preview.url} alt={`${language === 'en' ? 'Product review' : 'Đánh giá sản phẩm'} ${productName}`} loading="lazy" className="w-full h-full object-cover" />
                             ) : (
                               <div className="w-full h-full bg-zinc-900 flex items-center justify-center">
                                 <Video className="h-8 w-8 text-white/50" />
@@ -1812,7 +1827,7 @@ export const ProductDetail: React.FC = () => {
 
                   <div className="flex justify-end w-full sm:w-auto">
                     <Button type="submit" disabled={isSubmittingReview} className="w-full sm:w-auto bg-[#ee4d2d] hover:bg-[#d73211] text-white px-12 py-5 sm:py-7 h-auto rounded-2xl font-bold tracking-widest shadow-xl shadow-red-500/20 active:scale-95 transition-all cursor-pointer">
-                      {isSubmittingReview ? 'Đang gửi...' : 'Gửi đánh giá ngay'}
+                      {isSubmittingReview ? (language === 'en' ? 'Submitting...' : 'Đang gửi...') : (language === 'en' ? 'Submit review' : 'Gửi đánh giá ngay')}
                     </Button>
                   </div>
                 </form>
@@ -1891,7 +1906,7 @@ export const ProductDetail: React.FC = () => {
                             <div className="flex flex-wrap gap-4 pt-2">
                               {review.images?.map((img: string, i: number) => (
                                 <div key={i} className="w-32 h-32 rounded-xl overflow-hidden border border-zinc-100 cursor-pointer hover:scale-105 transition-all shadow-sm">
-                                  <img src={img} alt={`Đánh giá ${product.name} - Ảnh ${i + 1}`} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                                  <img src={img} alt={`${language === 'en' ? 'Review' : 'Đánh giá'} ${productName} - ${language === 'en' ? 'Image' : 'Ảnh'} ${i + 1}`} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                                 </div>
                               ))}
                               {review.videos?.map((vid: string, i: number) => (
@@ -2022,7 +2037,7 @@ export const ProductDetail: React.FC = () => {
               <X className="h-5 w-5" />
             </button>
             <div className="max-h-[85vh] overflow-auto">
-              <img src={product.sizeGuideUrl} alt={`Bảng size ${product.name}`} loading="lazy" decoding="async" className="w-full h-auto" />
+              <img src={product.sizeGuideUrl} alt={`${language === 'en' ? 'Size chart' : 'Bảng size'} ${productName}`} loading="lazy" decoding="async" className="w-full h-auto" />
             </div>
           </motion.div>
         </div>
@@ -2079,6 +2094,95 @@ const getDescriptionFallbackImage = (
   return matchedFallback?.url || fallbackImages[index % fallbackImages.length]?.url;
 };
 
+const escapeDescriptionHtml = (value = '') => value
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;');
+
+const hasStructuredDescriptionHtml = (value: string) =>
+  /<(p|h[1-6]|ul|ol|li|table|img|figure|blockquote|section)\b/i.test(value);
+
+const shouldFormatMarketplaceDescription = (value: string) => {
+  if (!value.trim()) return false;
+  if (/<(img|table|iframe|video)\b/i.test(value)) return false;
+  return !hasStructuredDescriptionHtml(value) || /[=_-]{8,}|[♦◆•✓⚠💧🔁⚡]|【[^】]+】/.test(value);
+};
+
+const getPlainDescriptionText = (value: string) => {
+  const normalized = value
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(div|p|h[1-6]|li)>/gi, '\n')
+    .replace(/<li[^>]*>/gi, '\n• ');
+
+  if (typeof DOMParser === 'undefined') return normalized.replace(/<[^>]+>/g, ' ');
+
+  const parsed = new DOMParser().parseFromString(`<div>${normalized}</div>`, 'text/html');
+  return parsed.body.textContent || normalized.replace(/<[^>]+>/g, ' ');
+};
+
+const emphasizeLeadLabel = (line: string) => {
+  const escaped = escapeDescriptionHtml(line);
+  return escaped.replace(
+    /^([A-ZÀ-Ỹ0-9][A-ZÀ-Ỹa-zà-ỹ0-9\s/+.-]{2,42}?)(\s*[—:-]\s*)/,
+    '<strong>$1</strong>$2'
+  );
+};
+
+const formatMarketplaceDescriptionHtml = (html: string) => {
+  const source = html.replace(/&nbsp;/g, ' ').replace(/\u00a0/g, ' ');
+  if (!shouldFormatMarketplaceDescription(source)) return source;
+
+  const text = getPlainDescriptionText(source)
+    .replace(/\r/g, '\n')
+    .replace(/[=_-]{8,}/g, '\n')
+    .replace(/\s+([♦◆])\s*/g, '\n$1 ')
+    .replace(/\s+([•✓⚠💧🔁⚡])\s*/g, '\n$1 ')
+    .replace(/\s{2,}/g, ' ')
+    .split('\n')
+    .map(line => line.trim().replace(/^[=_-]+\s*|\s*[=_-]+$/g, '').trim())
+    .filter(Boolean);
+
+  const blocks: string[] = [];
+  let bulletItems: string[] = [];
+
+  const flushBullets = () => {
+    if (!bulletItems.length) return;
+    blocks.push(`<ul>${bulletItems.map(item => `<li>${item}</li>`).join('')}</ul>`);
+    bulletItems = [];
+  };
+
+  text.forEach((line) => {
+    const bracketMatch = line.match(/^【\s*([^】]+?)\s*】\s*(.*)$/);
+    if (bracketMatch) {
+      flushBullets();
+      blocks.push(`<h3>${escapeDescriptionHtml(bracketMatch[1])}</h3>`);
+      if (bracketMatch[2]) blocks.push(`<p>${emphasizeLeadLabel(bracketMatch[2])}</p>`);
+      return;
+    }
+
+    const sectionMatch = line.match(/^[♦◆]\s*(.+)$/);
+    if (sectionMatch) {
+      flushBullets();
+      blocks.push(`<h3>${escapeDescriptionHtml(sectionMatch[1])}</h3>`);
+      return;
+    }
+
+    const bulletMatch = line.match(/^[•✓⚠💧🔁⚡]\s*(.+)$/);
+    if (bulletMatch) {
+      bulletItems.push(emphasizeLeadLabel(bulletMatch[1]));
+      return;
+    }
+
+    flushBullets();
+    blocks.push(`<p>${emphasizeLeadLabel(line)}</p>`);
+  });
+
+  flushBullets();
+  return blocks.join('');
+};
+
 const ProductDescriptionHtml = React.memo(({ html, className, fallbackImages = [] }: { html: string; className?: string; fallbackImages?: DescriptionFallbackImage[] }) => {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const normalizedFallbackImages = React.useMemo(
@@ -2096,7 +2200,7 @@ const ProductDescriptionHtml = React.memo(({ html, className, fallbackImages = [
     [fallbackImages]
   );
   const formattedHtml = React.useMemo(() => {
-    const safeHtml = sanitizeRichHtml(formatFaqContentHtml(html));
+    const safeHtml = sanitizeRichHtml(formatFaqContentHtml(formatMarketplaceDescriptionHtml(html)));
     if (!safeHtml || normalizedFallbackImages.length === 0 || typeof DOMParser === 'undefined') {
       return safeHtml;
     }

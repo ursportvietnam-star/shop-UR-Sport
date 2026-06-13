@@ -25,6 +25,9 @@ import { getProductPath } from '../lib/productUrls';
 import { cn } from '@/lib/utils';
 import { SITE_URL, absoluteUrl, buildSeoGraph } from '../lib/seo';
 import { sanitizeRichHtml } from '../lib/htmlContent';
+import { useLanguage } from '../LanguageContext';
+import { getLocalizedBlogField } from '../lib/blogI18n';
+import { getLocalizedProductName } from '../lib/productI18n';
 
 const getProductUrl = (product: Product) => {
   return getProductPath(product);
@@ -74,6 +77,7 @@ export default function HomePage({
   onPageChange: (page: string) => void;
 }) {
   const navigate = useNavigate();
+  const { language } = useLanguage();
   const { products } = useProducts();
   const [homeSeo, setHomeSeo] = useState({
     heading: 'UR Sport - Thương Hiệu Thời Trang Chất Lượng Từ Việt Nam',
@@ -306,7 +310,7 @@ export default function HomePage({
             title={cta}
             className="text-[#1e4b64] text-[11px] sm:text-[14px] font-bold flex items-center gap-0.5 sm:gap-1 hover:opacity-80 transition-all group flex-shrink-0 whitespace-nowrap"
           >
-            <span>Xem tất cả</span>
+            <span>{language === 'en' ? 'View all' : 'Xem tất cả'}</span>
             <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 group-hover:translate-x-1 transition-transform" />
           </Link>
         </motion.div>
@@ -334,7 +338,7 @@ export default function HomePage({
               onClick={() => showMoreProducts(key, 6)}
               className="inline-flex h-10 items-center justify-center rounded-full border border-zinc-200 bg-white px-6 text-sm font-bold text-zinc-900 shadow-sm transition-colors hover:border-[#1e4b64] hover:text-[#1e4b64] active:scale-[0.98]"
             >
-              Xem thêm
+              {language === 'en' ? 'Load more' : 'Xem thêm'}
             </button>
           </div>
         )}
@@ -369,6 +373,22 @@ export default function HomePage({
     const visibleCount = getVisibleProductCount(section.id, initialCount);
     const displayedProducts = customProducts.slice(0, visibleCount);
     const hasMore = visibleCount < customProducts.length;
+    const sectionName = language === 'en'
+      ? section.name
+        .replace(/Sản phẩm Quần thể thao nổi bật/gi, "Featured Men's Sports Bottoms")
+        .replace(/Sản phẩm Quần thể thao/gi, "Men's Sports Bottoms")
+        .replace(/Sản phẩm Áo thể thao nổi bật/gi, 'Featured Performance Tops')
+        .replace(/Áo Thun Nam Thời Trang/gi, "Men's Fashion T-Shirts")
+        .replace(/Quần thể thao nam/gi, "Men's Sports Bottoms")
+        .replace(/Quần thể thao/gi, "Sports Bottoms")
+        .replace(/Áo thun thể thao nam/gi, "Men's Performance T-Shirts")
+        .replace(/Áo thun nam/gi, "Men's T-Shirts")
+        .replace(/Sản phẩm bán chạy/gi, 'Best Sellers')
+        .replace(/Sản phẩm mới/gi, 'New Arrivals')
+        .replace(/Sản phẩm/gi, 'Products')
+        .replace(/Mã giảm giá/gi, 'Discount Codes')
+        .replace(/Gợi ý dành riêng cho bạn/gi, 'Recommended for you')
+      : section.name;
 
     return (
       <section key={section.id} className="container-custom section-padding bg-white">
@@ -380,14 +400,14 @@ export default function HomePage({
         >
           <div className="homepage-heading-copy">
             {section.settings?.subtitle && <span className="section-subtitle">{section.settings.subtitle}</span>}
-            <h2 className="section-title">{section.name}</h2>
+            <h2 className="section-title">{sectionName}</h2>
           </div>
           {href && (
             <Link
               to={href}
               className="text-[#1e4b64] text-[11px] sm:text-[14px] font-bold flex items-center gap-0.5 sm:gap-1 hover:opacity-80 transition-all group flex-shrink-0 whitespace-nowrap"
             >
-              <span>Xem tất cả</span>
+              <span>{language === 'en' ? 'View all' : 'Xem tất cả'}</span>
               <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 group-hover:translate-x-1 transition-transform" />
             </Link>
           )}
@@ -416,7 +436,7 @@ export default function HomePage({
               onClick={() => showMoreProducts(section.id, initialCount)}
               className="inline-flex h-10 items-center justify-center rounded-full border border-zinc-200 bg-white px-6 text-sm font-bold text-zinc-900 shadow-sm transition-colors hover:border-[#1e4b64] hover:text-[#1e4b64] active:scale-[0.98]"
             >
-              Xem thêm
+              {language === 'en' ? 'Load more' : 'Xem thêm'}
             </button>
           </div>
         )}
@@ -455,9 +475,14 @@ export default function HomePage({
     const latestPosts = sidePosts.slice(0, 6);
     const mobileNewsPosts = [featuredPost, ...sidePosts].slice(0, 3);
     const quickLinks = Array.from(new Set(posts.map(post => post.category).filter(Boolean))).slice(0, 6);
+    const getQuickLinkLabel = (label: string) => getLocalizedBlogField({ id: '', slug: '', title: '', excerpt: '', content: '', date: '', author: '', image: '', category: label }, 'category', language, label);
     const getPostPath = (post: BlogPost) => `/blog/${post.slug || post.id}`;
-    const getPostDate = (post: BlogPost) => post.date || 'Mới cập nhật';
-    const getPostExcerpt = (post: BlogPost) => post.excerpt || post.metaDescription || 'Khám phá góc nhìn mới từ UR Sport.';
+    const getPostDate = (post: BlogPost) => post.date || (language === 'en' ? 'Recently updated' : 'Mới cập nhật');
+    const getPostTitle = (post: BlogPost) => getLocalizedBlogField(post, 'title', language, post.title || '');
+    const getPostExcerpt = (post: BlogPost) =>
+      getLocalizedBlogField(post, 'excerpt', language, post.excerpt || '') ||
+      getLocalizedBlogField(post, 'metaDescription', language, post.metaDescription || '') ||
+      (language === 'en' ? 'Discover a new perspective from UR Sport.' : 'Khám phá góc nhìn mới từ UR Sport.');
     const getFirstContentImage = (html?: string) => {
       if (!html) return '';
       return html.match(/<img[^>]+src=["']([^"']+)["']/i)?.[1] || '';
@@ -496,7 +521,7 @@ export default function HomePage({
               to={`/blog/category/${getCategorySlug(label)}`}
               className="rounded bg-zinc-100 px-5 py-2.5 text-sm font-black text-[#005594] transition-colors hover:bg-[#e4eef6] hover:text-[#003e6e]"
             >
-              {label}
+              {getQuickLinkLabel(label)}
             </Link>
           ))}
         </div>
@@ -517,7 +542,7 @@ export default function HomePage({
               <div className="relative aspect-[1.08/1] overflow-hidden rounded-2xl bg-zinc-100">
                 <img
                   src={getBlogImage(mobileNewsPosts[0])}
-                  alt={mobileNewsPosts[0].title}
+                  alt={getPostTitle(mobileNewsPosts[0])}
                   className="h-full w-full object-cover"
                   loading="eager"
                   onError={(event) => {
@@ -530,7 +555,7 @@ export default function HomePage({
                 </span>
               </div>
               <h3 className="mt-3 text-[17px] font-semibold leading-tight text-zinc-950">
-                {mobileNewsPosts[0].title}
+                {getPostTitle(mobileNewsPosts[0])}
               </h3>
               <p className="mt-1 text-sm font-medium leading-5 text-zinc-700 line-clamp-2">
                 {getPostExcerpt(mobileNewsPosts[0])}
@@ -549,7 +574,7 @@ export default function HomePage({
                   <div className="relative aspect-[1.35/1] overflow-hidden rounded-xl bg-zinc-100">
                     <img
                       src={getBlogImage(post)}
-                      alt={post.title}
+                      alt={getPostTitle(post)}
                       className="h-full w-full object-cover"
                       loading="lazy"
                       onError={(event) => {
@@ -562,7 +587,7 @@ export default function HomePage({
                     </span>
                   </div>
                   <h4 className="mt-2 line-clamp-3 text-[14px] font-semibold leading-tight text-zinc-950">
-                    {post.title}
+                    {getPostTitle(post)}
                   </h4>
                 </article>
               ))}
@@ -582,13 +607,13 @@ export default function HomePage({
               <LazyImage
                 src={getBlogImage(featuredPost)}
                 fallbackSrc={getFallbackBlogImage(featuredPost)}
-                alt={featuredPost.title}
+                alt={getPostTitle(featuredPost)}
                 className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-linear-to-t from-[#061c35] via-[#061c35]/55 to-transparent" />
               <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8 lg:p-10">
                 <h3 className="max-w-2xl text-3xl font-black leading-tight text-white sm:text-4xl lg:text-[34px]">
-                  {featuredPost.title}
+                  {getPostTitle(featuredPost)}
                 </h3>
                 <p className="mt-3 max-w-2xl text-sm font-bold leading-5 text-white">
                   {getPostExcerpt(featuredPost)}
@@ -612,12 +637,12 @@ export default function HomePage({
                   <LazyImage
                     src={getBlogImage(item)}
                     fallbackSrc={getFallbackBlogImage(item)}
-                    alt={item.title}
+                    alt={getPostTitle(item)}
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                 </div>
                 <h4 className="text-xl font-black leading-tight text-zinc-950 transition-colors group-hover:text-[#005594] lg:text-[19px]">
-                  {item.title}
+                  {getPostTitle(item)}
                 </h4>
                 {i === 1 && (
                   <div className="mt-2 flex items-center gap-2">
@@ -648,7 +673,7 @@ export default function HomePage({
                       {getPostDate(item)}
                     </span>
                     <span className="block text-base font-black leading-tight text-zinc-950 transition-colors group-hover:text-[#005594]">
-                      {item.title}
+                      {getPostTitle(item)}
                     </span>
                   </span>
                 </button>
@@ -660,31 +685,41 @@ export default function HomePage({
     );
   };
 
+  const localizedHomeSeo = React.useMemo(() => {
+    if (language !== 'en') return homeSeo;
+    return {
+      ...homeSeo,
+      title: 'URSport | Premium Men\'s Sportswear, Shirts and Bottoms',
+      description: 'Discover premium men\'s sportswear at UR Sport, including performance T-shirts, polo shirts and sports bottoms with modern style and reliable comfort.',
+      keywords: 'men sportswear, performance t-shirts, men polo shirts, sports bottoms, UR Sport',
+    };
+  }, [homeSeo, language]);
+
   const homeSchema = React.useMemo(() => buildSeoGraph({
     '@type': 'CollectionPage',
     '@id': `${SITE_URL}/#homepage`,
     url: SITE_URL,
-    name: 'UR Sport - Thời trang thể thao nam',
+    name: language === 'en' ? 'UR Sport - Premium men\'s sportswear' : 'UR Sport - Thời trang thể thao nam',
     isPartOf: { '@id': `${SITE_URL}/#website` },
     about: { '@id': `${SITE_URL}/#organization` },
-    inLanguage: 'vi-VN',
+    inLanguage: language === 'en' ? 'en-US' : 'vi-VN',
     mainEntity: {
       '@type': 'ItemList',
       itemListElement: products.slice(0, 12).map((product, index) => ({
         '@type': 'ListItem',
         position: index + 1,
         url: absoluteUrl(getProductPath(product)),
-        name: product.name
+        name: getLocalizedProductName(product, language)
       }))
     }
-  }), [products]);
+  }), [language, products]);
 
   useSEO({
-    title: homeSeo.title,
-    description: homeSeo.description,
-    keywords: homeSeo.keywords,
-    canonical: homeSeo.canonical,
-    robots: homeSeo.robots,
+    title: localizedHomeSeo.title,
+    description: localizedHomeSeo.description,
+    keywords: localizedHomeSeo.keywords,
+    canonical: localizedHomeSeo.canonical,
+    robots: localizedHomeSeo.robots,
     schema: homeSchema
   });
 
@@ -724,19 +759,19 @@ export default function HomePage({
               key: s.id,
               category: 'Áo thun thể thao nam',
               subtitle: 'Performance Collection',
-              title: 'Sản phẩm',
-              titleAccent: 'Áo thể thao nổi bật',
+              title: language === 'en' ? 'Featured' : 'Sản phẩm',
+              titleAccent: language === 'en' ? 'Performance Tops' : 'Áo thể thao nổi bật',
               href: '/ao-thun-the-thao-nam',
-              cta: 'Tất cả sản phẩm'
+              cta: language === 'en' ? 'All products' : 'Tất cả sản phẩm'
             });
           case 'polo-products':
             return renderProductCategorySection({
               key: s.id,
               category: 'Áo polo nam',
-              title: 'Bộ sưu tập',
-              titleAccent: 'Áo Polo Nam',
+              title: language === 'en' ? 'Collection' : 'Bộ sưu tập',
+              titleAccent: language === 'en' ? 'Men\'s Polo Shirts' : 'Áo Polo Nam',
               href: '/ao-polo-nam',
-              cta: 'Khám phá',
+              cta: language === 'en' ? 'Explore' : 'Khám phá',
               compactHeader: true
             });
           case 'tshirt-products':
@@ -744,9 +779,9 @@ export default function HomePage({
               key: s.id,
               category: 'Áo thun nam',
               title: '',
-              titleAccent: 'Áo Thun Nam Thời Trang',
+              titleAccent: language === 'en' ? 'Men\'s Fashion T-Shirts' : 'Áo Thun Nam Thời Trang',
               href: '/ao-thun-nam',
-              cta: 'Xem ngay',
+              cta: language === 'en' ? 'Shop now' : 'Xem ngay',
               compactHeader: true
             });
           case 'news':
