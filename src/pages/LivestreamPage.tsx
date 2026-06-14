@@ -135,9 +135,9 @@ export default function LivestreamPage() {
               UR Sport <span className="text-red-500">Live</span>
             </h1>
           </div>
-          <div className="flex items-center gap-1.5 bg-red-50 text-red-600 px-3 py-1 rounded-full text-xs font-bold shadow-sm border border-red-100">
-            <Eye className="w-3.5 h-3.5" />
-            {viewerCount} <span className="hidden sm:inline">đang xem</span>
+          <div className="flex items-center gap-1.5 bg-red-50 text-red-600 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm border border-red-100">
+            <Eye className="w-4 h-4 shrink-0" />
+            <span className="whitespace-nowrap">{viewerCount} đang xem</span>
           </div>
         </div>
       </div>
