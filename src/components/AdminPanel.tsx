@@ -4,7 +4,7 @@ import {
   Image as ImageIcon, Settings, Plus, Trash2, Edit2, LogOut,
   TrendingUp, Eye, DollarSign, BarChart2, Menu, X, Bell,
   Search, ChevronRight, ChevronDown, Megaphone, Upload, Star, AlertCircle, Copy, ExternalLink, Code2, Check as CheckIcon, Bot, Sparkles, Zap, Timer, Clock, Ticket, Download, Filter, MailCheck, Send, UserPlus, ShieldCheck, Network, PanelsTopLeft, Phone, Truck, GripVertical,
-  FileText, Globe, Rocket, Link as LinkIcon
+  FileText, Globe, Rocket, Link as LinkIcon, Video
 } from 'lucide-react';
 import { PRODUCTS as STATIC_PRODUCTS, STATIC_BLOG_POSTS, STATIC_ORDERS, STATIC_CUSTOMERS, CATEGORY_METADATA, STATIC_VOUCHERS } from '../data';
 import { ImageUpload } from './ImageUpload';
@@ -109,6 +109,9 @@ const UsersRolesTab = React.lazy(() =>
 );
 const BioPageConfigManager = React.lazy(() =>
   import('./admin/BioPageConfigManager').then(module => ({ default: module.BioPageConfigManager }))
+);
+const AdminLivestreamTab = React.lazy(() =>
+  import('./admin/AdminLivestreamTab').then(module => ({ default: module.AdminLivestreamTab }))
 );
 
 const SITE_IMAGE_HOSTS = new Set(['shop-ur-sport.vercel.app', 'ursport.vn', 'www.ursport.vn']);
@@ -384,6 +387,7 @@ const NAV_ITEMS: AdminNavigationItem[] = [
       { id: 'homepage', label: 'Trang chủ', icon: PanelsTopLeft },
       { id: 'blog-page', label: 'Blog', icon: FileText },
       { id: 'bio-page', label: 'Trang Bio Link', icon: LinkIcon },
+      { id: 'livestream-config', label: 'Cấu hình Livestream', icon: Video },
       { id: 'menu-navigation', label: 'Menu website', icon: Menu },
     ]
   },
@@ -3310,6 +3314,12 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
           {activeTab === 'bio-page' && (
             <React.Suspense fallback={<AdminTabFallback />}>
               <BioPageConfigManager />
+            </React.Suspense>
+          )}
+
+          {activeTab === 'livestream-config' && (
+            <React.Suspense fallback={<AdminTabFallback />}>
+              <AdminLivestreamTab />
             </React.Suspense>
           )}
 

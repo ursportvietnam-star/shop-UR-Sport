@@ -26,6 +26,7 @@ export type AdminTab =
   | 'media'
   | 'settings'
   | 'menu-navigation'
+  | 'livestream-config'
   | 'blog-categories'
   | 'policy-pages'
   | 'blog-page'

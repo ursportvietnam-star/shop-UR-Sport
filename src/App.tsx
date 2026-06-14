@@ -29,6 +29,7 @@ const ProductComparisonPage = React.lazy(() => import('./pages/ProductComparison
 const PolicyPage = React.lazy(() => import('./pages/PolicyPage'));
 const ContactPage = React.lazy(() => import('./pages/ContactPage'));
 const BioPage = React.lazy(() => import('./pages/BioPage'));
+const LivestreamPage = React.lazy(() => import('./pages/LivestreamPage'));
 
 // Other lazy-loaded components
 const ProductDetail = React.lazy(() => import('./components/ProductDetail').then(module => ({ default: module.ProductDetail })));
@@ -347,6 +348,8 @@ function AppContent() {
               <Route path="/chinh-sach/:policySlug" element={<PolicyPage />} />
               <Route path="/lien-he" element={<ContactPage />} />
               <Route path="/contact" element={<Navigate to="/lien-he" replace />} />
+              <Route path="/live" element={<LivestreamPage />} />
+              <Route path="/livestream" element={<Navigate to="/live" replace />} />
 
               {/* Bio Page Routes */}
               <Route path="/bio" element={<BioPage />} />

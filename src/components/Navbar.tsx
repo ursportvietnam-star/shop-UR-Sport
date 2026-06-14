@@ -654,6 +654,22 @@ export const Navbar: React.FC<NavbarProps> = ({
               </>
             )}
 
+            {/* Live Button */}
+            <button
+              type="button"
+              onClick={() => navigate('/live')}
+              className={`${iconBtn} relative text-zinc-600 hover:bg-red-50 hover:text-red-500 hidden sm:flex`}
+              aria-label="Livestream"
+              title="Livestream"
+            >
+              <div className="relative flex items-center justify-center">
+                <div className="h-5 w-5 rounded border-[1.5px] border-current flex items-center justify-center group-hover:bg-red-500 group-hover:border-red-500 group-hover:text-white transition-colors">
+                   <span className="text-[7px] font-black tracking-widest mt-[1px]">LIVE</span>
+                </div>
+              </div>
+              <span className="absolute top-1 right-0 h-2 w-2 rounded-full bg-red-500 animate-pulse border border-white" />
+            </button>
+
             {/* Wishlist */}
             <button
               type="button"

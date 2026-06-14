@@ -257,6 +257,19 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
                                 </span>
                             )}
                         </Link>
+                        <Link 
+                            to="/live"
+                            onClick={onClose}
+                            className="flex w-full items-center justify-between py-2.5 text-[15px] font-black italic tracking-tight uppercase text-zinc-900 transition-colors hover:text-red-500"
+                        >
+                            <span className="flex items-center gap-2">
+                                <span className="h-4 w-4 rounded-sm border-[1.5px] border-red-500 text-red-500 flex items-center justify-center">
+                                   <span className="text-[5px] font-black mb-[1px]">LIVE</span>
+                                </span>
+                                Livestream
+                            </span>
+                            <span className="h-2.5 w-2.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
+                        </Link>
                         {mainLinks.map((link, idx) => (
                           <Link 
                               key={idx}
