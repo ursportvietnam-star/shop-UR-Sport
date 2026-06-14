@@ -11,6 +11,7 @@ export default function LivestreamPage() {
   const { products } = useProducts();
   const [liveProducts, setLiveProducts] = useState<Product[]>([]);
   const [viewerCount, setViewerCount] = useState(1);
+  const [presenceError, setPresenceError] = useState('');
   const sessionIdRef = React.useRef(`session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`);
 
   // Presence System: Announce we are here and keep heartbeat
@@ -22,8 +23,14 @@ export default function LivestreamPage() {
     const updatePresence = async () => {
       try {
         await setDoc(presenceDoc, { lastActive: Date.now() }, { merge: true });
-      } catch (error) {
+        setPresenceError(''); // Clear error if success
+      } catch (error: any) {
         console.error("Firestore Rules might be blocking presence updates:", error);
+        if (error.code === 'permission-denied') {
+          setPresenceError('Chưa cấp quyền Firebase Rules');
+        } else {
+          setPresenceError(error.message);
+        }
       }
     };
 
@@ -54,8 +61,11 @@ export default function LivestreamPage() {
         const q = query(viewersCol, where('lastActive', '>', activeThreshold));
         const snapshot = await getCountFromServer(q);
         setViewerCount(Math.max(1, snapshot.data().count));
-      } catch (error) {
+      } catch (error: any) {
         console.error("Firestore Rules might be blocking presence count:", error);
+        if (error.code === 'permission-denied') {
+          setPresenceError('Chưa cấp quyền Rules');
+        }
       }
     };
 
@@ -129,22 +139,27 @@ export default function LivestreamPage() {
   const embedUrl = getEmbedUrl(livestreamConfig.videoUrl);
 
   return (
-    <div className="bg-zinc-50 min-h-screen pb-20">
+    <div className="bg-zinc-50 min-h-screen pb-20 pt-8 sm:pt-0">
       {/* Header Section */}
-      <div className="bg-white border-b border-zinc-200 sticky top-16 md:top-24 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="relative flex h-3 w-3">
+      <div className="bg-white border-b border-zinc-200 sticky top-[88px] md:top-[104px] z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
+            <div className="relative flex h-2.5 w-2.5 sm:h-3 sm:w-3 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 bg-red-500"></span>
             </div>
-            <h1 className="text-lg font-black uppercase text-zinc-900 flex items-center gap-2 tracking-tight">
+            <h1 className="text-sm sm:text-lg font-black uppercase text-zinc-900 flex items-center gap-1 sm:gap-2 tracking-tight whitespace-nowrap truncate">
               UR Sport <span className="text-red-500">Live</span>
             </h1>
           </div>
-          <div className="flex items-center gap-1.5 bg-red-50 text-red-600 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm border border-red-100">
-            <Eye className="w-4 h-4 shrink-0" />
-            <span className="whitespace-nowrap">{viewerCount} đang xem</span>
+          <div className="flex flex-col items-end gap-1">
+            <div className="flex items-center gap-1 sm:gap-1.5 bg-red-50 text-red-600 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-bold shadow-sm border border-red-100 shrink-0">
+              <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+              <span className="whitespace-nowrap">{viewerCount} đang xem</span>
+            </div>
+            {presenceError && (
+              <span className="text-[9px] text-red-500 font-medium whitespace-nowrap">{presenceError}</span>
+            )}
           </div>
         </div>
       </div>
