@@ -21,10 +21,14 @@ export const AdminLivestreamTab = () => {
     const q = query(viewersCol, where('lastActive', '>', activeThreshold));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const activeViewers = snapshot.docs.map(doc => ({
+      let activeViewers = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
+      
+      // Bỏ qua những session cũ không có thông tin thiết bị
+      activeViewers = activeViewers.filter((v: any) => v.deviceInfo);
+
       // Sắp xếp người mới vào lên trên
       activeViewers.sort((a: any, b: any) => {
         const aTime = a.deviceInfo?.joinedAt || 0;
