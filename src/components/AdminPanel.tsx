@@ -699,7 +699,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
   const isLocalhost = typeof window !== 'undefined' &&
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
   const navRef = useRef<HTMLDivElement>(null);
-  const [activeTab, setActiveTab] = useState<AdminTab>(initialTab);
+  const [activeTab, setActiveTab] = useState<AdminTab>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('ursport_admin_tab');
+      if (saved) return saved as AdminTab;
+    }
+    return initialTab;
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('ursport_admin_tab', activeTab);
+    }
+  }, [activeTab]);
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['orders-group', 'products-group', 'content-group', 'ai-group']);
   const [products, setProducts] = useState<Product[]>([]);
   const productSourceRef = useRef<Product[]>([]);
