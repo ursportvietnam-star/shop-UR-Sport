@@ -138,7 +138,7 @@ export const ProductDetail: React.FC = () => {
       .filter((id) => id !== product?.id)
       .map((id) => productMap.get(id))
       .filter((item): item is Product => Boolean(item))
-      .slice(0, 4);
+      .slice(0, 5);
   }, [products, recentProductIds, product?.id]);
   const productSchema = React.useMemo(() => {
     if (!product) return null;
@@ -659,7 +659,7 @@ export const ProductDetail: React.FC = () => {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="bg-white min-h-screen pt-2 pb-20 md:pb-24 font-sans text-zinc-900"
+      className="bg-white min-h-screen pt-2 pb-6 md:pb-8 font-sans text-zinc-900"
     >
       {/* Breadcrumbs & Nav Row */}
       <motion.div
@@ -1148,7 +1148,7 @@ export const ProductDetail: React.FC = () => {
         </div>
 
         {recentlyViewedProducts.length > 0 && (
-          <section className="mt-8 border-t border-zinc-100 pt-6 sm:mt-12 sm:pt-8">
+          <section className="mt-8 border-t border-zinc-100 pt-6 sm:mt-12 sm:pt-8 overflow-hidden">
             <div className="mb-6 flex items-end justify-between gap-4">
               <div>
                 <p className="mb-2 text-[11px] font-black uppercase tracking-widest text-[#1e4b64]">
@@ -1167,7 +1167,7 @@ export const ProductDetail: React.FC = () => {
                 <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            <div className="grid grid-cols-5 gap-x-0 gap-y-8">
               {recentlyViewedProducts.map((recentProduct) => (
                 <ProductCard
                   key={recentProduct.id}
@@ -1736,8 +1736,8 @@ export const ProductDetail: React.FC = () => {
             </div>
 
             <div className="bg-[#fffbf8] border border-[#f9ede5] p-6 sm:p-8 rounded-3xl flex flex-col md:flex-row items-center gap-6 sm:gap-8 md:gap-12 shadow-sm/50">
-              <div className="text-center md:text-left shrink-0">
-                <div className="text-[#ee4d2d] font-bold mb-2 flex items-baseline justify-center md:justify-start gap-1">
+              <div className="flex flex-row flex-wrap items-center justify-center md:justify-start md:min-w-[150px] gap-3 sm:gap-4">
+                <div className="text-[#ee4d2d] font-bold flex items-baseline justify-center gap-1">
                   <span className="text-4xl font-black tracking-tight">{product.rating ? product.rating.toFixed(1) : '0.0'}</span>
                   <span className="text-sm font-bold text-zinc-500 uppercase tracking-wide">{language === 'en' ? 'out of 5' : 'trên 5'}</span>
                 </div>
@@ -1748,7 +1748,7 @@ export const ProductDetail: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex-1 flex flex-wrap gap-2 justify-center md:justify-start w-full">
+              <div className="flex-1 flex overflow-x-auto gap-2 pb-2 justify-start w-full snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:pb-0 md:snap-none">
                 {(() => {
                   const formatCount = (count: number) => {
                     if (count >= 1000) return `${(count / 1000).toFixed(1).replace('.', ',')}k`;
@@ -1769,7 +1769,7 @@ export const ProductDetail: React.FC = () => {
                       key={filter.id}
                       onClick={() => { setReviewFilter(filter.id); setCurrentPage(1); }}
                       className={cn(
-                        "px-4 py-2.5 text-xs sm:text-sm rounded-full border transition-all duration-200 flex items-center justify-center cursor-pointer select-none active:scale-95",
+                        "px-4 py-2 sm:py-2.5 text-xs sm:text-sm rounded-full border transition-all duration-200 flex items-center justify-center cursor-pointer select-none active:scale-95 whitespace-nowrap shrink-0 snap-start",
                         reviewFilter === filter.id
                           ? "bg-[#ee4d2d]/10 border-[#ee4d2d] text-[#ee4d2d] font-bold shadow-sm"
                           : "bg-white border-zinc-200 text-zinc-700 hover:border-[#ee4d2d]/50 hover:bg-[#ee4d2d]/5 font-medium"
@@ -1860,20 +1860,23 @@ export const ProductDetail: React.FC = () => {
                 </form>
               </div>
             ) : !isCheckingPurchase && (
-              <div className="bg-[#fffbf8] border border-[#f9ede5] p-8 rounded-2xl text-center">
-                <div className="h-16 w-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm border border-[#f9ede5]">
-                  <ShoppingBag className="h-8 w-8 text-[#ee4d2d]" />
+              <div className="bg-[#fffbf8] border border-[#f9ede5] p-4 sm:p-5 rounded-2xl flex flex-row items-start sm:items-center gap-3 sm:gap-4 text-left">
+                <div className="h-10 w-10 sm:h-12 sm:w-12 shrink-0 bg-white rounded-full flex items-center justify-center shadow-sm border border-[#f9ede5]">
+                  <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6 text-[#ee4d2d]" />
                 </div>
-                <h5 className="text-lg font-bold text-zinc-900 mb-2">Chỉ người mua hàng mới có thể đánh giá</h5>
-                <p className="text-zinc-500 text-sm max-w-md mx-auto leading-relaxed">
-                  Bạn cần mua sản phẩm này và đơn hàng phải ở trạng thái{' '}
-                  <strong className="text-[#ee4d2d]">"Đã giao hàng"</strong> để có thể chia sẻ trải nghiệm của mình.
-                </p>
-                {!user && (
-                  <Button onClick={() => window.location.href = '/login'} className="mt-6 bg-[#ee4d2d] text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-red-500/20">
-                    Đăng nhập để kiểm tra
-                  </Button>
-                )}
+                <div className="flex-1">
+                  <h5 className="text-[15px] sm:text-lg font-bold text-zinc-900 mb-1 sm:mb-1.5">{language === 'en' ? 'Only buyers can write a review' : 'Chỉ người mua hàng mới có thể đánh giá'}</h5>
+                  <p className="text-zinc-500 text-[13px] sm:text-sm leading-relaxed">
+                    {language === 'en' ? 'You need to purchase this product and the order must be in ' : 'Bạn cần mua sản phẩm này và đơn hàng phải ở trạng thái '}
+                    <strong className="text-[#ee4d2d]">{language === 'en' ? '"Delivered"' : '"Đã giao hàng"'}</strong> 
+                    {language === 'en' ? ' status to share your experience.' : ' để có thể chia sẻ trải nghiệm của mình.'}
+                  </p>
+                  {!user && (
+                    <Button onClick={() => window.location.href = '/login'} className="mt-3 sm:mt-4 h-9 sm:h-10 bg-[#ee4d2d] text-white px-5 sm:px-6 rounded-xl text-[13px] sm:text-sm font-bold shadow-md shadow-red-500/20 active:scale-95 transition-transform">
+                      {language === 'en' ? 'Login to check' : 'Đăng nhập để kiểm tra'}
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
 
