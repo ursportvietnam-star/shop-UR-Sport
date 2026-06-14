@@ -12,7 +12,51 @@ export default function LivestreamPage() {
   const [liveProducts, setLiveProducts] = useState<Product[]>([]);
   const [viewerCount, setViewerCount] = useState(1);
   const [presenceError, setPresenceError] = useState('');
+  const [deviceInfo, setDeviceInfo] = useState<any>(null);
   const sessionIdRef = React.useRef(`session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`);
+
+  // Lấy thông tin thiết bị và vị trí 1 lần duy nhất khi vào trang
+  useEffect(() => {
+    let isMounted = true;
+    const fetchInfo = async () => {
+      const ua = navigator.userAgent;
+      let browser = 'Unknown';
+      if (ua.indexOf('Firefox') > -1) browser = 'Firefox';
+      else if (ua.indexOf('SamsungBrowser') > -1) browser = 'Samsung Internet';
+      else if (ua.indexOf('Opera') > -1 || ua.indexOf('OPR') > -1) browser = 'Opera';
+      else if (ua.indexOf('Trident') > -1) browser = 'IE';
+      else if (ua.indexOf('Edge') > -1 || ua.indexOf('Edg') > -1) browser = 'Edge';
+      else if (ua.indexOf('Chrome') > -1) browser = 'Chrome';
+      else if (ua.indexOf('Safari') > -1) browser = 'Safari';
+
+      let os = 'Unknown';
+      if (ua.indexOf('Win') > -1) os = 'Windows';
+      else if (ua.indexOf('Mac') > -1) os = 'MacOS/iOS';
+      else if (ua.indexOf('Android') > -1) os = 'Android';
+      else if (ua.indexOf('Linux') > -1) os = 'Linux';
+      
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+      const info = { browser, os, type: isMobile ? 'Mobile' : 'Desktop' };
+      
+      let location = 'Không xác định';
+      try {
+        const res = await fetch('https://get.geojs.io/v1/ip/geo.json');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.city && data.country) {
+            location = `${data.city}, ${data.country}`;
+          }
+        }
+      } catch (e) {
+        console.error('Geo error', e);
+      }
+      
+      if (isMounted) setDeviceInfo({ ...info, location, joinedAt: Date.now() });
+    };
+    
+    fetchInfo();
+    return () => { isMounted = false; };
+  }, []);
 
   // Presence System: Announce we are here and keep heartbeat
   useEffect(() => {
@@ -22,7 +66,11 @@ export default function LivestreamPage() {
 
     const updatePresence = async () => {
       try {
-        await setDoc(presenceDoc, { lastActive: Date.now() }, { merge: true });
+        const payload: any = { lastActive: Date.now() };
+        if (deviceInfo) {
+          payload.deviceInfo = deviceInfo;
+        }
+        await setDoc(presenceDoc, payload, { merge: true });
         setPresenceError(''); // Clear error if success
       } catch (error: any) {
         console.error("Firestore Rules might be blocking presence updates:", error);
@@ -47,7 +95,7 @@ export default function LivestreamPage() {
       window.removeEventListener('beforeunload', cleanup);
       cleanup();
     };
-  }, []);
+  }, [deviceInfo]);
 
   // Poll for active viewer count
   useEffect(() => {

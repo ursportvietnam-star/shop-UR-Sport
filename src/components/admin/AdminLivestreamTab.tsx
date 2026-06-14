@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Video, Save, AlertCircle } from 'lucide-react';
+import { Video, Save, AlertCircle, Smartphone, Monitor, Globe2, Clock } from 'lucide-react';
 import { toast } from 'sonner';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
 
 export const AdminLivestreamTab = () => {
@@ -10,6 +10,34 @@ export const AdminLivestreamTab = () => {
   const [description, setDescription] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [viewers, setViewers] = useState<any[]>([]);
+
+  // Lắng nghe danh sách người xem realtime
+  useEffect(() => {
+    if (!db) return;
+    const viewersCol = collection(db, 'live_viewers');
+    // Chỉ lấy những người đang online (hoạt động trong 60s qua)
+    const activeThreshold = Date.now() - 60000;
+    const q = query(viewersCol, where('lastActive', '>', activeThreshold));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const activeViewers = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      // Sắp xếp người mới vào lên trên
+      activeViewers.sort((a: any, b: any) => {
+        const aTime = a.deviceInfo?.joinedAt || 0;
+        const bTime = b.deviceInfo?.joinedAt || 0;
+        return bTime - aTime;
+      });
+      setViewers(activeViewers);
+    }, (err) => {
+      console.error("Lỗi khi theo dõi người xem:", err);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -124,6 +152,68 @@ export const AdminLivestreamTab = () => {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Viewers Real-time Dashboard */}
+      <div className="rounded-2xl border border-white/5 bg-[#13161f] p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 flex items-center justify-center bg-green-500/10 text-green-500 rounded-xl">
+              <Globe2 className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-white tracking-tight">Người đang xem ({viewers.length})</h2>
+              <p className="text-sm font-medium text-white/45">Theo dõi vị trí và thiết bị theo thời gian thực</p>
+            </div>
+          </div>
+          {viewers.length > 0 && (
+            <div className="flex items-center gap-2">
+              <div className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+              </div>
+              <span className="text-xs font-bold text-green-500 uppercase tracking-widest">Live</span>
+            </div>
+          )}
+        </div>
+
+        {viewers.length === 0 ? (
+          <div className="text-center py-10 border border-white/5 border-dashed rounded-xl">
+            <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-white/5 mb-3 text-white/20">
+              <Clock className="w-6 h-6" />
+            </div>
+            <p className="text-sm text-white/40 font-medium">Chưa có ai đang xem luồng trực tiếp này.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {viewers.map((v, i) => (
+              <div key={v.id || i} className="flex items-center justify-between p-4 rounded-xl bg-black/20 border border-white/5 hover:border-white/10 transition-colors">
+                <div className="flex items-center gap-4">
+                  <div className={`p-2.5 rounded-lg ${v.deviceInfo?.type === 'Mobile' ? 'bg-blue-500/10 text-blue-400' : 'bg-purple-500/10 text-purple-400'}`}>
+                    {v.deviceInfo?.type === 'Mobile' ? <Smartphone className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-white flex items-center gap-2">
+                      {v.deviceInfo?.browser || 'Không xác định'} 
+                      <span className="text-white/20">•</span> 
+                      {v.deviceInfo?.os || 'Không xác định'}
+                    </div>
+                    <div className="text-xs font-medium text-white/40 flex items-center gap-1.5 mt-1">
+                      <Globe2 className="w-3.5 h-3.5" />
+                      {v.deviceInfo?.location || 'Không xác định'}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-[11px] font-bold text-white/30 uppercase tracking-wider mb-1">Tham gia lúc</div>
+                  <div className="text-sm text-white/80 font-medium">
+                    {v.deviceInfo?.joinedAt ? new Date(v.deviceInfo.joinedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
