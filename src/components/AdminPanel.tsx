@@ -701,6 +701,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
   const navRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<AdminTab>(() => {
     if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      if (tabParam) return tabParam as AdminTab;
+
       const saved = localStorage.getItem('ursport_admin_tab');
       if (saved) return saved as AdminTab;
     }
@@ -710,6 +714,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('ursport_admin_tab', activeTab);
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', activeTab);
+      window.history.replaceState({}, '', url.toString());
     }
   }, [activeTab]);
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['orders-group', 'products-group', 'content-group', 'ai-group']);
