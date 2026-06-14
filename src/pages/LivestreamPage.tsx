@@ -21,9 +21,9 @@ export default function LivestreamPage() {
 
     const updatePresence = async () => {
       try {
-        await setDoc(presenceDoc, { lastActive: serverTimestamp() }, { merge: true });
+        await setDoc(presenceDoc, { lastActive: Date.now() }, { merge: true });
       } catch (error) {
-        console.error("Presence error", error);
+        console.error("Firestore Rules might be blocking presence updates:", error);
       }
     };
 
@@ -49,13 +49,13 @@ export default function LivestreamPage() {
 
     const fetchCount = async () => {
       try {
-        // Query users active in the last 60 seconds (buffer for 30s heartbeat)
-        const activeThreshold = Timestamp.fromMillis(Date.now() - 60000);
+        // Query users active in the last 60 seconds using client Date.now() to match
+        const activeThreshold = Date.now() - 60000;
         const q = query(viewersCol, where('lastActive', '>', activeThreshold));
         const snapshot = await getCountFromServer(q);
         setViewerCount(Math.max(1, snapshot.data().count));
       } catch (error) {
-        console.error("Error fetching viewer count:", error);
+        console.error("Firestore Rules might be blocking presence count:", error);
       }
     };
 
@@ -66,10 +66,11 @@ export default function LivestreamPage() {
 
   // Fetch livestream config
   const [livestreamConfig, setLivestreamConfig] = useState({
-    videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-    title: '🔥 Siêu Sale Đồ Thể Thao Cao Cấp',
-    description: 'Săn ngay deal hot giảm giá đến 50% chỉ có trong livestream hôm nay.'
+    videoUrl: '',
+    title: '',
+    description: ''
   });
+  const [isLoadingConfig, setIsLoadingConfig] = useState(true);
 
   useEffect(() => {
     const fetchConfig = async () => {
@@ -78,16 +79,22 @@ export default function LivestreamPage() {
         const snap = await getDoc(doc(db, 'settings', 'livestream'));
         if (snap.exists()) {
           const data = snap.data();
-          if (data.videoUrl) {
-            setLivestreamConfig({
-              videoUrl: data.videoUrl,
-              title: data.title || '🔥 Siêu Sale Đồ Thể Thao Cao Cấp',
-              description: data.description || 'Săn ngay deal hot giảm giá đến 50% chỉ có trong livestream hôm nay.'
-            });
-          }
+          setLivestreamConfig({
+            videoUrl: data.videoUrl || '',
+            title: data.title || '🔥 Siêu Sale Đồ Thể Thao Cao Cấp',
+            description: data.description || 'Săn ngay deal hot giảm giá đến 50% chỉ có trong livestream hôm nay.'
+          });
+        } else {
+          setLivestreamConfig({
+            videoUrl: '',
+            title: '🔥 Siêu Sale Đồ Thể Thao Cao Cấp',
+            description: 'Săn ngay deal hot giảm giá đến 50% chỉ có trong livestream hôm nay.'
+          });
         }
       } catch (error) {
         console.error("Error fetching livestream config:", error);
+      } finally {
+        setIsLoadingConfig(false);
       }
     };
     fetchConfig();
@@ -148,7 +155,11 @@ export default function LivestreamPage() {
           <div className="w-full lg:w-2/3 xl:w-3/4 flex flex-col gap-4">
             <div className="bg-black sm:rounded-2xl overflow-hidden shadow-xl border border-zinc-800 relative w-full pt-[56.25%]">
               {/* 16:9 Aspect Ratio Container */}
-              {embedUrl ? (
+              {isLoadingConfig ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
+                  <div className="w-8 h-8 border-4 border-white/20 border-t-red-500 rounded-full animate-spin"></div>
+                </div>
+              ) : embedUrl ? (
                 <iframe
                   src={embedUrl}
                   title="Livestream Player"
