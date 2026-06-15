@@ -40,11 +40,22 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (!mounted) return;
 
         if (!snapshot.empty) {
-          const data = snapshot.docs.map(d => ({
+          const firebaseData = snapshot.docs.map(d => ({
             id: d.id,
             ...d.data()
           } as Product)).map(normalizeProduct);
-          productSourceRef.current = assignProductPublishTimes(data);
+
+          const combined = [...STATIC_PRODUCTS.map(normalizeProduct)];
+          firebaseData.forEach(fp => {
+            const index = combined.findIndex(p => p.id === fp.id);
+            if (index >= 0) {
+              combined[index] = fp;
+            } else {
+              combined.push(fp);
+            }
+          });
+
+          productSourceRef.current = assignProductPublishTimes(combined);
           setProducts(assignProductPublishTimes(mergeLocalProducts(productSourceRef.current)));
         } else {
           productSourceRef.current = assignProductPublishTimes(STATIC_PRODUCTS.map(normalizeProduct));
