@@ -11,23 +11,33 @@ export const AdminLivestreamTab = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [viewers, setViewers] = useState<any[]>([]);
+  const rawViewersRef = React.useRef<any[]>([]);
 
   // Lắng nghe danh sách người xem realtime
   useEffect(() => {
     if (!db) return;
     const viewersCol = collection(db, 'live_viewers');
-    // Chỉ lấy những người đang online (hoạt động trong 60s qua)
-    const activeThreshold = Date.now() - 60000;
-    const q = query(viewersCol, where('lastActive', '>', activeThreshold));
+    // Ngưỡng ban đầu để không tải lại toàn bộ lịch sử
+    const mountTimeThreshold = Date.now() - 60000;
+    const q = query(viewersCol, where('lastActive', '>', mountTimeThreshold));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      let activeViewers = snapshot.docs.map(doc => ({
+      const docs = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
-      
-      // Bỏ qua những session cũ không có thông tin thiết bị
-      activeViewers = activeViewers.filter((v: any) => v.deviceInfo);
+      rawViewersRef.current = docs;
+      updateVisibleViewers();
+    }, (err) => {
+      console.error("Lỗi khi theo dõi người xem:", err);
+    });
+
+    const updateVisibleViewers = () => {
+      const now = Date.now();
+      let activeViewers = rawViewersRef.current.filter(v => {
+        // Phải có deviceInfo và lastActive trong vòng 60s qua
+        return v.deviceInfo && v.lastActive && (now - v.lastActive <= 60000);
+      });
 
       // Sắp xếp người mới vào lên trên
       activeViewers.sort((a: any, b: any) => {
@@ -36,11 +46,15 @@ export const AdminLivestreamTab = () => {
         return bTime - aTime;
       });
       setViewers(activeViewers);
-    }, (err) => {
-      console.error("Lỗi khi theo dõi người xem:", err);
-    });
+    };
 
-    return () => unsubscribe();
+    // Quét dọn các phiên cũ mỗi 5 giây
+    const interval = setInterval(updateVisibleViewers, 5000);
+
+    return () => {
+      unsubscribe();
+      clearInterval(interval);
+    };
   }, []);
 
   useEffect(() => {

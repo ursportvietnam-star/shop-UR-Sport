@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Save, Search, AlertCircle, Code, Globe, FileText, Tag, Link2, Bot } from 'lucide-react';
+import { Save, Search, AlertCircle, Code, Globe, FileText, Tag, Link2, Bot, Trash2 } from 'lucide-react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -11,6 +11,7 @@ import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
 import beautify from 'js-beautify';
 import { getNavigationSubcategories, NavigationItem, slugifyVietnamese } from '../lib/categoryConfig';
+import { getCategoryLandingContent, CATEGORY_DEFAULT_SEO } from '../data/categoryLandingContent';
 
 interface SeoData {
   heading: string;
@@ -20,6 +21,9 @@ interface SeoData {
   seoCanonical: string;
   seoRobots: string;
   content: string;
+  sapo: string;
+  quickLinks: { label: string; href: string; description: string }[];
+  buyingGuides: { title: string; body: string }[];
 }
 
 const defaultSeoData: SeoData = {
@@ -30,6 +34,9 @@ const defaultSeoData: SeoData = {
   seoCanonical: '',
   seoRobots: 'index, follow',
   content: '',
+  sapo: '',
+  quickLinks: [],
+  buyingGuides: [],
 };
 
 type HomepageSectionType =
@@ -189,21 +196,36 @@ export function CategorySeoManager() {
     const fetchSeoData = async () => {
       setLoading(true);
       try {
+        const fallbackConfig = getCategoryLandingContent(selectedCategory, selectedCategory);
+        const fallbackSeo = (CATEGORY_DEFAULT_SEO as any)[selectedCategory] || {};
+
         const docRef = doc(db, 'categorySeo', selectedCategory);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           const data = docSnap.data();
-          setSeoData({
-            heading: data.heading || '',
-            seoTitle: data.seoTitle || '',
-            seoDescription: data.seoDescription || '',
-            seoKeywords: data.seoKeywords || '',
-            seoCanonical: data.seoCanonical || '',
-            seoRobots: data.seoRobots || 'index, follow',
-            content: data.content || '',
-          });
+            setSeoData({
+              heading: data.heading || fallbackSeo.heading || fallbackSeo.title || '',
+              seoTitle: data.seoTitle || fallbackSeo.title || '',
+              seoDescription: data.seoDescription || fallbackSeo.description || '',
+              seoKeywords: data.seoKeywords || fallbackSeo.keywords || '',
+              seoCanonical: data.seoCanonical || '',
+              seoRobots: data.seoRobots || 'index, follow',
+              content: data.content || '',
+              sapo: data.sapo || fallbackSeo.description || '',
+              quickLinks: data.quickLinks && data.quickLinks.length > 0 ? data.quickLinks : (fallbackConfig?.quickLinks || []),
+              buyingGuides: data.buyingGuides && data.buyingGuides.length > 0 ? data.buyingGuides : (fallbackConfig?.buyingGuides || []),
+            });
         } else {
-          setSeoData(defaultSeoData);
+          setSeoData({
+            ...defaultSeoData,
+            heading: fallbackSeo.heading || fallbackSeo.title || '',
+            seoTitle: fallbackSeo.title || '',
+            seoDescription: fallbackSeo.description || '',
+            seoKeywords: fallbackSeo.keywords || '',
+            sapo: fallbackSeo.description || '',
+            quickLinks: fallbackConfig?.quickLinks || [],
+            buyingGuides: fallbackConfig?.buyingGuides || [],
+          });
         }
       } catch (error) {
         console.error("Error fetching SEO content:", error);
@@ -332,7 +354,7 @@ export function CategorySeoManager() {
     }
   };
 
-  const updateField = (field: keyof SeoData, value: string) => {
+  const updateField = (field: keyof SeoData, value: any) => {
     setSeoData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -499,6 +521,21 @@ export function CategorySeoManager() {
                   <p className="text-[10px] text-white/20 mt-1 italic">Mặc định sẽ lấy tên danh mục nếu để trống.</p>
                 </div>
 
+                {/* Sapo */}
+                <div>
+                  <label className="flex items-center gap-2 text-white/70 text-sm font-bold mb-2">
+                    <FileText className="h-3.5 w-3.5" />
+                    Đoạn Sapo (Dưới H1)
+                  </label>
+                  <textarea
+                    value={seoData.sapo}
+                    onChange={e => updateField('sapo', e.target.value)}
+                    placeholder="Đoạn văn giới thiệu ngắn hiển thị trực tiếp dưới tiêu đề..."
+                    rows={2}
+                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm outline-none focus:border-[#1e4b64] transition-colors resize-none placeholder:text-white/20"
+                  />
+                </div>
+
                 {/* Title */}
                 <div>
                   <label className="flex items-center gap-2 text-white/70 text-sm font-bold mb-2">
@@ -587,6 +624,56 @@ export function CategorySeoManager() {
                     />
                   </div>
                 </div>
+
+                {/* Khối Gợi ý chọn nhanh */}
+                <div className="space-y-4 pt-4 border-t border-white/5">
+                  <h4 className="text-white font-bold flex items-center gap-2">
+                    <Search className="h-4 w-4 text-[#1e4b64]" />
+                    Khối Gợi ý chọn nhanh (Hiển thị dưới Sapo)
+                  </h4>
+                  
+                  {/* Quick Links */}
+                  <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                    <div className="flex items-center justify-between mb-4">
+                      <label className="text-white/70 text-sm font-bold">Danh sách Liên kết nhanh</label>
+                      <Button type="button" onClick={() => setSeoData(prev => ({...prev, quickLinks: [...prev.quickLinks, {label: '', href: '', description: ''}]}))} variant="outline" className="h-8 text-xs bg-transparent border-white/10 text-white hover:bg-white/10">Thêm liên kết</Button>
+                    </div>
+                    <div className="space-y-3">
+                      {seoData.quickLinks.map((link, i) => (
+                        <div key={i} className="flex gap-2 items-start">
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 flex-1">
+                            <input type="text" placeholder="Tên (vd: Áo chạy bộ)" value={link.label} onChange={e => { const newLinks = [...seoData.quickLinks]; newLinks[i].label = e.target.value; updateField('quickLinks', newLinks); }} className="px-3 py-2 bg-black/20 border border-white/10 rounded-lg text-white text-xs outline-none" />
+                            <input type="text" placeholder="Link (vd: /ao-chay-bo)" value={link.href} onChange={e => { const newLinks = [...seoData.quickLinks]; newLinks[i].href = e.target.value; updateField('quickLinks', newLinks); }} className="px-3 py-2 bg-black/20 border border-white/10 rounded-lg text-white text-xs outline-none" />
+                            <input type="text" placeholder="Mô tả ngắn" value={link.description} onChange={e => { const newLinks = [...seoData.quickLinks]; newLinks[i].description = e.target.value; updateField('quickLinks', newLinks); }} className="px-3 py-2 bg-black/20 border border-white/10 rounded-lg text-white text-xs outline-none" />
+                          </div>
+                          <button type="button" onClick={() => { const newLinks = [...seoData.quickLinks]; newLinks.splice(i, 1); updateField('quickLinks', newLinks); }} className="p-2 text-red-400 hover:bg-red-400/10 rounded-lg"><Trash2 className="h-4 w-4" /></button>
+                        </div>
+                      ))}
+                      {seoData.quickLinks.length === 0 && <p className="text-white/40 text-xs italic">Chưa có liên kết nhanh nào.</p>}
+                    </div>
+                  </div>
+
+                  {/* Buying Guides */}
+                  <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                    <div className="flex items-center justify-between mb-4">
+                      <label className="text-white/70 text-sm font-bold">Danh sách Gợi ý nhu cầu</label>
+                      <Button type="button" onClick={() => setSeoData(prev => ({...prev, buyingGuides: [...prev.buyingGuides, {title: '', body: ''}]}))} variant="outline" className="h-8 text-xs bg-transparent border-white/10 text-white hover:bg-white/10">Thêm gợi ý</Button>
+                    </div>
+                    <div className="space-y-3">
+                      {seoData.buyingGuides.map((guide, i) => (
+                        <div key={i} className="flex gap-2 items-start">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 flex-1">
+                            <input type="text" placeholder="Tiêu đề (vd: Form dáng)" value={guide.title} onChange={e => { const newGuides = [...seoData.buyingGuides]; newGuides[i].title = e.target.value; updateField('buyingGuides', newGuides); }} className="px-3 py-2 bg-black/20 border border-white/10 rounded-lg text-white text-xs outline-none" />
+                            <textarea placeholder="Mô tả chi tiết" value={guide.body} onChange={e => { const newGuides = [...seoData.buyingGuides]; newGuides[i].body = e.target.value; updateField('buyingGuides', newGuides); }} rows={2} className="px-3 py-2 bg-black/20 border border-white/10 rounded-lg text-white text-xs outline-none resize-none" />
+                          </div>
+                          <button type="button" onClick={() => { const newGuides = [...seoData.buyingGuides]; newGuides.splice(i, 1); updateField('buyingGuides', newGuides); }} className="p-2 text-red-400 hover:bg-red-400/10 rounded-lg"><Trash2 className="h-4 w-4" /></button>
+                        </div>
+                      ))}
+                      {seoData.buyingGuides.length === 0 && <p className="text-white/40 text-xs italic">Chưa có gợi ý nhu cầu nào.</p>}
+                    </div>
+                  </div>
+                </div>
+
               </div>
             )}
           </div>

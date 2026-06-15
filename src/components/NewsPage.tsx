@@ -1324,8 +1324,8 @@ export function NewsPage() {
         </nav>
 
         {/* Post Metadata Hero Block */}
-        <div className="max-w-4xl mb-8">
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-zinc-955 leading-tight tracking-tight mb-6">
+        <div className="w-full mb-8">
+          <h1 className="w-full text-[22px] sm:text-2xl lg:text-3xl xl:text-4xl font-black text-zinc-955 leading-tight tracking-tight mb-6 whitespace-nowrap overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {selectedPostTitle}
           </h1>
 

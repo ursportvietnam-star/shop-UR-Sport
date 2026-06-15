@@ -85,42 +85,48 @@ const getProductUrl = (product: Product) => {
 };
 
 function CategoryLandingBlocks({ config, productCount }: { config: any; productCount: number }) {
+  if (!config?.quickLinks?.length && !config?.buyingGuides?.length) return null;
+
   return (
     <section className="mb-10 space-y-5">
-      <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden">
-        {config.quickLinks.map((link: any) => (
-          <Link
-            key={link.href}
-            to={link.href}
-            className="group min-w-[82%] snap-start rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#1e4b64]/30 hover:shadow-md sm:min-w-0"
-          >
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <span className="text-sm font-black text-zinc-950">{link.label}</span>
-              <ArrowRight className="h-4 w-4 text-zinc-300 transition-colors group-hover:text-[#1e4b64]" />
-            </div>
-            <p className="text-xs font-medium leading-5 text-zinc-500">{link.description}</p>
-          </Link>
-        ))}
-      </div>
-
-      <div className="rounded-3xl border border-zinc-100 bg-zinc-50/60 p-5 sm:grid sm:grid-cols-[0.8fr_1.2fr] sm:gap-4 sm:p-6">
-        <div>
-          <p className="text-[11px] font-black uppercase tracking-widest text-[#1e4b64]">Gợi ý chọn nhanh</p>
-          <h2 className="mt-2 text-xl font-black tracking-tight text-zinc-950">Chọn sản phẩm theo nhu cầu mặc</h2>
-          <p className="mt-3 text-sm font-medium leading-6 text-zinc-500">
-            Có {productCount} sản phẩm phù hợp. Dùng các gợi ý này để chọn nhanh theo chất liệu, form dáng và hoàn cảnh sử dụng.
-          </p>
-        </div>
-        <div className="-mx-5 mt-4 flex snap-x gap-3 overflow-x-auto px-5 pb-1 [scrollbar-width:none] sm:mx-0 sm:mt-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden">
-          {config.buyingGuides.map((item: any) => (
-            <div key={item.title} className="min-w-[82%] snap-start rounded-2xl bg-white p-4 shadow-sm ring-1 ring-zinc-100 sm:min-w-0">
-              <Check className="mb-3 h-4 w-4 text-emerald-500" />
-              <h3 className="text-sm font-black text-zinc-950">{item.title}</h3>
-              <p className="mt-2 text-xs font-medium leading-5 text-zinc-500">{item.body}</p>
-            </div>
+      {config.quickLinks && config.quickLinks.length > 0 && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {config.quickLinks.map((link: any) => (
+            <Link
+              key={link.href}
+              to={link.href}
+              className="group rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#1e4b64]/30 hover:shadow-md"
+            >
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <span className="text-sm font-black text-zinc-950">{link.label}</span>
+                <ArrowRight className="h-4 w-4 shrink-0 text-zinc-300 transition-colors group-hover:text-[#1e4b64]" />
+              </div>
+              <p className="text-xs font-medium leading-5 text-zinc-500">{link.description}</p>
+            </Link>
           ))}
         </div>
-      </div>
+      )}
+
+      {config.buyingGuides && config.buyingGuides.length > 0 && (
+        <div className="rounded-3xl border border-zinc-100 bg-zinc-50/60 p-5 sm:p-6">
+          <div className="mb-4">
+            <p className="text-[11px] font-black uppercase tracking-widest text-[#1e4b64]">Gợi ý chọn nhanh</p>
+            <h2 className="mt-2 text-xl font-black tracking-tight text-zinc-950">Chọn sản phẩm theo nhu cầu mặc</h2>
+            <p className="mt-2 text-sm font-medium leading-6 text-zinc-500">
+              Có {productCount} sản phẩm phù hợp. Dùng các gợi ý này để chọn nhanh theo chất liệu, form dáng và hoàn cảnh sử dụng.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {config.buyingGuides.map((item: any) => (
+              <div key={item.title} className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-zinc-100">
+                <Check className="mb-3 h-4 w-4 text-emerald-500" />
+                <h3 className="text-sm font-black text-zinc-950">{item.title}</h3>
+                <p className="mt-2 text-xs font-medium leading-5 text-zinc-500">{item.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -147,7 +153,7 @@ export function ShopPage({
   const { products, loading: productsLoading } = useProducts();
   const [searchParams, setSearchParams] = useSearchParams();
   const [seoContent, setSeoContent] = React.useState<string>('');
-  const [seoMeta, setSeoMeta] = React.useState<{title:string,description:string,keywords:string,canonical:string,robots:string,heading:string}>({title:'',description:'',keywords:'',canonical:'',robots:'',heading:''});
+  const [seoMeta, setSeoMeta] = React.useState<{title:string,description:string,keywords:string,canonical:string,robots:string,heading:string, sapo?: string, quickLinks?: { label: string; href: string; description: string }[], buyingGuides?: { title: string; body: string }[]}>({title:'',description:'',keywords:'',canonical:'',robots:'',heading:''});
   const [isSeoExpanded, setIsSeoExpanded] = React.useState(false);
   const [openFilterMenu, setOpenFilterMenu] = React.useState<string | null>(null);
   const filtersRef = React.useRef<HTMLDivElement>(null);
@@ -298,7 +304,7 @@ export function ShopPage({
               keywords: fallback.keywords,
               canonical: '',
               robots: 'index, follow',
-              heading: seoLanding?.label || ''
+              heading: (fallback as any).heading || seoLanding?.label || ''
             });
             return;
           }
@@ -313,7 +319,10 @@ export function ShopPage({
               keywords: data.seoKeywords || fallback.keywords,
               canonical: data.seoCanonical || '',
               robots: data.seoRobots || 'index, follow',
-              heading: data.heading || seoLanding?.label || '',
+              heading: data.heading || (fallback as any).heading || seoLanding?.label || '',
+              sapo: data.sapo || '',
+              quickLinks: data.quickLinks || [],
+              buyingGuides: data.buyingGuides || [],
             });
           } else {
             setSeoContent('');
@@ -323,7 +332,7 @@ export function ShopPage({
               keywords: fallback.keywords,
               canonical: '',
               robots: 'index, follow',
-              heading: seoLanding?.label || ''
+              heading: (fallback as any).heading || seoLanding?.label || ''
             });
           }
         } catch (e) {
@@ -429,8 +438,18 @@ export function ShopPage({
   const shopCanonical = currentSlug ? `/${currentSlug}` : '/shop';
   const categoryIntro = !searchQuery && !brandFilter ? seoMeta.description : '';
   const landingConfig = React.useMemo(
-    () => !hasActiveFacetedParams ? getCategoryLandingContent(currentSlug, String(currentCategory)) : null,
-    [hasActiveFacetedParams, currentSlug, currentCategory]
+    () => {
+      if (hasActiveFacetedParams) return null;
+      if ((seoMeta.quickLinks && seoMeta.quickLinks.length > 0) || (seoMeta.buyingGuides && seoMeta.buyingGuides.length > 0)) {
+        return {
+          quickLinks: seoMeta.quickLinks || [],
+          buyingGuides: seoMeta.buyingGuides || [],
+          faqs: [],
+        };
+      }
+      return getCategoryLandingContent(currentSlug, String(currentCategory));
+    },
+    [hasActiveFacetedParams, seoMeta.quickLinks, seoMeta.buyingGuides, currentSlug, currentCategory]
   );
   const formattedSeoContent = React.useMemo(() => sanitizeRichHtml(formatSeoContentHtml(seoContent)), [seoContent]);
   const seoContentFaqs = React.useMemo(() => parseSeoFaqs(seoContent), [seoContent]);
@@ -559,15 +578,19 @@ export function ShopPage({
 
       <header className="mb-8">
         <div className="flex flex-col gap-4 mb-8">
-          <h1 className="text-[28px] sm:text-[40px] font-black text-black leading-tight tracking-tight">
+          <h1 className="w-full block text-2xl sm:text-3xl lg:text-[36px] font-black text-black leading-tight tracking-tight truncate">
             {searchQuery
               ? `Kết quả tìm kiếm "${searchQuery}"`
               : brandFilter
                 ? `Sản phẩm thương hiệu ${brandFilter}`
                 : (seoMeta.heading ? seoMeta.heading : (currentCategory === 'All' ? 'Tất cả sản phẩm' : currentCategory))}
           </h1>
-          {categoryIntro && (
-            <p className="max-w-3xl text-sm font-medium leading-7 text-zinc-600 sm:text-base">
+          {seoMeta.sapo ? (
+            <p className="w-full text-sm font-medium leading-7 text-zinc-600 sm:text-base">
+              {seoMeta.sapo}
+            </p>
+          ) : categoryIntro && (
+            <p className="w-full text-sm font-medium leading-7 text-zinc-600 sm:text-base">
               {categoryIntro}
             </p>
           )}

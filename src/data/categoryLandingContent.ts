@@ -155,15 +155,16 @@ export const getCategoryLandingContent = (slug: string | undefined, category: st
   return CATEGORY_LANDING_CONTENT[slug] || buildDefaultLandingContent(category);
 };
 
-export const CATEGORY_DEFAULT_SEO: Record<string, { title: string; description: string; keywords: string }> = {
+export const CATEGORY_DEFAULT_SEO: Record<string, { title: string; description: string; keywords: string; heading?: string }> = {
   'ao-thun-nam': {
     title: 'Áo Thun Nam Đẹp, Oversize, Cotton Cao Cấp 2026 | UR Sport',
     description: 'Mua áo thun nam đẹp tại UR Sport. Đa dạng mẫu áo thun oversize, slim-fit, cotton 100%, form chuẩn. Miễn phí vận chuyển toàn quốc.',
     keywords: 'áo thun nam, áo thun nam đẹp, áo thun oversize nam, áo thun cotton nam, áo phông nam',
   },
   'ao-thun-the-thao-nam': {
-    title: 'Áo Thun Thể Thao Nam Thoáng Mát, Tập Gym & Chạy Bộ | UR Sport',
-    description: 'Áo thun thể thao nam cao cấp tại UR Sport. Co giãn 4 chiều, thấm hút mồ hôi, kháng khuẩn. Phù hợp tập gym, chạy bộ, cầu lông. Chính hãng, giá tốt.',
+    title: 'Áo Thun Thể Thao Nam Chính Hãng, Thoáng Mát, Co Giãn Tốt | UR Sport',
+    heading: 'Áo Thun Thể Thao Nam Chính Hãng, Thoáng Mát, Co Giãn Tốt | UR Sport',
+    description: 'Áo thun thể thao nam URSport với chất liệu thoáng mát, thấm hút mồ hôi tốt, co giãn linh hoạt, phù hợp gym, chạy bộ, tập luyện thể thao và hoạt động ngoài trời.',
     keywords: 'áo thun thể thao nam, áo thể thao nam, áo tập gym nam, áo chạy bộ nam, áo thể thao nam cao cấp',
   },
   'ao-thun-cotton-nam': {
