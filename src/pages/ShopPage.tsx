@@ -157,7 +157,7 @@ export function ShopPage({
   const [isSeoExpanded, setIsSeoExpanded] = React.useState(false);
   const [openFilterMenu, setOpenFilterMenu] = React.useState<string | null>(null);
   const filtersRef = React.useRef<HTMLDivElement>(null);
-  
+
   const categoryFilter = searchParams.get('category');
   const brandFilter = searchParams.get('brand');
   const priceFilter = searchParams.get('price');

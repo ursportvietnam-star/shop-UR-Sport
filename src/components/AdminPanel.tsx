@@ -1679,6 +1679,14 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
         <div className="flex flex-col items-center gap-4">
           <div className="h-12 w-12 rounded-full border-4 border-[#1e4b64] border-t-transparent animate-spin" />
           <p className="text-white/50 font-medium text-sm">Đang xác thực...</p>
+          {isLocalhost && (
+            <button
+              onClick={() => devLogin()}
+              className="mt-4 px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer z-50"
+            >
+              Ép vô Admin (Bỏ qua Firebase)
+            </button>
+          )}
         </div>
       </div>
     );

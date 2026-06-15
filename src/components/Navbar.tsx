@@ -1,6 +1,6 @@
 import React, { type ReactNode, useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Search, Menu, LogOut, Phone, LogIn, UserPlus, X, UserRound, Heart, Clock, Mic, PackageSearch, MapPin, ChevronDown, List } from 'lucide-react';
+import { ShoppingCart, Search, Menu, LogOut, Phone, LogIn, UserPlus, X, UserRound, Heart, Clock, Mic, PackageSearch, MapPin, ChevronDown, List, QrCode } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { doc, getDoc } from 'firebase/firestore';
 import { useAuth } from '../AuthContext';
@@ -11,6 +11,7 @@ import { useProducts } from '../ProductsContext';
 import { db } from '../firebase';
 import { MobileSidebar } from './MobileSidebar';
 import { AuthModal } from './AuthModal';
+import { QrScannerModal } from './QrScannerModal';
 import { Category, Product } from '../types';
 import { getProductPath } from '../lib/productUrls';
 import { useLanguage } from '../LanguageContext';
@@ -65,6 +66,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [isScrolled, setIsScrolled] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [topPanelSection, setTopPanelSection] = useState<HomepageSectionConfig | null>(() => getHomepageTopPanelSection([]) || null);
   const [searchHistory, setSearchHistory] = useState<string[]>(() => {
     try {
@@ -193,6 +195,21 @@ export const Navbar: React.FC<NavbarProps> = ({
       setIsMobileSearchOpen(false);
       setIsSearchFocused(false);
       setSearchQuery('');
+    }
+  };
+
+  const handleQrScanSuccess = (decodedText: string) => {
+    try {
+      const url = new URL(decodedText);
+      if (url.origin === window.location.origin) {
+        navigate(url.pathname + url.search + url.hash);
+      } else {
+        window.open(decodedText, '_blank');
+      }
+    } catch {
+      // Not a URL, treat as search query
+      setSearchQuery(decodedText);
+      navigate(`/shop?q=${encodeURIComponent(decodedText)}`);
     }
   };
 
@@ -537,7 +554,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onFocus={() => setIsSearchFocused(true)}
                 onBlur={() => setIsSearchFocused(false)}
                 placeholder={t('searchPlaceholder')}
-                className="w-full bg-zinc-50 border border-zinc-200 rounded-full py-2.5 px-5 pr-12 text-sm focus:bg-white focus:ring-2 focus:ring-[#1e4b64]/15 focus:border-[#1e4b64] placeholder:text-zinc-400 font-medium outline-none transition-all"
+                className="w-full bg-zinc-50 border border-zinc-200 rounded-full py-2.5 px-5 pr-[100px] text-sm focus:bg-white focus:ring-2 focus:ring-[#1e4b64]/15 focus:border-[#1e4b64] placeholder:text-zinc-400 font-medium outline-none transition-all"
               />
               <button
                 type="submit"
@@ -552,6 +569,15 @@ export const Navbar: React.FC<NavbarProps> = ({
                 aria-label={t('voiceSearch')}
               >
                 <Mic className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsQrModalOpen(true)}
+                className="absolute right-[76px] top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-blue-50 hover:text-[#1e4b64]"
+                aria-label="Quét mã QR"
+                title="Quét mã QR"
+              >
+                <QrCode className="h-3.5 w-3.5" />
               </button>
               {renderSearchSuggestions()}
             </form>
@@ -763,6 +789,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </div>
                 <button
                   type="button"
+                  onClick={() => setIsQrModalOpen(true)}
+                  className="h-10 w-10 bg-white/10 hover:bg-white/15 rounded-full flex items-center justify-center text-white transition-all active:scale-90 shrink-0"
+                  aria-label="Quét mã QR"
+                >
+                  <QrCode className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
                   onClick={startVoiceSearch}
                   className="h-10 w-10 bg-white/10 hover:bg-white/15 rounded-full flex items-center justify-center text-white transition-all active:scale-90 shrink-0"
                   aria-label={t('voiceSearch')}
@@ -783,6 +817,12 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
         </AnimatePresence>
       </nav>
+
+      <QrScannerModal
+        isOpen={isQrModalOpen}
+        onClose={() => setIsQrModalOpen(false)}
+        onScanSuccess={handleQrScanSuccess}
+      />
 
       <MobileSidebar
         isOpen={isSidebarOpen}

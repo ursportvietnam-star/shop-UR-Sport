@@ -1,11 +1,13 @@
 import React from 'react';
-import { CheckCircle2, Circle, Loader2, PackagePlus, Rocket, Save, Sparkles, Trash2 } from 'lucide-react';
+import { CheckCircle2, Circle, Loader2, PackagePlus, Rocket, Save, Sparkles, Trash2, CloudUpload } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from './ui/button';
 import { ImageUpload } from './ImageUpload';
 import { generateProductFactoryDraft, publishProductFactoryDraft } from '../lib/productFactoryApi';
 import type { ProductFactoryInput, ProductFactoryResult } from '../types/productFactory';
 import { saveLocalProduct } from '../lib/localProducts';
+import { db } from '../firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 const DEFAULT_STEPS = [
   'AI Vision',
@@ -40,7 +42,60 @@ export function ProductFactoryPanel() {
   const [result, setResult] = React.useState<ProductFactoryResult | null>(null);
   const [running, setRunning] = React.useState(false);
   const [publishing, setPublishing] = React.useState(false);
+  const [syncing, setSyncing] = React.useState(false);
   const [activeStep, setActiveStep] = React.useState(-1);
+
+  const syncLocalToFirebase = async () => {
+    setSyncing(true);
+    try {
+      const res = await fetch('/api/admin/products');
+      if (!res.ok) throw new Error('Không thể lấy dữ liệu local');
+      const data = await res.json();
+      
+      const publishedProducts = data.products.filter((p: any) => p.status === 'published');
+      if (publishedProducts.length === 0) {
+        toast.info('Không có sản phẩm nào đã publish ở local.');
+        return;
+      }
+      
+      let syncedCount = 0;
+      for (const p of publishedProducts) {
+        const imgs = data.images.filter((i: any) => i.productId === p.id);
+        const legacyProduct = {
+          id: p.id,
+          productCode: 'UR-' + p.id.slice(0, 8).toUpperCase(),
+          slug: p.slug,
+          name: p.title,
+          description: p.fullDescriptionHtml,
+          price: p.price,
+          images: imgs.map((image: any) => image.url),
+          category: p.productType.includes('the-thao') ? 'Áo thun thể thao nam' : p.productType.includes('polo') ? 'Áo polo nam' : 'Áo thun nam',
+          colors: p.color ? p.color.split(',').map((item: any) => item.trim()).filter(Boolean) : [],
+          sizes: p.sizes,
+          stock: p.quantity || 100,
+          rating: 5.0,
+          reviewsCount: 0,
+          features: [],
+          seoTitle: p.metaTitle,
+          metaDescription: p.metaDescription,
+          keywords: p.secondaryKeywords ? p.secondaryKeywords.join(', ') : '',
+          specifications: '',
+          brand: p.brand || 'URSport',
+          isNew: true,
+          createdAt: new Date().toISOString()
+        };
+        
+        await setDoc(doc(db, 'products', legacyProduct.id), legacyProduct, { merge: true });
+        syncedCount++;
+      }
+      
+      toast.success(`Đã đồng bộ thành công ${syncedCount} sản phẩm lên Firebase!`);
+    } catch (error: any) {
+      toast.error('Lỗi đồng bộ: ' + error.message);
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const input: ProductFactoryInput = React.useMemo(() => ({
     title: form.title.trim(),
@@ -117,10 +172,16 @@ export function ProductFactoryPanel() {
             <h2 className="text-2xl font-black text-zinc-950">AI Product Factory</h2>
             <p className="mt-1 text-sm font-semibold text-zinc-500">Upload ảnh, nhập dữ liệu tối thiểu, chạy pipeline và publish khi SEO Score đạt chuẩn.</p>
           </div>
-          <Button onClick={runFactory} disabled={running} className="h-12 rounded-xl bg-violet-600 px-5 font-black text-white hover:bg-violet-700">
-            {running ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
-            Tạo sản phẩm bằng AI
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={syncLocalToFirebase} disabled={syncing} className="h-12 rounded-xl bg-blue-600 px-5 font-black text-white hover:bg-blue-700">
+              {syncing ? <Loader2 className="h-5 w-5 animate-spin" /> : <CloudUpload className="h-5 w-5" />}
+              Đồng bộ lên Firebase
+            </Button>
+            <Button onClick={runFactory} disabled={running} className="h-12 rounded-xl bg-violet-600 px-5 font-black text-white hover:bg-violet-700">
+              {running ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
+              Tạo sản phẩm bằng AI
+            </Button>
+          </div>
         </div>
       </div>
 

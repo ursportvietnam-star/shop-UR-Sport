@@ -366,7 +366,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const devLogin = () => {
     if (!isLocalhost) return;
     localStorage.setItem(DEV_ADMIN_KEY, '1');
-    setUser(fakeAdminUser);
+    setUser(fakeAdminUser as User);
     setIsAdmin(true);
     setCustomerProfile({
       uid: fakeAdminUser.uid,
@@ -378,6 +378,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isVip: true,
     });
     setIsVip(true);
+    setLoading(false);
   };
 
   const updateCustomerProfile = async ({ displayName, phone, address, provinceCode = '', provinceName = '', wardCode = '', wardName = '', addressDetail = '' }: CustomerProfileInput) => {
