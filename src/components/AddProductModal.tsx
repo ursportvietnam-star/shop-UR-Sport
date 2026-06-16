@@ -590,7 +590,8 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
     fashionStyle: '',
     collarType: '',
     shopeeUrl: '',
-    tiktokShopUrl: ''
+    tiktokShopUrl: '',
+    features: [] as string[]
   });
 
   const uploadProductDescriptionImage = async (file: File) => {
@@ -821,6 +822,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         collarType: product.collarType || 'Cổ tròn',
         shopeeUrl: product.marketplaceLinks?.shopee || '',
         tiktokShopUrl: product.marketplaceLinks?.tiktokShop || '',
+        features: product.features || [],
       });
       imageAltBySrcRef.current = {};
       imageCaptionBySrcRef.current = {};
@@ -879,6 +881,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         collarType: 'Cổ tròn',
         shopeeUrl: '',
         tiktokShopUrl: '',
+        features: [],
       });
       setHtmlSource('');
       setProductVideos([]);
@@ -1127,6 +1130,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         material: formData.material,
         fashionStyle: formData.fashionStyle,
         collarType: formData.collarType,
+        features: formData.features.map(f => f.trim()).filter(Boolean),
         marketplaceLinks: {
           shopee: formData.shopeeUrl.trim(),
           tiktokShop: formData.tiktokShopUrl.trim()
@@ -1161,6 +1165,11 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
           createdAt: new Date(),
         }) as Product;
         toast.success('Thêm sản phẩm thành công!');
+      }
+      const isLocalhostEnv = typeof window !== 'undefined' &&
+        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+      if (isLocalhostEnv && savedProduct) {
+        saveLocalProduct(savedProduct);
       }
 
       onSuccess(savedProduct);
@@ -1219,6 +1228,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
           material: formData.material,
           fashionStyle: formData.fashionStyle,
           collarType: formData.collarType,
+          features: formData.features.map(f => f.trim()).filter(Boolean),
           marketplaceLinks: {
             shopee: formData.shopeeUrl.trim(),
             tiktokShop: formData.tiktokShopUrl.trim()
@@ -2973,6 +2983,16 @@ Yeu cau: chi dua tren du lieu co that, khong bia thong so, gia, ton kho, bao han
                         placeholder="https://www.tiktok.com/..."
                       />
                     </div>
+                  </div>
+                  <div className="mt-4 space-y-2">
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase px-1">Điểm nổi bật (Mỗi dòng 1 ý)</label>
+                    <textarea 
+                      value={formData.features.join('\n')}
+                      onChange={(e) => setFormData({...formData, features: e.target.value.split('\n')})}
+                      rows={4}
+                      className="w-full p-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#1e4b64] resize-none"
+                      placeholder="Co giãn 4 chiều linh hoạt&#10;Thoáng khí, khô nhanh"
+                    />
                   </div>
                 </div>
                 

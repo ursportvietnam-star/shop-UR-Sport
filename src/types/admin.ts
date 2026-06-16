@@ -30,6 +30,7 @@ export type AdminTab =
   | 'blog-categories'
   | 'policy-pages'
   | 'blog-page'
+  | 'bio-page'
   | 'ai-workflow'
   | 'ai-product-factory'
   | 'ai-blog'

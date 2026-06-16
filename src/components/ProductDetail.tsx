@@ -816,6 +816,39 @@ export const ProductDetail: React.FC = () => {
                 </button>
               ))}
             </div>
+
+            {/* Trust Badges (Horizontal Row) */}
+            <div className="mt-5 sm:mt-6 pb-2">
+              <div className="flex overflow-x-auto scrollbar-none snap-x snap-mandatory gap-3 -mx-4 px-4 sm:mx-0 sm:px-0 lg:grid lg:grid-cols-3 lg:gap-1 lg:bg-zinc-50/50 lg:p-3 lg:rounded-2xl lg:border lg:border-zinc-100">
+                <div className="snap-start shrink-0 w-[85%] sm:w-[300px] lg:w-auto flex min-w-0 items-center gap-3 lg:gap-2 bg-zinc-50/80 lg:bg-transparent rounded-2xl p-4 lg:p-0 border border-zinc-100 lg:border-0 lg:border-r lg:border-zinc-200 lg:pr-1 lg:rounded-none">
+                  <div className="h-10 w-10 shrink-0 rounded-xl bg-white flex items-center justify-center shadow-sm border border-zinc-100 sm:h-12 sm:w-12 lg:h-8 lg:w-8">
+                    <ShieldCheck className="h-5 w-5 text-[#1e4b64] sm:h-6 sm:w-6 lg:h-4 lg:w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-black uppercase leading-tight tracking-tight text-zinc-900 sm:text-[12px] lg:text-[9.5px] lg:tracking-tighter whitespace-nowrap">{t('officialCommit')}</p>
+                    <p className="mt-0.5 text-[9px] text-zinc-400 font-bold uppercase leading-tight sm:text-[10px] lg:text-[7.5px] lg:tracking-tighter whitespace-nowrap">{t('officialCommitDesc')}</p>
+                  </div>
+                </div>
+                <div className="snap-start shrink-0 w-[85%] sm:w-[300px] lg:w-auto flex min-w-0 items-center gap-3 lg:gap-2 bg-zinc-50/80 lg:bg-transparent rounded-2xl p-4 lg:p-0 border border-zinc-100 lg:border-0 lg:border-r lg:border-zinc-200 lg:px-1 lg:rounded-none">
+                  <div className="h-10 w-10 shrink-0 rounded-xl bg-white flex items-center justify-center shadow-sm border border-zinc-100 sm:h-12 sm:w-12 lg:h-8 lg:w-8">
+                    <RefreshCcw className="h-5 w-5 text-[#1e4b64] sm:h-6 sm:w-6 lg:h-4 lg:w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-black uppercase leading-tight tracking-tight text-zinc-900 sm:text-[12px] lg:text-[9.5px] lg:tracking-tighter whitespace-nowrap">{t('returnDays')}</p>
+                    <p className="mt-0.5 text-[9px] text-zinc-400 font-bold uppercase leading-tight sm:text-[10px] lg:text-[7.5px] lg:tracking-tighter whitespace-nowrap">{t('returnDaysDesc')}</p>
+                  </div>
+                </div>
+                <div className="snap-start shrink-0 w-[85%] sm:w-[300px] lg:w-auto flex min-w-0 items-center gap-3 lg:gap-2 bg-zinc-50/80 lg:bg-transparent rounded-2xl p-4 lg:p-0 border border-zinc-100 lg:border-0 lg:pl-1 lg:rounded-none">
+                  <div className="h-10 w-10 shrink-0 rounded-xl bg-white flex items-center justify-center shadow-sm border border-zinc-100 sm:h-12 sm:w-12 lg:h-8 lg:w-8">
+                    <Truck className="h-5 w-5 text-[#1e4b64] sm:h-6 sm:w-6 lg:h-4 lg:w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-black uppercase leading-tight tracking-tight text-zinc-900 sm:text-[12px] lg:text-[9.5px] lg:tracking-tighter whitespace-nowrap">{t('fastShipping')}</p>
+                    <p className="mt-0.5 text-[9px] text-zinc-400 font-bold uppercase leading-tight sm:text-[10px] lg:text-[7.5px] lg:tracking-tighter whitespace-nowrap">{t('fastShippingDesc')}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </motion.div>
 
           {/* Right: Product Info */}
@@ -1077,14 +1110,12 @@ export const ProductDetail: React.FC = () => {
                 </button>
               </div>
 
-              <div className="rounded-xl border border-zinc-100 bg-white px-2 py-1.5 shadow-[0_8px_20px_-18px_rgba(15,23,42,0.28)]">
-                <div className="mb-1 flex items-center justify-between gap-3 px-0.5">
-                  <div>
-                    <p className="text-[9px] font-black uppercase tracking-widest text-zinc-400">{t('marketplaceTitle')}</p>
-                    <p className="text-[11px] font-bold leading-tight text-zinc-900">{t('marketplaceSubtitle')}</p>
-                  </div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 rounded-xl border border-zinc-100 bg-white p-2.5 sm:px-3 sm:py-2 shadow-[0_4px_12px_-10px_rgba(15,23,42,0.2)]">
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-zinc-400">{t('marketplaceTitle')}</p>
+                  <p className="text-[11px] font-bold leading-tight text-zinc-900">{t('marketplaceSubtitle')}</p>
                 </div>
-                <div className="grid grid-cols-2 gap-1.5">
+                <div className="grid grid-cols-2 sm:flex items-center gap-1.5">
                   {marketplaceLinks.map((link) => (
                     <a
                       key={link.id}
@@ -1092,57 +1123,37 @@ export const ProductDetail: React.FC = () => {
                       target="_blank"
                       rel="noopener noreferrer"
                       className={cn(
-                        "group flex min-h-[42px] items-center gap-2 rounded-lg border px-2 py-1 transition-all hover:-translate-y-0.5 hover:shadow-md sm:min-h-[44px]",
-                        link.className
+                        "group flex h-9 items-center justify-center gap-1.5 rounded-lg border px-2.5 transition-all hover:-translate-y-0.5 hover:shadow-sm",
+                        link.id === 'tiktok-shop' ? 'bg-black text-white border-black' : 'bg-orange-50/50 text-[#ee4d2d] border-orange-100'
                       )}
                     >
-                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm">
-                        <img src={link.icon} alt={link.label} loading="lazy" className="h-4.5 w-4.5 object-contain" />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[10px] font-black uppercase tracking-wide sm:text-[11px] sm:tracking-widest">{link.label}</span>
-                        <span className={cn("mt-0.5 hidden truncate text-[8px] font-bold leading-none xl:block", link.id === 'tiktok-shop' ? 'text-white/60' : 'text-[#ee4d2d]/65')}>
-                          {link.caption}
-                        </span>
-                      </span>
-                      <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-60 transition-transform group-hover:translate-x-1" />
+                      <img src={link.icon} alt={link.label} loading="lazy" className="h-4 w-4 object-contain brightness-95" />
+                      <span className="text-[10px] font-black uppercase tracking-wide">{link.label}</span>
                     </a>
                   ))}
                 </div>
               </div>
-
-              {/* Trust Badges */}
-              <div>
-                <div className="bg-zinc-50/50 rounded-2xl px-4 py-3 sm:p-5 grid grid-cols-1 sm:grid-cols-3 gap-0 sm:gap-5">
-                  <div className="flex min-w-0 items-center gap-3 py-3 sm:gap-4 sm:py-0">
-                    <div className="h-10 w-10 shrink-0 rounded-xl bg-white flex items-center justify-center shadow-sm border border-zinc-100 sm:h-12 sm:w-12">
-                      <ShieldCheck className="h-5 w-5 text-[#1e4b64] sm:h-6 sm:w-6" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[11px] font-black uppercase leading-tight tracking-tight text-zinc-900 sm:text-[12px]">{t('officialCommit')}</p>
-                      <p className="mt-0.5 text-[9px] text-zinc-400 font-bold uppercase leading-tight sm:text-[10px]">{t('officialCommitDesc')}</p>
-                    </div>
+              {/* Product Highlights */}
+              {product.features && product.features.length > 0 && (
+                <div className="rounded-xl border border-zinc-100 bg-zinc-50/50 p-4 shadow-sm">
+                  <div className="mb-3 flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-[#ff6a00] fill-[#ff6a00]/20" />
+                    <h3 className="text-[13px] font-black uppercase tracking-wider text-zinc-900">
+                      {language === 'en' ? 'Product Highlights' : 'Điểm nổi bật'}
+                    </h3>
                   </div>
-                  <div className="flex min-w-0 items-center gap-3 border-y sm:border-y-0 sm:border-x border-zinc-100 py-3 sm:gap-4 sm:py-0 sm:px-6">
-                    <div className="h-10 w-10 shrink-0 rounded-xl bg-white flex items-center justify-center shadow-sm border border-zinc-100 sm:h-12 sm:w-12">
-                      <RefreshCcw className="h-5 w-5 text-[#1e4b64] sm:h-6 sm:w-6" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[11px] font-black uppercase leading-tight tracking-tight text-zinc-900 sm:text-[12px]">{t('returnDays')}</p>
-                      <p className="mt-0.5 text-[9px] text-zinc-400 font-bold uppercase leading-tight sm:text-[10px]">{t('returnDaysDesc')}</p>
-                    </div>
-                  </div>
-                  <div className="flex min-w-0 items-center gap-3 py-3 sm:gap-4 sm:py-0">
-                    <div className="h-10 w-10 shrink-0 rounded-xl bg-white flex items-center justify-center shadow-sm border border-zinc-100 sm:h-12 sm:w-12">
-                      <Truck className="h-5 w-5 text-[#1e4b64] sm:h-6 sm:w-6" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[11px] font-black uppercase leading-tight tracking-tight text-zinc-900 sm:text-[12px]">{t('fastShipping')}</p>
-                      <p className="mt-0.5 text-[9px] text-zinc-400 font-bold uppercase leading-tight sm:text-[10px]">{t('fastShippingDesc')}</p>
-                    </div>
-                  </div>
+                  <ul className="space-y-2.5">
+                    {product.features.map((feature, i) => (
+                      <li key={`feature-${i}`} className="flex items-start gap-2.5 text-[13px] text-zinc-700 leading-snug">
+                        <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#10b981]" strokeWidth={3} />
+                        <span className="font-medium">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              </div>
+              )}
+
+              {/* End Product Info Column */}
             </div>
           </motion.div>
         </div>
@@ -1167,13 +1178,14 @@ export const ProductDetail: React.FC = () => {
                 <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
-            <div className="grid grid-cols-5 gap-x-0 gap-y-8">
+            <div className="flex overflow-x-auto scrollbar-none snap-x snap-mandatory gap-3 pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-3 lg:grid-cols-5 sm:gap-x-4 sm:gap-y-8">
               {recentlyViewedProducts.map((recentProduct) => (
-                <ProductCard
-                  key={recentProduct.id}
-                  product={recentProduct}
-                  onClick={() => navigate(`/${recentProduct.slug || recentProduct.id}`)}
-                />
+                <div key={recentProduct.id} className="w-[45%] shrink-0 snap-start sm:w-auto">
+                  <ProductCard
+                    product={recentProduct}
+                    onClick={() => navigate(`/${recentProduct.slug || recentProduct.id}`)}
+                  />
+                </div>
               ))}
             </div>
           </section>
