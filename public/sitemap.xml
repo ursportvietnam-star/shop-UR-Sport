@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://www.ursport.vn/</loc>
-    <lastmod>2026-06-15</lastmod>
+    <lastmod>2026-06-17</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
     <image:image>
@@ -13,24 +13,19 @@
   </url>
   <url>
     <loc>https://www.ursport.vn/shop</loc>
-    <lastmod>2026-06-15</lastmod>
+    <lastmod>2026-06-17</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Shop đồ thể thao nam UR Sport</image:title>
-      <image:caption>Shop đồ thể thao nam UR Sport</image:caption>
-    </image:image>
   </url>
   <url>
     <loc>https://www.ursport.vn/blog</loc>
-    <lastmod>2026-06-15</lastmod>
+    <lastmod>2026-06-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.ursport.vn/ao-thun-nam</loc>
-    <lastmod>2026-06-15</lastmod>
+    <lastmod>2026-06-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -41,7 +36,7 @@
   </url>
   <url>
     <loc>https://www.ursport.vn/ao-thun-the-thao-nam</loc>
-    <lastmod>2026-06-15</lastmod>
+    <lastmod>2026-06-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -52,7 +47,7 @@
   </url>
   <url>
     <loc>https://www.ursport.vn/ao-polo-nam</loc>
-    <lastmod>2026-06-15</lastmod>
+    <lastmod>2026-06-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -63,7 +58,7 @@
   </url>
   <url>
     <loc>https://www.ursport.vn/quan-the-thao-nam</loc>
-    <lastmod>2026-06-15</lastmod>
+    <lastmod>2026-06-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -74,7 +69,7 @@
   </url>
   <url>
     <loc>https://www.ursport.vn/phu-kien-the-thao</loc>
-    <lastmod>2026-06-15</lastmod>
+    <lastmod>2026-06-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -85,504 +80,44 @@
   </url>
   <url>
     <loc>https://www.ursport.vn/ao-thun-cotton-nam</loc>
-    <lastmod>2026-06-15</lastmod>
+    <lastmod>2026-06-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
   </url>
   <url>
     <loc>https://www.ursport.vn/ao-thun-nam-form-rong</loc>
-    <lastmod>2026-06-15</lastmod>
+    <lastmod>2026-06-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
   </url>
   <url>
     <loc>https://www.ursport.vn/blog/ao-thun-nam</loc>
-    <lastmod>2026-06-15</lastmod>
+    <lastmod>2026-06-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
   </url>
   <url>
     <loc>https://www.ursport.vn/blog/ao-thun-the-thao-nam</loc>
-    <lastmod>2026-06-15</lastmod>
+    <lastmod>2026-06-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
   </url>
   <url>
     <loc>https://www.ursport.vn/blog/quan-the-thao-nam</loc>
-    <lastmod>2026-06-15</lastmod>
+    <lastmod>2026-06-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
   </url>
   <url>
     <loc>https://www.ursport.vn/blog/chat-lieu-vai-the-thao</loc>
-    <lastmod>2026-06-15</lastmod>
+    <lastmod>2026-06-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
   </url>
   <url>
     <loc>https://www.ursport.vn/blog/phoi-do-the-thao-nam</loc>
-    <lastmod>2026-06-15</lastmod>
+    <lastmod>2026-06-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/ao-thun-cotton-starship-premium</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Áo Thun Cotton Starship Premium</image:title>
-      <image:caption>Chất liệu 100% cotton tự nhiên cao cấp, in logo Starship Entertainment tinh tế. Form dáng hiện đại, thoáng mát.</image:caption>
-    </image:image>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-the-thao-nam.webp</image:loc>
-      <image:title>Áo Thun Cotton Starship Premium</image:title>
-      <image:caption>Chất liệu 100% cotton tự nhiên cao cấp, in logo Starship Entertainment tinh tế. Form dáng hiện đại, thoáng mát.</image:caption>
-    </image:image>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-polo-nam.webp</image:loc>
-      <image:title>Áo Thun Cotton Starship Premium</image:title>
-      <image:caption>Chất liệu 100% cotton tự nhiên cao cấp, in logo Starship Entertainment tinh tế. Form dáng hiện đại, thoáng mát.</image:caption>
-    </image:image>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/quan-the-thao-nam.webp</image:loc>
-      <image:title>Áo Thun Cotton Starship Premium</image:title>
-      <image:caption>Chất liệu 100% cotton tự nhiên cao cấp, in logo Starship Entertainment tinh tế. Form dáng hiện đại, thoáng mát.</image:caption>
-    </image:image>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/phu-kien-the-thao.webp</image:loc>
-      <image:title>Áo Thun Cotton Starship Premium</image:title>
-      <image:caption>Chất liệu 100% cotton tự nhiên cao cấp, in logo Starship Entertainment tinh tế. Form dáng hiện đại, thoáng mát.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/ao-thun-graphic-run-fast</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Áo Thun Graphic &quot;Run Fast&quot;</image:title>
-      <image:caption>Thiết kế graphic năng động, cá tính. Form áo rộng thoải mái.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/ao-thun-oversize-urstyle</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Áo Thun Oversize UrStyle</image:title>
-      <image:caption>Phong cách đường phố hiện đại, form dáng cực chuẩn cho giới trẻ.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/ao-thun-henley-co-nut</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Áo Thun Henley Cổ Nút</image:title>
-      <image:caption>Thiết kế cổ nút tinh tế, mang lại vẻ ngoài lịch lãm nhưng vẫn trẻ trung.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/ao-thun-soc-ngang-urban</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Áo Thun Sọc Ngang Urban</image:title>
-      <image:caption>Họa tiết sọc ngang kinh điển, trẻ trung và không bao giờ lỗi mốt.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/ao-thun-pocket-tee</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Áo Thun Pocket Tee</image:title>
-      <image:caption>Điểm nhấn túi ngực nhỏ gọn, tinh tế và tiện lợi.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/ao-thun-longline-modern</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Áo Thun Longline Modern</image:title>
-      <image:caption>Vạt bầu dài thời trang, cực kỳ phù hợp cho phong cách layer.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/ao-thun-in-chim-stealth</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Áo Thun In Chìm Stealth</image:title>
-      <image:caption>Logo in chìm tinh tế, chỉ lộ rõ dưới ánh sáng mạnh. Đầy bí ẩn và đẳng cấp.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/ao-thun-the-thao-nam-chay-bo-gym-pro-dry-khang-khuan</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Áo Thun Thể Thao Nam Chạy Bộ, Tập Gym Cao Cấp Pro-Dry Kháng Khuẩn</image:title>
-      <image:caption>Mua ngay áo thun thể thao nam Pro-Dry cao cấp. Áo tập gym, chạy bộ nam thoáng mát, co giãn 4 chiều, khử mùi hôi. Miễn phí vận chuyển toàn quốc!</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/ao-tanktop-nam-tap-gym-khoe-co-bap-urarmor</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Áo Tanktop Nam Tập Gym, Khoét Nách Sâu Khoe Cơ Bắp UrArmor</image:title>
-      <image:caption>Áo tanktop nam tập gym UR Sport chất liệu thoáng khí, thấm hút mồ hôi, form dáng khoét nách cực ngầu giúp khoe trọn vóc dáng nam tính.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/ao-compression-nam-dai-tay-giu-nhiet-tap-gym-da-bong</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Áo Compression Nam Dài Tay Giữ Nhiệt, Trợ Lực Tập Gym &amp; Đá Bóng</image:title>
-      <image:caption>Áo compression dài tay nam cao cấp. Hỗ trợ trợ lực, nén cơ bắp, giữ nhiệt cực tốt. Phù hợp cho tập gym, đá bóng và chạy bộ mùa đông.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/ao-chay-bo-nam-phan-quang-cao-cap-nightrun</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Áo Chạy Bộ Nam Phản Quang Chống Nước Nhẹ NightRun</image:title>
-      <image:caption>Bảo vệ an toàn khi chạy đêm với áo chạy bộ nam phản quang NightRun. Chất liệu nhẹ mát, thấm mồ hôi cực tốt. Phù hợp chạy bộ, đạp xe.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/ao-thun-the-thao-nam-co-v-tre-trung-v-neck-sport</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Áo Thun Thể Thao Nam Cổ V Trẻ Trung, V-Neck Sport Kháng Khuẩn</image:title>
-      <image:caption>Sở hữu ngay áo thun thể thao nam cổ V sành điệu. Chất vải kháng khuẩn, thiết kế nam tính, phù hợp cho việc đi tập và mặc thường ngày.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/ao-thun-the-thao-in-hoa-tiet-camo</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Áo Thun Thể Thao In Họa Tiết Camo</image:title>
-      <image:caption>Họa tiết rằn ri mạnh mẽ, giúp bạn nổi bật trong phòng tập.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/ao-khoac-gio-the-thao-windbreaker</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Áo Khoác Gió Thể Thao Windbreaker</image:title>
-      <image:caption>Chống gió và mưa nhẹ, lý tưởng cho những buổi tập ngoài trời.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/ao-thun-sat-nach-stringer</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Áo Thun Sát Nách Stringer</image:title>
-      <image:caption>Dành riêng cho các vận động viên thể hình chuyên nghiệp.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/ao-polo-nam-the-thao-golf-classic-lux-cao-cap</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Áo Polo Nam Thể Thao Golf Classic Lux Cao Cấp Chống Nhăn</image:title>
-      <image:caption>Mua áo polo nam thể thao cao cấp cho Golfer. Áo thun có cổ form chuẩn, vải cá sấu mềm mịn, thoáng mát, chống nhăn. Miễn phí đổi trả 7 ngày.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/ao-polo-nam-the-thao-sporty-mesh-thoang-khi</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Áo Polo Nam Thể Thao Sporty Mesh Thoáng Khí</image:title>
-      <image:caption>Áo polo nam thể thao Sporty Mesh cực thoáng mát, thấm mồ hôi tốt. Sự lựa chọn hoàn hảo cho phong cách năng động nhưng vẫn lịch sự. Đặt hàng ngay!</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/ao-polo-nam-phoi-bo-tay-stripe-thoi-trang</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Áo Polo Nam Phối Bo Tay Stripe Kẻ Sọc Thời Trang</image:title>
-      <image:caption>Áo polo nam viền kẻ sọc thời thượng, thiết kế bo tay hiện đại. Áo polo dáng Slim fit giúp tôn lên nét nam tính, trẻ trung.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/ao-polo-nam-zipper-tech-khoa-keo</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Áo Polo Nam Zipper Tech Khóa Kéo Tương Lai</image:title>
-      <image:caption>Phá cách với áo polo nam khóa kéo Zipper Tech. Vải Spandex co giãn 4 chiều, thiết kế hiện đại, độc quyền tại UR Sport.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/ao-polo-nam-det-kim-knit-texture</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Áo Polo Nam Dệt Kim Knit Texture Sang Trọng</image:title>
-      <image:caption>Nâng tầm phong cách với áo polo nam dệt kim Knit Texture sang trọng. Chất liệu cao cấp, vân nổi tinh tế. Lựa chọn số 1 của quý ông.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/ao-polo-active-dri-fit</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Áo Polo Active Dri-Fit</image:title>
-      <image:caption>Dành cho những người yêu thích sự thoải mái tuyệt đối cả ngày dài.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/ao-polo-pattern-dot</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Áo Polo Pattern Dot</image:title>
-      <image:caption>Họa tiết chấm bi nhỏ li ti, tinh tế và lịch sự.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/ao-polo-long-sleeve-winter</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Áo Polo Long Sleeve Winter</image:title>
-      <image:caption>Áo polo tay dài giữ ấm cơ thể trong những ngày se lạnh.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/quan-short-chay-bo-elite-night</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Quần Short Chạy Bộ Elite Night</image:title>
-      <image:caption>Siêu nhẹ, có túi khóa kéo an toàn. Đai quần co giãn cực tốt.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/quan-jogger-training-urfocus</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Quần Jogger Training UrFocus</image:title>
-      <image:caption>Thiết kế bo gấu năng động, chất liệu nỉ da cá thoáng mát.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/quan-dui-tap-gym-2-lop</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Quần Đùi Tập Gym 2 Lớp</image:title>
-      <image:caption>Tích hợp lớp lót bên trong giúp bảo vệ và hỗ trợ cơ bắp tối ưu.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/quan-long-pants-the-thao-pro</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Quần Long Pants Thể Thao Pro</image:title>
-      <image:caption>Dáng quần ống suông, phù hợp cho cả tập luyện và dạo phố.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/quan-short-basketball-legend</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Quần Short Basketball Legend</image:title>
-      <image:caption>Form rộng rãi, phong cách bóng rổ đường phố Mỹ.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/quan-legging-tap-gym-nam</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Quần Legging Tập Gym Nam</image:title>
-      <image:caption>Mặc bên trong quần đùi, giúp giữ nhiệt và bảo vệ đôi chân.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/quan-cargo-sport-da-nang</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Quần Cargo Sport Đa Năng</image:title>
-      <image:caption>Tích hợp nhiều túi hộp, phong cách quân đội mạnh mẽ.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/quan-short-boi-urbeach</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Quần Short Bơi UrBeach</image:title>
-      <image:caption>Chất liệu mau khô, họa tiết nhiệt đới rực rỡ.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/binh-nuoc-the-thao-tritan-1l</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Bình Nước Thể Thao Tritan 1L</image:title>
-      <image:caption>Nhựa cao cấp không chứa BPA, bền chắc và an toàn cho sức khỏe.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/tham-yoga-tpe-8mm-sieu-bam</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Thảm Yoga TPE 8mm Siêu Bám</image:title>
-      <image:caption>Chống trượt tuyệt đối, độ đàn hồi cực tốt bảo vệ khớp xương.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/tui-the-thao-gym-bag-duffel</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Túi Thể Thao Gym Bag Duffel</image:title>
-      <image:caption>Ngăn chứa đồ rộng rãi, có ngăn đựng giày riêng biệt cực tiện lợi.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/gang-tay-tap-gym-pro-grip</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Găng Tay Tập Gym Pro-Grip</image:title>
-      <image:caption>Bảo vệ lòng bàn tay khỏi chai sạn, tăng lực bám khi đẩy tạ.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/non-ket-the-thao-performance</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Nón Kết Thể Thao Performance</image:title>
-      <image:caption>Chất liệu vải dù cực nhẹ, form nón chuẩn đẹp.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/day-nhay-the-luc-speed-rope</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Dây Nhảy Thể Lực Speed Rope</image:title>
-      <image:caption>Thiết kế khí động học cho tốc độ xoay cực cao.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/tat-the-thao-cotton-cushioned</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Tất Thể Thao Cotton Cushioned</image:title>
-      <image:caption>Lớp đệm dày ở gót và mũi chân giúp giảm chấn thương.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.ursport.vn/bo-5-day-mini-band-khang-luc</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://www.ursport.vn/images/ao-thun-nam.webp</image:loc>
-      <image:title>Bộ 5 Dây Mini Band Kháng Lực</image:title>
-      <image:caption>Hỗ trợ tập luyện mông và chân hiệu quả tại nhà.</image:caption>
-    </image:image>
   </url>
 </urlset>

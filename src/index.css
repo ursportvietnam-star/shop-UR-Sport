@@ -140,10 +140,9 @@
 /* Link styling */
 .product-description-container a {
   color: #1e4b64 !important;
-  text-decoration: underline !important;
-  text-decoration-color: #1e4b64 !important;
-  text-underline-offset: 2px !important;
-  text-decoration-thickness: 1.5px !important;
+  text-decoration: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
   transition: all 0.2s ease !important;
   pointer-events: auto !important;
   cursor: pointer !important;
@@ -778,8 +777,20 @@ html {
   @apply border-l-4 border-[#1e4b64] pl-6 py-4 bg-slate-50 italic rounded-r-2xl my-8 text-slate-700;
 }
 
-.product-description-content a {
-  @apply text-[#1e4b64] underline hover:text-[#153446] transition-colors font-bold;
+.product-description-content a, .blog-content a {
+  @apply text-[#1e4b64] no-underline hover:text-[#153446] transition-colors font-bold;
+  text-decoration: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+
+.product-description-content a *, .blog-content a *, .product-description-container a * {
+  text-decoration: none !important;
+  border-bottom: none !important;
+}
+
+.product-description-content u:has(a), .blog-content u:has(a), .product-description-container u:has(a) {
+  text-decoration: none !important;
 }
 
 .ql-align-center { text-align: center; }
