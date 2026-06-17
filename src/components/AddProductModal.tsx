@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Save, Eye, Settings, Star, Check, AlignLeft, AlignCenter, AlignRight, Type, Tag, Code, TrendingUp, Trash2, Upload, Link as LinkIcon, CircleCheck, CircleAlert, Sparkles, BrainCircuit, Video, Play } from 'lucide-react';
+import { X, Save, Eye, Settings, Star, Check, AlignLeft, AlignCenter, AlignRight, Type, Tag, Code, TrendingUp, Trash2, Upload, Link as LinkIcon, CircleCheck, CircleAlert, Sparkles, BrainCircuit, Video, Play, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { collection, addDoc, serverTimestamp, updateDoc, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -16,6 +16,30 @@ import { generateProductSeoFix, generateProductDescriptionFromMd } from '../lib/
 
 const DEFAULT_PRODUCT_SIZES = ['M', 'L', 'XL', 'XXL', '3XL', '4XL'];
 const DEFAULT_PRODUCT_SIZE_TEXT = DEFAULT_PRODUCT_SIZES.join(',');
+const SIZE_CHARTS = {
+  polo: [
+    { size: 'M', vai: 42, dai: 68, nguc: 96 },
+    { size: 'L', vai: 44, dai: 70, nguc: 100 },
+    { size: 'XL', vai: 46, dai: 72, nguc: 104 },
+    { size: 'XXL', vai: 48, dai: 74, nguc: 108 },
+    { size: 'XXXL', vai: 50, dai: 76, nguc: 112 }
+  ],
+  tshirt: [
+    { size: 'M', vai: 43, dai: 69, nguc: 98 },
+    { size: 'L', vai: 45, dai: 71, nguc: 102 },
+    { size: 'XL', vai: 47, dai: 73, nguc: 106 },
+    { size: 'XXL', vai: 49, dai: 75, nguc: 110 },
+    { size: 'XXXL', vai: 51, dai: 77, nguc: 114 },
+    { size: '4XL', vai: 53, dai: 79, nguc: 118 }
+  ],
+  sports: [
+    { size: 'M', vai: 41, dai: 67, nguc: 94 },
+    { size: 'L', vai: 43, dai: 69, nguc: 98 },
+    { size: 'XL', vai: 45, dai: 71, nguc: 102 },
+    { size: 'XXL', vai: 47, dai: 73, nguc: 106 },
+    { size: 'XXXL', vai: 49, dai: 75, nguc: 110 }
+  ]
+};
 const LOCAL_PRODUCT_COPIES_STORAGE_KEY = 'ursport_local_product_copies_v1';
 const LOCAL_PRODUCTS_UPDATED_EVENT = 'ursport:local-products-updated';
 
@@ -306,8 +330,11 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
   const quillRef = useRef<any>(null);
   const editorWrapRef = useRef<HTMLDivElement>(null);
   const salesInfoRef = useRef<HTMLElement>(null);
+  const detailsInfoRef = useRef<HTMLDivElement>(null);
   const [imageToolbar, setImageToolbar] = useState<ImageToolbarState | null>(null);
-  const [activeQuickTab, setActiveQuickTab] = useState<'description' | 'sales'>('description');
+  const [activeQuickTab, setActiveQuickTab] = useState<'details' | 'description' | 'sales'>('details');
+  const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
+  const [isSizeChartParamsOpen, setIsSizeChartParamsOpen] = useState(true);
   const [aiFixingChecklistId, setAiFixingChecklistId] = useState<SeoChecklistFixId | null>(null);
   const [captionDraft, setCaptionDraft] = useState('');
   const [showCaption, setShowCaption] = useState(false);
@@ -581,6 +608,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
     } as VariantBulkForm,
     extraImages: [] as string[],
     coverImage: '',
+    imageTitle: '',
     specifications: '',
     careInstructions: '',
     brand: '',
@@ -812,6 +840,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         },
         extraImages,
         coverImage,
+        imageTitle: product.imageTitle || '',
         specifications: product.specifications || '',
         careInstructions: product.careInstructions || '',
         brand: product.brand || 'UR SPORT',
@@ -1111,6 +1140,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         colors: validVariants.map(v => v.name.trim()),
         colorImages: validVariants.map(v => ({ name: v.name.trim(), image: v.image })),
         images: allImages,
+        imageTitle: formData.imageTitle,
         videos: productVideos.filter(Boolean),
         price: Number(currentPrice),
         discountPrice: formData.discountPrice ? Number(formData.discountPrice) : null,
@@ -1118,6 +1148,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         sizes: finalSizes,
         variants: productVariants,
         sizeGuideUrl: formData.sizeGuideUrl,
+        sizeChartType: formData.sizeChartType,
         slug: normalizeProductSlug(formData.slug, formData.name),
         seoTitle: formData.seoTitle,
         metaDescription: formData.metaDescription,
@@ -1127,9 +1158,13 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         brand: formData.brand,
         origin: formData.origin,
         style: formData.style,
+        fitType: formData.fitType,
         material: formData.material,
         fashionStyle: formData.fashionStyle,
         collarType: formData.collarType,
+        productLine: formData.productLine,
+        detailColors: formData.detailColors,
+        detailSizes: formData.detailSizes,
         features: formData.features.map(f => f.trim()).filter(Boolean),
         marketplaceLinks: {
           shopee: formData.shopeeUrl.trim(),
@@ -1480,20 +1515,29 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
     option.parent && !parentCategoryOptions.some(parent => normalizeMenuLabel(parent.label) === normalizeMenuLabel(option.parent))
   );
 
-  const scrollToQuickSection = (section: 'description' | 'sales') => {
+  const scrollToQuickSection = (section: 'details' | 'description' | 'sales') => {
     setActiveQuickTab(section);
-    const target = section === 'description' ? editorWrapRef.current : salesInfoRef.current;
+    const target = section === 'details' ? detailsInfoRef.current : (section === 'description' ? editorWrapRef.current : salesInfoRef.current);
     target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const handleLeftColumnScroll = () => {
     const scroller = leftScrollerRef.current;
+    const detailsSection = detailsInfoRef.current;
+    const descSection = editorWrapRef.current;
     const salesSection = salesInfoRef.current;
-    if (!scroller || !salesSection) return;
+    if (!scroller) return;
 
     const scrollerTop = scroller.getBoundingClientRect().top;
-    const salesTop = salesSection.getBoundingClientRect().top - scrollerTop;
-    setActiveQuickTab(salesTop <= 120 ? 'sales' : 'description');
+    const offset = 120;
+
+    if (salesSection && salesSection.getBoundingClientRect().top - scrollerTop <= offset) {
+      setActiveQuickTab('sales');
+    } else if (descSection && descSection.getBoundingClientRect().top - scrollerTop <= offset) {
+      setActiveQuickTab('description');
+    } else if (detailsSection && detailsSection.getBoundingClientRect().top - scrollerTop <= offset) {
+      setActiveQuickTab('details');
+    }
   };
 
   const currentDescriptionHtml = isHtmlMode ? htmlSource : formData.description;
@@ -1511,6 +1555,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
     formData.brand,
     formData.origin,
     formData.style,
+    formData.fitType,
     formData.material,
     formData.fashionStyle,
     formData.collarType,
@@ -1935,8 +1980,9 @@ Yeu cau: chi dua tren du lieu co that, khong bia thong so, gia, ton kho, bao han
                 />
 
                 <div className="sticky top-0 z-30 -mx-2 border-b border-zinc-200 bg-white/95 px-2 py-2 backdrop-blur">
-                  <div className="inline-flex rounded-lg border border-zinc-200 bg-zinc-50 p-1 shadow-sm">
+                  <div className="inline-flex rounded-lg border border-zinc-200 bg-zinc-50 p-1 shadow-sm overflow-x-auto max-w-full">
                     {[
+                      { id: 'details' as const, label: 'Chi tiết sản phẩm' },
                       { id: 'description' as const, label: 'Mô tả' },
                       { id: 'sales' as const, label: 'Thông tin bán hàng' },
                     ].map(tab => (
@@ -1945,7 +1991,7 @@ Yeu cau: chi dua tren du lieu co that, khong bia thong so, gia, ton kho, bao han
                         type="button"
                         onClick={() => scrollToQuickSection(tab.id)}
                         className={cn(
-                          'h-9 rounded-md px-4 text-[13px] font-black transition-colors',
+                          'h-9 rounded-md px-4 text-[13px] font-black transition-colors whitespace-nowrap',
                           activeQuickTab === tab.id
                             ? 'bg-white text-[#10b981] shadow-sm'
                             : 'text-zinc-500 hover:text-zinc-900'
@@ -1956,6 +2002,256 @@ Yeu cau: chi dua tren du lieu co that, khong bia thong so, gia, ton kho, bao han
                     ))}
                   </div>
                 </div>
+
+                {/* Chi tiết sản phẩm */}
+                <section ref={detailsInfoRef} className="w-full scroll-mt-20 space-y-6 pt-6 pb-6">
+                  <h3 className="text-[11px] font-black uppercase tracking-widest text-zinc-500">Chi tiết sản phẩm</h3>
+                  
+                  {/* Bảng Size */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between bg-zinc-50 border border-zinc-200 rounded-xl p-3 cursor-pointer hover:bg-zinc-100 transition-colors" onClick={() => setIsSizeGuideOpen(!isSizeGuideOpen)}>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-[12px] font-bold text-zinc-700 uppercase">Size Guide (Ảnh)</h4>
+                        {formData.sizeGuideUrl && (
+                          <span className="flex h-5 items-center rounded-full bg-green-100 px-2 text-[10px] font-bold text-green-700">Đã tải lên</span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        className="text-[12px] font-semibold text-[#1e4b64] flex items-center gap-1"
+                      >
+                        {isSizeGuideOpen ? 'Thu gọn' : formData.sizeGuideUrl ? 'Sửa ảnh' : 'Tải ảnh lên'}
+                        <ChevronRight className={cn("h-3 w-3 transition-transform", isSizeGuideOpen && "rotate-90")} />
+                      </button>
+                    </div>
+
+                    {isSizeGuideOpen && (
+                      <div className="space-y-4 p-4 bg-zinc-50/50 rounded-xl border border-zinc-100 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <div className="bg-white rounded-xl border border-zinc-200 p-1">
+                          <div className="h-[120px]">
+                            <ImageUpload 
+                              onUploadComplete={(url) => setFormData(prev => ({...prev, sizeGuideUrl: url}))}
+                              folder="size-guides"
+                              label="Tải ảnh bảng size"
+                              externalPreview={formData.sizeGuideUrl || undefined}
+                              storage="local"
+                            />
+                          </div>
+                        </div>
+                        {formData.sizeGuideUrl && (
+                          <div className="relative w-full h-32 rounded-md overflow-hidden border border-zinc-200 group shadow-sm bg-white mt-3">
+                            <img src={formData.sizeGuideUrl} alt="Size Guide Preview" loading="lazy" className="w-full h-full object-cover" />
+                            <button 
+                              type="button"
+                              onClick={() => setFormData({...formData, sizeGuideUrl: ''})}
+                              className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X className="h-5 w-5 text-white" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Bảng Size Params */}
+                  <div className="space-y-4 pt-2">
+                    <div className="flex items-center justify-between bg-zinc-50 border border-zinc-200 rounded-xl p-3 cursor-pointer hover:bg-zinc-100 transition-colors" onClick={() => setIsSizeChartParamsOpen(!isSizeChartParamsOpen)}>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-[12px] font-bold text-zinc-700 uppercase">Bảng size & Hướng dẫn (Thông số)</h4>
+                        {formData.sizeChartType && (
+                          <span className="flex h-5 items-center rounded-full bg-blue-100 px-2 text-[10px] font-bold text-blue-700">
+                            {formData.sizeChartType === 'polo' ? 'Áo Polo' : formData.sizeChartType === 'sports' ? 'Áo Thun Thể Thao' : 'Áo Thun Nam'}
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        className="text-[12px] font-semibold text-[#1e4b64] flex items-center gap-1"
+                      >
+                        {isSizeChartParamsOpen ? 'Thu gọn' : 'Cài đặt'}
+                        <ChevronRight className={cn("h-3 w-3 transition-transform", isSizeChartParamsOpen && "rotate-90")} />
+                      </button>
+                    </div>
+
+                    {isSizeChartParamsOpen && (
+                      <div className="space-y-4 p-4 bg-zinc-50/50 rounded-xl border border-zinc-100 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <div className="space-y-2">
+                          <label className="text-[11px] font-bold text-zinc-500 uppercase">Chọn dòng sản phẩm để hiển thị bảng size</label>
+                          <select 
+                            value={formData.sizeChartType || ''} 
+                            onChange={(e) => setFormData({...formData, sizeChartType: e.target.value as any})}
+                            className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-white border border-zinc-200 rounded-xl outline-none focus:border-[#1e4b64]"
+                          >
+                            <option value="">Tự động (Dựa theo tên SP)</option>
+                            <option value="polo">Áo Polo</option>
+                            <option value="tshirt">Áo Thun Nam</option>
+                            <option value="sports">Áo Thun Thể Thao</option>
+                          </select>
+                        </div>
+
+                        <div className="mt-4 overflow-x-auto rounded-xl border border-zinc-200 bg-white">
+                          <table className="w-full text-center text-[12px] min-w-[400px]">
+                            <thead className="bg-zinc-50">
+                              <tr>
+                                <th className="py-2.5 px-4 font-bold text-zinc-600 border-b border-zinc-200 text-left">Size (Quốc Tế)</th>
+                                <th className="py-2.5 px-4 font-bold text-zinc-600 border-b border-zinc-200">Vai (cm)</th>
+                                <th className="py-2.5 px-4 font-bold text-zinc-600 border-b border-zinc-200">Dài áo (cm)</th>
+                                <th className="py-2.5 px-4 font-bold text-zinc-600 border-b border-zinc-200">Vòng ngực (cm)</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {SIZE_CHARTS[formData.sizeChartType || 'tshirt'].map((row: any) => (
+                                <tr key={row.size} className="border-b border-zinc-100 last:border-0 hover:bg-zinc-50/50">
+                                  <td className="py-2.5 px-4 font-bold text-[#1e4b64] text-left">{row.size}</td>
+                                  <td className="py-2.5 px-4 text-zinc-600 font-medium">{row.vai}</td>
+                                  <td className="py-2.5 px-4 text-zinc-600 font-medium">{row.dai}</td>
+                                  <td className="py-2.5 px-4 text-zinc-600 font-medium">{row.nguc}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        <p className="text-[10px] text-zinc-500 italic mt-2">* Hiển thị minh họa bảng size sẽ xuất hiện trên trang sản phẩm</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-zinc-100">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase px-1">Dòng sản phẩm</label>
+                      <input 
+                        type="text"
+                        value={formData.productLine || ''}
+                        onChange={(e) => setFormData({...formData, productLine: e.target.value})}
+                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#1e4b64]"
+                        placeholder="UR BEE Premium Polo"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase px-1">Thương hiệu</label>
+                      <input 
+                        type="text"
+                        value={formData.brand || ''}
+                        onChange={(e) => setFormData({...formData, brand: e.target.value})}
+                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#1e4b64]"
+                        placeholder="UR SPORT"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase px-1">Xuất xứ</label>
+                      <input 
+                        type="text"
+                        value={formData.origin}
+                        onChange={(e) => setFormData({...formData, origin: e.target.value})}
+                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#1e4b64]"
+                        placeholder="Việt Nam"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase px-1">Kiểu dáng</label>
+                      <input 
+                        type="text"
+                        value={formData.style}
+                        onChange={(e) => setFormData({...formData, style: e.target.value})}
+                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#1e4b64]"
+                        placeholder="Polo nam thể thao"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase px-1">Form áo</label>
+                      <input 
+                        type="text"
+                        value={formData.fitType || ''}
+                        onChange={(e) => setFormData({...formData, fitType: e.target.value})}
+                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#1e4b64]"
+                        placeholder="Regular Fit, Slim Fit, v.v."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase px-1">Chất liệu</label>
+                      <input 
+                        type="text"
+                        value={formData.material}
+                        onChange={(e) => setFormData({...formData, material: e.target.value})}
+                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#1e4b64]"
+                        placeholder="Cotton Premium"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase px-1">Phong cách</label>
+                      <input 
+                        type="text"
+                        value={formData.fashionStyle || ''}
+                        onChange={(e) => setFormData({...formData, fashionStyle: e.target.value})}
+                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#1e4b64]"
+                        placeholder="Thể thao, Cơ bản, Hàn Quốc"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase px-1">Cổ áo</label>
+                      <input 
+                        type="text"
+                        value={formData.collarType || ''}
+                        onChange={(e) => setFormData({...formData, collarType: e.target.value})}
+                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#1e4b64]"
+                        placeholder="Cổ tròn"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase px-1">Màu sắc (Chi tiết)</label>
+                      <input 
+                        type="text"
+                        value={formData.detailColors || ''}
+                        onChange={(e) => setFormData({...formData, detailColors: e.target.value})}
+                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#1e4b64]"
+                        placeholder="Để trống tự lấy từ Biến thể"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase px-1">Size (Chi tiết)</label>
+                      <input 
+                        type="text"
+                        value={formData.detailSizes || ''}
+                        onChange={(e) => setFormData({...formData, detailSizes: e.target.value})}
+                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#1e4b64]"
+                        placeholder="Để trống tự lấy từ Biến thể"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase px-1">Link Shopee</label>
+                      <input
+                        type="url"
+                        value={formData.shopeeUrl}
+                        onChange={(e) => setFormData({ ...formData, shopeeUrl: e.target.value })}
+                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#ee4d2d]"
+                        placeholder="https://shopee.vn/..."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase px-1">Link TikTok Shop</label>
+                      <input
+                        type="url"
+                        value={formData.tiktokShopUrl}
+                        onChange={(e) => setFormData({ ...formData, tiktokShopUrl: e.target.value })}
+                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-zinc-900"
+                        placeholder="https://www.tiktok.com/..."
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-4 space-y-2">
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase px-1">Điểm nổi bật (Mỗi dòng 1 ý)</label>
+                    <textarea 
+                      value={formData.features.join('\n')}
+                      onChange={(e) => setFormData({...formData, features: e.target.value.split('\n')})}
+                      rows={4}
+                      className="w-full p-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#1e4b64] resize-none"
+                      placeholder="Co giãn 4 chiều linh hoạt&#10;Thoáng khí, khô nhanh"
+                    />
+                  </div>
+                </section>
                  
                 {/* Rich Text Editor */}
                 <div ref={editorWrapRef} className="w-full product-quill-editor relative scroll-mt-20">
@@ -2626,6 +2922,16 @@ Yeu cau: chi dua tren du lieu co that, khong bia thong so, gia, ton kho, bao han
                 {/* Hình ảnh bổ sung */}
                 <div className="space-y-4 pt-6 border-t border-zinc-200">
                   <h3 className="text-[11px] font-black uppercase tracking-widest text-zinc-500">Hình ảnh bổ sung</h3>
+                  <label className="text-[10px] font-bold text-zinc-400 uppercase px-2 pt-1 block">Thẻ title cho ảnh đại diện</label>
+                  <div className="bg-white p-1 rounded-md border border-zinc-200 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all">
+                    <input 
+                      type="text"
+                      value={formData.imageTitle}
+                      onChange={(e) => setFormData({...formData, imageTitle: e.target.value})}
+                      className="w-full h-8 px-2 text-[13px] text-zinc-900 bg-transparent outline-none"
+                      placeholder="Ví dụ: Áo polo thể thao nam..."
+                    />
+                  </div>
                   <div className="bg-white rounded-xl border border-zinc-200 p-1">
                     <div className="h-[120px]">
                       <ImageUpload 
@@ -2869,133 +3175,9 @@ Yeu cau: chi dua tren du lieu co that, khong bia thong so, gia, ton kho, bao han
                   )}
                 </div>
 
-                {/* Bảng Size */}
-                <div className="space-y-4 pt-6 border-t border-zinc-200">
-                  <h3 className="text-[11px] font-black uppercase tracking-widest text-zinc-500">Bảng size</h3>
-                  <div className="bg-white rounded-xl border border-zinc-200 p-1">
-                    <div className="h-[120px]">
-                      <ImageUpload 
-                        onUploadComplete={(url) => setFormData(prev => ({...prev, sizeGuideUrl: url}))}
-                        folder="size-guides"
-                        label="Tải ảnh bảng size"
-                        externalPreview={formData.sizeGuideUrl || undefined}
-                        storage="local"
-                      />
-                    </div>
-                  </div>
-                  {formData.sizeGuideUrl && (
-                    <div className="relative w-full h-32 rounded-md overflow-hidden border border-zinc-200 group shadow-sm bg-white mt-3">
-                      <img src={formData.sizeGuideUrl} alt="Size Guide Preview" loading="lazy" className="w-full h-full object-cover" />
-                      <button 
-                        type="button"
-                        onClick={() => setFormData({...formData, sizeGuideUrl: ''})}
-                        className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="h-5 w-5 text-white" />
-                      </button>
-                    </div>
-                  )}
-                </div>
+
                 
-                {/* Chi tiết sản phẩm */}
-                <div className="space-y-6 pt-6 border-t border-zinc-200">
-                  <h3 className="text-[11px] font-black uppercase tracking-widest text-zinc-500">Chi tiết sản phẩm</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase px-1">Thương hiệu</label>
-                      <input 
-                        type="text"
-                        value={formData.brand}
-                        onChange={(e) => setFormData({...formData, brand: e.target.value})}
-                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#1e4b64]"
-                        placeholder="UR SPORT"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase px-1">Xuất xứ</label>
-                      <input 
-                        type="text"
-                        value={formData.origin}
-                        onChange={(e) => setFormData({...formData, origin: e.target.value})}
-                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#1e4b64]"
-                        placeholder="Việt Nam"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase px-1">Kiểu dáng</label>
-                      <input 
-                        type="text"
-                        value={formData.style}
-                        onChange={(e) => setFormData({...formData, style: e.target.value})}
-                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#1e4b64]"
-                        placeholder="Slim Fit"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase px-1">Chất liệu</label>
-                      <input 
-                        type="text"
-                        value={formData.material}
-                        onChange={(e) => setFormData({...formData, material: e.target.value})}
-                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#1e4b64]"
-                        placeholder="Cotton Premium"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase px-1">Phong cách</label>
-                      <input 
-                        type="text"
-                        value={formData.fashionStyle || ''}
-                        onChange={(e) => setFormData({...formData, fashionStyle: e.target.value})}
-                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#1e4b64]"
-                        placeholder="Thể thao, Cơ bản, Hàn Quốc"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase px-1">Cổ áo</label>
-                      <input 
-                        type="text"
-                        value={formData.collarType || ''}
-                        onChange={(e) => setFormData({...formData, collarType: e.target.value})}
-                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#1e4b64]"
-                        placeholder="Cổ tròn"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase px-1">Link Shopee</label>
-                      <input
-                        type="url"
-                        value={formData.shopeeUrl}
-                        onChange={(e) => setFormData({ ...formData, shopeeUrl: e.target.value })}
-                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#ee4d2d]"
-                        placeholder="https://shopee.vn/..."
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase px-1">Link TikTok Shop</label>
-                      <input
-                        type="url"
-                        value={formData.tiktokShopUrl}
-                        onChange={(e) => setFormData({ ...formData, tiktokShopUrl: e.target.value })}
-                        className="w-full h-11 px-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-zinc-900"
-                        placeholder="https://www.tiktok.com/..."
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-4 space-y-2">
-                    <label className="text-[10px] font-bold text-zinc-400 uppercase px-1">Điểm nổi bật (Mỗi dòng 1 ý)</label>
-                    <textarea 
-                      value={formData.features.join('\n')}
-                      onChange={(e) => setFormData({...formData, features: e.target.value.split('\n')})}
-                      rows={4}
-                      className="w-full p-4 text-[14px] font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-[#1e4b64] resize-none"
-                      placeholder="Co giãn 4 chiều linh hoạt&#10;Thoáng khí, khô nhanh"
-                    />
-                  </div>
-                </div>
-                
+
                 {/* SEO Settings */}
                 <div className="space-y-6 pt-8 border-t border-zinc-200">
                   <div className="flex items-center gap-2 mb-2">

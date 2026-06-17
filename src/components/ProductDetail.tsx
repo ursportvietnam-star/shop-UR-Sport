@@ -255,14 +255,44 @@ export const ProductDetail: React.FC = () => {
     };
   }, []);
 
-  const SHIRT_SIZES = [
-    { size: 'M', vai: 46, dai: 37, nguc: 64 },
-    { size: 'L', vai: 48, dai: 39, nguc: 66 },
-    { size: 'XL', vai: 50, dai: 41, nguc: 68 },
-    { size: 'XXL', vai: 52, dai: 43, nguc: 70 },
-    { size: 'XXXL', vai: 54, dai: 48, nguc: 72 },
-    { size: 'XXXXL', vai: 56, dai: 50, nguc: 74 }
-  ];
+  const initialChart = React.useMemo(() => {
+    if (product?.sizeChartType) return product.sizeChartType;
+    const name = product?.name?.toLowerCase() || '';
+    const cat = String(categoryName || '').toLowerCase();
+    if (name.includes('polo') || cat.includes('polo')) return 'polo';
+    if (name.includes('thể thao') || cat.includes('thể thao')) return 'sports';
+    return 'tshirt';
+  }, [product?.name, categoryName, product?.sizeChartType]);
+
+  const [activeChart, setActiveChart] = useState<'polo' | 'tshirt' | 'sports'>(initialChart);
+
+  useEffect(() => {
+    setActiveChart(initialChart);
+  }, [initialChart]);
+  const SIZE_CHARTS = {
+    polo: [
+      { size: 'M', vai: 42, dai: 68, nguc: 96 },
+      { size: 'L', vai: 44, dai: 70, nguc: 100 },
+      { size: 'XL', vai: 46, dai: 72, nguc: 104 },
+      { size: 'XXL', vai: 48, dai: 74, nguc: 108 },
+      { size: 'XXXL', vai: 50, dai: 76, nguc: 112 }
+    ],
+    tshirt: [
+      { size: 'M', vai: 43, dai: 69, nguc: 98 },
+      { size: 'L', vai: 45, dai: 71, nguc: 102 },
+      { size: 'XL', vai: 47, dai: 73, nguc: 106 },
+      { size: 'XXL', vai: 49, dai: 75, nguc: 110 },
+      { size: 'XXXL', vai: 51, dai: 77, nguc: 114 },
+      { size: '4XL', vai: 53, dai: 79, nguc: 118 }
+    ],
+    sports: [
+      { size: 'M', vai: 41, dai: 67, nguc: 94 },
+      { size: 'L', vai: 43, dai: 69, nguc: 98 },
+      { size: 'XL', vai: 45, dai: 71, nguc: 102 },
+      { size: 'XXL', vai: 47, dai: 73, nguc: 106 },
+      { size: 'XXXL', vai: 49, dai: 75, nguc: 110 }
+    ]
+  };
 
   const handleSaveSizeProfile = () => {
     const h = parseInt(userHeight);
@@ -277,18 +307,16 @@ export const ProductDetail: React.FC = () => {
     else if (h <= 170) hIndex = 1;
     else if (h <= 175) hIndex = 2;
     else if (h <= 180) hIndex = 3;
-    else if (h <= 185) hIndex = 4;
-    else hIndex = 5;
+    else hIndex = 4;
 
     let wIndex = 0;
     if (w < 60) wIndex = 0;
     else if (w <= 68) wIndex = 1;
     else if (w <= 75) wIndex = 2;
     else if (w <= 82) wIndex = 3;
-    else if (w <= 90) wIndex = 4;
-    else wIndex = 5;
+    else wIndex = 4;
 
-    const sizes = ['M', 'L', 'XL', 'XXL', 'XXXL', 'XXXXL'];
+    const sizes = ['M', 'L', 'XL', 'XXL', 'XXXL'];
     const finalIndex = Math.max(hIndex, wIndex);
     const size = sizes[finalIndex];
     
@@ -744,6 +772,7 @@ export const ProductDetail: React.FC = () => {
                   animate={{ opacity: 1, scale: 1 }}
                   src={mainImage}
                   alt={productName}
+                  title={product.imageTitle || productName}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   loading="eager"
                   decoding="async"
@@ -782,6 +811,7 @@ export const ProductDetail: React.FC = () => {
                     <img
                       src={videoThumbnailImage}
                       alt={`${productName} - Video ${i + 1}`}
+                      title={`${product.imageTitle || productName} - Video ${i + 1}`}
                       loading="lazy"
                       decoding="async"
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
@@ -812,7 +842,7 @@ export const ProductDetail: React.FC = () => {
                     mainImage === img && !mainVideo ? "border-[#1e4b64] scale-[1.03]" : "border-zinc-100 hover:border-zinc-300"
                   )}
                 >
-                  <img src={img} alt={`${productName} - ${language === 'en' ? 'Image' : 'Ảnh'} ${i + 1}`} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                  <img src={img} alt={`${productName} - ${language === 'en' ? 'Image' : 'Ảnh'} ${i + 1}`} title={`${product.imageTitle || productName} - ${language === 'en' ? 'Image' : 'Ảnh'} ${i + 1}`} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>
@@ -1489,12 +1519,16 @@ export const ProductDetail: React.FC = () => {
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-0 w-full">
                   {[
+                    { label: language === 'en' ? 'Product Line' : 'Dòng sản phẩm', value: product.productLine || productName, key: 'line' },
                     { label: language === 'en' ? 'Brand' : 'Thương hiệu', value: product.brand || 'UR SPORT', key: 'brand' },
                     { label: language === 'en' ? 'Origin' : 'Xuất xứ', value: language === 'en' ? getLocalizedProductAttribute(product.origin || 'Việt Nam', language) : (product.origin || 'Việt Nam'), key: 'origin' },
                     { label: language === 'en' ? 'Fit' : 'Kiểu dáng', value: getLocalizedProductAttribute(product.style || 'Slim Fit', language), key: 'style' },
+                    { label: language === 'en' ? 'Fit Type' : 'Form áo', value: getLocalizedProductAttribute(product.fitType || 'Regular', language), key: 'fitType' },
                     { label: language === 'en' ? 'Material' : 'Chất liệu', value: getLocalizedProductAttribute(product.material || 'Cotton Premium', language), key: 'material' },
                     { label: language === 'en' ? 'Style' : 'Phong cách', value: language === 'en' ? getLocalizedProductAttribute(product.fashionStyle || 'Thể thao, Cơ bản, Hàn Quốc, Đường phố, Công sở', language) : (product.fashionStyle || 'Thể thao, Cơ bản, Hàn Quốc, Đường phố, Công sở'), key: 'fashionStyle' },
-                    { label: language === 'en' ? 'Collar' : 'Cổ áo', value: language === 'en' ? getLocalizedProductAttribute(product.collarType || 'Cổ tròn', language) : (product.collarType || 'Cổ tròn'), key: 'collar' }
+                    { label: language === 'en' ? 'Collar' : 'Cổ áo', value: language === 'en' ? getLocalizedProductAttribute(product.collarType || 'Cổ tròn', language) : (product.collarType || 'Cổ tròn'), key: 'collar' },
+                    { label: language === 'en' ? 'Colors' : 'Màu sắc', value: product.detailColors || product.colors?.join(', ') || 'Đang cập nhật', key: 'colors' },
+                    { label: language === 'en' ? 'Sizes' : 'Size', value: product.detailSizes || product.sizes?.join(', ') || 'Đang cập nhật', key: 'sizes' }
                   ].map(row => (
                     <div key={row.label} className="flex items-center py-[14px] border-b border-zinc-100 last:border-0 gap-4 w-full">
                       <span className="text-zinc-400 text-[14px] w-32 shrink-0">{row.label}</span>
@@ -1543,6 +1577,7 @@ export const ProductDetail: React.FC = () => {
                   </div>
 
                   {/* Bảng thông số */}
+
                   <div className="w-full overflow-x-auto rounded-xl border border-zinc-200 mb-6">
                     <table className="w-full text-center text-[14px] min-w-[500px]">
                       <thead className="bg-zinc-50">
@@ -1554,7 +1589,7 @@ export const ProductDetail: React.FC = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {SHIRT_SIZES.map((row) => {
+                        {SIZE_CHARTS[activeChart].map((row) => {
                           const isSuggested = suggestedSize === row.size;
                           return (
                             <tr key={row.size} className={cn("border-b border-zinc-100 last:border-0", isSuggested ? "bg-red-50/20" : "")}>
@@ -2146,9 +2181,12 @@ const escapeDescriptionHtml = (value = '') => value
 const hasStructuredDescriptionHtml = (value: string) =>
   /<(p|h[1-6]|ul|ol|li|table|img|figure|blockquote|section)\b/i.test(value);
 
+const hasRichStructuredHtml = (value: string) =>
+  /<(h[1-6]|ul|ol|table|img|figure|blockquote|section|strong|b|em)\b/i.test(value);
+
 const shouldFormatMarketplaceDescription = (value: string) => {
   if (!value.trim()) return false;
-  if (/<(img|table|iframe|video)\b/i.test(value)) return false;
+  if (hasRichStructuredHtml(value)) return false;
   return !hasStructuredDescriptionHtml(value) || /[=_-]{8,}|[♦◆•✓⚠💧🔁⚡]|【[^】]+】/.test(value);
 };
 

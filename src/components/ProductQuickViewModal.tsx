@@ -73,6 +73,7 @@ export function ProductQuickViewModal({
                 <img
                   src={quickViewImage || product.images?.[0] || ''}
                   alt={product.name}
+                  title={product.imageTitle || product.name}
                   className="h-full w-full object-cover"
                   loading="eager"
                 />
@@ -89,7 +90,7 @@ export function ProductQuickViewModal({
                         quickViewImage === image ? "border-[#1e4b64]" : "border-transparent"
                       )}
                     >
-                      <img src={image} alt={product.name} className="h-full w-full object-cover" loading="lazy" />
+                      <img src={image} alt={product.name} title={product.imageTitle || product.name} className="h-full w-full object-cover" loading="lazy" />
                     </button>
                   ))}
                 </div>

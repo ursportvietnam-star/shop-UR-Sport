@@ -143,6 +143,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
               initial={{ opacity: 0.9 }} animate={{ opacity: 1 }} exit={{ opacity: 0.9 }}
               src={primaryImage || '/images/og-ursport.jpg'}
               alt={productName}
+              title={product.imageTitle || productName}
               loading="lazy"
               decoding="async"
               className={cn(

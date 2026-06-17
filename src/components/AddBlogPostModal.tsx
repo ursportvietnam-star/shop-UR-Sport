@@ -106,6 +106,7 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
   const [author, setAuthor] = useState('UrSport Team');
   const [content, setContent] = useState('');
   const [coverImage, setCoverImage] = useState('');
+  const [coverImageTitle, setCoverImageTitle] = useState('');
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [videoUrls, setVideoUrls] = useState<string[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -153,6 +154,7 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
       setHtmlSource('');
       setAiEditedLineNumbers([]);
       setCoverImage('');
+      setCoverImageTitle('');
       setImageUrls([]);
       setVideoUrls([]);
       setUploadProgress(0);
@@ -188,6 +190,7 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
       setAiEditedLineNumbers([]);
       setIsHtmlMode(containsTableHtml(post.content || ''));
       setCoverImage(post.image || '');
+      setCoverImageTitle(post.imageTitle || '');
       setImageUrls(post.images || []);
       setVideoUrls(post.videos || []);
       setSeoTitle(post.seoTitle || '');
@@ -1511,6 +1514,7 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
         author,
         date: new Date().toLocaleDateString('vi-VN'),
         image: coverImage,
+        imageTitle: coverImageTitle,
         excerpt: metaDescription.trim() || title.trim(),
         content: cleanedContent,
         seoTitle: seoTitle.trim(),
@@ -2161,15 +2165,26 @@ export const AddBlogPostModal: React.FC<AddBlogPostModalProps> = ({ isOpen, onCl
                 />
               </label>
               {coverImage && (
-                <div className="relative aspect-[1024/682] overflow-hidden rounded-3xl border border-zinc-200 bg-white">
-                  <img src={coverImage} alt="Cover Preview" loading="lazy" className="h-full w-full object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => setCoverImage('')}
-                    className="absolute right-3 top-3 rounded-full bg-white/90 p-2 text-zinc-700 shadow"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                <div className="space-y-4">
+                  <div className="relative aspect-[1024/682] overflow-hidden rounded-3xl border border-zinc-200 bg-white">
+                    <img src={coverImage} alt="Cover Preview" loading="lazy" className="h-full w-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setCoverImage('')}
+                      className="absolute right-3 top-3 rounded-full bg-white/90 p-2 text-zinc-700 shadow"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <label className="block space-y-2 text-sm font-semibold text-zinc-700">
+                    Thẻ Title cho Ảnh
+                    <input
+                      value={coverImageTitle}
+                      onChange={(e) => setCoverImageTitle(e.target.value)}
+                      className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-normal outline-none focus:border-[#1e4b64]"
+                      placeholder="Ví dụ: Ảnh mô tả áo polo thể thao"
+                    />
+                  </label>
                 </div>
               )}
             </div>

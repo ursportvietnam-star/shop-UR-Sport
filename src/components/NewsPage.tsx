@@ -1355,6 +1355,7 @@ export function NewsPage() {
           <img 
             src={selectedPost.image} 
             alt={selectedPostTitle} 
+            title={selectedPost.imageTitle || selectedPostTitle}
             loading="lazy"
             className="h-full w-full object-cover transition-transform duration-700 hover:scale-102"
           />
@@ -1545,7 +1546,7 @@ export function NewsPage() {
               <div className="grid gap-6 mt-10 sm:grid-cols-2 w-full">
                 {selectedPost.images.map((img, index) => (
                   <div key={index} className="overflow-hidden rounded-[24px] bg-zinc-50 border border-zinc-100 shadow-sm w-full aspect-[4/3]">
-                    <img src={img} alt={`${selectedPostTitle} - image ${index + 1}`} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 hover:scale-103" />
+                    <img src={img} alt={`${selectedPostTitle} - image ${index + 1}`} title={`${selectedPostTitle} - image ${index + 1}`} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 hover:scale-103" />
                   </div>
                 ))}
               </div>
@@ -1820,6 +1821,7 @@ export function NewsPage() {
               <img
                 src={getMobilePostImage(featuredMobilePosts[0])}
                 alt={getMobilePostTitle(featuredMobilePosts[0])}
+                title={featuredMobilePosts[0].imageTitle || getMobilePostTitle(featuredMobilePosts[0])}
                 className="h-full w-full object-cover"
                 loading="eager"
                 onError={(event) => {
@@ -1851,6 +1853,7 @@ export function NewsPage() {
                     <img
                       src={getMobilePostImage(post)}
                       alt={getMobilePostTitle(post)}
+                      title={post.imageTitle || getMobilePostTitle(post)}
                       className="h-full w-full object-cover"
                       loading="lazy"
                       onError={(event) => {

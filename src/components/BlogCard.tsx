@@ -12,6 +12,7 @@ interface BlogCardProps {
     excerpt?: string;
     content?: string;
     image: string;
+    imageTitle?: string;
     category?: string;
     date?: string;
     author?: string;
@@ -35,6 +36,7 @@ export const BlogCard: React.FC<BlogCardProps> = ({ post }) => {
           <LazyImage
             src={image}
             alt={title}
+            title={post?.imageTitle || title}
             className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
           />
         ) : (

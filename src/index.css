@@ -115,10 +115,23 @@
 
 /* Inline elements */
 .product-description-container strong,
-.product-description-container em,
-.product-description-container span,
-.product-description-container a,
 .product-description-container b {
+  display: inline !important;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+}
+
+.product-description-container em {
+  display: inline !important;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+  font-style: italic !important;
+}
+
+.product-description-container span,
+.product-description-container a {
   display: inline !important;
   word-break: normal !important;
   overflow-wrap: break-word !important;
@@ -160,6 +173,56 @@
   word-break: normal !important;
   overflow-wrap: break-word !important;
   margin-bottom: 0.8em !important;
+}
+
+.product-description-container h1 {
+  font-size: 1.5rem !important;
+  font-weight: 800 !important;
+  margin-top: 1.5em !important;
+  margin-bottom: 0.8em !important;
+  color: #0f172a !important;
+  line-height: 1.3 !important;
+}
+
+.product-description-container h2 {
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  margin-top: 1.5em !important;
+  margin-bottom: 0.8em !important;
+  color: #0f172a !important;
+  line-height: 1.35 !important;
+}
+
+.product-description-container h3 {
+  font-size: 1.125rem !important;
+  font-weight: 700 !important;
+  margin-top: 1.25em !important;
+  margin-bottom: 0.6em !important;
+  color: #0f172a !important;
+  line-height: 1.4 !important;
+}
+
+.product-description-container h4 {
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  margin-top: 1.25em !important;
+  margin-bottom: 0.6em !important;
+  color: #0f172a !important;
+  line-height: 1.4 !important;
+}
+
+.product-description-container ul {
+  display: block !important;
+  list-style-type: disc !important;
+  padding-left: 1.5rem !important;
+  margin-bottom: 1rem !important;
+}
+
+.product-description-container ol {
+  display: block !important;
+  list-style-type: decimal !important;
+  padding-left: 1.5rem !important;
+  margin-bottom: 1rem !important;
 }
 
 /* Div block: exclude video-container to avoid breaking the 16:9 padding trick */

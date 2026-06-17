@@ -4,19 +4,36 @@ import { ChevronRight, X, ChevronDown } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useLanguage } from '../LanguageContext';
 
-const SHIRT_SIZES = [
-  { size: 'M', vai: 46, dai: 37, nguc: 64 },
-  { size: 'L', vai: 48, dai: 39, nguc: 66 },
-  { size: 'XL', vai: 50, dai: 41, nguc: 68 },
-  { size: 'XXL', vai: 52, dai: 43, nguc: 70 },
-  { size: 'XXXL', vai: 54, dai: 48, nguc: 72 },
-  { size: 'XXXXL', vai: 56, dai: 50, nguc: 74 },
-];
+const SIZE_CHARTS = {
+  polo: [
+    { size: 'M', vai: 42, dai: 68, nguc: 96 },
+    { size: 'L', vai: 44, dai: 70, nguc: 100 },
+    { size: 'XL', vai: 46, dai: 72, nguc: 104 },
+    { size: 'XXL', vai: 48, dai: 74, nguc: 108 },
+    { size: 'XXXL', vai: 50, dai: 76, nguc: 112 }
+  ],
+  tshirt: [
+    { size: 'M', vai: 43, dai: 69, nguc: 98 },
+    { size: 'L', vai: 45, dai: 71, nguc: 102 },
+    { size: 'XL', vai: 47, dai: 73, nguc: 106 },
+    { size: 'XXL', vai: 49, dai: 75, nguc: 110 },
+    { size: 'XXXL', vai: 51, dai: 77, nguc: 114 },
+    { size: '4XL', vai: 53, dai: 79, nguc: 118 }
+  ],
+  sports: [
+    { size: 'M', vai: 41, dai: 67, nguc: 94 },
+    { size: 'L', vai: 43, dai: 69, nguc: 98 },
+    { size: 'XL', vai: 45, dai: 71, nguc: 102 },
+    { size: 'XXL', vai: 47, dai: 73, nguc: 106 },
+    { size: 'XXXL', vai: 49, dai: 75, nguc: 110 }
+  ]
+};
 
 export function BlogSizeGuideWidget() {
   const { language } = useLanguage();
   const [suggestedSize, setSuggestedSize] = useState<string | null>(null);
   const [isSizeProfileModalOpen, setIsSizeProfileModalOpen] = useState(false);
+  const [activeChart, setActiveChart] = useState<'polo' | 'tshirt' | 'sports'>('polo');
   const [userHeight, setUserHeight] = useState('');
   const [userWeight, setUserWeight] = useState('');
 
@@ -32,11 +49,10 @@ export function BlogSizeGuideWidget() {
   }, []);
 
   const calculateSize = (height: number, weight: number) => {
-    if (height > 185 || weight > 90) setSuggestedSize('XXXXL');
-    else if (height > 180 || weight > 85) setSuggestedSize('XXXL');
+    if (height > 180 || weight > 82) setSuggestedSize('XXXL');
     else if (height > 175 || weight > 75) setSuggestedSize('XXL');
-    else if (height > 170 || weight > 65) setSuggestedSize('XL');
-    else if (height > 165 || weight > 55) setSuggestedSize('L');
+    else if (height > 170 || weight > 68) setSuggestedSize('XL');
+    else if (height > 165 || weight > 60) setSuggestedSize('L');
     else setSuggestedSize('M');
   };
 
@@ -79,6 +95,7 @@ export function BlogSizeGuideWidget() {
         </div>
 
         {/* Bảng thông số */}
+
         <div className="w-full overflow-x-auto rounded-xl border border-zinc-200 mb-6">
           <table className="w-full text-center text-[14px] min-w-[500px] border-collapse m-0">
             <thead className="bg-zinc-50">
@@ -90,7 +107,7 @@ export function BlogSizeGuideWidget() {
               </tr>
             </thead>
             <tbody>
-              {SHIRT_SIZES.map((row) => {
+              {SIZE_CHARTS[activeChart].map((row) => {
                 const isSuggested = suggestedSize === row.size;
                 return (
                   <tr key={row.size} className={cn("border-b border-zinc-100 last:border-0", isSuggested ? "bg-red-50/20" : "")}>

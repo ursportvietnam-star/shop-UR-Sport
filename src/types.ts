@@ -35,6 +35,7 @@ export interface Product {
   price: number;
   discountPrice?: number;
   images: string[];
+  imageTitle?: string;
   videos?: string[];
   category: Category;
   colors: string[];
@@ -47,6 +48,7 @@ export interface Product {
   isNew?: boolean;
   isBestSeller?: boolean;
   sizeGuideUrl?: string;
+  sizeChartType?: 'polo' | 'tshirt' | 'sports';
   colorImages?: { name: string; image: string }[];
   seoTitle?: string;
   metaDescription?: string;
@@ -56,9 +58,13 @@ export interface Product {
   brand?: string;
   origin?: string;
   style?: string;
+  fitType?: string;
   material?: string;
   fashionStyle?: string;
   collarType?: string;
+  productLine?: string;
+  detailColors?: string;
+  detailSizes?: string;
   marketplaceLinks?: {
     shopee?: string;
     tiktokShop?: string;
@@ -124,6 +130,7 @@ export interface BlogPost {
   author: string;
   date: string;
   image: string;
+  imageTitle?: string;
   excerpt: string;
   content: string;
   seoTitle?: string;
