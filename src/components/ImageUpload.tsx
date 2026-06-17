@@ -36,7 +36,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   externalPreview,
   compact = false,
   compactLayout = 'inline',
-  storage = 'local',
+  storage = 'cloudinary',
   multiple = false,
   onRemove,
   allowedTypes = DEFAULT_ALLOWED_TYPES,

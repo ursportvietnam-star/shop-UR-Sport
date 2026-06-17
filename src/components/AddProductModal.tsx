@@ -1201,12 +1201,6 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
         }) as Product;
         toast.success('Thêm sản phẩm thành công!');
       }
-      const isLocalhostEnv = typeof window !== 'undefined' &&
-        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-      if (isLocalhostEnv && savedProduct) {
-        saveLocalProduct(savedProduct);
-      }
-
       onSuccess(savedProduct);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Lỗi không xác định';
@@ -2034,7 +2028,7 @@ Yeu cau: chi dua tren du lieu co that, khong bia thong so, gia, ton kho, bao han
                               folder="size-guides"
                               label="Tải ảnh bảng size"
                               externalPreview={formData.sizeGuideUrl || undefined}
-                              storage="local"
+                              storage="cloudinary"
                             />
                           </div>
                         </div>
@@ -2641,7 +2635,7 @@ Yeu cau: chi dua tren du lieu co that, khong bia thong so, gia, ton kho, bao han
                                   }}
                                   folder="products"
                                   label="Ảnh"
-                                  storage="local"
+                                  storage="cloudinary"
                                 />
                               )}
                             </div>
@@ -2943,7 +2937,7 @@ Yeu cau: chi dua tren du lieu co that, khong bia thong so, gia, ton kho, bao han
                         folder="products"
                         label="Tải ảnh lên"
                         externalPreview={formData.coverImage || undefined}
-                        storage="local"
+                        storage="cloudinary"
                         multiple
                       />
                     </div>

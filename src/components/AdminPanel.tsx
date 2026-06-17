@@ -1107,6 +1107,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
     if (!window.confirm('Bạn có chắc muốn xóa sản phẩm này?')) return;
     try {
       await deleteAdminDocument('products', id);
+      removeLocalProduct(id);
+      
+      const sourceProducts = productSourceRef.current.length > 0 ? productSourceRef.current : STATIC_PRODUCTS;
+      setProducts(assignProductPublishTimes(mergeLocalProducts(sourceProducts)));
       toast.success('Đã xóa sản phẩm');
     } catch {
       if (removeLocalProduct(id)) {

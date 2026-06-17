@@ -151,7 +151,6 @@ export function ProductFactoryPanel() {
     try {
       const published = await publishProductFactoryDraft(result);
       setResult(prev => prev ? { ...prev, product: published.product, images: published.images, schema: published.schema, blueprint: published.blueprint } : prev);
-      if (published.legacyProduct) saveLocalProduct(published.legacyProduct);
       toast.success(published.published ? 'Đã publish và đưa vào catalog local.' : 'Đã lưu draft.');
     } catch (error: any) {
       toast.error(error.message || 'Chưa publish được sản phẩm.');
@@ -248,7 +247,7 @@ export function ProductFactoryPanel() {
             <ImageUpload
               folder="products"
               multiple
-              storage="local"
+              storage="cloudinary"
               label="Upload nhiều ảnh"
               onUploadComplete={(url) => setImages(prev => [...prev, { url }])}
             />
