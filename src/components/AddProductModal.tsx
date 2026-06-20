@@ -1097,12 +1097,26 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
     }));
 
     const productCode = normalizeProductCode(formData.productCode);
+    const parsedSizes = formData.sizes.split(',').map(c => c.trim()).filter(Boolean);
+    const validVariants = formData.colorVariants.filter(v => v.name.trim() !== '');
+    const finalSizes = parsedSizes.length > 0 ? parsedSizes : DEFAULT_PRODUCT_SIZES;
+
+    // Only use extraImages for the main gallery, don't auto-include all variant images
+    let allImages = [...formData.extraImages].filter(Boolean);
+
+    // Ensure coverImage is first
+    if (formData.coverImage) {
+      allImages = [formData.coverImage, ...allImages.filter(img => img !== formData.coverImage)];
+    } else if (allImages.length === 0 && validVariants.length > 0) {
+      // Fallback to variant images only if no extra images are provided
+      allImages = validVariants.map(v => v.image).filter(Boolean);
+    }
+    
+    // Make unique
+    allImages = Array.from(new Set(allImages));
 
     setIsSubmitting(true);
     try {
-      const parsedSizes = formData.sizes.split(',').map(c => c.trim()).filter(Boolean);
-      const validVariants = formData.colorVariants.filter(v => v.name.trim() !== '');
-      const finalSizes = parsedSizes.length > 0 ? parsedSizes : DEFAULT_PRODUCT_SIZES;
       const variantRows = buildVariantMatrix(validVariants, finalSizes, formData.variants, {
         price: currentPrice,
         stock: currentStock,
@@ -1110,20 +1124,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
       });
       const productVariants = normalizeVariantPayload(variantRows);
       const totalVariantStock = productVariants.reduce((sum, variant) => sum + Number(variant.stock || 0), 0);
-      
-      // Only use extraImages for the main gallery, don't auto-include all variant images
-      let allImages = [...formData.extraImages].filter(Boolean);
 
-      // Ensure coverImage is first
-      if (formData.coverImage) {
-        allImages = [formData.coverImage, ...allImages.filter(img => img !== formData.coverImage)];
-      } else if (allImages.length === 0 && validVariants.length > 0) {
-        // Fallback to variant images only if no extra images are provided
-        allImages = validVariants.map(v => v.image).filter(Boolean);
-      }
-      
-      // Make unique
-      allImages = Array.from(new Set(allImages));
       
       const finalDescription = normalizeImageAltTitles(isHtmlMode ? htmlSource : getCurrentEditorHtml());
       if (isHtmlMode) {
@@ -1233,11 +1234,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
           category: canonicalCategoryLabel(formData.category) as Category,
           colors: formData.colorVariants.filter(v => v.name.trim()).map(v => v.name.trim()),
           colorImages: formData.colorVariants.filter(v => v.name.trim()).map(v => ({ name: v.name.trim(), image: v.image })),
-          images: Array.from(new Set([
-            formData.coverImage,
-            ...formData.extraImages,
-            ...formData.colorVariants.map(v => v.image),
-          ].filter(Boolean))),
+          images: allImages,
           videos: productVideos.filter(Boolean),
           price: Number(formData.price),
           discountPrice: formData.discountPrice ? Number(formData.discountPrice) : undefined,
@@ -2025,6 +2022,7 @@ Yeu cau: chi dua tren du lieu co that, khong bia thong so, gia, ton kho, bao han
                           <div className="h-[120px]">
                             <ImageUpload 
                               onUploadComplete={(url) => setFormData(prev => ({...prev, sizeGuideUrl: url}))}
+                              onRemove={() => setFormData(prev => ({...prev, sizeGuideUrl: ''}))}
                               folder="size-guides"
                               label="Tải ảnh bảng size"
                               externalPreview={formData.sizeGuideUrl || undefined}
@@ -2633,6 +2631,13 @@ Yeu cau: chi dua tren du lieu co that, khong bia thong so, gia, ton kho, bao han
                                       };
                                     });
                                   }}
+                                  onRemove={() => {
+                                    setFormData(prev => {
+                                      const newVariants = [...prev.colorVariants];
+                                      newVariants[index].image = '';
+                                      return { ...prev, colorVariants: newVariants };
+                                    });
+                                  }}
                                   folder="products"
                                   label="Ảnh"
                                   storage="cloudinary"
@@ -2934,6 +2939,7 @@ Yeu cau: chi dua tren du lieu co that, khong bia thong so, gia, ton kho, bao han
                           extraImages: [...prev.extraImages, url],
                           coverImage: prev.coverImage || url
                         }))}
+                        onRemove={() => setFormData(prev => ({...prev, coverImage: ''}))}
                         folder="products"
                         label="Tải ảnh lên"
                         externalPreview={formData.coverImage || undefined}

@@ -557,7 +557,8 @@ export function NewsPage() {
     const q = query(collection(db, 'blogPosts'), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const loaded = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
-      const allPosts = [...loaded, ...POSTS];
+      const now = Date.now();
+      const allPosts = [...loaded, ...POSTS].filter(post => !post.isHidden && (!post.scheduledPublishTime || post.scheduledPublishTime <= now));
       setPosts(allPosts);
       setPostsLoaded(true);
     }, (error) => {

@@ -133,6 +133,7 @@ export interface BlogPost {
   imageTitle?: string;
   excerpt: string;
   content: string;
+  isHidden?: boolean;
   seoTitle?: string;
   metaDescription?: string;
   primaryKeyword?: string;
@@ -140,6 +141,7 @@ export interface BlogPost {
   customSchema?: string;
   images?: string[];
   videos?: string[];
+  scheduledPublishTime?: number;
   createdAt?: FirestoreTimestamp;
 }
 

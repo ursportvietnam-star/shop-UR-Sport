@@ -252,7 +252,9 @@ export default function HomePage({
           ...(postDoc.data() as Omit<BlogPost, 'id'>),
           id: postDoc.id
         })) as BlogPost[];
-        if (mounted && posts.length > 0) setHomeBlogPosts(posts);
+        const now = Date.now();
+        const visiblePosts = posts.filter(p => !p.isHidden && (!p.scheduledPublishTime || p.scheduledPublishTime <= now));
+        if (mounted && visiblePosts.length > 0) setHomeBlogPosts(visiblePosts);
       } catch (error) {
         console.error('Error loading homepage blog posts:', error);
         if (mounted) setHomeBlogPosts(STATIC_BLOG_POSTS);

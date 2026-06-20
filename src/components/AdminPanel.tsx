@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   LayoutDashboard, Package, ShoppingBag, Users, MessageSquare,
   Image as ImageIcon, Settings, Plus, Trash2, Edit2, LogOut,
-  TrendingUp, Eye, DollarSign, BarChart2, Menu, X, Bell,
+  TrendingUp, Eye, EyeOff, DollarSign, BarChart2, Menu, X, Bell,
   Search, ChevronRight, ChevronDown, Megaphone, Upload, Star, AlertCircle, Copy, ExternalLink, Code2, Check as CheckIcon, Bot, Sparkles, Zap, Timer, Clock, Ticket, Download, Filter, MailCheck, Send, UserPlus, ShieldCheck, Network, PanelsTopLeft, Phone, Truck, GripVertical,
   FileText, Globe, Rocket, Link as LinkIcon, Video
 } from 'lucide-react';
@@ -1175,6 +1175,42 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
       toast.success('Đã xóa bài viết');
     } catch {
       toast.error('Lỗi khi xóa bài viết');
+    }
+  };
+
+  const [editingBlogPostDateTime, setEditingBlogPostDateTime] = useState<{ postId: string; date: string; time: string } | null>(null);
+
+  const handleToggleBlogPostVisibility = async (post: BlogPost) => {
+    try {
+      const isHidden = !post.isHidden;
+      const dataToUpdate: any = { isHidden };
+      
+      if (!isHidden) {
+        // Cập nhật ngày đăng lại khi hiện
+        dataToUpdate.date = new Date().toLocaleDateString('vi-VN');
+      }
+      
+      await updateAdminDocument('blogPosts', post.id, dataToUpdate);
+      toast.success(isHidden ? 'Đã ẩn bài viết khỏi website' : 'Đã hiện bài viết lên website');
+    } catch {
+      toast.error('Lỗi khi cập nhật trạng thái bài viết');
+    }
+  };
+
+  const handleSaveBlogPostDateTime = async () => {
+    if (!editingBlogPostDateTime) return;
+    try {
+      const newDate = editingBlogPostDateTime.date;
+      const newTime = editingBlogPostDateTime.time;
+      const scheduledPublishTime = new Date(`${newDate}T${newTime}:00`).getTime();
+      await updateAdminDocument('blogPosts', editingBlogPostDateTime.postId, { 
+        date: new Date(newDate).toLocaleDateString('vi-VN'),
+        scheduledPublishTime
+      });
+      toast.success('Đã cập nhật ngày đăng bài viết');
+      setEditingBlogPostDateTime(null);
+    } catch {
+      toast.error('Lỗi khi cập nhật ngày đăng');
     }
   };
 
@@ -3282,7 +3318,14 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
                               <p className="text-white text-sm font-bold">{post.author}</p>
                             </td>
                             <td className="px-6 py-4 hidden lg:table-cell">
-                              <p className="text-white/40 text-sm">{post.date}</p>
+                              <div className="flex flex-col">
+                                <p className="text-white/40 text-sm">{post.date}</p>
+                                {post.scheduledPublishTime && post.scheduledPublishTime > Date.now() && (
+                                  <span className="text-xs text-orange-400 font-medium mt-0.5">
+                                    Đã lên lịch: {new Date(post.scheduledPublishTime).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                  </span>
+                                )}
+                              </div>
                             </td>
                             <td className="px-6 py-4">
                               <div className="flex items-center justify-end gap-1">
@@ -3292,6 +3335,41 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
                                   className="h-8 w-8 flex items-center justify-center rounded-lg text-white/30 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all"
                                 >
                                   <Eye className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleToggleBlogPostVisibility(post)}
+                                  title={post.isHidden ? 'Hiển thị bài viết' : 'Ẩn bài viết'}
+                                  className={cn(
+                                    "h-8 w-8 flex items-center justify-center rounded-lg transition-all",
+                                    post.isHidden 
+                                      ? "text-green-500 bg-green-500/10 hover:bg-green-500/20"
+                                      : "text-red-500 bg-red-500/10 hover:bg-red-500/20"
+                                  )}
+                                >
+                                  {post.isHidden ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    let dateStr = new Date().toISOString().split('T')[0];
+                                    let timeStr = '09:00';
+                                    if (post.scheduledPublishTime) {
+                                      const d = new Date(post.scheduledPublishTime);
+                                      // Adjust for timezone offset to get local YYYY-MM-DD and HH:MM
+                                      const localD = new Date(d.getTime() - (d.getTimezoneOffset() * 60000));
+                                      dateStr = localD.toISOString().split('T')[0];
+                                      timeStr = localD.toISOString().split('T')[1].substring(0, 5);
+                                    } else if (post.date) {
+                                      const parts = post.date.split('/');
+                                      if (parts.length === 3) {
+                                        dateStr = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                                      }
+                                    }
+                                    setEditingBlogPostDateTime({ postId: post.id, date: dateStr, time: timeStr });
+                                  }}
+                                  title="Chỉnh sửa ngày giờ đăng"
+                                  className="h-8 w-8 flex items-center justify-center rounded-lg text-white/30 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all"
+                                >
+                                  <Clock className="h-3.5 w-3.5" />
                                 </button>
                                 <button
                                   onClick={() => handleCopyBlogPost(post)}
@@ -4883,6 +4961,51 @@ Sitemap: https://www.ursport.vn/sitemap.xml`;
           )}
         </main>
       </div>
+
+      {editingBlogPostDateTime && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-[#13161f] border border-white/10 rounded-2xl p-6 max-w-sm w-full space-y-4">
+            <h3 className="text-white font-bold text-lg">Chỉnh sửa ngày đăng bài viết</h3>
+            
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-black uppercase text-white/40 block mb-2">Ngày</label>
+                <input
+                  type="date"
+                  value={editingBlogPostDateTime.date}
+                  onChange={(e) => setEditingBlogPostDateTime(prev => prev ? { ...prev, date: e.target.value } : null)}
+                  className="w-full bg-[#0f1117] border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#1e4b64]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-black uppercase text-white/40 block mb-2">Giờ : Phút</label>
+                <input
+                  type="time"
+                  value={editingBlogPostDateTime.time}
+                  onChange={(e) => setEditingBlogPostDateTime(prev => prev ? { ...prev, time: e.target.value } : null)}
+                  className="w-full bg-[#0f1117] border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#1e4b64]"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <button
+                onClick={() => setEditingBlogPostDateTime(null)}
+                className="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-lg font-bold text-sm transition-all"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleSaveBlogPostDateTime}
+                className="flex-1 px-4 py-2 bg-[#1e4b64] hover:bg-[#1e4b64]/80 text-white rounded-lg font-bold text-sm transition-all"
+              >
+                Lưu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {(isAddModalOpen || isBlogModalOpen) && (
         <React.Suspense fallback={<AdminTabFallback />}>
