@@ -1366,47 +1366,6 @@ export function NewsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 lg:gap-16 items-start">
           <div className="min-w-0 w-full">
             <div className="relative w-full overflow-x-hidden">
-              {/* Static Collapsible TOC for Mobile/Tablet */}
-              {tocHeadings.length > 0 && (
-                <div className="mb-10 p-6 rounded-2xl bg-zinc-50 border border-zinc-200/60 shadow-sm w-full lg:hidden">
-                  <div className="flex items-center justify-between border-b border-zinc-150 pb-3 mb-4">
-                    <h4 className="text-sm font-black text-zinc-955 uppercase tracking-wider">
-                      {language === 'en' ? 'Contents' : 'Mục lục'}
-                    </h4>
-                    <button 
-                      onClick={() => setIsStaticTocOpen(!isStaticTocOpen)}
-                      className="text-xs text-[#1e4b64] flex items-center gap-1 hover:underline font-bold uppercase tracking-wider cursor-pointer"
-                    >
-                      {isStaticTocOpen ? (language === 'en' ? 'Hide' : 'Ẩn') : (language === 'en' ? 'Show' : 'Hiện')} 
-                      <ChevronDown className={cn("h-4 w-4 transition-transform duration-300", isStaticTocOpen ? "rotate-180" : "rotate-0")} />
-                    </button>
-                  </div>
-                  
-                  {isStaticTocOpen && (
-                    <motion.div 
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      className="space-y-2.5 overflow-hidden"
-                    >
-                      {tocHeadings.map((item) => (
-                        <button
-                          key={`static-${item.id}`}
-                          onClick={() => {
-                            scrollToTocHeading(item.id, 100);
-                          }}
-                          className={cn(
-                            "block w-full text-left text-[14px] text-zinc-600 hover:text-zinc-955 transition-colors leading-snug cursor-pointer",
-                            item.level !== 2 && "pl-6 text-zinc-500"
-                          )}
-                        >
-                          <span>{item.number}. {item.text}</span>
-                        </button>
-                      ))}
-                    </motion.div>
-                  )}
-                </div>
-              )}
-
               {/* Main Content Render */}
               <div 
                 ref={blogContentRef}
