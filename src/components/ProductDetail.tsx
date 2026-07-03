@@ -566,6 +566,7 @@ export const ProductDetail: React.FC = () => {
       const variant = product.colorImages?.find(ci => ci.name === selectedColor);
       if (variant?.image) {
         setMainImage(variant.image);
+        setMainVideo('');
       }
     }
   }, [selectedColor, product?.id]);
@@ -1023,22 +1024,7 @@ export const ProductDetail: React.FC = () => {
                   )}
                 </div>
 
-                {/* Member VIP Banner inspired by Shopee */}
-                <div className="mt-3 flex items-center justify-between rounded-xl border border-red-100 bg-red-50 px-2.5 py-2 text-xs md:hidden">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span className="shrink-0 rounded bg-red-500 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white">VIP</span>
-                    <span className="hidden">
-                      Mua ngay với giá <strong className="text-[#ff3b30]">{memberPrice.toLocaleString('vi-VN')}đ</strong> khi là thành viên UR VIP!
-                    </span>
-                  </div>
-                  <div className="flex min-w-0 flex-1 items-center gap-2 pl-2">
-                    <span className="min-w-0 truncate font-bold text-zinc-700">{isVip ? 'Đã kích hoạt VIP' : 'Giá thành viên'}</span>
-                    <strong className="shrink-0 font-black text-[#ff3b30]">
-                      {memberPrice.toLocaleString('vi-VN')}đ
-                    </strong>
-                  </div>
-                  <ChevronRight className="h-3.5 w-3.5 shrink-0 text-red-500" />
-                </div>
+
               </div>
             </div>
 
