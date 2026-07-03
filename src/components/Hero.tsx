@@ -105,7 +105,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   const heroTitleLines = splitHeroTitle(translateBannerText(headingOverride || banners[currentIndex]?.title || 'UR Sport'));
 
   return (
-    <div className="relative h-[560px] sm:h-[clamp(360px,36vw,520px)] w-full overflow-hidden bg-[#dceefa] group/hero">
+    <div className="relative h-[560px] sm:h-[clamp(360px,36vw,520px)] w-full overflow-hidden bg-[#0f172a] group/hero">
       <AnimatePresence mode="popLayout">
         <motion.div 
           key={currentIndex}
@@ -309,16 +309,16 @@ export const Hero: React.FC<{ onShopClick: () => void; headingOverride?: string 
   }, [activeMobileBanners.length]);
 
   if (isLoading) return (
-    <div className="relative h-[560px] w-full overflow-hidden bg-[#dceefa] sm:h-[clamp(360px,36vw,520px)]">
-      <div className="absolute inset-0 bg-linear-to-br from-[#7ebbe5] via-[#dceefa] to-white" />
-      <div className="absolute inset-x-0 bottom-0 h-2/3 bg-linear-to-t from-[#1e4b64]/25 to-transparent" />
+    <div className="relative h-[560px] w-full overflow-hidden bg-[#0f172a] sm:h-[clamp(360px,36vw,520px)]">
+      <div className="absolute inset-0 bg-linear-to-br from-[#1e4b64] via-[#0f172a] to-[#0f172a]" />
+      <div className="absolute inset-x-0 bottom-0 h-2/3 bg-linear-to-t from-black/40 to-transparent" />
       <div className="relative mx-auto flex h-full max-w-[1440px] flex-col justify-end px-6 pb-20 sm:px-12 sm:pb-16 lg:px-20">
-        <span className="mb-3 block text-[9px] font-black uppercase tracking-[0.42em] text-white/70 drop-shadow-md sm:text-[11px]">
+        <span className="mb-3 block text-[9px] font-black uppercase tracking-[0.42em] text-white/40 drop-shadow-md sm:text-[11px]">
           UR SPORT PERFORMANCE
         </span>
-        <div className="h-10 w-56 animate-pulse rounded-full bg-white/40 sm:h-14 sm:w-80" />
-        <div className="mt-4 h-4 w-48 animate-pulse rounded-full bg-white/35 sm:w-64" />
-        <div className="mt-7 h-12 w-56 animate-pulse rounded-full bg-white/80" />
+        <div className="h-10 w-56 animate-pulse rounded-full bg-white/10 sm:h-14 sm:w-80" />
+        <div className="mt-4 h-4 w-48 animate-pulse rounded-full bg-white/8 sm:w-64" />
+        <div className="mt-7 h-12 w-56 animate-pulse rounded-full bg-white/15" />
       </div>
     </div>
   );
