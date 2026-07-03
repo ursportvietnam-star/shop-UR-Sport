@@ -728,7 +728,7 @@ export const ProductDetail: React.FC = () => {
 
       <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
         {/* Product Info Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-16">
           {/* Left: Images */}
           <motion.div
             initial={{ x: -20, opacity: 0 }}
@@ -736,6 +736,53 @@ export const ProductDetail: React.FC = () => {
             transition={{ delay: 0.1 }}
             className="lg:col-span-5 space-y-6"
           >
+            {/* Mobile Title Block */}
+            <div className="lg:hidden space-y-1.5">
+              <motion.h1
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="text-[20px] font-semibold leading-tight text-zinc-950 sm:text-[22px]"
+              >
+                {productName}
+              </motion.h1>
+              <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[12px] leading-none text-zinc-500">
+                <div className="flex items-center gap-0.5">
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={i}
+                      className={cn(
+                        "h-3.5 w-3.5",
+                        i < Math.floor(product.rating || 0) ? "fill-[#ff6a00] text-[#ff6a00]" : "text-zinc-200"
+                      )}
+                    />
+                  ))}
+                </div>
+                <span>{(product.rating || 0).toFixed(1)}</span>
+                <button
+                  type="button"
+                  onClick={() => document.getElementById('reviews-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                  className="text-[#0068FF] underline underline-offset-2 transition-colors hover:text-[#005AE0]"
+                >
+                  {t('reviews')}: {product.reviewsCount || 0}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => document.getElementById('reviews-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                  className="text-[#0068FF] underline underline-offset-2 transition-colors hover:text-[#005AE0]"
+                >
+                  {t('writeReview')}
+                </button>
+              </div>
+              <div className="flex items-center gap-1.5 text-[11px] leading-none text-zinc-500">
+                <span className="font-medium uppercase tracking-wide">CODE:</span>
+                <span className="font-bold tracking-[0.08em] text-zinc-900">
+                  {product.productCode || `UR-${product.id.substring(0, 6).toUpperCase()}`}
+                </span>
+                <Copy className="h-3.5 w-3.5 cursor-pointer text-zinc-400 transition-colors hover:text-zinc-900" />
+              </div>
+            </div>
+
             <div 
               onClick={() => {
                 if (mainVideo) return;
@@ -848,7 +895,7 @@ export const ProductDetail: React.FC = () => {
             </div>
 
             {/* Trust Badges (Horizontal Row) */}
-            <div className="mt-5 sm:mt-6 pb-2">
+            <div className="hidden lg:block mt-5 sm:mt-6 pb-2">
               <div className="flex overflow-x-auto scrollbar-none snap-x snap-mandatory gap-3 -mx-4 px-4 sm:mx-0 sm:px-0 lg:grid lg:grid-cols-3 lg:gap-1 lg:bg-zinc-50/50 lg:p-3 lg:rounded-2xl lg:border lg:border-zinc-100">
                 <div className="snap-start shrink-0 w-[85%] sm:w-[300px] lg:w-auto flex min-w-0 items-center gap-3 lg:gap-2 bg-zinc-50/80 lg:bg-transparent rounded-2xl p-4 lg:p-0 border border-zinc-100 lg:border-0 lg:border-r lg:border-zinc-200 lg:pr-1 lg:rounded-none">
                   <div className="h-10 w-10 shrink-0 rounded-xl bg-white flex items-center justify-center shadow-sm border border-zinc-100 sm:h-12 sm:w-12 lg:h-8 lg:w-8">
@@ -889,7 +936,7 @@ export const ProductDetail: React.FC = () => {
             className="lg:col-span-7 space-y-6 lg:sticky lg:top-24"
           >
             <div className="space-y-4">
-              <div className="space-y-1.5">
+              <div className="hidden lg:block space-y-1.5">
                 <motion.h1
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
