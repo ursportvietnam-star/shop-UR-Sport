@@ -45,6 +45,16 @@ export function MediaLibraryTab({ mediaItems, onDeleteMedia, onSaveMedia }: Medi
   const [brokenIds, setBrokenIds] = React.useState<Set<string>>(new Set());
   const brokenCount = mediaItems.filter(item => brokenIds.has(item.id)).length;
 
+  const filteredMediaItems = mediaItems.filter(item => {
+    const mediaPath = getMediaPath(item.url);
+    if (!isLocalPublicImage(mediaPath)) return true;
+    
+    if (selectedFolder.key === 'blog') return mediaPath.startsWith('/images/blog');
+    if (selectedFolder.key === 'product') return mediaPath.startsWith('/images/product');
+    if (selectedFolder.key === 'images') return mediaPath.startsWith('/images/') && !mediaPath.startsWith('/images/blog') && !mediaPath.startsWith('/images/product');
+    
+    return true;
+  });
   const markBroken = (id: string) => {
     setBrokenIds(prev => {
       const next = new Set(prev);
@@ -142,17 +152,17 @@ export function MediaLibraryTab({ mediaItems, onDeleteMedia, onSaveMedia }: Medi
       <div className="bg-[#13161f] border border-white/5 rounded-2xl overflow-hidden">
         <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between">
           <h3 className="text-white font-black text-sm uppercase tracking-widest">Anh da tai len</h3>
-          <p className="text-white/30 text-xs font-medium">{mediaItems.length} anh</p>
+          <p className="text-white/30 text-xs font-medium">{filteredMediaItems.length} anh</p>
         </div>
         <div className="p-6">
-          {mediaItems.length === 0 ? (
+          {filteredMediaItems.length === 0 ? (
             <div className="py-20 text-center">
               <ImageIcon className="h-12 w-12 text-white/10 mx-auto mb-3" />
-              <p className="text-white/30 font-bold text-sm">Chua co anh nao trong thu vien</p>
+              <p className="text-white/30 font-bold text-sm">Chua co anh nao trong muc nay</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {mediaItems.map((item) => {
+              {filteredMediaItems.map((item) => {
                 const mediaPath = getMediaPath(item.url);
                 const isBroken = brokenIds.has(item.id);
                 const isLocal = isLocalPublicImage(mediaPath);
