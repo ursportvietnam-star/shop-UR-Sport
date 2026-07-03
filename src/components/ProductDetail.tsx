@@ -729,7 +729,7 @@ export const ProductDetail: React.FC = () => {
 
       <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
         {/* Product Info Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-16">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 lg:gap-16">
           {/* Left: Images */}
           <motion.div
             initial={{ x: -20, opacity: 0 }}
@@ -816,8 +816,9 @@ export const ProductDetail: React.FC = () => {
               ) : mainImage && (
                 <motion.img
                   key={mainImage}
-                  initial={{ opacity: 0, scale: 0.95 }}
+                  initial={{ opacity: 0.5, scale: 0.98 }}
                   animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.2, ease: 'easeOut' }}
                   src={mainImage}
                   alt={productName}
                   title={product.imageTitle || productName}
@@ -1007,7 +1008,7 @@ export const ProductDetail: React.FC = () => {
                 </div>
               )}
 
-              <div className="space-y-2 border-t border-zinc-100 pt-4">
+              <div className="space-y-2">
                 <div className="flex items-baseline gap-2 sm:gap-3 flex-nowrap">
                   <span className="text-3xl font-bold tracking-tighter text-[#ff3b30] sm:text-[44px] whitespace-nowrap">
                     {activePrice.toLocaleString('vi-VN')}₫
