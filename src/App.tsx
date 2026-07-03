@@ -329,7 +329,7 @@ function AppContent() {
             />
           )}
           
-          <main className={!hideLayout ? (hasTopPanel ? "flex-1 pt-16 md:pt-24 pb-16 md:pb-0" : "flex-1 pt-16 pb-16 md:pb-0") : "flex-1"}>
+          <main className={!hideLayout ? (hasTopPanel ? "flex-1 pt-24 pb-16 md:pb-0" : "flex-1 pt-16 pb-16 md:pb-0") : "flex-1"}>
             <React.Suspense fallback={<div className="min-h-[50vh] flex items-center justify-center"><div className="h-10 w-10 rounded-full border-4 border-[#1e4b64] border-t-transparent animate-spin" /></div>}>
             <Routes>
               <Route path="/" element={<HomePage onCategorySelect={handleCategorySelect} onPageChange={onPageChange} />} />
