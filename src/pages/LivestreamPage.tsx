@@ -61,6 +61,7 @@ export default function LivestreamPage() {
   // Presence System: Announce we are here and keep heartbeat
   useEffect(() => {
     if (!db) return;
+    if (!isLiveEnabled) return; // skip presence when livestream is disabled
     const sessionId = sessionIdRef.current;
     const presenceDoc = doc(db, 'live_viewers', sessionId);
 
@@ -95,11 +96,12 @@ export default function LivestreamPage() {
       window.removeEventListener('beforeunload', cleanup);
       cleanup();
     };
-  }, [deviceInfo]);
+  }, [deviceInfo, isLiveEnabled]);
 
   // Poll for active viewer count
   useEffect(() => {
     if (!db) return;
+    if (!isLiveEnabled) { setViewerCount(0); return; }
     const viewersCol = collection(db, 'live_viewers');
 
     const fetchCount = async () => {
@@ -120,7 +122,7 @@ export default function LivestreamPage() {
     fetchCount();
     const pollInterval = setInterval(fetchCount, 10000); // Poll every 10s
     return () => clearInterval(pollInterval);
-  }, []);
+  }, [isLiveEnabled]);
 
   // Fetch livestream config
   const [livestreamConfig, setLivestreamConfig] = useState({
@@ -128,6 +130,7 @@ export default function LivestreamPage() {
     title: '',
     description: ''
   });
+  const [isLiveEnabled, setIsLiveEnabled] = useState(true);
   const [isLoadingConfig, setIsLoadingConfig] = useState(true);
 
   useEffect(() => {
@@ -142,6 +145,7 @@ export default function LivestreamPage() {
             title: data.title || '🔥 Siêu Sale Đồ Thể Thao Cao Cấp',
             description: data.description || 'Săn ngay deal hot giảm giá đến 50% chỉ có trong livestream hôm nay.'
           });
+          setIsLiveEnabled(typeof data.enabled === 'boolean' ? data.enabled : true);
         } else {
           setLivestreamConfig({
             videoUrl: '',
@@ -201,10 +205,16 @@ export default function LivestreamPage() {
             </h1>
           </div>
           <div className="flex flex-col items-end gap-1">
-            <div className="flex items-center gap-1 sm:gap-1.5 bg-red-50 text-red-600 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-bold shadow-sm border border-red-100 shrink-0">
-              <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-              <span className="whitespace-nowrap">{viewerCount} đang xem</span>
-            </div>
+            {isLiveEnabled ? (
+              <div className="flex items-center gap-1 sm:gap-1.5 bg-red-50 text-red-600 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-bold shadow-sm border border-red-100 shrink-0">
+                <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                <span className="whitespace-nowrap">{viewerCount} đang xem</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 sm:gap-1.5 bg-red-50 text-red-500 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-bold shadow-sm border border-red-100 shrink-0">
+                <span className="whitespace-nowrap">OFF</span>
+              </div>
+            )}
             {presenceError && (
               <span className="text-[9px] text-red-500 font-medium whitespace-nowrap">{presenceError}</span>
             )}
@@ -222,18 +232,35 @@ export default function LivestreamPage() {
                 <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
                   <div className="w-8 h-8 border-4 border-white/20 border-t-red-500 rounded-full animate-spin"></div>
                 </div>
-              ) : embedUrl ? (
-                <iframe
-                  src={embedUrl}
-                  title="Livestream Player"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                  className="absolute inset-0 w-full h-full"
-                ></iframe>
               ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-white/50 text-sm">
-                  Chưa có luồng phát trực tiếp nào được cấu hình
-                </div>
+                // When livestream is disabled we intentionally avoid loading the iframe
+                isLiveEnabled ? (
+                  embedUrl ? (
+                    <iframe
+                      src={embedUrl}
+                      title="Livestream Player"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                      className="absolute inset-0 w-full h-full"
+                    ></iframe>
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-white/50 text-sm">
+                      Chưa có luồng phát trực tiếp nào được cấu hình
+                    </div>
+                  )
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/95 px-6">
+                    <div className="text-center max-w-md">
+                      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70">
+                        <Video className="h-6 w-6" />
+                      </div>
+                      <p className="text-base font-semibold text-white">Tính năng Livestream hiện đang tắt</p>
+                      <p className="mt-2 text-sm text-white/60">
+                        Khi bật live, bạn sẽ xem được stream, chương trình khuyến mãi và sản phẩm đang diễn ra ngay tại đây.
+                      </p>
+                    </div>
+                  </div>
+                )
               )}
             </div>
 

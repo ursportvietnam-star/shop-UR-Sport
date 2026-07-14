@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Video, Save, AlertCircle, Smartphone, Monitor, Globe2, Clock } from 'lucide-react';
+import { Video, Save, AlertCircle, Smartphone, Monitor, Globe2, Clock, Power } from 'lucide-react';
 import { toast } from 'sonner';
 import { doc, getDoc, setDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
@@ -8,6 +8,7 @@ export const AdminLivestreamTab = () => {
   const [videoUrl, setVideoUrl] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [isLiveEnabled, setIsLiveEnabled] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [viewers, setViewers] = useState<any[]>([]);
@@ -66,6 +67,7 @@ export const AdminLivestreamTab = () => {
           setVideoUrl(data.videoUrl || '');
           setTitle(data.title || '');
           setDescription(data.description || '');
+          setIsLiveEnabled(typeof data.enabled === 'boolean' ? data.enabled : true);
         } else {
           // Defaults
           setTitle('🔥 Siêu Sale Đồ Thể Thao Cao Cấp');
@@ -87,6 +89,7 @@ export const AdminLivestreamTab = () => {
         videoUrl,
         title,
         description,
+        enabled: isLiveEnabled,
         updatedAt: new Date().toISOString()
       }, { merge: true });
       toast.success('Đã lưu cấu hình Livestream!');
@@ -105,13 +108,25 @@ export const AdminLivestreamTab = () => {
   return (
     <div className="space-y-6 max-w-4xl">
       <div className="rounded-2xl border border-white/5 bg-[#13161f] p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="h-10 w-10 flex items-center justify-center bg-red-500/10 text-red-500 rounded-xl">
-            <Video className="h-5 w-5" />
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 flex items-center justify-center bg-red-500/10 text-red-500 rounded-xl">
+              <Video className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-white tracking-tight">Cấu hình Livestream</h2>
+              <p className="text-sm font-medium text-white/45">Thiết lập luồng phát trực tiếp hiển thị trên trang /live</p>
+            </div>
           </div>
+
           <div>
-            <h2 className="text-xl font-black text-white tracking-tight">Cấu hình Livestream</h2>
-            <p className="text-sm font-medium text-white/45">Thiết lập luồng phát trực tiếp hiển thị trên trang /live</p>
+            <button
+              onClick={() => setIsLiveEnabled(!isLiveEnabled)}
+              className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl font-bold transition-colors ${isLiveEnabled ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}
+            >
+              <Power className="w-4 h-4" />
+              <span className="text-sm uppercase">{isLiveEnabled ? 'On' : 'Off'}</span>
+            </button>
           </div>
         </div>
 
@@ -123,9 +138,13 @@ export const AdminLivestreamTab = () => {
             <input
               type="text"
               value={videoUrl}
-              onChange={(e) => setVideoUrl(e.target.value)}
+              onChange={(e) => { if (isLiveEnabled) setVideoUrl(e.target.value); }}
               placeholder="VD: https://www.youtube.com/watch?v=..."
-              className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#4ca6d8] focus:ring-1 focus:ring-[#4ca6d8]/50 transition-all placeholder:text-white/20 font-medium"
+              disabled={!isLiveEnabled}
+              onPaste={(e) => { if (!isLiveEnabled) e.preventDefault(); }}
+              onDrop={(e) => { if (!isLiveEnabled) e.preventDefault(); }}
+              onKeyDown={(e) => { if (!isLiveEnabled) e.preventDefault(); }}
+              className={`w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#4ca6d8] focus:ring-1 focus:ring-[#4ca6d8]/50 transition-all placeholder:text-white/20 font-medium ${!isLiveEnabled ? 'opacity-40 cursor-not-allowed pointer-events-none' : ''}`}
             />
             <p className="text-xs text-white/40 mt-2 flex items-start gap-1">
               <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
@@ -184,13 +203,19 @@ export const AdminLivestreamTab = () => {
               <p className="text-sm font-medium text-white/45">Theo dõi vị trí và thiết bị theo thời gian thực</p>
             </div>
           </div>
-          {viewers.length > 0 && (
-            <div className="flex items-center gap-2">
-              <div className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+          {isLiveEnabled ? (
+            viewers.length > 0 && (
+              <div className="flex items-center gap-2">
+                <div className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </div>
+                <span className="text-xs font-bold text-green-500 uppercase tracking-widest">Live</span>
               </div>
-              <span className="text-xs font-bold text-green-500 uppercase tracking-widest">Live</span>
+            )
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-red-400 uppercase tracking-widest">Off</span>
             </div>
           )}
         </div>

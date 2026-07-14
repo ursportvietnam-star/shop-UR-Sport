@@ -9,6 +9,19 @@ import { db } from '../firebase';
 import { readLocalHomepageBanners, readLocalHomepageMobileBanners } from '../lib/homepageConfig';
 import { useLanguage } from '../LanguageContext';
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  );
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return isMobile;
+}
+
 const splitHeroTitle = (title: string) => {
   const normalized = title.replace(/\s+/g, ' ').trim();
   if (!normalized) return ['UR Sport'];
@@ -159,7 +172,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
             
             <div className="mb-4">
               <AnimatePresence mode="wait">
-                <motion.h1 
+                <motion.h1
                   key={currentIndex}
                   initial={{ opacity: 0, x: -30 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -244,8 +257,8 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
 };
 
 export const Hero: React.FC<{ onShopClick: () => void; headingOverride?: string }> = ({ onShopClick, headingOverride }) => {
-  const [currentIndexDesktop, setCurrentIndexDesktop] = useState(0);
-  const [currentIndexMobile, setCurrentIndexMobile] = useState(0);
+  const isMobile = useIsMobile();
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [activeBanners, setActiveBanners] = useState<any[]>([]);
   const [activeMobileBanners, setActiveMobileBanners] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -292,21 +305,20 @@ export const Hero: React.FC<{ onShopClick: () => void; headingOverride?: string 
     });
   }, []);
 
-  useEffect(() => {
-    if (activeBanners.length <= 1) return;
-    const timer = setInterval(() => {
-      setCurrentIndexDesktop((prev) => (prev + 1) % activeBanners.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, [activeBanners.length]);
+  // Reset index khi switch giữa mobile/desktop banner set
+  const banners = isMobile && activeMobileBanners.length > 0 ? activeMobileBanners : activeBanners;
 
   useEffect(() => {
-    if (activeMobileBanners.length <= 1) return;
+    setCurrentIndex(0);
+  }, [isMobile]);
+
+  useEffect(() => {
+    if (banners.length <= 1) return;
     const timer = setInterval(() => {
-      setCurrentIndexMobile((prev) => (prev + 1) % activeMobileBanners.length);
+      setCurrentIndex((prev) => (prev + 1) % banners.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, [activeMobileBanners.length]);
+  }, [banners.length]);
 
   if (isLoading) return (
     <div className="relative h-[560px] w-full overflow-hidden bg-[#0f172a] sm:h-[clamp(360px,36vw,520px)]">
@@ -323,28 +335,15 @@ export const Hero: React.FC<{ onShopClick: () => void; headingOverride?: string 
     </div>
   );
 
+  // Chỉ render DUY NHẤT 1 HeroSlider — không có DOM thừa, không có H1 trùng
   return (
-    <>
-      <div className="hidden md:block w-full">
-        <HeroSlider
-          banners={activeBanners}
-          currentIndex={currentIndexDesktop}
-          setCurrentIndex={setCurrentIndexDesktop}
-          onShopClick={onShopClick}
-          headingOverride={headingOverride}
-          isMobile={false}
-        />
-      </div>
-      <div className="block md:hidden w-full">
-        <HeroSlider
-          banners={activeMobileBanners.length > 0 ? activeMobileBanners : activeBanners}
-          currentIndex={currentIndexMobile}
-          setCurrentIndex={setCurrentIndexMobile}
-          onShopClick={onShopClick}
-          headingOverride={headingOverride}
-          isMobile={true}
-        />
-      </div>
-    </>
+    <HeroSlider
+      banners={banners}
+      currentIndex={currentIndex}
+      setCurrentIndex={setCurrentIndex}
+      onShopClick={onShopClick}
+      headingOverride={headingOverride}
+      isMobile={isMobile}
+    />
   );
 };
