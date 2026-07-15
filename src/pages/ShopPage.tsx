@@ -468,7 +468,7 @@ export function ShopPage({
       text.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
     const seenIds = new Set<string>();
     const counters = { h2: 0, h3: 0 };
-    return Array.from(wrapper.querySelectorAll('h2, h3')).map((el) => {
+    return Array.from(wrapper.querySelectorAll('h2, h3')).map((el, index) => {
       const level = Number(el.tagName.charAt(1));
       const text = el.textContent?.replace(/^\s*\d+[.)]\s*/, '').trim() || '';
       if (level === 2) { counters.h2 += 1; counters.h3 = 0; }
@@ -478,7 +478,7 @@ export function ShopPage({
       let uid = id; let c = 1;
       while (seenIds.has(uid)) { uid = `${id}-${c}`; c++; }
       seenIds.add(uid);
-      return { id: uid, text, level, number };
+      return { id: uid, text, level, number, index };
     });
   }, [formattedSeoContent]);
 
@@ -502,10 +502,12 @@ export function ShopPage({
     });
   }, [isSeoExpanded, formattedSeoContent, seoTocHeadings]);
 
-  const scrollToSeoHeading = (id: string) => {
-    const el = document.getElementById(id);
+  const scrollToSeoHeading = (index: number) => {
+    if (!seoContentRef.current) return;
+    const headings = Array.from(seoContentRef.current.querySelectorAll('h2, h3'));
+    const el = headings[index];
     if (!el) return;
-    const offset = 100;
+    const offset = 100; // Account for sticky headers
     const top = el.getBoundingClientRect().top + window.scrollY - offset;
     window.scrollTo({ top, behavior: 'smooth' });
     setIsTocOpen(false);
@@ -920,7 +922,7 @@ export function ShopPage({
                     <button
                       key={`mobile-toc-${item.id}`}
                       type="button"
-                      onClick={() => scrollToSeoHeading(item.id)}
+                      onClick={() => scrollToSeoHeading(item.index)}
                       className={cn(
                         "block w-full text-left text-[14px] text-zinc-600 hover:text-[#1e4b64] transition-colors leading-snug cursor-pointer",
                         item.level !== 2 && "pl-5 text-zinc-500 text-[13px]"
@@ -998,7 +1000,7 @@ export function ShopPage({
                         <button
                           key={item.id}
                           type="button"
-                          onClick={() => scrollToSeoHeading(item.id)}
+                          onClick={() => scrollToSeoHeading(item.index)}
                           className={cn(
                             "block w-full text-left text-[13px] leading-relaxed transition-all duration-200 cursor-pointer font-bold hover:text-[#1e4b64]",
                             item.level !== 2 ? "pl-3 text-[12px] font-semibold text-zinc-500 hover:text-zinc-800" : "text-zinc-600"
