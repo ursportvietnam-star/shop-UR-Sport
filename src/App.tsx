@@ -191,13 +191,31 @@ function AppContent() {
 
   // Inject custom CSS từ Firestore vào mọi trang
   useEffect(() => {
-    if (!db) return;
+    // 1. Áp dụng từ cache NGAY LẬP TỨC (nếu có)
+    try {
+      const cachedLogo = window.localStorage.getItem('ursport_cached_logo');
+      if (cachedLogo) {
+        const data = JSON.parse(cachedLogo);
+        setLogoSettings(data);
+        if (data.favicon) {
+          applyFavicon(data.favicon);
+        }
+      }
+
+      const cachedCss = window.localStorage.getItem('ursport_cached_css');
+      if (cachedCss) {
+        applyCustomCss(cachedCss);
+      }
+    } catch (e) {}
 
     const localHomepageSections = readLocalHomepageSections();
     if (localHomepageSections) {
       setHasTopPanel(Boolean(getHomepageTopPanelSection(localHomepageSections)));
     }
 
+    if (!db) return;
+
+    // 2. Fetch ngầm từ Firestore (stale-while-revalidate)
     getDoc(doc(db, 'settings', 'homepage')).then(snap => {
       if (!snap.exists()) return;
       const sections = Array.isArray(snap.data().sections) ? snap.data().sections as HomepageSectionConfig[] : [];
@@ -210,13 +228,8 @@ function AppContent() {
       if (!snap.exists()) return;
       const css = snap.data().css || '';
       if (!css.trim()) return;
-      let styleEl = document.getElementById('custom-global-css') as HTMLStyleElement | null;
-      if (!styleEl) {
-        styleEl = document.createElement('style');
-        styleEl.id = 'custom-global-css';
-        document.head.appendChild(styleEl);
-      }
-      styleEl.textContent = css;
+      window.localStorage.setItem('ursport_cached_css', css);
+      applyCustomCss(css);
     }).catch(() => {});
 
     // Load Logo & Favicon Settings from Firestore
@@ -224,38 +237,54 @@ function AppContent() {
       if (!snap.exists()) return;
       const data = snap.data();
       setLogoSettings(data);
+      window.localStorage.setItem('ursport_cached_logo', JSON.stringify(data));
       if (data.favicon) {
-        const faviconPath = String(data.favicon).split('?')[0].toLowerCase();
-        const faviconType =
-          faviconPath.endsWith('.ico') ? 'image/x-icon' :
-          faviconPath.endsWith('.png') ? 'image/png' :
-          faviconPath.endsWith('.webp') ? 'image/webp' :
-          faviconPath.endsWith('.gif') ? 'image/gif' :
-          faviconPath.endsWith('.jpg') || faviconPath.endsWith('.jpeg') ? 'image/jpeg' :
-          faviconPath.endsWith('.svg') ? 'image/svg+xml' :
-          '';
-        const iconLinks = Array.from(document.querySelectorAll("link[rel~='icon']")) as HTMLLinkElement[];
-        const linksToUpdate = iconLinks.length ? iconLinks : [document.createElement('link') as HTMLLinkElement];
-        linksToUpdate.forEach((iconLink) => {
-          if (!iconLink.parentElement) {
-            iconLink.rel = 'icon';
-            document.head.appendChild(iconLink);
-          }
-          iconLink.href = data.favicon;
-          if (faviconType) iconLink.type = faviconType;
-          iconLink.removeAttribute('sizes');
-        });
-
-        let appleLink = document.querySelector("link[rel='apple-touch-icon']") as HTMLLinkElement | null;
-        if (!appleLink) {
-          appleLink = document.createElement('link');
-          appleLink.rel = 'apple-touch-icon';
-          document.head.appendChild(appleLink);
-        }
-        appleLink.href = data.favicon;
+        applyFavicon(data.favicon);
       }
     }).catch(() => {});
   }, []);
+
+  // Helpers outside useEffect to avoid duplication
+  const applyCustomCss = (css: string) => {
+    let styleEl = document.getElementById('custom-global-css') as HTMLStyleElement | null;
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'custom-global-css';
+      document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = css;
+  };
+
+  const applyFavicon = (faviconUrl: string) => {
+    const faviconPath = String(faviconUrl).split('?')[0].toLowerCase();
+    const faviconType =
+      faviconPath.endsWith('.ico') ? 'image/x-icon' :
+      faviconPath.endsWith('.png') ? 'image/png' :
+      faviconPath.endsWith('.webp') ? 'image/webp' :
+      faviconPath.endsWith('.gif') ? 'image/gif' :
+      faviconPath.endsWith('.jpg') || faviconPath.endsWith('.jpeg') ? 'image/jpeg' :
+      faviconPath.endsWith('.svg') ? 'image/svg+xml' :
+      '';
+    const iconLinks = Array.from(document.querySelectorAll("link[rel~='icon']")) as HTMLLinkElement[];
+    const linksToUpdate = iconLinks.length ? iconLinks : [document.createElement('link') as HTMLLinkElement];
+    linksToUpdate.forEach((iconLink) => {
+      if (!iconLink.parentElement) {
+        iconLink.rel = 'icon';
+        document.head.appendChild(iconLink);
+      }
+      iconLink.href = faviconUrl;
+      if (faviconType) iconLink.type = faviconType;
+      iconLink.removeAttribute('sizes');
+    });
+
+    let appleLink = document.querySelector("link[rel='apple-touch-icon']") as HTMLLinkElement | null;
+    if (!appleLink) {
+      appleLink = document.createElement('link');
+      appleLink.rel = 'apple-touch-icon';
+      document.head.appendChild(appleLink);
+    }
+    appleLink.href = faviconUrl;
+  };
 
   const handleCategorySelect = (category: Category) => {
     setActiveCategory(category);

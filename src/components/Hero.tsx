@@ -261,29 +261,34 @@ export const Hero: React.FC<{ onShopClick: () => void; headingOverride?: string 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [activeBanners, setActiveBanners] = useState<any[]>([]);
   const [activeMobileBanners, setActiveMobileBanners] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+
+  // Khởi tạo từ localStorage NGAY LẬP TỨC — không cần chờ Firestore
+  const [isLoading, setIsLoading] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    const cached = readLocalHomepageBanners();
+    return !cached?.length;
+  });
 
   useEffect(() => {
-    let activeDone = false;
-    let mobileDone = false;
-
+    // Bước 1: Đọc cache từ localStorage trước (instant, không network)
     const localBanners = readLocalHomepageBanners();
+    const localMobileBanners = readLocalHomepageMobileBanners();
+    let hasCachedBanners = false;
+
     if (localBanners?.length) {
       setActiveBanners(localBanners);
-      activeDone = true;
+      hasCachedBanners = true;
     }
-
-    const localMobileBanners = readLocalHomepageMobileBanners();
     if (localMobileBanners?.length) {
       setActiveMobileBanners(localMobileBanners);
-      mobileDone = true;
     }
-
-    if (activeDone && mobileDone) {
+    if (hasCachedBanners) {
       setIsLoading(false);
-      return;
     }
 
+    // Bước 2: Fetch Firestore ngầm (stale-while-revalidate)
+    // — nếu đã có cache: chạy ngầm, không ảnh hưởng UI
+    // — nếu chưa có cache: fetch rồi mới show
     if (!db) {
       setIsLoading(false);
       return;
@@ -292,11 +297,14 @@ export const Hero: React.FC<{ onShopClick: () => void; headingOverride?: string 
     getDoc(doc(db, 'settings', 'banners')).then(snap => {
       if (snap.exists()) {
         const data = snap.data();
-        if (!activeDone && data.items?.length > 0) {
+        if (data.items?.length > 0) {
           setActiveBanners(data.items);
+          // Ghi vào localStorage để lần sau dùng ngay
+          writeLocalHomepageBanners(data.items);
         }
-        if (!mobileDone && data.mobileItems?.length > 0) {
+        if (data.mobileItems?.length > 0) {
           setActiveMobileBanners(data.mobileItems);
+          writeLocalHomepageMobileBanners(data.mobileItems);
         }
       }
       setIsLoading(false);
@@ -321,16 +329,15 @@ export const Hero: React.FC<{ onShopClick: () => void; headingOverride?: string 
   }, [banners.length]);
 
   if (isLoading) return (
-    <div className="relative h-[560px] w-full overflow-hidden bg-[#0f172a] sm:h-[clamp(360px,36vw,520px)]">
-      <div className="absolute inset-0 bg-linear-to-br from-[#1e4b64] via-[#0f172a] to-[#0f172a]" />
-      <div className="absolute inset-x-0 bottom-0 h-2/3 bg-linear-to-t from-black/40 to-transparent" />
+    <div className="relative h-[560px] w-full overflow-hidden bg-zinc-100 sm:h-[clamp(360px,36vw,520px)]">
+      <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-zinc-200 via-zinc-100 to-zinc-50" />
       <div className="relative mx-auto flex h-full max-w-[1440px] flex-col justify-end px-6 pb-20 sm:px-12 sm:pb-16 lg:px-20">
-        <span className="mb-3 block text-[9px] font-black uppercase tracking-[0.42em] text-white/40 drop-shadow-md sm:text-[11px]">
+        <span className="mb-3 block text-[9px] font-black uppercase tracking-[0.42em] text-zinc-300 drop-shadow-md sm:text-[11px]">
           UR SPORT PERFORMANCE
         </span>
-        <div className="h-10 w-56 animate-pulse rounded-full bg-white/10 sm:h-14 sm:w-80" />
-        <div className="mt-4 h-4 w-48 animate-pulse rounded-full bg-white/8 sm:w-64" />
-        <div className="mt-7 h-12 w-56 animate-pulse rounded-full bg-white/15" />
+        <div className="h-10 w-56 animate-pulse rounded-full bg-zinc-200 sm:h-14 sm:w-80" />
+        <div className="mt-4 h-4 w-48 animate-pulse rounded-full bg-zinc-200 sm:w-64" />
+        <div className="mt-7 h-12 w-56 animate-pulse rounded-full bg-zinc-200" />
       </div>
     </div>
   );
