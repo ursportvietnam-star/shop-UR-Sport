@@ -155,8 +155,10 @@ export function ShopPage({
   const [seoContent, setSeoContent] = React.useState<string>('');
   const [seoMeta, setSeoMeta] = React.useState<{title:string,description:string,keywords:string,canonical:string,robots:string,heading:string, sapo?: string, quickLinks?: { label: string; href: string; description: string }[], buyingGuides?: { title: string; body: string }[]}>({title:'',description:'',keywords:'',canonical:'',robots:'',heading:''});
   const [isSeoExpanded, setIsSeoExpanded] = React.useState(false);
+  const [isTocOpen, setIsTocOpen] = React.useState(false);
   const [openFilterMenu, setOpenFilterMenu] = React.useState<string | null>(null);
   const filtersRef = React.useRef<HTMLDivElement>(null);
+  const seoContentRef = React.useRef<HTMLDivElement>(null);
 
   const categoryFilter = searchParams.get('category');
   const brandFilter = searchParams.get('brand');
@@ -453,6 +455,61 @@ export function ShopPage({
   );
   const formattedSeoContent = React.useMemo(() => sanitizeRichHtml(formatSeoContentHtml(seoContent)), [seoContent]);
   const seoContentFaqs = React.useMemo(() => parseSeoFaqs(seoContent), [seoContent]);
+
+  // Extract TOC headings from SEO content (h2/h3)
+  type TocHeading = { id: string; text: string; level: number; number: string };
+  const seoTocHeadings = React.useMemo((): TocHeading[] => {
+    if (!formattedSeoContent) return [];
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(`<div>${formattedSeoContent}</div>`, 'text/html');
+    const wrapper = doc.body.firstElementChild;
+    if (!wrapper) return [];
+    const slugify = (text: string) =>
+      text.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
+    const seenIds = new Set<string>();
+    const counters = { h2: 0, h3: 0 };
+    return Array.from(wrapper.querySelectorAll('h2, h3')).map((el) => {
+      const level = Number(el.tagName.charAt(1));
+      const text = el.textContent?.replace(/^\s*\d+[.)]\s*/, '').trim() || '';
+      if (level === 2) { counters.h2 += 1; counters.h3 = 0; }
+      else { if (counters.h2 === 0) counters.h2 = 1; counters.h3 += 1; }
+      const number = level === 2 ? `${counters.h2}` : `${counters.h2}.${counters.h3}`;
+      let id = slugify(text || 'heading');
+      let uid = id; let c = 1;
+      while (seenIds.has(uid)) { uid = `${id}-${c}`; c++; }
+      seenIds.add(uid);
+      return { id: uid, text, level, number };
+    });
+  }, [formattedSeoContent]);
+
+  // Inject IDs into rendered headings after expansion
+  React.useEffect(() => {
+    if (!isSeoExpanded || !seoContentRef.current || seoTocHeadings.length === 0) return;
+    const slugify = (text: string) =>
+      text.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
+    const seenIds = new Set<string>();
+    const counters = { h2: 0, h3: 0 };
+    seoContentRef.current.querySelectorAll('h2, h3').forEach((el) => {
+      const level = Number(el.tagName.charAt(1));
+      const text = el.textContent?.replace(/^\s*\d+[.)]\s*/, '').trim() || '';
+      if (level === 2) { counters.h2 += 1; counters.h3 = 0; }
+      else { if (counters.h2 === 0) counters.h2 = 1; counters.h3 += 1; }
+      let id = slugify(text || 'heading');
+      let uid = id; let c = 1;
+      while (seenIds.has(uid)) { uid = `${id}-${c}`; c++; }
+      seenIds.add(uid);
+      el.id = uid;
+    });
+  }, [isSeoExpanded, formattedSeoContent, seoTocHeadings]);
+
+  const scrollToSeoHeading = (id: string) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const offset = 100;
+    const top = el.getBoundingClientRect().top + window.scrollY - offset;
+    window.scrollTo({ top, behavior: 'smooth' });
+    setIsTocOpen(false);
+  };
   const combinedFaqs = React.useMemo(() => {
     const list = [...seoContentFaqs];
     if (landingConfig?.faqs) {
@@ -837,47 +894,125 @@ export function ShopPage({
         </div>
       )}
 
-      {seoContent && (
-        <div className="relative mt-16 w-full border-t border-zinc-100 pt-12">
-          <div className="relative w-full overflow-x-hidden">
-            <div 
-              className={cn(
-                "product-description-container w-full text-zinc-600 transition-[max-height] duration-700 ease-in-out overflow-x-hidden",
-                !isSeoExpanded ? "max-h-[118px] overflow-y-hidden sm:max-h-[132px]" : "max-h-none overflow-y-visible"
-              )}
-            >
-              <div dangerouslySetInnerHTML={{ 
-                __html: formattedSeoContent
-              }} />
-            </div>
-            
-            {!isSeoExpanded && (
-              <>
-                <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-10 h-16 bg-gradient-to-t from-white via-white/90 to-transparent" />
-                <div className="pointer-events-none absolute bottom-1 left-0 right-0 z-20 flex justify-center">
-                  <button
-                    type="button"
-                    onClick={() => setIsSeoExpanded(true)}
-                    className="pointer-events-auto flex items-center gap-1.5 bg-white/95 px-2 py-1 text-sm font-bold text-[#1e4b64] transition-colors hover:text-[#153446]"
-                  >
-                    Xem thêm
-                    <ChevronDown className="h-4 w-4 transition-transform duration-300" />
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-
-          <div className={cn("flex justify-center", isSeoExpanded ? "pt-6 mb-12" : "hidden")}>
+      {/* Mobile sticky TOC bar — only when SEO content is expanded */}
+      {seoContent && isSeoExpanded && seoTocHeadings.length > 0 && (
+        <div className="lg:hidden fixed top-0 left-0 right-0 z-[60] bg-white/95 backdrop-blur-md border-b border-zinc-100 shadow-sm">
+          <div className="flex items-center justify-between gap-3 px-4 h-14">
+            <p className="text-[13px] font-black text-[#1e4b64] truncate flex-1 min-w-0">
+              Mục lục bài viết
+            </p>
             <button
               type="button"
-              onClick={() => setIsSeoExpanded(!isSeoExpanded)}
-              className="pointer-events-auto flex items-center gap-1.5 bg-white/95 px-2 py-1 text-sm font-bold text-[#1e4b64] transition-colors hover:text-[#153446]"
+              onClick={() => setIsTocOpen(prev => !prev)}
+              className="flex-shrink-0 flex items-center gap-1.5 text-[12px] font-bold px-3 py-1.5 rounded-lg bg-zinc-50 hover:bg-zinc-100 text-[#1e4b64] border border-zinc-200 transition-all cursor-pointer"
             >
-              {isSeoExpanded ? 'Thu gọn' : 'Xem thêm'}
-              <ChevronDown className={cn("h-4 w-4 transition-transform duration-300", isSeoExpanded && "rotate-180")} />
+              {isTocOpen ? 'Thu gọn' : 'Xem mục lục'}
+              <ChevronDown className={cn("h-3.5 w-3.5 transition-transform duration-300", isTocOpen && "rotate-180")} />
             </button>
           </div>
+
+          {/* Mobile TOC dropdown */}
+          {isTocOpen && (
+            <div className="bg-white/98 backdrop-blur-md px-4 pb-5 border-t border-zinc-100">
+              <div className="mt-4 rounded-2xl bg-zinc-50 border border-zinc-200 p-5 max-h-[min(65vh,480px)] overflow-y-auto">
+                <nav className="space-y-2.5">
+                  {seoTocHeadings.map((item) => (
+                    <button
+                      key={`mobile-toc-${item.id}`}
+                      type="button"
+                      onClick={() => scrollToSeoHeading(item.id)}
+                      className={cn(
+                        "block w-full text-left text-[14px] text-zinc-600 hover:text-[#1e4b64] transition-colors leading-snug cursor-pointer",
+                        item.level !== 2 && "pl-5 text-zinc-500 text-[13px]"
+                      )}
+                    >
+                      <span className="font-black text-[#1e4b64]/60 mr-1.5">{item.number}.</span>
+                      {item.text}
+                    </button>
+                  ))}
+                </nav>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {seoContent && (
+        <div className="relative mt-16 w-full border-t border-zinc-100 pt-12">
+          {/* Collapsed state — gradient + Xem thêm button */}
+          {!isSeoExpanded && (
+            <div className="relative overflow-hidden">
+              <div
+                ref={seoContentRef}
+                className="product-description-container w-full text-zinc-600 max-h-[118px] overflow-y-hidden sm:max-h-[132px] overflow-x-hidden"
+              >
+                <div dangerouslySetInnerHTML={{ __html: formattedSeoContent }} />
+              </div>
+              <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-10 h-16 bg-gradient-to-t from-white via-white/90 to-transparent" />
+              <div className="pointer-events-none absolute bottom-1 left-0 right-0 z-20 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => { setIsSeoExpanded(true); setIsTocOpen(false); }}
+                  className="pointer-events-auto flex items-center gap-1.5 bg-white/95 px-2 py-1 text-sm font-bold text-[#1e4b64] transition-colors hover:text-[#153446]"
+                >
+                  Xem thêm
+                  <ChevronDown className="h-4 w-4 transition-transform duration-300" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Expanded state — two-column layout: content + sticky TOC sidebar */}
+          {isSeoExpanded && (
+            <div className="flex gap-10 items-start">
+              {/* Main content — add top padding on mobile to account for sticky bar */}
+              <div className="min-w-0 flex-1 lg:pt-0 pt-16">
+                <div
+                  ref={seoContentRef}
+                  className="product-description-container w-full text-zinc-600 overflow-x-hidden"
+                >
+                  <div dangerouslySetInnerHTML={{ __html: formattedSeoContent }} />
+                </div>
+
+                <div className="flex justify-center pt-8 mb-12">
+                  <button
+                    type="button"
+                    onClick={() => { setIsSeoExpanded(false); setIsTocOpen(false); }}
+                    className="flex items-center gap-1.5 px-2 py-1 text-sm font-bold text-[#1e4b64] transition-colors hover:text-[#153446]"
+                  >
+                    Thu gọn
+                    <ChevronDown className="h-4 w-4 rotate-180 transition-transform duration-300" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Sticky TOC sidebar — desktop only */}
+              {seoTocHeadings.length > 0 && (
+                <aside className="hidden lg:block w-[280px] xl:w-[300px] shrink-0 self-stretch">
+                  <div className="sticky top-24 p-5 rounded-2xl bg-zinc-50 border border-zinc-200/60 shadow-xs h-fit">
+                    <h4 className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-4 pb-2 border-b border-zinc-150">
+                      Mục lục bài viết
+                    </h4>
+                    <nav className="space-y-2.5 max-h-[min(70vh,600px)] overflow-y-auto pr-1">
+                      {seoTocHeadings.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => scrollToSeoHeading(item.id)}
+                          className={cn(
+                            "block w-full text-left text-[13px] leading-relaxed transition-all duration-200 cursor-pointer font-bold hover:text-[#1e4b64]",
+                            item.level !== 2 ? "pl-3 text-[12px] font-semibold text-zinc-500 hover:text-zinc-800" : "text-zinc-600"
+                          )}
+                        >
+                          {item.number}. {item.text}
+                        </button>
+                      ))}
+                    </nav>
+                  </div>
+                </aside>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
