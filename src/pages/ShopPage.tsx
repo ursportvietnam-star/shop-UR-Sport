@@ -924,8 +924,10 @@ export function ShopPage({
                       type="button"
                       onClick={() => scrollToSeoHeading(item.index)}
                       className={cn(
-                        "block w-full text-left text-[14px] text-zinc-600 hover:text-[#1e4b64] transition-colors leading-snug cursor-pointer",
-                        item.level !== 2 && "pl-5 text-zinc-500 text-[13px]"
+                        "block w-full text-left transition-all duration-200 cursor-pointer rounded-lg px-3 py-2",
+                        item.level === 2 
+                          ? "text-[14px] font-bold text-zinc-700 hover:text-[#1e4b64] hover:bg-[#1e4b64]/5"
+                          : "text-[13px] font-semibold text-zinc-500 pl-6 hover:text-[#1e4b64] hover:bg-[#1e4b64]/5"
                       )}
                     >
                       <span className="font-black text-[#1e4b64]/60 mr-1.5">{item.number}.</span>
@@ -1002,8 +1004,10 @@ export function ShopPage({
                           type="button"
                           onClick={() => scrollToSeoHeading(item.index)}
                           className={cn(
-                            "block w-full text-left text-[13px] leading-relaxed transition-all duration-200 cursor-pointer font-bold hover:text-[#1e4b64]",
-                            item.level !== 2 ? "pl-3 text-[12px] font-semibold text-zinc-500 hover:text-zinc-800" : "text-zinc-600"
+                            "block w-full text-left leading-relaxed transition-all duration-200 cursor-pointer rounded-md px-2 py-1.5",
+                            item.level === 2 
+                              ? "text-[13px] font-bold text-zinc-700 hover:text-[#1e4b64] hover:bg-[#1e4b64]/5" 
+                              : "text-[12px] font-semibold text-zinc-500 pl-4 hover:text-[#1e4b64] hover:bg-[#1e4b64]/5"
                           )}
                         >
                           {item.number}. {item.text}
