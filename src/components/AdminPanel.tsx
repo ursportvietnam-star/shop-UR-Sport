@@ -1413,9 +1413,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'dashboard'
 
   const handleSaveLogoSettings = async (settings: typeof logoSettings) => {
     try {
-      const normalizedSettings = settings.favicon && !/[?&]v=/.test(settings.favicon)
-        ? { ...settings, favicon: `${settings.favicon}${settings.favicon.includes('?') ? '&' : '?'}v=${Date.now()}` }
-        : settings;
+      const normalizedSettings = settings;
       await saveAdminSetting('logoSettings', normalizedSettings);
       if (normalizedSettings.favicon) {
         await syncSiteFavicon(normalizedSettings.favicon);

@@ -14,10 +14,7 @@ import { DEFAULT_SEO_SUBCATEGORIES } from '../../lib/categoryConfig';
 import { getProductPath } from '../../lib/productUrls';
 import type { FirestoreTimestamp } from '../../types/firestore';
 
-const withCacheBust = (url: string) => {
-  const separator = url.includes('?') ? '&' : '?';
-  return `${url}${separator}v=${Date.now()}`;
-};
+const withCacheBust = (url: string) => url;
 
 interface AdminSettingsTabProps {
   activeSection?: 'settings' | 'settings-logo' | 'settings-footer' | 'settings-shipping' | 'settings-css' | 'settings-contact' | 'seo-sitemap' | 'seo-schema' | 'seo-robots' | 'seo-redirects';
