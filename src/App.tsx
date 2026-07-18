@@ -314,6 +314,7 @@ function AppContent() {
   const isAdminRoute = location.pathname === '/quan-tri' || location.pathname === '/quantri' || location.pathname.startsWith('/admin');
   const isBlogRoute = location.pathname === '/blog' || location.pathname.startsWith('/blog/');
   const isBioRoute = location.pathname === '/bio' || location.pathname === '/links' || location.pathname === '/me';
+  const isCheckoutRoute = location.pathname === '/checkout';
   const hideLayout = isAdminRoute || isBioRoute;
 
   useEffect(() => {
@@ -454,8 +455,8 @@ function AppContent() {
           )}
           
           <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} onCheckout={handleCheckout} />
-          {!hideLayout && <FloatingContactMenu />}
-          {!hideLayout && (
+          {!hideLayout && !isCheckoutRoute && <FloatingContactMenu />}
+          {!hideLayout && !isCheckoutRoute && (
             <MobileBottomNav
               onMenuClick={() => setIsSidebarOpen(true)}
               onSearchClick={() => setIsMobileSearchOpen(v => !v)}

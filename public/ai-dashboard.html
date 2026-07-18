@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Teamwork Workflow (n8n Style)</title>
+  <style>
+    :root {
+      --bg-color: #1e1e1e;
+      --grid-color: #2a2a2a;
+      --node-bg: #2d2d2d;
+      --node-border: #444;
+      --text-main: #f0f0f0;
+      --text-muted: #888;
+      --primary: #FF6B6B;     /* Start */
+      --info: #4285F4;        /* Orchestrator */
+      --success: #0F9D58;     /* Researcher/Writer/Reviewer */
+      --line-color: #555;
+      --anim-color: #00E676;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      overflow: hidden;
+      display: flex;
+    }
+
+    /* Lưới n8n */
+    .canvas-container {
+      flex: 1;
+      height: 100vh;
+      position: relative;
+      background-image: 
+        linear-gradient(var(--grid-color) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+
+    /* Thanh Log bên phải */
+    .log-panel {
+      width: 350px;
+      height: 100vh;
+      background-color: #1a1a1a;
+      border-left: 1px solid var(--node-border);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .log-header {
+      padding: 15px;
+      background-color: #222;
+      border-bottom: 1px solid var(--node-border);
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .log-content {
+      flex: 1;
+      padding: 15px;
+      overflow-y: auto;
+      font-family: 'Consolas', monospace;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .log-line {
+      margin-bottom: 8px;
+      opacity: 0;
+      animation: fadeIn 0.3s forwards;
+    }
+    .log-time { color: var(--text-muted); margin-right: 8px; }
+    .log-info { color: #4285F4; }
+    .log-success { color: #0F9D58; }
+    .log-warning { color: #F4B400; }
+
+    @keyframes fadeIn {
+      to { opacity: 1; }
+    }
+
+    /* Các Node */
+    .node {
+      position: absolute;
+      background-color: var(--node-bg);
+      border: 1px solid var(--node-border);
+      border-radius: 8px;
+      width: 220px;
+      padding: 15px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 10;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .node.active {
+      border-color: var(--info);
+      box-shadow: 0 0 15px rgba(66, 133, 244, 0.4);
+      transform: scale(1.02);
+    }
+
+    .node-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 6px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 20px;
+      color: white;
+    }
+
+    .icon-start { background-color: var(--primary); cursor: pointer; transition: 0.2s; }
+    .icon-start:hover { transform: scale(1.1); box-shadow: 0 0 10px var(--primary); }
+    .icon-orch { background-color: var(--info); }
+    .icon-res { background-color: var(--success); }
+    .icon-writ { background-color: #F4B400; }
+    .icon-rev { background-color: #DB4437; }
+
+    .node-content { flex: 1; }
+    .node-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .node-desc { font-size: 12px; color: var(--text-muted); }
+
+    /* Vị trí các Node */
+    #node-start { top: 40%; left: 50px; }
+    #node-orch { top: 40%; left: 350px; }
+    #node-res { top: 15%; left: 700px; }
+    #node-writ { top: 40%; left: 700px; }
+    #node-rev { top: 65%; left: 700px; }
+
+    /* SVG kết nối */
+    svg.connections {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    path.link {
+      fill: none;
+      stroke: var(--line-color);
+      stroke-width: 2;
+    }
+
+    path.link-anim {
+      fill: none;
+      stroke: var(--anim-color);
+      stroke-width: 3;
+      stroke-dasharray: 10 15;
+      animation: dash 1s linear infinite;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    path.link-anim.active {
+      opacity: 1;
+    }
+
+    @keyframes dash {
+      to { stroke-dashoffset: -25; }
+    }
+
+    .header-bar {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 20;
+    }
+    
+    .btn {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn:hover { background-color: #ff5252; }
+  </style>
+</head>
+<body>
+
+  <!-- Khung lưới chứa Node -->
+  <div class="canvas-container" id="canvas">
+    
+    <div class="header-bar">
+      <h2>URSPORT AI TEAMWORK (n8n Style)</h2>
+      <p style="color: var(--text-muted); margin-top: -10px;">Giao diện giả lập tiến trình AI nội bộ</p>
+    </div>
+
+    <!-- Node 1: Start -->
+    <div class="node" id="node-start">
+      <div class="node-icon icon-start" onclick="startWorkflow()" title="Bấm để khởi chạy!">⚡</div>
+      <div class="node-content">
+        <div class="node-title">Khởi chạy (Trigger)</div>
+        <div class="node-desc">Nhận lệnh từ User</div>
+      </div>
+    </div>
+
+    <!-- Node 2: Orchestrator -->
+    <div class="node" id="node-orch">
+      <div class="node-icon icon-orch">🤖</div>
+      <div class="node-content">
+        <div class="node-title">AI Nhạc Trưởng</div>
+        <div class="node-desc">Điều phối trung tâm</div>
+      </div>
+    </div>
+
+    <!-- Node 3: Researcher -->
+    <div class="node" id="node-res">
+      <div class="node-icon icon-res">🔍</div>
+      <div class="node-content">
+        <div class="node-title">AI Nghiên Cứu</div>
+        <div class="node-desc">Quét Data & Outline</div>
+      </div>
+    </div>
+
+    <!-- Node 4: Writer -->
+    <div class="node" id="node-writ">
+      <div class="node-icon icon-writ">✍️</div>
+      <div class="node-content">
+        <div class="node-title">AI Sáng Tạo</div>
+        <div class="node-desc">Viết bài & HTML</div>
+      </div>
+    </div>
+
+    <!-- Node 5: Reviewer -->
+    <div class="node" id="node-rev">
+      <div class="node-icon icon-rev">🧐</div>
+      <div class="node-content">
+        <div class="node-title">AI Kiểm Duyệt</div>
+        <div class="node-desc">Audit lỗi & SEO</div>
+      </div>
+    </div>
+
+    <!-- SVG vẽ đường nối -->
+    <svg class="connections">
+      <!-- Start to Orch -->
+      <path class="link" d="M 270 440 C 310 440, 310 440, 350 440" />
+      <path class="link-anim" id="path-start-orch" d="M 270 440 C 310 440, 310 440, 350 440" />
+      
+      <!-- Orch to Res -->
+      <path class="link" d="M 570 440 C 635 440, 635 190, 700 190" />
+      <path class="link-anim" id="path-orch-res" d="M 570 440 C 635 440, 635 190, 700 190" />
+
+      <!-- Orch to Writ -->
+      <path class="link" d="M 570 440 C 635 440, 635 440, 700 440" />
+      <path class="link-anim" id="path-orch-writ" d="M 570 440 C 635 440, 635 440, 700 440" />
+
+      <!-- Orch to Rev -->
+      <path class="link" d="M 570 440 C 635 440, 635 690, 700 690" />
+      <path class="link-anim" id="path-orch-rev" d="M 570 440 C 635 440, 635 690, 700 690" />
+      
+      <!-- Rev to Orch (Vòng lặp sửa lỗi) -->
+      <path class="link" d="M 700 710 C 570 710, 570 460, 570 460" stroke-dasharray="5 5"/>
+      <path class="link-anim" id="path-rev-orch" d="M 700 710 C 570 710, 570 460, 570 460" />
+    </svg>
+
+  </div>
+
+  <!-- Bảng Log -->
+  <div class="log-panel">
+    <div class="log-header">
+      <span>Terminal Log</span>
+      <button class="btn" style="padding: 5px 10px; font-size: 12px;" onclick="document.getElementById('log-box').innerHTML = ''">Clear</button>
+    </div>
+    <div class="log-content" id="log-box">
+      <div class="log-line"><span class="log-time">[System]</span> Hệ thống sẵn sàng. Bấm vào biểu tượng ⚡ ở khối 'Khởi chạy' để bắt đầu trải nghiệm!</div>
+    </div>
+  </div>
+
+  <script>
+    const logBox = document.getElementById('log-box');
+
+    function log(message, type = 'info') {
+      const now = new Date();
+      const time = now.toLocaleTimeString('vi-VN', { hour12: false });
+      const div = document.createElement('div');
+      div.className = 'log-line';
+      let colorClass = type === 'info' ? 'log-info' : (type === 'success' ? 'log-success' : 'log-warning');
+      div.innerHTML = `<span class="log-time">[${time}]</span> <span class="${colorClass}">${message}</span>`;
+      logBox.appendChild(div);
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    async function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function toggleAnim(pathId, show) {
+      const el = document.getElementById(pathId);
+      if(show) el.classList.add('active');
+      else el.classList.remove('active');
+    }
+
+    function highlightNode(nodeId, show) {
+      const el = document.getElementById(nodeId);
+      if(show) el.classList.add('active');
+      else el.classList.remove('active');
+    }
+
+    let isRunning = false;
+
+    async function startWorkflow() {
+      if(isRunning) return;
+      isRunning = true;
+      
+      logBox.innerHTML = '';
+      log('Đã nhận lệnh khởi chạy từ User...', 'info');
+      highlightNode('node-start', true);
+      toggleAnim('path-start-orch', true);
+      await sleep(1000);
+      
+      highlightNode('node-start', false);
+      toggleAnim('path-start-orch', false);
+      
+      // Orchestrator
+      highlightNode('node-orch', true);
+      log('Nhạc Trưởng: Đang phân tích lệnh và cấu trúc bài viết (Pillar 4)...', 'info');
+      await sleep(1500);
+
+      // Orch -> Res
+      log('Nhạc Trưởng: Giao việc cho AI Nghiên Cứu quét dữ liệu đối thủ.', 'info');
+      toggleAnim('path-orch-res', true);
+      await sleep(800);
+      highlightNode('node-res', true);
+      log('Nghiên Cứu: Đang quét Top 10 Google cho từ khóa "Áo thun thể thao nam"...', 'info');
+      await sleep(2000);
+      log('Nghiên Cứu: ✅ Đã tạo xong Outline 15 thẻ H2. Tìm thấy lỗ hổng content (Content Gap).', 'success');
+      highlightNode('node-res', false);
+      toggleAnim('path-orch-res', false);
+      
+      // Orch -> Writ
+      await sleep(500);
+      log('Nhạc Trưởng: Chuyển Outline sang AI Sáng Tạo để viết bài 5000 từ.', 'info');
+      toggleAnim('path-orch-writ', true);
+      await sleep(800);
+      highlightNode('node-writ', true);
+      log('Sáng Tạo: Đang generate mã HTML5...', 'info');
+      await sleep(1000);
+      log('Sáng Tạo: Đang chèn hình ảnh và Schema...', 'info');
+      await sleep(1500);
+      log('Sáng Tạo: Đã hoàn thành bản nháp V1.', 'info');
+      highlightNode('node-writ', false);
+      toggleAnim('path-orch-writ', false);
+
+      // Orch -> Rev
+      await sleep(500);
+      log('Nhạc Trưởng: Gửi bản nháp V1 cho AI Kiểm Duyệt Audit.', 'info');
+      toggleAnim('path-orch-rev', true);
+      await sleep(800);
+      highlightNode('node-rev', true);
+      log('Kiểm Duyệt: Đang kiểm tra mật độ từ khóa và E-E-A-T...', 'info');
+      await sleep(1500);
+      log('Kiểm Duyệt: ⚠️ PHÁT HIỆN LỖI! Đoạn H2 số 4 bị nhồi từ khóa. Hình ảnh thiếu thuộc tính alt.', 'warning');
+      
+      // Vòng lặp sửa lỗi
+      toggleAnim('path-rev-orch', true);
+      await sleep(1000);
+      highlightNode('node-rev', false);
+      toggleAnim('path-orch-rev', false);
+      toggleAnim('path-rev-orch', false);
+
+      log('Nhạc Trưởng: ❌ Bác bỏ bản nháp V1. Yêu cầu AI Sáng Tạo sửa lại!', 'warning');
+      
+      // Orch -> Writ (Lần 2)
+      toggleAnim('path-orch-writ', true);
+      highlightNode('node-writ', true);
+      await sleep(1500);
+      log('Sáng Tạo: Đã sửa lại mật độ từ khóa và bổ sung alt text. Cập nhật bản nháp V2.', 'success');
+      highlightNode('node-writ', false);
+      toggleAnim('path-orch-writ', false);
+
+      // Orch -> Rev (Lần 2)
+      toggleAnim('path-orch-rev', true);
+      highlightNode('node-rev', true);
+      await sleep(1500);
+      log('Kiểm Duyệt: ✅ PASSED! Bài viết đạt chuẩn SEO 10/10.', 'success');
+      highlightNode('node-rev', false);
+      toggleAnim('path-orch-rev', false);
+
+      // Hoàn tất
+      await sleep(500);
+      log('Nhạc Trưởng: 🎉 TỔNG KẾT: Quy trình khép kín thành công. Đã xuất file chuẩn SEO!', 'success');
+      highlightNode('node-orch', false);
+
+      isRunning = false;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Công cụ Đăng Bài Tự Động (Login Google)</title>
+  <style>
+    body { font-family: sans-serif; padding: 40px; text-align: center; background: #f0f2f5; }
+    .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 600px; margin: auto; }
+    button { padding: 15px 30px; font-size: 16px; margin: 10px; cursor: pointer; border-radius: 8px; border: none; font-weight: bold; width: 100%; }
+    #loginBtn { background-color: #4285F4; color: white; }
+    #uploadBtn { background-color: #34A853; color: white; display: none; }
+    #status { margin-top: 20px; font-size: 16px; color: #333; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Công cụ Đăng Bài Lên Firebase</h1>
+    <p>Nhấp vào nút để tự động đẩy bài viết <b>Ultimate Pillar 4</b> lên Website nhé.</p>
+
+    <button id="loginBtn">1. Đăng nhập Google (Tài khoản Admin)</button>
+    <button id="uploadBtn">2. Tiến Hành Đăng Bài Viết</button>
+    
+    <div id="status">Trạng thái: Chưa đăng nhập.</div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: 'AIzaSyBZYqAg_mDmqTjhu1_DWWVsLZWNISQS1W4',
+      authDomain: 'shop-ursport.firebaseapp.com',
+      projectId: 'shop-ursport',
+      storageBucket: 'shop-ursport.firebasestorage.app',
+      messagingSenderId: '980330324717',
+      appId: '1:980330324717:web:3814444e6a5da2c09822e4'
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+
+    const statusEl = document.getElementById('status');
+    const loginBtn = document.getElementById('loginBtn');
+    const uploadBtn = document.getElementById('uploadBtn');
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        statusEl.innerHTML = `✅ Đã đăng nhập: <b>${user.email}</b><br><br>Hãy nhấn nút Số 2 để tải dữ liệu lên.`;
+        loginBtn.style.display = 'none';
+        uploadBtn.style.display = 'block';
+      }
+    });
+
+    loginBtn.addEventListener('click', () => {
+      signInWithPopup(auth, provider).catch(error => {
+        statusEl.innerHTML = `❌ Lỗi đăng nhập: ${error.message}`;
+      });
+    });
+
+    uploadBtn.addEventListener('click', async () => {
+      statusEl.innerHTML = '⏳ Đang tải nội dung file HTML (Bài 4 - Ultimate) và xử lý dữ liệu...';
+      try {
+        const response = await fetch('/article_pillar_4_ultimate.html');
+        const fullHtml = await response.text();
+        const parser = new DOMParser();
+        const docHtml = parser.parseFromString(fullHtml, 'text/html');
+        const articleContent = docHtml.querySelector('article').innerHTML;
+
+        const slug = 'ao-thun-the-thao-nam-chuyen-dung-huong-dan-chon-mua';
+        await setDoc(doc(db, 'blogPosts', slug), {
+          id: slug,
+          slug: slug,
+          title: 'Áo Thun Thể Thao Nam Chuyên Dụng: Hướng Dẫn Chọn Mua & Phối Đồ Chuẩn Nhất 2026',
+          category: 'Kiến thức thời trang',
+          author: 'Chuyên gia Thời trang URSport',
+          date: new Date().toISOString(),
+          image: '/images/blog/tam-quan-trong-ao-thun-the-thao-nam.jpg',
+          imageTitle: 'Tầm quan trọng của áo thun thể thao nam',
+          excerpt: 'Cẩm nang toàn diện hướng dẫn cách chọn áo thun thể thao nam. Phân tích chuyên sâu về chất liệu, công nghệ thoát ẩm, form dáng và phong cách phối đồ chuẩn nhất 2026.',
+          content: articleContent,
+          isHidden: false,
+          seoTitle: 'Áo Thun Thể Thao Nam Chuyên Dụng: Hướng Dẫn Chọn Mua & Phối Đồ Chuẩn Nhất 2026',
+          metaDescription: 'Cẩm nang toàn tập về áo thun thể thao nam. Tìm hiểu ngay chất liệu, công nghệ, form dáng và cách chọn áo tập gym, chạy bộ chuẩn E-E-A-T từ chuyên gia ursport.vn.',
+          primaryKeyword: 'áo thun thể thao nam',
+          createdAt: new Date().toISOString()
+        });
+
+        statusEl.innerHTML = '🎉 HOÀN TẤT! Đã đẩy bài viết số 4 (SIÊU PILLAR) lên Database thành công.<br><br>👉 Bạn có thể truy cập <b>/blog/' + slug + '</b> để chiêm ngưỡng nhé!';
+        uploadBtn.style.display = 'none';
+
+      } catch (error) {
+        statusEl.innerHTML = `❌ Lỗi: ${error.message}`;
+      }
+    });
+  </script>
+</body>
+</html>

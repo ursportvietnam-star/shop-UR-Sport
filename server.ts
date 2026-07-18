@@ -1101,6 +1101,60 @@ ${String(parsed?.contentHtml || '').slice(0, 12000)}`;
     });
   });
 
+  // ==========================================
+  // DYNAMIC SSR FOR SEO BOTS
+  // ==========================================
+  const isBot = (userAgent: string) => /googlebot|bingbot|yandex|baiduspider|twitterbot|facebookexternalhit|rogerbot|linkedinbot|embedly|quora link preview|showyoubot|outbrain|pinterest|slackbot|vkShare|W3C_Validator|whatsapp/i.test(userAgent || '');
+
+  app.get("/blog/:slug", async (req, res, next) => {
+    const userAgent = req.headers["user-agent"] || "";
+    if (!isBot(userAgent)) {
+      return next(); // Not a bot, continue to SPA
+    }
+
+    const slug = req.params.slug;
+    try {
+      const projectId = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID || "shop-ursport";
+      const firestoreUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/blogPosts/${slug}`;
+      
+      const response = await fetch(firestoreUrl);
+      if (!response.ok) return next();
+
+      const data = await response.json();
+      const fields = data.fields;
+      if (!fields) return next();
+
+      const seoTitle = fields.seoTitle?.stringValue || fields.title?.stringValue || "UR Sport";
+      const metaDescription = fields.metaDescription?.stringValue || fields.excerpt?.stringValue || "";
+      const image = fields.image?.stringValue || "/images/og-ursport.jpg";
+      const content = fields.content?.stringValue || "";
+
+      // Resolve index.html path based on environment
+      const indexPath = process.env.NODE_ENV === "production" 
+        ? path.join(process.cwd(), "dist", "index.html")
+        : path.join(process.cwd(), "index.html");
+
+      let indexHtml = await fs.readFile(indexPath, "utf-8");
+      
+      // Inject Metadata
+      indexHtml = indexHtml.replace(/<title>.*?<\/title>/i, `<title>${seoTitle}</title>`);
+      indexHtml = indexHtml.replace(/<meta name="description" content=".*?" \/>/gi, `<meta name="description" content="${metaDescription}" />`);
+      indexHtml = indexHtml.replace(/<meta property="og:title" content=".*?" \/>/gi, `<meta property="og:title" content="${seoTitle}" />`);
+      indexHtml = indexHtml.replace(/<meta property="og:description" content=".*?" \/>/gi, `<meta property="og:description" content="${metaDescription}" />`);
+      indexHtml = indexHtml.replace(/<meta property="og:image" content=".*?" \/>/gi, `<meta property="og:image" content="${image}" />`);
+      
+      // Inject Main Content directly into the root div
+      indexHtml = indexHtml.replace('<div id="root"></div>', `<div id="root">${content}</div>`);
+
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Cache-Control", "public, max-age=3600"); // Cache for 1 hour
+      return res.send(indexHtml);
+    } catch (e) {
+      console.error("Bot SSR Error:", e);
+      return next();
+    }
+  });
+
   console.log(`Starting server in ${process.env.NODE_ENV || 'development'} mode`);
   
   // Vite middleware for development
